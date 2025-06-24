@@ -8,10 +8,9 @@
 
 ### 🔐 نظام المصادقة والأمان
 - تسجيل الدخول والخروج
-- إدارة المستخدمين والصلاحيات (Admin, Editor, Viewer)
+- إدارة المستخدمين والصلاحيات
 - حماية المسارات والوظائف
 - جلسات آمنة مع MySQL Store
-- تشفير كلمات المرور باستخدام bcrypt
 
 ### 📦 إدارة المخزون
 - إضافة وتعديل وحذف العينات
@@ -20,61 +19,48 @@
 - نظام سلة المحذوفات (Soft Delete)
 - طباعة تقارير المخزون
 - تصدير البيانات بصيغة PDF
-- البحث والفلترة المتقدمة
-- نظام رفض العينات
 
 ### 🧾 إدارة الفواتير
 - إنشاء وتعديل الفواتير
 - إضافة عينات متعددة للفاتورة
-- تتبع حالة الدفع (مدفوع/غير مدفوع)
+- تتبع حالة الدفع
 - طباعة الفواتير
 - نظام سلة المحذوفات للفواتير
-- حساب الأوزان الصافية تلقائياً
-- تتبع حركة المبيعات
 
 ### 📋 إدارة الشهادات
 - شهادات داخلية وخارجية
 - إدارة بيانات العملاء
 - طباعة الشهادات
 - نظام سلة المحذوفات للشهادات
-- رموز QR للوصول العام
-- قياسات متعددة للعينات
 
 ### 📊 التقارير والتصدير
 - تصدير البيانات بصيغة PDF
 - طباعة تقارير مفصلة
 - إحصائيات المخزون
-- تقارير حركة المبيعات
-- طباعة بصيغة A4 محسنة
 
 ## التقنيات المستخدمة
 
 ### Backend
-- **Node.js** (v16+) - بيئة تشغيل JavaScript
-- **Express.js** (v4.18+) - إطار عمل الويب
-- **MySQL** (v8.0+) - قاعدة البيانات
-- **EJS** (v3.1+) - محرك القوالب
-- **bcrypt** (v6.0+) - تشفير كلمات المرور
-- **express-session** (v1.17+) - إدارة الجلسات
-- **helmet** (v8.1+) - أمان التطبيق
-- **mysql2** (v3.14+) - محرك MySQL
-- **express-validator** (v7.0+) - التحقق من المدخلات
+- **Node.js** - بيئة تشغيل JavaScript
+- **Express.js** - إطار عمل الويب
+- **MySQL** - قاعدة البيانات
+- **EJS** - محرك القوالب
+- **bcrypt** - تشفير كلمات المرور
+- **express-session** - إدارة الجلسات
+- **helmet** - أمان التطبيق
 
 ### Frontend
 - **Bootstrap 5** - إطار عمل CSS
 - **Font Awesome** - الأيقونات
 - **JavaScript (ES6+)** - التفاعل في المتصفح
 - **EJS** - قوالب HTML الديناميكية
-- **jQuery** - معالجة DOM
 
 ### الأدوات المساعدة
-- **Puppeteer** (v24.10+) - إنشاء ملفات PDF
-- **ExcelJS** (v4.4+) - التعامل مع ملفات Excel
-- **Winston** (v3.8+) - تسجيل الأحداث
-- **Morgan** (v1.10+) - تسجيل الطلبات
-- **node-cron** (v4.1+) - المهام المجدولة
-- **QRCode** (v1.5+) - إنشاء رموز QR
-- **UUID** (v11.1+) - إنشاء معرفات فريدة
+- **Puppeteer** - إنشاء ملفات PDF
+- **ExcelJS** - التعامل مع ملفات Excel
+- **Winston** - تسجيل الأحداث
+- **Morgan** - تسجيل الطلبات
+- **node-cron** - المهام المجدولة
 
 ## متطلبات النظام
 
@@ -87,7 +73,6 @@
 - **RAM**: 2GB على الأقل
 - **مساحة التخزين**: 1GB متاحة
 - **نظام التشغيل**: Windows, macOS, Linux
-- **المتصفح**: Chrome, Firefox, Safari, Edge (الإصدارات الحديثة)
 
 ## التثبيت والإعداد
 
@@ -184,9 +169,7 @@ lab_inventory/
 │   │   ├── inventoryController.js # التحكم بالمخزون
 │   │   ├── invoiceController.js  # التحكم بالفواتير
 │   │   ├── certificatesController.js # التحكم بالشهادات
-│   │   ├── userController.js     # التحكم بالمستخدمين
-│   │   ├── exportController.js   # التحكم بالتصدير
-│   │   └── homeController.js     # التحكم بالصفحة الرئيسية
+│   │   └── userController.js     # التحكم بالمستخدمين
 │   ├── database/                 # قاعدة البيانات
 │   │   ├── db.js                 # إعداد الاتصال
 │   │   ├── init.js               # تهيئة قاعدة البيانات
@@ -200,59 +183,20 @@ lab_inventory/
 │   │   ├── inventory.js          # مسارات المخزون
 │   │   ├── invoices.js           # مسارات الفواتير
 │   │   ├── certificates.js       # مسارات الشهادات
-│   │   ├── users.js              # مسارات المستخدمين
-│   │   ├── exports.js            # مسارات التصدير
-│   │   └── index.js              # المسارات الرئيسية
+│   │   └── users.js              # مسارات المستخدمين
 │   ├── views/                    # قوالب العرض
 │   │   ├── layouts/              # تخطيطات الصفحات
-│   │   │   ├── main.ejs          # التخطيط الرئيسي
-│   │   │   ├── public.ejs        # تخطيط الصفحات العامة
-│   │   │   ├── header.ejs        # رأس الصفحة
-│   │   │   └── footer.ejs        # تذييل الصفحة
 │   │   ├── inventory/            # صفحات المخزون
-│   │   │   ├── index.ejs         # قائمة المخزون
-│   │   │   ├── create.ejs        # إنشاء عينة
-│   │   │   ├── edit.ejs          # تعديل عينة
-│   │   │   ├── show.ejs          # عرض عينة
-│   │   │   ├── deleted.ejs       # سلة المحذوفات
-│   │   │   └── print.ejs         # صفحة الطباعة
 │   │   ├── invoices/             # صفحات الفواتير
-│   │   │   ├── index.ejs         # قائمة الفواتير
-│   │   │   ├── create.ejs        # إنشاء فاتورة
-│   │   │   ├── edit.ejs          # تعديل فاتورة
-│   │   │   ├── view.ejs          # عرض فاتورة
-│   │   │   └── deleted.ejs       # سلة المحذوفات
 │   │   ├── certificates/         # صفحات الشهادات
-│   │   │   ├── index.ejs         # قائمة الشهادات
-│   │   │   ├── create.ejs        # إنشاء شهادة
-│   │   │   ├── show.ejs          # عرض شهادة
-│   │   │   ├── public.ejs        # الصفحة العامة
-│   │   │   └── deleted.ejs       # سلة المحذوفات
-│   │   ├── auth/                 # صفحات المصادقة
-│   │   │   ├── login.ejs         # تسجيل الدخول
-│   │   │   ├── register.ejs      # تسجيل مستخدم جديد
-│   │   │   └── change-password.ejs # تغيير كلمة المرور
-│   │   ├── users/                # صفحات المستخدمين
-│   │   │   ├── index.ejs         # قائمة المستخدمين
-│   │   │   ├── create.ejs        # إنشاء مستخدم
-│   │   │   └── edit.ejs          # تعديل مستخدم
-│   │   ├── index.ejs             # الصفحة الرئيسية
-│   │   └── error.ejs             # صفحة الأخطاء
+│   │   └── auth/                 # صفحات المصادقة
 │   ├── public/                   # الملفات الثابتة
 │   │   ├── css/                  # ملفات CSS
-│   │   │   ├── bootstrap.rtl.min.css # Bootstrap RTL
-│   │   │   └── style.css         # الأنماط المخصصة
 │   │   └── js/                   # ملفات JavaScript
-│   │       ├── bootstrap.bundle.min.js # Bootstrap JS
-│   │       └── main.js           # JavaScript الرئيسي
 │   ├── utils/                    # الأدوات المساعدة
 │   │   ├── helpers.js            # دوال مساعدة
 │   │   └── logger.js             # نظام التسجيل
 │   └── validators/               # قواعد التحقق
-│       ├── auth.js               # التحقق من المصادقة
-│       ├── inventory.js          # التحقق من المخزون
-│       ├── invoices.js           # التحقق من الفواتير
-│       └── certificates.js       # التحقق من الشهادات
 ├── logs/                         # ملفات التسجيل
 ├── uploads/                      # الملفات المرفوعة
 ├── package.json                  # تبعيات المشروع
@@ -269,20 +213,6 @@ POST /auth/login
 Content-Type: application/x-www-form-urlencoded
 
 username=admin&password=password
-```
-
-**الاستجابة:**
-```json
-{
-  "success": true,
-  "message": "تم تسجيل الدخول بنجاح",
-  "user": {
-    "id": 1,
-    "username": "admin",
-    "role": "admin",
-    "full_name": "مدير النظام"
-  }
-}
 ```
 
 #### تسجيل الخروج
@@ -304,37 +234,9 @@ currentPassword=old&newPassword=new&confirmPassword=new
 ```http
 GET /inventory
 Query Parameters:
-- date: تاريخ العينة (YYYY-MM-DD)
+- date: تاريخ العينة
 - supplier: اسم المورد
 - sample_number: رقم العينة
-- page: رقم الصفحة
-- limit: عدد العناصر في الصفحة
-```
-
-**الاستجابة:**
-```json
-{
-  "inventory": [
-    {
-      "id": 1,
-      "date": "2025-01-01",
-      "sample_number": "123",
-      "supplier_or_sample_name": "مورد",
-      "base_quantity": 100.00,
-      "current_quantity": 50.00,
-      "ph": 7.00,
-      "peroxide_value": 5.00,
-      "absorption_readings": "1.5 2.0 1.8 2.2 1.9",
-      "sigma_absorbance": 0.0050,
-      "analyst": "محلل",
-      "notes": "ملاحظات",
-      "created_at": "2025-01-01T00:00:00.000Z"
-    }
-  ],
-  "total": 100,
-  "page": 1,
-  "limit": 10
-}
 ```
 
 #### إنشاء عينة جديدة
@@ -345,15 +247,6 @@ Content-Type: application/x-www-form-urlencoded
 date=2025-01-01&sample_number=123&supplier_or_sample_name=مورد&base_quantity=100&current_quantity=100&ph=7&peroxide_value=5&absorption_readings=1.5 2.0 1.8 2.2 1.9&sigma_absorbance=0.005&analyst=محلل&notes=ملاحظات
 ```
 
-**الاستجابة:**
-```json
-{
-  "success": true,
-  "message": "تم إنشاء العينة بنجاح",
-  "id": 1
-}
-```
-
 #### تحديث عينة
 ```http
 POST /inventory/:id/edit
@@ -362,23 +255,10 @@ Content-Type: application/x-www-form-urlencoded
 date=2025-01-01&sample_number=123&supplier_or_sample_name=مورد&base_quantity=100&current_quantity=50&ph=7&peroxide_value=5&absorption_readings=1.5 2.0 1.8 2.2 1.9&sigma_absorbance=0.005&analyst=محلل&notes=ملاحظات
 ```
 
-#### جلب عينة واحدة
-```http
-GET /inventory/:id
-```
-
 #### نقل عينة إلى سلة المحذوفات
 ```http
 POST /inventory/trash/:id
 Content-Type: application/json
-```
-
-**الاستجابة:**
-```json
-{
-  "success": true,
-  "message": "تم نقل العينة 123 إلى سلة المحذوفات بنجاح"
-}
 ```
 
 #### استعادة عينة من سلة المحذوفات
@@ -431,12 +311,6 @@ Query Parameters:
 - sample_number: رقم العينة
 ```
 
-#### تبديل حالة رفض العينة
-```http
-POST /inventory/:id/toggle-reject
-Content-Type: application/json
-```
-
 ### الفواتير (Invoices)
 
 #### جلب جميع الفواتير
@@ -446,8 +320,6 @@ Query Parameters:
 - date: تاريخ الفاتورة
 - customer_name: اسم العميل
 - status: حالة الدفع (paid/unpaid)
-- page: رقم الصفحة
-- limit: عدد العناصر في الصفحة
 ```
 
 #### إنشاء فاتورة جديدة
@@ -464,11 +336,6 @@ POST /invoices/:id/edit
 Content-Type: application/x-www-form-urlencoded
 
 invoice_number=INV001&date=2025-01-01&customer_name=عميل&customer_phone=123456789&customer_address=عنوان&driver_name=سائق&notes=ملاحظات&items=[{"inventory_id":1,"quantity":10}]
-```
-
-#### جلب فاتورة واحدة
-```http
-GET /invoices/:id
 ```
 
 #### نقل فاتورة إلى سلة المحذوفات
@@ -518,8 +385,6 @@ Query Parameters:
 - date: تاريخ الشهادة
 - customer_name: اسم العميل
 - type: نوع الشهادة (internal/external)
-- page: رقم الصفحة
-- limit: عدد العناصر في الصفحة
 ```
 
 #### إنشاء شهادة جديدة
@@ -536,16 +401,6 @@ POST /certificates/:id/edit
 Content-Type: application/x-www-form-urlencoded
 
 certificate_number=CERT001&year=2025&type=external&date=2025-01-01&customer_name=عميل&customer_phone=123456789&customer_address=عنوان&analyst=محلل&notes=ملاحظات&items=[{"sample_number":"123","quantity":100,"ph":7,"peroxide":5}]
-```
-
-#### جلب شهادة واحدة
-```http
-GET /certificates/:id
-```
-
-#### الوصول العام للشهادة
-```http
-GET /certificates/public/:public_id
 ```
 
 #### نقل شهادة إلى سلة المحذوفات
@@ -715,15 +570,6 @@ CREATE TABLE certificates (
 );
 ```
 
-#### جدول الجلسات (sessions)
-```sql
-CREATE TABLE sessions (
-  session_id VARCHAR(128) PRIMARY KEY,
-  expires INT UNSIGNED NOT NULL,
-  data MEDIUMTEXT
-);
-```
-
 ## الأمان
 
 ### حماية التطبيق
@@ -731,39 +577,23 @@ CREATE TABLE sessions (
 - **bcrypt**: تشفير كلمات المرور
 - **express-session**: إدارة الجلسات الآمنة
 - **express-validator**: التحقق من المدخلات
-- **Content Security Policy**: حماية من هجمات XSS
 
 ### إدارة الصلاحيات
-- **Admin**: صلاحيات كاملة (إدارة المستخدمين، حذف نهائي)
-- **Editor**: إضافة وتعديل وحذف (نقل إلى سلة المحذوفات)
+- **Admin**: صلاحيات كاملة
+- **Editor**: إضافة وتعديل وحذف
 - **Viewer**: عرض فقط
 
 ### حماية المسارات
 - جميع المسارات محمية ما عدا صفحات الطباعة والتصدير
 - التحقق من الصلاحيات قبل تنفيذ العمليات
-- حماية من CSRF attacks
 
 ## المهام المجدولة
 
-### حذف السجلات المحذوفات ناعماً
+### حذف السجلات المحذوفة ناعماً
 ```javascript
 // كل يوم عند منتصف الليل
 cron.schedule('0 0 * * *', async () => {
   // حذف السجلات المحذوفة ناعماً التي يزيد عمرها عن شهر واحد
-  const [certificatesResult] = await conn.query(`
-    DELETE FROM certificates WHERE deleted_at < NOW() - INTERVAL 1 MONTH
-  `);
-  
-  const [inventoryResult] = await conn.query(`
-    DELETE FROM inventory WHERE deleted_at < NOW() - INTERVAL 1 MONTH
-  `);
-  
-  const [invoicesResult] = await conn.query(`
-    DELETE FROM invoices WHERE deleted_at < NOW() - INTERVAL 1 MONTH
-  `);
-}, {
-  scheduled: true,
-  timezone: "Asia/Damascus"
 });
 ```
 
@@ -784,11 +614,6 @@ npm start
 npm run init-db
 ```
 
-### تثبيت التبعيات الجديدة
-```bash
-npm install package-name
-```
-
 ## استكشاف الأخطاء
 
 ### مشاكل شائعة
@@ -799,7 +624,6 @@ npm install package-name
 mysql -u root -p
 # التأكد من وجود قاعدة البيانات
 SHOW DATABASES;
-# التحقق من إعدادات الاتصال في src/.env
 ```
 
 #### خطأ في المنفذ
@@ -817,34 +641,6 @@ chmod 755 src/
 chmod 644 src/.env
 ```
 
-#### خطأ في الذاكرة
-```bash
-# زيادة ذاكرة Node.js
-node --max-old-space-size=4096 src/app.js
-```
-
-### ملفات التسجيل
-- **logs/app.log**: سجلات التطبيق العامة
-- **logs/error.log**: سجلات الأخطاء
-- **logs/access.log**: سجلات الطلبات
-
-## الأداء والتحسين
-
-### تحسين قاعدة البيانات
-- استخدام الفهارس (Indexes) على الأعمدة المطلوبة
-- تحسين الاستعلامات
-- استخدام Connection Pooling
-
-### تحسين التطبيق
-- استخدام Caching للبيانات الثابتة
-- ضغط الملفات الثابتة
-- تحسين استعلامات قاعدة البيانات
-
-### مراقبة الأداء
-- استخدام Winston للتسجيل
-- مراقبة استخدام الذاكرة
-- مراقبة استجابة قاعدة البيانات
-
 ## المساهمة
 
 1. Fork المشروع
@@ -852,12 +648,6 @@ node --max-old-space-size=4096 src/app.js
 3. Commit التغييرات (`git commit -m 'Add some AmazingFeature'`)
 4. Push إلى الفرع (`git push origin feature/AmazingFeature`)
 5. فتح Pull Request
-
-### معايير الكود
-- استخدام ESLint للتحقق من جودة الكود
-- اتباع معايير JavaScript ES6+
-- كتابة تعليقات باللغة العربية
-- اختبار الوظائف قبل الإرسال
 
 ## الترخيص
 
@@ -868,47 +658,32 @@ node --max-old-space-size=4096 src/app.js
 للدعم الفني أو الاستفسارات، يرجى التواصل عبر:
 - البريد الإلكتروني: support@example.com
 - الهاتف: +963-XXX-XXX-XXX
-- GitHub Issues: [رابط المشروع]
 
 ## الإصدارات
 
 ### v1.0.0 (الحالي)
-- ✅ نظام إدارة المخزون الأساسي
-- ✅ نظام إدارة الفواتير
-- ✅ نظام إدارة الشهادات
-- ✅ نظام المصادقة والأمان
-- ✅ واجهة مستخدم عربية
-- ✅ تصدير البيانات بصيغة PDF
-- ✅ نظام سلة المحذوفات
-- ✅ طباعة التقارير
-- ✅ نظام رفض العينات
-- ✅ رموز QR للشهادات
+- نظام إدارة المخزون الأساسي
+- نظام إدارة الفواتير
+- نظام إدارة الشهادات
+- نظام المصادقة والأمان
+- واجهة مستخدم عربية
+- تصدير البيانات بصيغة PDF
+- نظام سلة المحذوفات
 
 ## خطة التطوير المستقبلية
 
 ### v1.1.0 (قيد التطوير)
-- [ ] نظام التنبيهات والإشعارات
+- [ ] نظام التنبيهات
 - [ ] لوحة تحكم للإحصائيات
 - [ ] نظام النسخ الاحتياطي التلقائي
 - [ ] واجهة API للجوال
-- [ ] نظام التقارير المتقدمة
 
 ### v1.2.0 (مخطط)
+- [ ] نظام التقارير المتقدمة
 - [ ] دعم متعدد اللغات
-- [ ] نظام الإشعارات المتقدم
+- [ ] نظام الإشعارات
 - [ ] تكامل مع أنظمة خارجية
-- [ ] نظام إدارة المخزون المتقدم
-- [ ] واجهة مستخدم محسنة
-
-### v2.0.0 (مستقبلي)
-- [ ] تطبيق جوال
-- [ ] نظام إدارة متعدد المختبرات
-- [ ] ذكاء اصطناعي للتنبؤات
-- [ ] نظام إدارة الجودة المتقدم
 
 ---
 
 **تم تطوير هذا النظام بواسطة فريق NEXA للبرمجيات**
-
-**آخر تحديث**: يناير 2025
-**الإصدار**: v1.0.0
