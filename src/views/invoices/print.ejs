@@ -188,11 +188,11 @@ function formatNumberDisplay(value) {
                   <td colspan="4" style="text-align: center; padding: 6pt 4pt; vertical-align: middle;"><strong>المتوسط المرجح</strong></td>
                   <td style="padding: 6pt 4pt;"><strong><%= formatNumberDisplay(totalQuantity ? (weightedPH / totalQuantity) : 0) %></strong></td>
                   <td style="padding: 6pt 4pt;"><strong><%= formatNumberDisplay(totalQuantity ? (weightedPeroxide / totalQuantity) : 0) %></strong></td>
-                  <td style="padding: 6pt 4pt;"><strong><%= parseFloat(totalQuantity ? (weighted232 / totalQuantity) : 0).toFixed(3) == NaN ? '' : parseFloat(totalWeight ? (weighted232 / totalWeight) : 0).toFixed(3) %></strong></td>
-                  <td style="padding: 6pt 4pt;"><strong><%= parseFloat(totalQuantity ? (weighted266 / totalQuantity) : 0).toFixed(3) == NaN ? '' : parseFloat(totalWeight ? (weighted266 / totalWeight) : 0).toFixed(3) %></strong></td>
-                  <td style="padding: 6pt 4pt;"><strong><%= parseFloat(totalQuantity ? (weighted270 / totalQuantity) : 0).toFixed(3) == NaN ? '' : parseFloat(totalWeight ? (weighted270 / totalWeight) : 0).toFixed(3) %></strong></td>
-                  <td style="padding: 6pt 4pt;"><strong><%= parseFloat(totalQuantity ? (weighted274 / totalQuantity) : 0).toFixed(3) == NaN ? '' : parseFloat(totalWeight ? (weighted274 / totalWeight) : 0).toFixed(3) %></strong></td>
-                  <td style="padding: 6pt 4pt;"><strong><%= parseFloat(totalQuantity ? (weightedDeltaK / totalQuantity) : 0).toFixed(3) == NaN ? '' : parseFloat(totalWeight ? (weightedDeltaK / totalWeight) : 0).toFixed(3) %></strong></td>
+                  <td style="padding: 6pt 4pt;"><strong><%= parseFloat(totalQuantity ? (weighted232 / totalQuantity) : 0).toFixed(3) %></strong></td>
+                  <td style="padding: 6pt 4pt;"><strong><%= parseFloat(totalQuantity ? (weighted266 / totalQuantity) : 0).toFixed(3) %></strong></td>
+                  <td style="padding: 6pt 4pt;"><strong><%= parseFloat(totalQuantity ? (weighted270 / totalQuantity) : 0).toFixed(3) %></strong></td>
+                  <td style="padding: 6pt 4pt;"><strong><%= parseFloat(totalQuantity ? (weighted274 / totalQuantity) : 0).toFixed(3) %></strong></td>
+                  <td style="padding: 6pt 4pt;"><strong><%= parseFloat(totalQuantity ? (weightedDeltaK / totalQuantity) : 0).toFixed(3) %></strong></td>
                 </tr>
               </tfoot>
             </table>
