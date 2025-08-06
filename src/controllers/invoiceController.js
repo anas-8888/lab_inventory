@@ -36,6 +36,31 @@ exports.getInvoices = async (req, res) => {
         query += ` ORDER BY i.date DESC, i.id DESC`;
 
         const [invoices] = await pool.query(query, params);
+        
+        // إعادة حساب الوزن الإجمالي لكل فاتورة باستخدام الصيغة المطلوبة
+        for (let invoice of invoices) {
+            // جلب عناصر الفاتورة مع بيانات المخزون
+            const [items] = await pool.query(`
+                SELECT ii.quantity, inv.net_weight_total, inv.base_quantity
+                FROM invoice_items ii
+                JOIN inventory inv ON ii.inventory_id = inv.id
+                WHERE ii.invoice_id = ?
+            `, [invoice.id]);
+            
+            // إعادة حساب الوزن الإجمالي
+            let recalculatedWeight = 0;
+            items.forEach(item => {
+                const quantity = Number(item.quantity) || 0;
+                const netWeightTotal = Number(item.net_weight_total) || 0;
+                const baseQuantity = Number(item.base_quantity) || 1;
+                const weight = (netWeightTotal / baseQuantity) * quantity;
+                recalculatedWeight += weight;
+            });
+            
+            // تحديث الوزن في الكائن
+            invoice.total_quantity_liters = recalculatedWeight;
+        }
+        
         res.render('invoices/index', {
             title: 'الفواتير',
             invoices,
@@ -336,6 +361,7 @@ exports.getInvoice = async (req, res) => {
 
         const [items] = await pool.query(
             `SELECT ii.*, inv.sample_number, inv.supplier_or_sample_name, 
+                    inv.net_weight_total, inv.base_quantity,
                     (inv.current_quantity + ii.quantity) AS available_quantity
              FROM invoice_items ii
              JOIN inventory inv ON ii.inventory_id = inv.id
@@ -373,7 +399,7 @@ exports.printInvoice = async (req, res) => {
         }
 
         const [items] = await pool.query(
-            `SELECT ii.*, inv.sample_number
+            `SELECT ii.*, inv.sample_number, inv.net_weight_total, inv.base_quantity
              FROM invoice_items ii
              JOIN inventory inv ON ii.inventory_id = inv.id
              WHERE ii.invoice_id = ?`,
@@ -852,6 +878,31 @@ exports.trashMultiple = async (req, res) => {
 exports.getDeletedInvoices = async (req, res) => {
     try {
         const [deletedInvoices] = await pool.query('SELECT * FROM invoices WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC');
+        
+        // إعادة حساب الوزن الإجمالي لكل فاتورة محذوفة باستخدام الصيغة المطلوبة
+        for (let invoice of deletedInvoices) {
+            // جلب عناصر الفاتورة مع بيانات المخزون
+            const [items] = await pool.query(`
+                SELECT ii.quantity, inv.net_weight_total, inv.base_quantity
+                FROM invoice_items ii
+                JOIN inventory inv ON ii.inventory_id = inv.id
+                WHERE ii.invoice_id = ?
+            `, [invoice.id]);
+            
+            // إعادة حساب الوزن الإجمالي
+            let recalculatedWeight = 0;
+            items.forEach(item => {
+                const quantity = Number(item.quantity) || 0;
+                const netWeightTotal = Number(item.net_weight_total) || 0;
+                const baseQuantity = Number(item.base_quantity) || 1;
+                const weight = (netWeightTotal / baseQuantity) * quantity;
+                recalculatedWeight += weight;
+            });
+            
+            // تحديث الوزن في الكائن
+            invoice.total_quantity_liters = recalculatedWeight;
+        }
+        
         res.render('invoices/deleted', { deletedInvoices, user: req.session.user });
     } catch (error) {
         console.error('Error fetching deleted invoices:', error);

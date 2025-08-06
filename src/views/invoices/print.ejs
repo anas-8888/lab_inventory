@@ -148,7 +148,10 @@ function formatNumberDisplay(value) {
                   
                   items.forEach((item, index) => { 
                     const quantity = Number(item.quantity) || 0;
-                    const weight = Number(item.net_weight) || 0;
+                    // حساب الوزن الصافي باستخدام الصيغة المطلوبة
+                    const netWeightTotal = Number(item.net_weight_total) || 0;
+                    const baseQuantity = Number(item.base_quantity) || 1;
+                    const weight = (netWeightTotal / baseQuantity) * quantity;
                     totalQuantity += quantity;
                     totalWeight += weight;
                     weightedPH += quantity * (Number(item.ph) || 0);

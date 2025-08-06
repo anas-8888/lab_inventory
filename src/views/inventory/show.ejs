@@ -250,7 +250,7 @@ function convertToArabicNumbers(num) {
                                             <td><%= formatDateEnglish(sale.date) %></td>
                                             <td><%= sale.customer_name %></td>
                                             <td><%= formatNumberDisplay(sale.quantity) %></td>
-                                            <td><%= formatNumberDisplay(sale.net_weight) %></td>
+                                            <td><%= formatNumberDisplay((item.net_weight_total/(item.base_quantity ? item.base_quantity : 1))*sale.quantity) %></td>
                                             <td><%= sale.driver_name || '-' %></td>
                                             <td>
                                                 <a href="/invoices/<%= sale.invoice_id %>" 
@@ -267,7 +267,7 @@ function convertToArabicNumbers(num) {
                                     <tr>
                                         <td colspan="3" class="text-start"><strong>المجموع:</strong></td>
                                         <td><strong><%= sales.reduce((sum, sale) => sum + parseFloat(sale.quantity), 0).toFixed(2) %></strong></td>
-                                        <td><strong><%= sales.reduce((sum, sale) => sum + parseFloat(sale.net_weight), 0).toFixed(2) %></strong></td>
+                                        <td><strong><%= sales.reduce((sum, sale) => sum + parseFloat((item.net_weight_total/(item.base_quantity ? item.base_quantity : 1))*sale.quantity), 0).toFixed(2) %></strong></td>
                                         <td colspan="2"></td>
                                     </tr>
                                 </tfoot>
