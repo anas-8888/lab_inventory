@@ -1,0 +1,620 @@
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-cart-check"></i> الطلبيات</h2>
+                <a href="/costs" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-right me-1"></i> العودة للتكاليف
+                </a>
+            </div>
+
+            <!-- نموذج إنشاء طلبية جديدة -->
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-plus-circle"></i> إنشاء طلبية جديدة</h5>
+                </div>
+                <div class="card-body">
+                    <form id="orderForm" method="POST" action="/costs/orders">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">اسم العميل *</label>
+                                <input type="text" class="form-control" name="client_name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">رقم الهاتف</label>
+                                <input type="text" class="form-control" name="client_phone">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">العنوان</label>
+                                <textarea class="form-control" name="client_address" rows="2"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">تاريخ التسليم *</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control datepicker" name="delivery_date" readonly required>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="openDatePicker('delivery_date')">
+                                        <i class="bi bi-calendar"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">اسم العامل المسؤول</label>
+                                <input type="text" class="form-control" name="responsible_worker">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">ملاحظات</label>
+                                <textarea class="form-control" name="notes" rows="3"></textarea>
+                            </div>
+                            <div class="col-12 text-end">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save me-1"></i> حفظ الطلبية
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- جدول الطلبيات الموجودة -->
+            <% if (orders && orders.length > 0) { %>
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> الطلبيات المسجلة</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>رقم الطلبية</th>
+                                    <th>اسم العميل</th>
+                                    <th>رقم الهاتف</th>
+                                    <th>تاريخ التسليم</th>
+                                    <th>العامل المسؤول</th>
+                                    <th>الحالة</th>
+                                    <th>التاريخ</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% orders.forEach(order => { %>
+                                <tr>
+                                    <td><%= order.order_number %></td>
+                                    <td><%= order.client_name %></td>
+                                    <td><%= order.client_phone || '-' %></td>
+                                    <td><%= formatDate(order.delivery_date) %></td>
+                                    <td><%= order.responsible_worker || '-' %></td>
+                                    <td>
+                                        <span class="badge bg-<%= 
+                                            order.status === 'pending' ? 'warning' : 
+                                            order.status === 'processing' ? 'info' : 
+                                            order.status === 'completed' ? 'success' : 'danger' 
+                                        %>">
+                                            <%= 
+                                                order.status === 'pending' ? 'قيد الانتظار' :
+                                                order.status === 'processing' ? 'قيد المعالجة' :
+                                                order.status === 'completed' ? 'مكتمل' : 'ملغي'
+                                            %>
+                                        </span>
+                                    </td>
+                                    <td><%= formatDate(order.created_at) %></td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-sm btn-info" onclick="editOrder(<%= order.id %>)" title="تعديل">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-warning" onclick="updateOrderStatus('<%= order.id %>', 'processing')" <%= order.status !== 'pending' ? 'disabled' : '' %> title="قيد المعالجة">
+                                                <i class="bi bi-play"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-success" onclick="updateOrderStatus('<%= order.id %>', 'completed')" <%= order.status === 'completed' || order.status === 'cancelled' ? 'disabled' : '' %> title="مكتمل">
+                                                <i class="bi bi-check"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="updateOrderStatus('<%= order.id %>', 'cancelled')" <%= order.status === 'cancelled' ? 'disabled' : '' %> title="إلغاء">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="deleteOrder(<%= order.id %>)" title="حذف">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<!-- Modal تعديل الطلبية -->
+<div class="modal fade" id="editOrderModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تعديل الطلبية</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editOrderForm">
+                    <input type="hidden" id="editOrderId" name="order_id">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">اسم العميل *</label>
+                            <input type="text" class="form-control" id="editClientName" name="client_name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">رقم الهاتف</label>
+                            <input type="text" class="form-control" id="editClientPhone" name="client_phone">
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">العنوان</label>
+                            <textarea class="form-control" id="editClientAddress" name="client_address" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">تاريخ التسليم *</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control datepicker" id="editDeliveryDate" name="delivery_date" readonly required>
+                                <button type="button" class="btn btn-outline-secondary" onclick="openDatePicker('editDeliveryDate')">
+                                    <i class="bi bi-calendar"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">اسم العامل المسؤول</label>
+                            <input type="text" class="form-control" id="editResponsibleWorker" name="responsible_worker">
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">ملاحظات</label>
+                            <textarea class="form-control" id="editNotes" name="notes" rows="3"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" onclick="saveOrderEdit()">حفظ التعديلات</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal التقويم -->
+<div class="modal fade" id="datePickerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">اختر التاريخ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <select class="form-select" id="monthSelect">
+                            <option value="1">يناير</option>
+                            <option value="2">فبراير</option>
+                            <option value="3">مارس</option>
+                            <option value="4">أبريل</option>
+                            <option value="5">مايو</option>
+                            <option value="6">يونيو</option>
+                            <option value="7">يوليو</option>
+                            <option value="8">أغسطس</option>
+                            <option value="9">سبتمبر</option>
+                            <option value="10">أكتوبر</option>
+                            <option value="11">نوفمبر</option>
+                            <option value="12">ديسمبر</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <select class="form-select" id="yearSelect"></select>
+                    </div>
+                </div>
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="prevMonth">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                        <span id="currentMonthYear"></span>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="nextMonth">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </div>
+                    <div class="calendar-body" id="calendarBody"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="confirmDate">تأكيد</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentDateInput = null;
+let selectedDate = null;
+let currentMonth = new Date().getMonth();
+let currentYear = new Date().getFullYear();
+
+// أسماء الأشهر بالعربية
+const monthNames = [
+    'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+    'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+];
+
+// أسماء أيام الأسبوع بالعربية
+const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+// تهيئة التقويم
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCalendar();
+    setDefaultDates();
+    
+    // إضافة مستمعي الأحداث
+    document.getElementById('prevMonth').addEventListener('click', function() {
+        currentMonth--;
+        if (currentMonth < 0) {
+            currentMonth = 11;
+            currentYear--;
+        }
+        renderCalendar();
+    });
+    
+    document.getElementById('nextMonth').addEventListener('click', function() {
+        currentMonth++;
+        if (currentMonth > 11) {
+            currentMonth = 0;
+            currentYear++;
+        }
+        renderCalendar();
+    });
+    
+    document.getElementById('monthSelect').addEventListener('change', function() {
+        currentMonth = parseInt(this.value) - 1;
+        renderCalendar();
+    });
+    
+    document.getElementById('yearSelect').addEventListener('change', function() {
+        currentYear = parseInt(this.value);
+        renderCalendar();
+    });
+    
+    document.getElementById('confirmDate').addEventListener('click', function() {
+        if (selectedDate) {
+            const day = selectedDate.getDate().toString().padStart(2, '0');
+            const month = (selectedDate.getMonth() + 1).toString().padStart(2, '0');
+            const year = selectedDate.getFullYear();
+            const formattedDate = `${day}/${month}/${year}`;
+            
+            currentDateInput.value = formattedDate;
+            
+            const modal = bootstrap.Modal.getInstance(document.getElementById('datePickerModal'));
+            modal.hide();
+        }
+    });
+});
+
+// دالة تهيئة التقويم
+function initializeCalendar() {
+    // ملء قائمة السنوات
+    const yearSelect = document.getElementById('yearSelect');
+    const currentYear = new Date().getFullYear();
+    
+    for (let year = currentYear - 10; year <= currentYear + 5; year++) {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        yearSelect.appendChild(option);
+    }
+    
+    // تعيين القيم الحالية
+    document.getElementById('monthSelect').value = currentMonth + 1;
+    document.getElementById('yearSelect').value = currentYear;
+    
+    renderCalendar();
+}
+
+// دالة عرض التقويم
+function renderCalendar() {
+    const calendarBody = document.getElementById('calendarBody');
+    const currentMonthYear = document.getElementById('currentMonthYear');
+    
+    // تحديث العنوان
+    currentMonthYear.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+    
+    // تحديث قوائم الاختيار
+    document.getElementById('monthSelect').value = currentMonth + 1;
+    document.getElementById('yearSelect').value = currentYear;
+    
+    // إنشاء التقويم
+    const firstDay = new Date(currentYear, currentMonth, 1);
+    const lastDay = new Date(currentYear, currentMonth + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+    
+    let calendarHTML = '<div class="calendar-grid">';
+    
+    // أيام الأسبوع
+    dayNames.forEach(day => {
+        calendarHTML += `<div class="calendar-day-header">${day}</div>`;
+    });
+    
+    // أيام الشهر
+    for (let i = 0; i < 42; i++) {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + i);
+        
+        const isCurrentMonth = date.getMonth() === currentMonth;
+        const isToday = date.toDateString() === new Date().toDateString();
+        const isSelected = selectedDate && date.toDateString() === selectedDate.toDateString();
+        
+        let className = 'calendar-day';
+        if (!isCurrentMonth) className += ' other-month';
+        if (isToday) className += ' today';
+        if (isSelected) className += ' selected';
+        
+        calendarHTML += `<div class="${className}" onclick="selectDate(new Date(${date.getTime()}))">${date.getDate()}</div>`;
+    }
+    
+    calendarHTML += '</div>';
+    calendarBody.innerHTML = calendarHTML;
+}
+
+// دالة اختيار التاريخ
+function selectDate(date) {
+    selectedDate = date;
+    renderCalendar();
+}
+
+// دالة فتح التقويم
+function openDatePicker(inputId) {
+    currentDateInput = document.getElementById(inputId);
+    const modal = new bootstrap.Modal(document.getElementById('datePickerModal'));
+    modal.show();
+}
+
+// دالة تعيين التواريخ الافتراضية
+function setDefaultDates() {
+    const today = new Date();
+    const day = today.getDate().toString().padStart(2, '0');
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const year = today.getFullYear();
+    const formattedDate = `${day}/${month}/${year}`;
+    
+    document.querySelector('input[name="delivery_date"]').value = formattedDate;
+}
+
+// دالة تنسيق التاريخ
+function formatDate(dateString) {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+}
+
+// دالة تعديل الطلبية
+function editOrder(orderId) {
+    // جلب بيانات الطلبية
+    fetch(`/costs/orders/${orderId}`)
+        .then(response => response.json())
+        .then(order => {
+            document.getElementById('editOrderId').value = order.id;
+            document.getElementById('editClientName').value = order.client_name;
+            document.getElementById('editClientPhone').value = order.client_phone || '';
+            document.getElementById('editClientAddress').value = order.client_address || '';
+            document.getElementById('editDeliveryDate').value = formatDate(order.delivery_date);
+            document.getElementById('editResponsibleWorker').value = order.responsible_worker || '';
+            document.getElementById('editNotes').value = order.notes || '';
+            
+            const modal = new bootstrap.Modal(document.getElementById('editOrderModal'));
+            modal.show();
+        })
+        .catch(error => {
+            showAlert('حدث خطأ في جلب بيانات الطلبية', 'error');
+        });
+}
+
+// دالة حفظ تعديل الطلبية
+function saveOrderEdit() {
+    const formData = new FormData(document.getElementById('editOrderForm'));
+    const orderId = document.getElementById('editOrderId').value;
+    
+    fetch(`/costs/orders/${orderId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            client_name: formData.get('client_name'),
+            client_phone: formData.get('client_phone'),
+            client_address: formData.get('client_address'),
+            delivery_date: formData.get('delivery_date'),
+            responsible_worker: formData.get('responsible_worker'),
+            notes: formData.get('notes')
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('تم تحديث الطلبية بنجاح', 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showAlert(data.message || 'حدث خطأ في تحديث الطلبية', 'error');
+        }
+    })
+    .catch(error => {
+        showAlert('حدث خطأ في تحديث الطلبية', 'error');
+    });
+}
+
+// تحديث حالة الطلبية
+function updateOrderStatus(orderId, status) {
+    const statusText = {
+        'pending': 'قيد الانتظار',
+        'processing': 'قيد المعالجة',
+        'completed': 'مكتمل',
+        'cancelled': 'ملغي'
+    };
+    
+    if (confirm(`هل تريد تغيير حالة الطلبية إلى "${statusText[status]}"؟`)) {
+        fetch(`/costs/orders/${orderId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('تم تحديث حالة الطلبية بنجاح', 'success');
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                showAlert(data.message || 'حدث خطأ في تحديث حالة الطلبية', 'error');
+            }
+        })
+        .catch(error => {
+            showAlert('حدث خطأ في تحديث حالة الطلبية', 'error');
+        });
+    }
+}
+
+// حذف طلبية
+function deleteOrder(id) {
+    if (confirm('هل أنت متأكد من حذف هذه الطلبية؟')) {
+        fetch(`/costs/orders/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('تم حذف الطلبية بنجاح', 'success');
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                showAlert(data.message || 'حدث خطأ في حذف الطلبية', 'error');
+            }
+        })
+        .catch(error => {
+            showAlert('حدث خطأ في حذف الطلبية', 'error');
+        });
+    }
+}
+
+// معالجة نموذج إنشاء الطلبية
+document.getElementById('orderForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('/costs/orders', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            client_name: formData.get('client_name'),
+            client_phone: formData.get('client_phone'),
+            client_address: formData.get('client_address'),
+            delivery_date: formData.get('delivery_date'),
+            responsible_worker: formData.get('responsible_worker'),
+            notes: formData.get('notes')
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('تم إنشاء الطلبية بنجاح', 'success');
+            this.reset();
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showAlert(data.message || 'حدث خطأ في إنشاء الطلبية', 'error');
+        }
+    })
+    .catch(error => {
+        showAlert('حدث خطأ في إنشاء الطلبية', 'error');
+    });
+});
+
+// دالة عرض التنبيهات
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.container').firstChild);
+    
+    // إزالة التنبيه تلقائياً بعد 5 ثوان
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+
+<style>
+.calendar-container {
+    text-align: center;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    background-color: #dee2e6;
+    border: 1px solid #dee2e6;
+}
+
+.calendar-day-header {
+    background-color: #f8f9fa;
+    padding: 0.5rem;
+    font-weight: bold;
+    font-size: 0.875rem;
+}
+
+.calendar-day {
+    background-color: white;
+    padding: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.calendar-day:hover {
+    background-color: #e9ecef;
+}
+
+.calendar-day.other-month {
+    color: #6c757d;
+}
+
+.calendar-day.today {
+    background-color: #007bff;
+    color: white;
+}
+
+.calendar-day.selected {
+    background-color: #28a745;
+    color: white;
+}
+
+.calendar-day.selected:hover {
+    background-color: #218838;
+}
+</style> 

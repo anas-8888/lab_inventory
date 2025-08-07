@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 07, 2025 at 01:17 PM
+-- Generation Time: Aug 07, 2025 at 04:51 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -97,8 +97,50 @@ INSERT INTO `certificates` (`id`, `certificate_number`, `year`, `type`, `date`, 
 (132, '44', 2025, 'external', '2025-08-03', 'حكيم ناصر', NULL, NULL, 'محمد خالد العثمانلي', NULL, '[{\"sample_number\":null,\"quantity\":1,\"packaging_unit\":\"0\",\"packaging_weight\":0,\"total_weight\":0,\"ph\":6.1,\"peroxide\":79.5,\"abs_232\":3.084,\"abs_270\":1.723,\"abs_268\":null,\"abs_262\":null,\"abs_274\":1.628,\"abs_266\":1.755,\"k_232\":null,\"k_270\":null,\"delta_k\":0.031,\"stigmastadiene\":null},{\"sample_number\":null,\"quantity\":2,\"packaging_unit\":\"0\",\"packaging_weight\":0,\"total_weight\":0,\"ph\":5.35,\"peroxide\":47.5,\"abs_232\":3.034,\"abs_270\":1.167,\"abs_268\":null,\"abs_262\":null,\"abs_274\":1.098,\"abs_266\":1.152,\"k_232\":null,\"k_270\":null,\"delta_k\":0.042,\"stigmastadiene\":null},{\"sample_number\":null,\"quantity\":3,\"packaging_unit\":\"0\",\"packaging_weight\":0,\"total_weight\":0,\"ph\":7,\"peroxide\":51.5,\"abs_232\":3.045,\"abs_270\":1.155,\"abs_268\":null,\"abs_262\":null,\"abs_274\":1.104,\"abs_266\":1.137,\"k_232\":null,\"k_270\":null,\"delta_k\":0.035,\"stigmastadiene\":null}]', 6.00, 0.00, '40d5d133', 13, '2025-08-03 15:49:47', '2025-08-03 15:49:47', NULL),
 (133, '45', 2025, 'internal', '2025-08-04', 'السيد عبدو فهيم المحترم', NULL, 'حلب - عفرين', 'محمد خالد العثمانلي', 'نتيجة تحليل زيت وارد', '[{\"sample_number\":\"1299\",\"quantity\":250,\"packaging_unit\":\"تنكة\",\"packaging_weight\":0.1,\"total_weight\":1,\"ph\":0.8,\"peroxide\":11.5,\"abs_232\":1.826,\"abs_270\":0.147,\"abs_268\":null,\"abs_262\":null,\"abs_274\":0.141,\"abs_266\":0.156,\"k_232\":null,\"k_270\":null,\"delta_k\":-0.002,\"stigmastadiene\":0},{\"sample_number\":\"1300\",\"quantity\":250,\"packaging_unit\":\"تنكة\",\"packaging_weight\":0.1,\"total_weight\":1,\"ph\":0.9,\"peroxide\":13,\"abs_232\":1.817,\"abs_270\":0.15,\"abs_268\":null,\"abs_262\":null,\"abs_274\":0.143,\"abs_266\":0.156,\"k_232\":null,\"k_270\":null,\"delta_k\":0,\"stigmastadiene\":0}]', 500.00, 2.00, 'dad5eeab', 13, '2025-08-04 10:42:01', '2025-08-04 10:42:01', NULL),
 (134, '46', 2025, 'internal', '2025-08-04', 'محمود نورس', NULL, 'ادلب-كورين', 'محمد خالد العثمانلي', 'تنك فرز (تحليل الحموضة والبروكسيد وهمي)', '[{\"sample_number\":\"1304\",\"quantity\":5,\"packaging_unit\":\"تنك\",\"packaging_weight\":0.101,\"total_weight\":1,\"ph\":1,\"peroxide\":1,\"abs_232\":2.374,\"abs_270\":0.405,\"abs_268\":null,\"abs_262\":null,\"abs_274\":0.389,\"abs_266\":0.391,\"k_232\":null,\"k_270\":null,\"delta_k\":0.015,\"stigmastadiene\":0}]', 5.00, 1.00, '32828b18', 13, '2025-08-04 12:49:24', '2025-08-04 12:49:24', NULL),
-(135, '47', 2025, 'internal', '2025-08-04', 'السيد ابراهيم ياسر الابراهيم', NULL, 'ادلب - كورين', 'محمد خالد صفوان عثمانلي', 'عينة داخلية زيت جورة مخالفة', '[{\"sample_number\":\"1306\",\"quantity\":181,\"packaging_unit\":\"تنكة\",\"packaging_weight\":0.101,\"total_weight\":2888.1,\"ph\":3.35,\"peroxide\":0,\"abs_232\":3.22,\"abs_270\":1.175,\"abs_268\":null,\"abs_262\":null,\"abs_274\":1.112,\"abs_266\":1.19,\"k_232\":null,\"k_270\":null,\"delta_k\":0.025,\"stigmastadiene\":0}]', 181.00, 2888.10, '2dec3fb9', 3, '2025-08-04 20:30:10', '2025-08-04 20:30:10', NULL),
-(136, '48', 2025, 'internal', '2025-08-06', 'أنس كيلاني', '0959595959', NULL, 'مالك مدني', NULL, '[{\"sample_number\":\"1305\",\"quantity\":91,\"packaging_unit\":\"لتر\",\"packaging_weight\":0.101,\"total_weight\":1969.65,\"ph\":0.65,\"peroxide\":21.5,\"abs_232\":2.491,\"abs_270\":0.234,\"abs_268\":null,\"abs_262\":null,\"abs_274\":0.222,\"abs_266\":0.249,\"k_232\":null,\"k_270\":null,\"delta_k\":-0.001,\"stigmastadiene\":0}]', 91.00, 1969.65, '3ac06e70', 17, '2025-08-06 10:04:11', '2025-08-06 10:04:11', NULL);
+(135, '47', 2025, 'internal', '2025-08-04', 'السيد ابراهيم ياسر الابراهيم', NULL, 'ادلب - كورين', 'محمد خالد صفوان عثمانلي', 'عينة داخلية زيت جورة مخالفة', '[{\"sample_number\":\"1306\",\"quantity\":181,\"packaging_unit\":\"تنكة\",\"packaging_weight\":0.101,\"total_weight\":2888.1,\"ph\":3.35,\"peroxide\":0,\"abs_232\":3.22,\"abs_270\":1.175,\"abs_268\":null,\"abs_262\":null,\"abs_274\":1.112,\"abs_266\":1.19,\"k_232\":null,\"k_270\":null,\"delta_k\":0.025,\"stigmastadiene\":0}]', 181.00, 2888.10, '2dec3fb9', 3, '2025-08-04 20:30:10', '2025-08-04 20:30:10', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `clients`
+--
+
+CREATE TABLE `clients` (
+  `id` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `phone` varchar(50) DEFAULT NULL,
+  `address` text DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `cost_logs`
+--
+
+CREATE TABLE `cost_logs` (
+  `id` int(11) NOT NULL,
+  `material_id` int(11) DEFAULT NULL,
+  `material_name` varchar(255) NOT NULL,
+  `unit_cost` decimal(10,2) NOT NULL,
+  `package_cost` decimal(10,2) NOT NULL,
+  `calculation_date` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `cost_logs`
+--
+
+INSERT INTO `cost_logs` (`id`, `material_id`, `material_name`, `unit_cost`, `package_cost`, `calculation_date`) VALUES
+(1, NULL, 'زيت الزيتون', 981793.75, 19635875.00, '2025-08-07 12:09:54'),
+(2, NULL, 'زيت الزيتون', 981793.75, 19635875.00, '2025-08-07 12:22:14'),
+(3, NULL, 'زيت الزيتون', 981793.00, 19635860.00, '2025-08-07 12:51:33'),
+(4, 3, 'تفاحي مكسر', 2.76, 2.86, '2025-08-07 13:40:32'),
+(5, 4, 'تفاحي مكسر', 9.36, 9.46, '2025-08-07 14:45:52'),
+(6, 5, 'تفاحي مكسر', 9.36, 9.46, '2025-08-07 14:50:11');
 
 -- --------------------------------------------------------
 
@@ -249,7 +291,7 @@ INSERT INTO `inventory` (`id`, `date`, `sample_number`, `supplier_or_sample_name
 (252, '2025-08-02', '1282', 'نورس الحماد', 120.00, 0.00, 0.101, 1920.80, 0.80, 18.00, '2.216 0.155 0.157 0.154 0.002', NULL, 'بيدون', 'محمد حالد العثمانلي', '2025-08-02 09:09:56', '2025-08-05 11:38:47', 0, NULL),
 (253, '2025-08-02', '1283', 'ابراهيم أبو ياسر', 191.00, 191.00, 0.100, 3051.60, 0.45, 11.50, '2.047 0.177 0.163 0.156 -0.004', NULL, 'تنك', 'محمد خالد العثمانلي', '2025-08-02 14:04:53', '2025-08-02 14:05:44', 0, NULL),
 (254, '2025-08-03', '1284', 'محمد حسام الابراهيم', 200.00, 0.00, 0.100, 3203.40, 1.05, 10.50, '1.718 0.149 0.145 0.139 0.001', NULL, 'تنك', 'محمد خالد العثمانلي', '2025-08-03 07:43:09', '2025-08-05 11:38:47', 0, NULL),
-(255, '2025-08-03', '1285', 'حسن البدر', 195.00, 81.00, 0.104, 3120.20, 1.10, 13.00, '2.202 0.225 0.217 0.206 0.001', NULL, 'تنك', 'محمد خالد العثمانلي', '2025-08-03 10:02:08', '2025-08-05 06:00:12', 0, NULL),
+(255, '2025-08-03', '1285', 'حسن البدر', 195.00, 82.00, 0.104, 3120.20, 1.10, 13.00, '2.202 0.225 0.217 0.206 0.001', NULL, 'تنك', 'محمد خالد العثمانلي', '2025-08-03 10:02:08', '2025-08-07 11:33:28', 0, NULL),
 (256, '2025-08-03', '1286', 'حسن البدر', 3.00, 0.00, NULL, 48.50, 1.00, 1.00, '2.702 0.734 0.768 0.730 0.036', NULL, 'تنك فرز', 'محمد خالد العثمانلي', '2025-08-03 10:03:30', '2025-08-05 10:08:37', 1, NULL),
 (257, '2025-08-03', '1287', 'ابراهيم أبو ياسر', 174.00, 0.00, 0.100, 2774.60, 0.80, 15.50, '2.006 0.147 0.140 0.134 0.000', NULL, '170تنك+4بيدون', 'محمد خالد العثمانلي', '2025-08-03 10:04:48', '2025-08-05 11:38:47', 0, NULL),
 (258, '2025-08-03', '1288', 'حكيم ناصر', 250.00, 0.00, 0.101, 3976.80, 0.60, 13.50, '1.987 0.151 0.141 0.135 -0.002', NULL, 'تنك', 'محمد خالد العثمانلي', '2025-08-03 17:23:45', '2025-08-05 05:52:18', 0, NULL),
@@ -263,8 +305,8 @@ INSERT INTO `inventory` (`id`, `date`, `sample_number`, `supplier_or_sample_name
 (266, '2025-08-04', '1296', 'محمد حسام الابراهيم', 78.00, 78.00, 0.100, 1319.80, 1.60, 16.50, '2.146 0.178 0.172 0.164 0.001', NULL, 'تنك', 'محمد خالد العثمانلي', '2025-08-04 10:08:52', '2025-08-04 15:24:01', 0, NULL),
 (267, '2025-08-04', '1297', 'محمد حسام الابراهيم', 69.00, 69.00, 0.100, 1.00, 1.75, 31.50, '2.339 0.168 0.164 0.158 0.002', NULL, 'بيدون', 'محمد خالد العثمانلي', '2025-08-04 10:10:18', '2025-08-04 11:02:26', 1, NULL),
 (268, '2025-08-04', '1298', 'نورس الحماد', 29.00, 29.00, 0.100, 463.15, 2.15, 35.50, '2.618 0.208 0.203 0.196 0.001', NULL, 'بيدون', 'محمد خالد العثمانلي', '2025-08-04 10:11:18', '2025-08-04 15:25:48', 0, NULL),
-(269, '2025-08-04', '1299', 'عبدالرحمن فهمي سيدو', 250.00, 0.00, 0.100, 4000.90, 0.80, 11.50, '1.826 0.156 0.147 0.141 -0.002', NULL, 'تنك', 'محمد خالد العثمانلي', '2025-08-04 10:12:21', '2025-08-05 06:00:12', 0, NULL),
-(270, '2025-08-04', '1300', 'عبدالرحمن فهمي سيدو', 250.00, 0.00, 0.100, 3998.90, 0.90, 13.00, '1.817 0.156 0.150 0.143 0.000', NULL, 'تنك', 'محمد خالد العثمانلي', '2025-08-04 10:40:26', '2025-08-05 06:00:12', 0, NULL),
+(269, '2025-08-04', '1299', 'عبدالرحمن فهمي سيدو', 250.00, 0.00, 0.100, 4000.90, 0.80, 11.50, '1.826 0.156 0.147 0.141 -0.002', NULL, 'تنك', 'محمد خالد العثمانلي', '2025-08-04 10:12:21', '2025-08-07 11:33:28', 0, NULL),
+(270, '2025-08-04', '1300', 'عبدالرحمن فهمي سيدو', 250.00, 0.00, 0.100, 3998.90, 0.90, 13.00, '1.817 0.156 0.150 0.143 0.000', NULL, 'تنك', 'محمد خالد العثمانلي', '2025-08-04 10:40:26', '2025-08-07 11:33:28', 0, NULL),
 (271, '2025-08-04', '1301', 'محمود نورس', 45.00, 0.00, 0.100, 721.60, 0.70, 14.00, '1.889 0.168 0.156 0.147 -0.001', NULL, 'تنك', 'محمد خالد العثمانلي', '2025-08-04 11:13:04', '2025-08-05 11:38:47', 0, NULL),
 (272, '2025-08-04', '1302', 'محمود نورس', 47.00, 0.00, 0.100, 751.05, 0.70, 18.50, '2.047 0.157 0.161 0.161 0.003', NULL, 'بيدون', 'محمد خالد العثمانلي', '2025-08-04 11:15:10', '2025-08-05 11:38:47', 0, NULL),
 (273, '2025-08-04', '1303', 'محمود نورس', 503.00, 0.00, 0.100, 8004.00, 0.90, 16.00, '2.117 0.200 0.192 0.185 -0.001', NULL, 'تنك', 'محمد خالد العثمانلي', '2025-08-04 12:45:45', '2025-08-05 08:51:46', 0, NULL),
@@ -275,7 +317,7 @@ INSERT INTO `inventory` (`id`, `date`, `sample_number`, `supplier_or_sample_name
 (278, '2025-08-05', '1310', 'محمود نورس', 184.00, 184.00, 0.100, 1.00, 0.55, 16.50, '2.080 0.202 0.184 0.176 -0.004', NULL, 'تنك', 'محمد خالد العثمانلي', '2025-08-05 09:36:00', '2025-08-05 09:36:00', 0, NULL),
 (279, '2025-08-05', '1311', 'محمود نورس', 2.00, 0.00, 0.102, 1.00, 1.00, 1.00, '2.598 0.475 0.493 0.472 0.019', NULL, 'تنك فرز(اسيد بيروكسيد تحليل وهمي)', 'محمد خالد العثمانلي', '2025-08-05 09:37:10', '2025-08-05 10:08:37', 1, NULL),
 (280, '2025-08-05', '1312', 'محمود نورس', 156.00, 0.00, 0.101, 1.00, 0.60, 12.00, '1.949 0.181 0.173 0.168 -0.002', NULL, 'تنك', 'محمد خالد العثمانلي', '2025-08-05 10:07:47', '2025-08-05 11:38:47', 0, NULL),
-(281, '2025-08-05', '1313', 'مرتجع ', 85.00, 85.00, NULL, 1.00, 1.35, 19.00, '1.968 0.197 0.193 0.185 0.002', NULL, 'مرتجع من شركة ش.ا', 'محمد خالد العثمانلي', '2025-08-05 11:42:23', '2025-08-05 11:42:23', 0, NULL);
+(281, '2025-08-05', '1313', 'مرتجع ', 85.00, 85.00, NULL, 1.00, 1.36, 19.00, '1.968 0.197 0.193 0.185 0.002', NULL, 'مرتجع من شركة ش.ا', 'محمد خالد العثمانلي', '2025-08-05 11:42:23', '2025-08-07 11:33:48', 0, NULL);
 
 -- --------------------------------------------------------
 
@@ -338,7 +380,7 @@ INSERT INTO `invoices` (`id`, `invoice_number`, `date`, `customer_name`, `driver
 (98, '237', '2025-08-02', 'نسيم رياض فرح', 'محمد مهدي', '', NULL, NULL, 16904.20, 'unpaid', 3, '2025-08-02 14:14:42', '2025-08-05 11:38:47', 0.81, 14.22, 2.03, 0.00, 0.00, 1921.00, 30736.00, NULL),
 (101, '238', '2025-08-04', 'الشرق الادنى لمنتجات زيتون', 'خالد طنب - علاء الاحمد', 'تنك سيارتين مع علام الزمة رقم 1285 بالبخاخ ', NULL, NULL, 8807.05, 'unpaid', 3, '2025-08-04 15:42:34', '2025-08-04 15:42:34', 0.84, 14.31, 1.97, 0.00, 0.00, 1054.00, 8807.05, NULL),
 (102, '239', '2025-08-05', 'الشرق الادنى لمنتجات الزيتون', 'خالد طنب', 'حمل خالد طنب رقم 2 مع التاكيد على علامة زمة  قم 1285', NULL, NULL, 8410.34, 'unpaid', 3, '2025-08-05 05:52:18', '2025-08-05 05:52:18', 0.77, 13.47, 1.98, 0.00, 0.00, 527.00, 8410.34, NULL),
-(103, '240', '2025-08-05', 'الشرق الادنى لمنتجات الزيتون', 'علاء الاحمد', 'سيارة رقم 2 للسائق علاء مع التاكيد على علام الزمة رقم 1285', NULL, NULL, 8431.83, 'unpaid', 3, '2025-08-05 06:00:12', '2025-08-05 06:00:12', 0.86, 12.29, 1.84, 0.00, 0.00, 527.00, 8431.83, NULL);
+(103, '240', '2025-08-05', 'الشرق الادنى لمنتجات الزيتون', 'علاء الاحمد', 'سيارة رقم 2 للسائق علاء مع التاكيد على علام الزمة رقم 1285', NULL, NULL, 8431.83, 'unpaid', 3, '2025-08-05 06:00:12', '2025-08-07 11:33:28', 0.86, 12.29, 1.84, 0.00, 0.00, 526.00, 8416.00, NULL);
 
 -- --------------------------------------------------------
 
@@ -496,9 +538,6 @@ INSERT INTO `invoice_items` (`id`, `invoice_id`, `inventory_id`, `quantity`, `sa
 (732, 102, 255, 36.00, '1285', 0.00, '2025-08-05 05:52:18', 576.04, 1.10, 13.00, 2.2020, 0.2250, 0.2170, 0.2060, 0.0010),
 (733, 102, 258, 250.00, '1288', 0.00, '2025-08-05 05:52:18', 3976.80, 0.60, 13.50, 1.9870, 0.1510, 0.1410, 0.1350, -0.0020),
 (734, 102, 259, 241.00, '1289', 0.00, '2025-08-05 05:52:18', 3857.50, 0.90, 13.50, 1.9450, 0.1420, 0.1380, 0.1330, 0.0000),
-(735, 103, 255, 27.00, '1285', 0.00, '2025-08-05 06:00:12', 432.03, 1.10, 13.00, 2.2020, 0.2250, 0.2170, 0.2060, 0.0010),
-(736, 103, 269, 250.00, '1299', 0.00, '2025-08-05 06:00:12', 4000.90, 0.80, 11.50, 1.8260, 0.1560, 0.1470, 0.1410, -0.0020),
-(737, 103, 270, 250.00, '1300', 0.00, '2025-08-05 06:00:12', 3998.90, 0.90, 13.00, 1.8170, 0.1560, 0.1500, 0.1430, 0.0000),
 (738, 56, 147, 18.00, '1187', 0.00, '2025-08-05 10:08:37', 288.00, 0.80, 20.00, 2.5610, 0.3420, 0.3480, 0.3330, 0.0110),
 (739, 56, 157, 42.00, '1191', 0.00, '2025-08-05 10:08:37', 672.00, 3.10, 0.00, 2.6020, 0.3200, 0.3200, 0.3050, 0.0070),
 (740, 56, 159, 37.00, '1193', 0.00, '2025-08-05 10:08:37', 592.00, 0.90, 0.00, 2.1580, 0.2460, 0.2480, 0.2240, 0.0130),
@@ -529,7 +568,121 @@ INSERT INTO `invoice_items` (`id`, `invoice_id`, `inventory_id`, `quantity`, `sa
 (765, 98, 271, 45.00, '1301', 0.00, '2025-08-05 11:38:47', 720.00, 0.70, 14.00, 1.8890, 0.1680, 0.1560, 0.1470, -0.0010),
 (766, 98, 272, 47.00, '1302', 0.00, '2025-08-05 11:38:47', 752.00, 0.70, 18.50, 2.0470, 0.1570, 0.1610, 0.1610, 0.0030),
 (767, 98, 275, 91.00, '1305', 0.00, '2025-08-05 11:38:47', 1456.00, 0.65, 21.50, 2.4910, 0.2490, 0.2340, 0.2220, -0.0010),
-(768, 98, 280, 156.00, '1312', 0.00, '2025-08-05 11:38:47', 2496.00, 0.60, 12.00, 1.9490, 0.1810, 0.1730, 0.1680, -0.0020);
+(768, 98, 280, 156.00, '1312', 0.00, '2025-08-05 11:38:47', 2496.00, 0.60, 12.00, 1.9490, 0.1810, 0.1730, 0.1680, -0.0020),
+(769, 103, 255, 26.00, '1285', 0.00, '2025-08-07 11:33:28', 416.00, 1.10, 13.00, 2.2020, 0.2250, 0.2170, 0.2060, 0.0010),
+(770, 103, 269, 250.00, '1299', 0.00, '2025-08-07 11:33:28', 4000.00, 0.80, 11.50, 1.8260, 0.1560, 0.1470, 0.1410, -0.0020),
+(771, 103, 270, 250.00, '1300', 0.00, '2025-08-07 11:33:28', 4000.00, 0.90, 13.00, 1.8170, 0.1560, 0.1500, 0.1430, 0.0000);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `materials`
+--
+
+CREATE TABLE `materials` (
+  `id` int(11) NOT NULL,
+  `material_type` varchar(100) NOT NULL,
+  `material_name` varchar(255) NOT NULL,
+  `price_before_waste` decimal(10,2) NOT NULL,
+  `gross_weight` decimal(10,2) NOT NULL,
+  `waste_percentage` decimal(5,2) NOT NULL,
+  `packaging_unit` varchar(50) NOT NULL,
+  `packaging_weight` decimal(10,2) NOT NULL,
+  `empty_package_price` decimal(10,2) NOT NULL,
+  `sticker_price` decimal(10,2) NOT NULL,
+  `additional_expenses` decimal(10,2) NOT NULL,
+  `labor_cost` decimal(10,2) NOT NULL,
+  `preservatives_cost` decimal(10,2) NOT NULL,
+  `carton_price` decimal(10,2) NOT NULL,
+  `pieces_per_package` int(11) NOT NULL,
+  `pallet_price` decimal(10,2) NOT NULL,
+  `packages_per_pallet` int(11) NOT NULL,
+  `unit_cost` decimal(10,2) NOT NULL,
+  `package_cost` decimal(10,2) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `materials`
+--
+
+INSERT INTO `materials` (`id`, `material_type`, `material_name`, `price_before_waste`, `gross_weight`, `waste_percentage`, `packaging_unit`, `packaging_weight`, `empty_package_price`, `sticker_price`, `additional_expenses`, `labor_cost`, `preservatives_cost`, `carton_price`, `pieces_per_package`, `pallet_price`, `packages_per_pallet`, `unit_cost`, `package_cost`, `created_at`, `updated_at`) VALUES
+(3, 'زيتون', 'تفاحي مكسر', 1.10, 1.00, 0.00, 'سطل', 7.00, 1.36, 0.05, 0.05, 0.05, 0.15, 0.00, 1, 10.00, 96, 2.76, 2.86, '2025-08-07 13:40:32', '2025-08-07 13:40:32'),
+(4, 'زيتون', 'تفاحي مكسر', 1.10, 1.00, 0.00, 'سطل', 7.00, 1.36, 0.05, 0.05, 0.05, 0.15, 0.00, 1, 10.00, 96, 9.36, 9.46, '2025-08-07 14:45:52', '2025-08-07 14:45:52'),
+(5, 'زيتون', 'تفاحي مكسر', 1.10, 1.00, 0.00, 'سطل', 7.00, 1.36, 0.05, 0.05, 0.05, 0.15, 0.00, 1, 10.00, 96, 9.36, 9.46, '2025-08-07 14:50:11', '2025-08-07 14:50:11');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `orders`
+--
+
+CREATE TABLE `orders` (
+  `id` int(11) NOT NULL,
+  `order_number` varchar(50) NOT NULL,
+  `client_name` varchar(255) NOT NULL,
+  `client_phone` varchar(50) DEFAULT NULL,
+  `client_address` text DEFAULT NULL,
+  `delivery_date` date NOT NULL,
+  `responsible_worker` varchar(255) DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `status` enum('pending','processing','completed','cancelled') DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `quotations`
+--
+
+CREATE TABLE `quotations` (
+  `id` int(11) NOT NULL,
+  `quotation_number` varchar(50) NOT NULL,
+  `client_id` int(11) DEFAULT NULL,
+  `client_name` varchar(255) NOT NULL,
+  `client_phone` varchar(50) DEFAULT NULL,
+  `client_address` text DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `total_amount` decimal(10,2) NOT NULL,
+  `general_profit_percentage` decimal(5,2) DEFAULT 0.00,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `quotations`
+--
+
+INSERT INTO `quotations` (`id`, `quotation_number`, `client_id`, `client_name`, `client_phone`, `client_address`, `notes`, `total_amount`, `general_profit_percentage`, `created_at`, `updated_at`) VALUES
+(3, 'QT-001', NULL, 'efdfd', '4324343', 'بي', 'بيبي', 2.76, 0.00, '2025-08-07 13:50:46', '2025-08-07 13:50:46');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `quotation_items`
+--
+
+CREATE TABLE `quotation_items` (
+  `id` int(11) NOT NULL,
+  `quotation_id` int(11) NOT NULL,
+  `material_id` int(11) DEFAULT NULL,
+  `material_name` varchar(255) NOT NULL,
+  `unit_cost` decimal(10,2) NOT NULL,
+  `profit_percentage` decimal(5,2) DEFAULT 0.00,
+  `final_price` decimal(10,2) NOT NULL,
+  `quantity` int(11) DEFAULT 1,
+  `total_price` decimal(10,2) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `quotation_items`
+--
+
+INSERT INTO `quotation_items` (`id`, `quotation_id`, `material_id`, `material_name`, `unit_cost`, `profit_percentage`, `final_price`, `quantity`, `total_price`) VALUES
+(3, 3, 3, 'تفاحي مكسر', 2.76, 0.00, 2.76, 1, 2.76);
 
 -- --------------------------------------------------------
 
@@ -571,21 +724,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`session_id`, `expires`, `data`, `created_at`, `updated_at`) VALUES
-('1kHGpGraeDQgQ2Nuf3QJebSlmW_vgY8R', 1754480544, '{\"cookie\":{\"originalMaxAge\":86399998,\"expires\":\"2025-08-06T11:42:23.217Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{},\"user\":{\"id\":13,\"username\":\"LABRATORY\",\"role\":\"editor\"}}', '2025-08-02 07:11:07', '2025-08-05 11:42:24'),
-('8p2OPaDqAw16CdM8tEQ-enEiYu-1YUl8', 1754564514, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-07T11:01:54.135Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-06 11:01:54', '2025-08-06 11:01:54'),
-('AlxQBSr342-2VE1phOgMu5d4iWBzfdkm', 1754572359, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-07T13:12:39.226Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-06 13:12:39', '2025-08-06 13:12:39'),
-('b4EN2zQiMIngKAkvJojJ-aHrvcYyCrui', 1754489494, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T14:11:33.957Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 14:11:33', '2025-08-05 14:11:33'),
-('BxLodovAs5fCbBkLiajw134Ln-eYGJAR', 1754481108, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T08:51:47.044Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{},\"user\":{\"id\":3,\"username\":\"MOHAMMED AJAJ\",\"role\":\"editor\"}}', '2025-08-04 14:35:02', '2025-08-05 11:51:48'),
-('DZZPSLLBElfyTta0cC1KHMHQ6DJ5776D', 1754569011, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T12:26:23.698Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{},\"user\":{\"id\":17,\"username\":\"anas\",\"role\":\"editor\"}}', '2025-08-05 12:26:21', '2025-08-06 12:16:51'),
-('grMbwiQxgLAqtFenvrap6Np9-7FRNs1X', 1754572368, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-07T12:55:36.065Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{},\"user\":{\"id\":17,\"username\":\"anas\",\"role\":\"editor\"}}', '2025-08-06 12:55:31', '2025-08-06 13:12:48'),
-('MxQLFc0s4H7moJzhAWUlRfgJUFd_bxte', 1754483161, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T12:26:01.219Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 12:26:01', '2025-08-05 12:26:01'),
-('nE1ltaAUvXpG2QoAVv2qAJZVvuQlE7QS', 1754483142, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T12:08:21.754Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{},\"user\":{\"id\":17,\"username\":\"anas\",\"role\":\"editor\"}}', '2025-08-05 12:01:01', '2025-08-05 12:25:42'),
-('pq076kFvHhbmqowQ8LvBABK4hFRkXkU1', 1754491129, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T14:38:48.568Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 14:38:48', '2025-08-05 14:38:48'),
-('qtdBzanxWOQAusO6u0wA3GttirlHBJVQ', 1754489093, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T14:04:53.443Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 14:04:53', '2025-08-05 14:04:53'),
-('Rk6JZGLoRo3qPbWac73LjNMNkqdwokw-', 1754488935, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T14:02:15.163Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 14:02:15', '2025-08-05 14:02:15'),
-('tPKB4zdr3vASd1ILDeyrOdmK9H5NcuUC', 1754561518, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-07T10:11:57.581Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-06 10:11:57', '2025-08-06 10:11:57'),
-('tS0FsH2TZP32eajYAvguttzcF__yRok4', 1754478356, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T10:59:29.095Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{},\"user\":{\"id\":3,\"username\":\"MOHAMMED AJAJ\",\"role\":\"editor\"}}', '2025-08-05 09:37:05', '2025-08-05 11:05:56'),
-('VIUednsEye6HLvVbn4vlGnWOrH7erMi2', 1754565017, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-07T11:10:17.479Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-06 11:10:17', '2025-08-06 11:10:17');
+('xu95LL-_Dqf9pcXQuC476eYcK-U2U3f7', 1754664613, '{\"cookie\":{\"originalMaxAge\":86399998,\"expires\":\"2025-08-08T12:28:01.249Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{},\"user\":{\"id\":20,\"username\":\"admin\",\"role\":\"admin\"}}', '2025-08-07 11:20:48', '2025-08-07 14:50:13');
 
 -- --------------------------------------------------------
 
@@ -628,6 +767,20 @@ ALTER TABLE `certificates`
   ADD KEY `idx_certificates_deleted_at` (`deleted_at`);
 
 --
+-- Indexes for table `clients`
+--
+ALTER TABLE `clients`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `cost_logs`
+--
+ALTER TABLE `cost_logs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_cost_logs_material` (`material_id`),
+  ADD KEY `idx_cost_logs_date` (`calculation_date`);
+
+--
 -- Indexes for table `inventory`
 --
 ALTER TABLE `inventory`
@@ -647,6 +800,40 @@ ALTER TABLE `invoice_items`
   ADD PRIMARY KEY (`id`),
   ADD KEY `inventory_id` (`inventory_id`),
   ADD KEY `invoice_items_ibfk_1` (`invoice_id`);
+
+--
+-- Indexes for table `materials`
+--
+ALTER TABLE `materials`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_materials_name` (`material_name`);
+
+--
+-- Indexes for table `orders`
+--
+ALTER TABLE `orders`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `order_number` (`order_number`),
+  ADD KEY `idx_orders_number` (`order_number`),
+  ADD KEY `idx_orders_client` (`client_name`);
+
+--
+-- Indexes for table `quotations`
+--
+ALTER TABLE `quotations`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `quotation_number` (`quotation_number`),
+  ADD KEY `client_id` (`client_id`),
+  ADD KEY `idx_quotations_number` (`quotation_number`),
+  ADD KEY `idx_quotations_client` (`client_name`);
+
+--
+-- Indexes for table `quotation_items`
+--
+ALTER TABLE `quotation_items`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `quotation_id` (`quotation_id`),
+  ADD KEY `material_id` (`material_id`);
 
 --
 -- Indexes for table `roles`
@@ -680,6 +867,18 @@ ALTER TABLE `certificates`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=137;
 
 --
+-- AUTO_INCREMENT for table `clients`
+--
+ALTER TABLE `clients`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `cost_logs`
+--
+ALTER TABLE `cost_logs`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
 -- AUTO_INCREMENT for table `inventory`
 --
 ALTER TABLE `inventory`
@@ -695,7 +894,31 @@ ALTER TABLE `invoices`
 -- AUTO_INCREMENT for table `invoice_items`
 --
 ALTER TABLE `invoice_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=769;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=772;
+
+--
+-- AUTO_INCREMENT for table `materials`
+--
+ALTER TABLE `materials`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT for table `orders`
+--
+ALTER TABLE `orders`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `quotations`
+--
+ALTER TABLE `quotations`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT for table `quotation_items`
+--
+ALTER TABLE `quotation_items`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `roles`
@@ -714,6 +937,12 @@ ALTER TABLE `users`
 --
 
 --
+-- Constraints for table `cost_logs`
+--
+ALTER TABLE `cost_logs`
+  ADD CONSTRAINT `cost_logs_ibfk_1` FOREIGN KEY (`material_id`) REFERENCES `materials` (`id`) ON DELETE SET NULL;
+
+--
 -- Constraints for table `invoices`
 --
 ALTER TABLE `invoices`
@@ -725,6 +954,19 @@ ALTER TABLE `invoices`
 ALTER TABLE `invoice_items`
   ADD CONSTRAINT `invoice_items_ibfk_1` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `invoice_items_ibfk_2` FOREIGN KEY (`inventory_id`) REFERENCES `inventory` (`id`);
+
+--
+-- Constraints for table `quotations`
+--
+ALTER TABLE `quotations`
+  ADD CONSTRAINT `quotations_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `quotation_items`
+--
+ALTER TABLE `quotation_items`
+  ADD CONSTRAINT `quotation_items_ibfk_1` FOREIGN KEY (`quotation_id`) REFERENCES `quotations` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `quotation_items_ibfk_2` FOREIGN KEY (`material_id`) REFERENCES `materials` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `users`

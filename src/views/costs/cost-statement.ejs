@@ -1,0 +1,1028 @@
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-calculator"></i> بيان الكلفة</h2>
+                <div>
+                    <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#addMaterialModal">
+                        <i class="bi bi-plus-circle me-1"></i> إضافة مادة جديدة
+                    </button>
+                    <a href="/costs" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-right me-1"></i> العودة للتكاليف
+                    </a>
+                </div>
+            </div>
+
+            <!-- جدول المواد الموجودة -->
+            <% if (materials && materials.length > 0) { %>
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> المواد المسجلة</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>اسم المادة</th>
+                                    <th>النوع</th>
+                                    <th>كلفة القطعة</th>
+                                    <th>كلفة الطرد</th>
+                                    <th>تاريخ الإضافة</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% materials.forEach(material => { %>
+                                <tr>
+                                    <td><%= material.material_name %></td>
+                                    <td><%= material.material_type %></td>
+                                    <td><%= parseFloat(material.unit_cost).toFixed(2) %> د.ك</td>
+                                    <td><%= parseFloat(material.package_cost).toFixed(2) %> د.ك</td>
+                                    <td><%= formatDate(material.created_at) %></td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="/costs/cost-statement/<%= material.id %>/preview" class="btn btn-sm btn-success" title="معاينة">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-info" onclick="editMaterial(<%= material.id %>)" title="تعديل">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="deleteMaterial(<%= material.id %>)" title="حذف">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <% } else { %>
+            <div class="card shadow">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-inbox display-1 text-muted mb-3"></i>
+                    <h4 class="text-muted">لا توجد مواد مسجلة</h4>
+                    <p class="text-muted">اضغط على زر "إضافة مادة جديدة" لبدء إضافة المواد</p>
+                </div>
+            </div>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<!-- Modal إضافة مادة جديدة -->
+<div class="modal fade" id="addMaterialModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-plus-circle"></i> إضافة مادة جديدة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="materialForm" method="POST" action="/costs/cost-statement">
+                    <div class="row g-3">
+                        <!-- نوع المادة -->
+                        <div class="col-md-6">
+                            <label class="form-label">نوع المادة *</label>
+                            <input type="text" class="form-control" name="material_type" value="زيتون" required>
+                        </div>
+
+                        <!-- اسم المادة -->
+                        <div class="col-md-6">
+                            <label class="form-label">اسم المادة *</label>
+                            <input type="text" class="form-control" name="material_name" required>
+                        </div>
+
+                        <!-- السعر قبل الهدر -->
+                        <div class="col-md-4">
+                            <label class="form-label">السعر قبل الهدر (د.ك/كجم) *</label>
+                            <input type="number" class="form-control" name="price_before_waste" step="0.01" required>
+                        </div>
+
+                        <!-- الوزن الجمالي -->
+                        <div class="col-md-4">
+                            <label class="form-label">الوزن الجمالي (كجم) *</label>
+                            <input type="number" class="form-control" name="gross_weight" step="0.01" required>
+                        </div>
+
+                        <!-- نسبة الهدر -->
+                        <div class="col-md-4">
+                            <label class="form-label">نسبة الهدر (%) *</label>
+                            <input type="number" class="form-control" name="waste_percentage" step="0.01" required>
+                        </div>
+
+                        <!-- وحدة التعبئة -->
+                        <div class="col-md-4">
+                            <label class="form-label">وحدة التعبئة *</label>
+                            <input type="text" class="form-control" name="packaging_unit" value="سطل" required>
+                        </div>
+
+                        <!-- وزن وحدة التعبئة -->
+                        <div class="col-md-4">
+                            <label class="form-label">وزن وحدة التعبئة (كجم) *</label>
+                            <input type="number" class="form-control" name="packaging_weight" step="0.01" required>
+                        </div>
+
+                        <!-- ثمن العبوة الفارغة -->
+                        <div class="col-md-4">
+                            <label class="form-label">ثمن العبوة الفارغة (د.ك) *</label>
+                            <input type="number" class="form-control" name="empty_package_price" step="0.01" required>
+                        </div>
+
+                        <!-- ثمن اللصاقة -->
+                        <div class="col-md-4">
+                            <label class="form-label">ثمن اللصاقة (د.ك) *</label>
+                            <input type="number" class="form-control" name="sticker_price" step="0.01" required>
+                        </div>
+
+                        <!-- مصاريف إضافية -->
+                        <div class="col-md-4">
+                            <label class="form-label">مصاريف إضافية (د.ك) *</label>
+                            <input type="number" class="form-control" name="additional_expenses" step="0.01" required>
+                        </div>
+
+                        <!-- مصروف عمال -->
+                        <div class="col-md-4">
+                            <label class="form-label">مصروف عمال (د.ك) *</label>
+                            <input type="number" class="form-control" name="labor_cost" step="0.01" required>
+                        </div>
+
+                        <!-- مواد حافظة -->
+                        <div class="col-md-4">
+                            <label class="form-label">مواد حافظة (د.ك) *</label>
+                            <input type="number" class="form-control" name="preservatives_cost" step="0.01" required>
+                        </div>
+
+                        <!-- ثمن كرتونة -->
+                        <div class="col-md-4">
+                            <label class="form-label">ثمن كرتونة (د.ك) *</label>
+                            <input type="number" class="form-control" name="carton_price" step="0.01" required>
+                        </div>
+
+                        <!-- عدد الحبات في الطرد -->
+                        <div class="col-md-4">
+                            <label class="form-label">عدد الحبات في الطرد *</label>
+                            <input type="number" class="form-control" name="pieces_per_package" required>
+                        </div>
+
+                        <!-- ثمن الطبلية -->
+                        <div class="col-md-4">
+                            <label class="form-label">ثمن الطبلية (د.ك) *</label>
+                            <input type="number" class="form-control" name="pallet_price" step="0.01" required>
+                        </div>
+
+                        <!-- عدد الطرود في الطبلية -->
+                        <div class="col-md-4">
+                            <label class="form-label">عدد الطرود في الطبلية *</label>
+                            <input type="number" class="form-control" name="packages_per_pallet" required>
+                        </div>
+                    </div>
+
+                    <!-- نتائج الحساب -->
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="alert alert-info">
+                                <h6><i class="bi bi-calculator"></i> نتائج الحساب التلقائي:</h6>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <strong>كلفة القطعة الواحدة:</strong>
+                                        <span id="unitCostResult">0.00 د.ك</span>
+                                    </div>
+                                    <div class="col-6">
+                                        <strong>كلفة الطرد:</strong>
+                                        <span id="packageCostResult">0.00 د.ك</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-save me-1"></i> حفظ المادة
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal تعديل المادة -->
+<div class="modal fade" id="editMaterialModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تعديل المادة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editMaterialForm">
+                    <input type="hidden" id="editMaterialId" name="material_id">
+                    <div class="row g-3">
+                        <!-- نوع المادة -->
+                        <div class="col-md-6">
+                            <label class="form-label">نوع المادة *</label>
+                            <input type="text" class="form-control" id="editMaterialType" name="material_type" required>
+                        </div>
+
+                        <!-- اسم المادة -->
+                        <div class="col-md-6">
+                            <label class="form-label">اسم المادة *</label>
+                            <input type="text" class="form-control" id="editMaterialName" name="material_name" required>
+                        </div>
+
+                        <!-- السعر قبل الهدر -->
+                        <div class="col-md-4">
+                            <label class="form-label">السعر قبل الهدر (د.ك/كجم) *</label>
+                            <input type="number" class="form-control" id="editPriceBeforeWaste" name="price_before_waste" step="0.01" required>
+                        </div>
+
+                        <!-- الوزن الجمالي -->
+                        <div class="col-md-4">
+                            <label class="form-label">الوزن الجمالي (كجم) *</label>
+                            <input type="number" class="form-control" id="editGrossWeight" name="gross_weight" step="0.01" required>
+                        </div>
+
+                        <!-- نسبة الهدر -->
+                        <div class="col-md-4">
+                            <label class="form-label">نسبة الهدر (%) *</label>
+                            <input type="number" class="form-control" id="editWastePercentage" name="waste_percentage" step="0.01" required>
+                        </div>
+
+                        <!-- وحدة التعبئة -->
+                        <div class="col-md-4">
+                            <label class="form-label">وحدة التعبئة *</label>
+                            <input type="text" class="form-control" id="editPackagingUnit" name="packaging_unit" required>
+                        </div>
+
+                        <!-- وزن وحدة التعبئة -->
+                        <div class="col-md-4">
+                            <label class="form-label">وزن وحدة التعبئة (كجم) *</label>
+                            <input type="number" class="form-control" id="editPackagingWeight" name="packaging_weight" step="0.01" required>
+                        </div>
+
+                        <!-- ثمن العبوة الفارغة -->
+                        <div class="col-md-4">
+                            <label class="form-label">ثمن العبوة الفارغة (د.ك) *</label>
+                            <input type="number" class="form-control" id="editEmptyPackagePrice" name="empty_package_price" step="0.01" required>
+                        </div>
+
+                        <!-- ثمن اللصاقة -->
+                        <div class="col-md-4">
+                            <label class="form-label">ثمن اللصاقة (د.ك) *</label>
+                            <input type="number" class="form-control" id="editStickerPrice" name="sticker_price" step="0.01" required>
+                        </div>
+
+                        <!-- مصاريف إضافية -->
+                        <div class="col-md-4">
+                            <label class="form-label">مصاريف إضافية (د.ك) *</label>
+                            <input type="number" class="form-control" id="editAdditionalExpenses" name="additional_expenses" step="0.01" required>
+                        </div>
+
+                        <!-- مصروف عمال -->
+                        <div class="col-md-4">
+                            <label class="form-label">مصروف عمال (د.ك) *</label>
+                            <input type="number" class="form-control" id="editLaborCost" name="labor_cost" step="0.01" required>
+                        </div>
+
+                        <!-- مواد حافظة -->
+                        <div class="col-md-4">
+                            <label class="form-label">مواد حافظة (د.ك) *</label>
+                            <input type="number" class="form-control" id="editPreservativesCost" name="preservatives_cost" step="0.01" required>
+                        </div>
+
+                        <!-- ثمن كرتونة -->
+                        <div class="col-md-4">
+                            <label class="form-label">ثمن كرتونة (د.ك) *</label>
+                            <input type="number" class="form-control" id="editCartonPrice" name="carton_price" step="0.01" required>
+                        </div>
+
+                        <!-- عدد الحبات في الطرد -->
+                        <div class="col-md-4">
+                            <label class="form-label">عدد الحبات في الطرد *</label>
+                            <input type="number" class="form-control" id="editPiecesPerPackage" name="pieces_per_package" required>
+                        </div>
+
+                        <!-- ثمن الطبلية -->
+                        <div class="col-md-4">
+                            <label class="form-label">ثمن الطبلية (د.ك) *</label>
+                            <input type="number" class="form-control" id="editPalletPrice" name="pallet_price" step="0.01" required>
+                        </div>
+
+                        <!-- عدد الطرود في الطبلية -->
+                        <div class="col-md-4">
+                            <label class="form-label">عدد الطرود في الطبلية *</label>
+                            <input type="number" class="form-control" id="editPackagesPerPallet" name="packages_per_pallet" required>
+                        </div>
+                    </div>
+
+                    <!-- نتائج الحساب -->
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="alert alert-info">
+                                <h6><i class="bi bi-calculator"></i> نتائج الحساب التلقائي:</h6>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <strong>كلفة القطعة الواحدة:</strong>
+                                        <span id="editUnitCostResult">0.00 د.ك</span>
+                                    </div>
+                                    <div class="col-6">
+                                        <strong>كلفة الطرد:</strong>
+                                        <span id="editPackageCostResult">0.00 د.ك</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" onclick="saveMaterialEdit()">حفظ التعديلات</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal استعراض المادة -->
+<div class="modal fade" id="viewMaterialModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تفاصيل المادة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary mb-3">المعلومات الأساسية</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>اسم المادة:</strong></td>
+                                <td id="viewMaterialName">-</td>
+                            </tr>
+                            <tr>
+                                <td><strong>نوع المادة:</strong></td>
+                                <td id="viewMaterialType">-</td>
+                            </tr>
+                            <tr>
+                                <td><strong>تاريخ الإضافة:</strong></td>
+                                <td id="viewMaterialDate">-</td>
+                            </tr>
+                            <tr>
+                                <td><strong>آخر تحديث:</strong></td>
+                                <td id="viewMaterialUpdated">-</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-success mb-3">نتائج الحساب</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>كلفة القطعة الواحدة:</strong></td>
+                                <td id="viewUnitCost" class="text-primary fw-bold">-</td>
+                            </tr>
+                            <tr>
+                                <td><strong>كلفة الطرد:</strong></td>
+                                <td id="viewPackageCost" class="text-success fw-bold">-</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-info mb-3">بيانات التكلفة الأساسية</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>السعر قبل الهدر:</strong></td>
+                                <td id="viewPriceBeforeWaste">-</td>
+                            </tr>
+                            <tr>
+                                <td><strong>الوزن الجمالي:</strong></td>
+                                <td id="viewGrossWeight">-</td>
+                            </tr>
+                            <tr>
+                                <td><strong>نسبة الهدر:</strong></td>
+                                <td id="viewWastePercentage">-</td>
+                            </tr>
+                            <tr>
+                                <td><strong>الوزن الصافي:</strong></td>
+                                <td id="viewNetWeight" class="text-info fw-bold">-</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-warning mb-3">بيانات التعبئة</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>وحدة التعبئة:</strong></td>
+                                <td id="viewPackagingUnit">-</td>
+                            </tr>
+                            <tr>
+                                <td><strong>وزن وحدة التعبئة:</strong></td>
+                                <td id="viewPackagingWeight">-</td>
+                            </tr>
+                            <tr>
+                                <td><strong>عدد الحبات في الطرد:</strong></td>
+                                <td id="viewPiecesPerPackage">-</td>
+                            </tr>
+                            <tr>
+                                <td><strong>عدد الطرود في الطبلية:</strong></td>
+                                <td id="viewPackagesPerPallet">-</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-danger mb-3">تكاليف التعبئة</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>ثمن العبوة الفارغة:</strong></td>
+                                <td id="viewEmptyPackagePrice">-</td>
+                            </tr>
+                            <tr>
+                                <td><strong>ثمن اللصاقة:</strong></td>
+                                <td id="viewStickerPrice">-</td>
+                            </tr>
+                            <tr>
+                                <td><strong>ثمن كرتونة:</strong></td>
+                                <td id="viewCartonPrice">-</td>
+                            </tr>
+                            <tr>
+                                <td><strong>ثمن الطبلية:</strong></td>
+                                <td id="viewPalletPrice">-</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-secondary mb-3">تكاليف إضافية</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>مصاريف إضافية:</strong></td>
+                                <td id="viewAdditionalExpenses">-</td>
+                            </tr>
+                            <tr>
+                                <td><strong>مصروف عمال:</strong></td>
+                                <td id="viewLaborCost">-</td>
+                            </tr>
+                            <tr>
+                                <td><strong>مواد حافظة:</strong></td>
+                                <td id="viewPreservativesCost">-</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- سجل التكاليف -->
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-dark mb-3">سجل التكاليف</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped" id="costLogsTable">
+                                <thead>
+                                    <tr>
+                                        <th>التاريخ</th>
+                                        <th>كلفة القطعة</th>
+                                        <th>كلفة الطرد</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="costLogsBody">
+                                    <!-- سيتم ملؤها بالبيانات -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                <button type="button" class="btn btn-primary" onclick="printMaterialDetails()">
+                    <i class="bi bi-printer"></i> طباعة
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// حساب التكاليف تلقائياً
+function calculateCosts() {
+    const priceBeforeWaste = parseFloat(document.querySelector('input[name="price_before_waste"]').value) || 0;
+    const grossWeight = parseFloat(document.querySelector('input[name="gross_weight"]').value) || 0;
+    const wastePercentage = parseFloat(document.querySelector('input[name="waste_percentage"]').value) || 0;
+    const emptyPackagePrice = parseFloat(document.querySelector('input[name="empty_package_price"]').value) || 0;
+    const stickerPrice = parseFloat(document.querySelector('input[name="sticker_price"]').value) || 0;
+    const additionalExpenses = parseFloat(document.querySelector('input[name="additional_expenses"]').value) || 0;
+    const laborCost = parseFloat(document.querySelector('input[name="labor_cost"]').value) || 0;
+    const preservativesCost = parseFloat(document.querySelector('input[name="preservatives_cost"]').value) || 0;
+    const cartonPrice = parseFloat(document.querySelector('input[name="carton_price"]').value) || 0;
+    const piecesPerPackage = parseInt(document.querySelector('input[name="pieces_per_package"]').value) || 1;
+    const palletPrice = parseFloat(document.querySelector('input[name="pallet_price"]').value) || 0;
+    const packagesPerPallet = parseInt(document.querySelector('input[name="packages_per_pallet"]').value) || 1;
+
+    // حساب كلفة القطعة الواحدة
+    const netWeight = grossWeight * (1 - wastePercentage / 100);
+    const pricePerKgAfterWaste = priceBeforeWaste / (1 - wastePercentage / 100);
+    const packagingWeight = parseFloat(document.querySelector('input[name="packaging_weight"]').value) || 0;
+    const materialCostInUnit = pricePerKgAfterWaste * packagingWeight;
+    const totalPackagingCosts = emptyPackagePrice + stickerPrice + additionalExpenses + laborCost + preservativesCost;
+    const unitCost = materialCostInUnit + totalPackagingCosts;
+
+    // حساب كلفة الطرد
+    const palletShare = palletPrice / packagesPerPallet;
+    const packageCost = unitCost + palletShare;
+
+    // عرض النتائج
+    document.getElementById('unitCostResult').textContent = unitCost.toFixed(2) + ' د.ك';
+    document.getElementById('packageCostResult').textContent = packageCost.toFixed(2) + ' د.ك';
+}
+
+// معالجة نموذج إضافة المادة
+document.getElementById('materialForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('/costs/cost-statement', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            material_type: formData.get('material_type'),
+            material_name: formData.get('material_name'),
+            price_before_waste: formData.get('price_before_waste'),
+            gross_weight: formData.get('gross_weight'),
+            waste_percentage: formData.get('waste_percentage'),
+            packaging_unit: formData.get('packaging_unit'),
+            packaging_weight: formData.get('packaging_weight'),
+            empty_package_price: formData.get('empty_package_price'),
+            sticker_price: formData.get('sticker_price'),
+            additional_expenses: formData.get('additional_expenses'),
+            labor_cost: formData.get('labor_cost'),
+            preservatives_cost: formData.get('preservatives_cost'),
+            carton_price: formData.get('carton_price'),
+            pieces_per_package: formData.get('pieces_per_package'),
+            pallet_price: formData.get('pallet_price'),
+            packages_per_pallet: formData.get('packages_per_pallet')
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('تم حفظ المادة بنجاح', 'success');
+            // إغلاق المودال
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addMaterialModal'));
+            if (modal) {
+                modal.hide();
+            }
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showAlert(data.message || 'حدث خطأ في حفظ المادة', 'error');
+        }
+    })
+    .catch(error => {
+        showAlert('حدث خطأ في حفظ المادة', 'error');
+    });
+});
+
+// إضافة مستمعي الأحداث للحقول في مودال الإضافة
+document.addEventListener('DOMContentLoaded', function() {
+    const addMaterialInputs = document.querySelectorAll('#addMaterialModal input, #addMaterialModal select');
+    addMaterialInputs.forEach(input => {
+        input.addEventListener('input', calculateCosts);
+    });
+});
+
+// إضافة مستمعي الأحداث لحقول التعديل
+document.addEventListener('DOMContentLoaded', function() {
+    const editFields = [
+        'editPriceBeforeWaste', 'editGrossWeight', 'editWastePercentage',
+        'editEmptyPackagePrice', 'editStickerPrice', 'editAdditionalExpenses',
+        'editLaborCost', 'editPreservativesCost', 'editCartonPrice',
+        'editPiecesPerPackage', 'editPalletPrice', 'editPackagesPerPallet'
+    ];
+    
+    editFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('input', calculateEditCosts);
+        }
+    });
+    
+    // تعيين القيم الافتراضية في نموذج الإضافة
+    setupAddMaterialForm();
+    
+    // إعادة تعيين النموذج عند إغلاق المودال
+    const addMaterialModal = document.getElementById('addMaterialModal');
+    if (addMaterialModal) {
+        addMaterialModal.addEventListener('hidden.bs.modal', function() {
+            resetAddMaterialForm();
+        });
+    }
+});
+
+// دالة إعداد نموذج إضافة المادة
+function setupAddMaterialForm() {
+    const materialTypeInput = document.querySelector('#addMaterialModal input[name="material_type"]');
+    if (materialTypeInput && !materialTypeInput.value) {
+        materialTypeInput.value = 'زيتون';
+    }
+    
+    const packagingUnitInput = document.querySelector('#addMaterialModal input[name="packaging_unit"]');
+    if (packagingUnitInput && !packagingUnitInput.value) {
+        packagingUnitInput.value = 'سطل';
+    }
+}
+
+// دالة إعادة تعيين نموذج إضافة المادة
+function resetAddMaterialForm() {
+    const form = document.getElementById('materialForm');
+    if (form) {
+        form.reset();
+        setupAddMaterialForm();
+        // إعادة تعيين نتائج الحساب
+        document.getElementById('unitCostResult').textContent = '0.00 د.ك';
+        document.getElementById('packageCostResult').textContent = '0.00 د.ك';
+    }
+}
+
+// حذف مادة
+function deleteMaterial(id) {
+    if (confirm('هل أنت متأكد من حذف هذه المادة؟')) {
+        fetch(`/costs/cost-statement/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('تم حذف المادة بنجاح', 'success');
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                showAlert(data.message || 'حدث خطأ في حذف المادة', 'error');
+            }
+        })
+        .catch(error => {
+            showAlert('حدث خطأ في حذف المادة', 'error');
+        });
+    }
+}
+
+// دالة عرض التنبيهات
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.container').firstChild);
+    
+    // إزالة التنبيه تلقائياً بعد 5 ثوان
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+
+// دالة تعديل المادة
+function editMaterial(materialId) {
+    // جلب بيانات المادة
+    fetch(`/costs/cost-statement/${materialId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const material = data.material;
+                
+                // ملء النموذج بالبيانات
+                document.getElementById('editMaterialId').value = material.id;
+                document.getElementById('editMaterialType').value = material.material_type;
+                document.getElementById('editMaterialName').value = material.material_name;
+                document.getElementById('editPriceBeforeWaste').value = material.price_before_waste;
+                document.getElementById('editGrossWeight').value = material.gross_weight;
+                document.getElementById('editWastePercentage').value = material.waste_percentage;
+                document.getElementById('editPackagingUnit').value = material.packaging_unit;
+                document.getElementById('editPackagingWeight').value = material.packaging_weight;
+                document.getElementById('editEmptyPackagePrice').value = material.empty_package_price;
+                document.getElementById('editStickerPrice').value = material.sticker_price;
+                document.getElementById('editAdditionalExpenses').value = material.additional_expenses;
+                document.getElementById('editLaborCost').value = material.labor_cost;
+                document.getElementById('editPreservativesCost').value = material.preservatives_cost;
+                document.getElementById('editCartonPrice').value = material.carton_price;
+                document.getElementById('editPiecesPerPackage').value = material.pieces_per_package;
+                document.getElementById('editPalletPrice').value = material.pallet_price;
+                document.getElementById('editPackagesPerPallet').value = material.packages_per_pallet;
+                
+                // حساب التكاليف
+                calculateEditCosts();
+                
+                // فتح Modal
+                const modal = new bootstrap.Modal(document.getElementById('editMaterialModal'));
+                modal.show();
+            } else {
+                showAlert(data.message || 'حدث خطأ في جلب بيانات المادة', 'error');
+            }
+        })
+        .catch(error => {
+            showAlert('حدث خطأ في جلب بيانات المادة', 'error');
+        });
+}
+
+// حساب التكاليف في نموذج التعديل
+function calculateEditCosts() {
+    const priceBeforeWaste = parseFloat(document.getElementById('editPriceBeforeWaste').value) || 0;
+    const grossWeight = parseFloat(document.getElementById('editGrossWeight').value) || 0;
+    const wastePercentage = parseFloat(document.getElementById('editWastePercentage').value) || 0;
+    const emptyPackagePrice = parseFloat(document.getElementById('editEmptyPackagePrice').value) || 0;
+    const stickerPrice = parseFloat(document.getElementById('editStickerPrice').value) || 0;
+    const additionalExpenses = parseFloat(document.getElementById('editAdditionalExpenses').value) || 0;
+    const laborCost = parseFloat(document.getElementById('editLaborCost').value) || 0;
+    const preservativesCost = parseFloat(document.getElementById('editPreservativesCost').value) || 0;
+    const cartonPrice = parseFloat(document.getElementById('editCartonPrice').value) || 0;
+    const piecesPerPackage = parseInt(document.getElementById('editPiecesPerPackage').value) || 1;
+    const palletPrice = parseFloat(document.getElementById('editPalletPrice').value) || 0;
+    const packagesPerPallet = parseInt(document.getElementById('editPackagesPerPallet').value) || 1;
+
+    // حساب كلفة القطعة الواحدة
+    const netWeight = grossWeight * (1 - wastePercentage / 100);
+    const pricePerKgAfterWaste = priceBeforeWaste / (1 - wastePercentage / 100);
+    const packagingWeight = parseFloat(document.getElementById('editPackagingWeight').value) || 0;
+    const materialCostInUnit = pricePerKgAfterWaste * packagingWeight;
+    const totalPackagingCosts = emptyPackagePrice + stickerPrice + additionalExpenses + laborCost + preservativesCost;
+    const unitCost = materialCostInUnit + totalPackagingCosts;
+
+    // حساب كلفة الطرد
+    const palletShare = palletPrice / packagesPerPallet;
+    const packageCost = unitCost + palletShare;
+
+    // عرض النتائج
+    document.getElementById('editUnitCostResult').textContent = unitCost.toFixed(2) + ' د.ك';
+    document.getElementById('editPackageCostResult').textContent = packageCost.toFixed(2) + ' د.ك';
+}
+
+// حفظ تعديل المادة
+function saveMaterialEdit() {
+    const materialId = document.getElementById('editMaterialId').value;
+    
+    const formData = {
+        material_type: document.getElementById('editMaterialType').value,
+        material_name: document.getElementById('editMaterialName').value,
+        price_before_waste: document.getElementById('editPriceBeforeWaste').value,
+        gross_weight: document.getElementById('editGrossWeight').value,
+        waste_percentage: document.getElementById('editWastePercentage').value,
+        packaging_unit: document.getElementById('editPackagingUnit').value,
+        packaging_weight: document.getElementById('editPackagingWeight').value,
+        empty_package_price: document.getElementById('editEmptyPackagePrice').value,
+        sticker_price: document.getElementById('editStickerPrice').value,
+        additional_expenses: document.getElementById('editAdditionalExpenses').value,
+        labor_cost: document.getElementById('editLaborCost').value,
+        preservatives_cost: document.getElementById('editPreservativesCost').value,
+        carton_price: document.getElementById('editCartonPrice').value,
+        pieces_per_package: document.getElementById('editPiecesPerPackage').value,
+        pallet_price: document.getElementById('editPalletPrice').value,
+        packages_per_pallet: document.getElementById('editPackagesPerPallet').value
+    };
+    
+    fetch(`/costs/cost-statement/${materialId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('تم تحديث المادة بنجاح', 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showAlert(data.message || 'حدث خطأ في تحديث المادة', 'error');
+        }
+    })
+    .catch(error => {
+        showAlert('حدث خطأ في تحديث المادة', 'error');
+    });
+}
+
+// دالة تنسيق التاريخ
+function formatDate(dateString) {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+}
+
+// دالة استعراض المادة
+function viewMaterial(materialId) {
+    // جلب بيانات المادة
+    fetch(`/costs/cost-statement/${materialId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const material = data.material;
+                
+                try {
+                    // ملء البيانات الأساسية
+                    document.getElementById('viewMaterialName').textContent = material.material_name || '-';
+                    document.getElementById('viewMaterialType').textContent = material.material_type || '-';
+                    document.getElementById('viewMaterialDate').textContent = formatDate(material.created_at);
+                    document.getElementById('viewMaterialUpdated').textContent = formatDate(material.updated_at);
+                
+                // ملء نتائج الحساب
+                document.getElementById('viewUnitCost').textContent = (parseFloat(material.unit_cost) || 0).toFixed(2) + ' د.ك';
+                document.getElementById('viewPackageCost').textContent = (parseFloat(material.package_cost) || 0).toFixed(2) + ' د.ك';
+                
+                // ملء بيانات التكلفة الأساسية
+                document.getElementById('viewPriceBeforeWaste').textContent = (parseFloat(material.price_before_waste) || 0).toFixed(2) + ' د.ك/كجم';
+                document.getElementById('viewGrossWeight').textContent = (parseFloat(material.gross_weight) || 0).toFixed(2) + ' كجم';
+                document.getElementById('viewWastePercentage').textContent = (parseFloat(material.waste_percentage) || 0).toFixed(1) + '%';
+                
+                // حساب الوزن الصافي
+                const grossWeight = parseFloat(material.gross_weight) || 0;
+                const wastePercentage = parseFloat(material.waste_percentage) || 0;
+                const netWeight = grossWeight * (1 - wastePercentage / 100);
+                document.getElementById('viewNetWeight').textContent = netWeight.toFixed(2) + ' كجم';
+                
+                // ملء بيانات التعبئة
+                document.getElementById('viewPackagingUnit').textContent = material.packaging_unit || '-';
+                document.getElementById('viewPackagingWeight').textContent = (parseFloat(material.packaging_weight) || 0).toFixed(2) + ' كجم';
+                document.getElementById('viewPiecesPerPackage').textContent = material.pieces_per_package || '-';
+                document.getElementById('viewPackagesPerPallet').textContent = material.packages_per_pallet || '-';
+                
+                // ملء تكاليف التعبئة
+                document.getElementById('viewEmptyPackagePrice').textContent = (parseFloat(material.empty_package_price) || 0).toFixed(2) + ' د.ك';
+                document.getElementById('viewStickerPrice').textContent = (parseFloat(material.sticker_price) || 0).toFixed(2) + ' د.ك';
+                document.getElementById('viewCartonPrice').textContent = (parseFloat(material.carton_price) || 0).toFixed(2) + ' د.ك';
+                document.getElementById('viewPalletPrice').textContent = (parseFloat(material.pallet_price) || 0).toFixed(2) + ' د.ك';
+                
+                // ملء التكاليف الإضافية
+                document.getElementById('viewAdditionalExpenses').textContent = (parseFloat(material.additional_expenses) || 0).toFixed(2) + ' د.ك';
+                document.getElementById('viewLaborCost').textContent = (parseFloat(material.labor_cost) || 0).toFixed(2) + ' د.ك';
+                document.getElementById('viewPreservativesCost').textContent = (parseFloat(material.preservatives_cost) || 0).toFixed(2) + ' د.ك';
+                
+                // جلب سجل التكاليف
+                loadCostLogs(materialId);
+                
+                // فتح Modal
+                const modal = new bootstrap.Modal(document.getElementById('viewMaterialModal'));
+                modal.show();
+            } catch (error) {
+                console.error('خطأ في معالجة بيانات المادة:', error);
+                showAlert('حدث خطأ في معالجة بيانات المادة', 'error');
+            }
+            } else {
+                showAlert(data.message || 'حدث خطأ في جلب بيانات المادة', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('خطأ في جلب بيانات المادة:', error);
+            showAlert('حدث خطأ في جلب بيانات المادة', 'error');
+        });
+}
+
+// دالة جلب سجل التكاليف
+function loadCostLogs(materialId) {
+    fetch(`/costs/cost-statement/${materialId}/logs`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const tbody = document.getElementById('costLogsBody');
+                tbody.innerHTML = '';
+                
+                data.logs.forEach(log => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${formatDate(log.calculation_date)}</td>
+                        <td>${parseFloat(log.unit_cost).toFixed(2)} د.ك</td>
+                        <td>${parseFloat(log.package_cost).toFixed(2)} د.ك</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('خطأ في جلب سجل التكاليف:', error);
+        });
+}
+
+// دالة طباعة تفاصيل المادة
+function printMaterialDetails() {
+    const printWindow = window.open('', '_blank');
+    const materialName = document.getElementById('viewMaterialName').textContent;
+    
+    printWindow.document.write(`
+        <html dir="rtl">
+        <head>
+            <title>تفاصيل المادة - ${materialName}</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .header { text-align: center; margin-bottom: 30px; }
+                .section { margin-bottom: 20px; }
+                .section h3 { color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 5px; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
+                th { background-color: #f8f9fa; }
+                .highlight { background-color: #e3f2fd; font-weight: bold; }
+                @media print { .no-print { display: none; } }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>تفاصيل المادة</h1>
+                <h2>${materialName}</h2>
+            </div>
+            
+            <div class="section">
+                <h3>المعلومات الأساسية</h3>
+                <table>
+                    <tr><th>اسم المادة</th><td>${document.getElementById('viewMaterialName').textContent}</td></tr>
+                    <tr><th>نوع المادة</th><td>${document.getElementById('viewMaterialType').textContent}</td></tr>
+                    <tr><th>تاريخ الإضافة</th><td>${document.getElementById('viewMaterialDate').textContent}</td></tr>
+                    <tr><th>آخر تحديث</th><td>${document.getElementById('viewMaterialUpdated').textContent}</td></tr>
+                </table>
+            </div>
+            
+            <div class="section">
+                <h3>نتائج الحساب</h3>
+                <table>
+                    <tr class="highlight"><th>كلفة القطعة الواحدة</th><td>${document.getElementById('viewUnitCost').textContent}</td></tr>
+                    <tr class="highlight"><th>كلفة الطرد</th><td>${document.getElementById('viewPackageCost').textContent}</td></tr>
+                </table>
+            </div>
+            
+            <div class="section">
+                <h3>بيانات التكلفة الأساسية</h3>
+                <table>
+                    <tr><th>السعر قبل الهدر</th><td>${document.getElementById('viewPriceBeforeWaste').textContent}</td></tr>
+                    <tr><th>الوزن الجمالي</th><td>${document.getElementById('viewGrossWeight').textContent}</td></tr>
+                    <tr><th>نسبة الهدر</th><td>${document.getElementById('viewWastePercentage').textContent}</td></tr>
+                    <tr><th>الوزن الصافي</th><td>${document.getElementById('viewNetWeight').textContent}</td></tr>
+                </table>
+            </div>
+            
+            <div class="section">
+                <h3>بيانات التعبئة</h3>
+                <table>
+                    <tr><th>وحدة التعبئة</th><td>${document.getElementById('viewPackagingUnit').textContent}</td></tr>
+                    <tr><th>وزن وحدة التعبئة</th><td>${document.getElementById('viewPackagingWeight').textContent}</td></tr>
+                    <tr><th>عدد الحبات في الطرد</th><td>${document.getElementById('viewPiecesPerPackage').textContent}</td></tr>
+                    <tr><th>عدد الطرود في الطبلية</th><td>${document.getElementById('viewPackagesPerPallet').textContent}</td></tr>
+                </table>
+            </div>
+            
+            <div class="section">
+                <h3>تكاليف التعبئة</h3>
+                <table>
+                    <tr><th>ثمن العبوة الفارغة</th><td>${document.getElementById('viewEmptyPackagePrice').textContent}</td></tr>
+                    <tr><th>ثمن اللصاقة</th><td>${document.getElementById('viewStickerPrice').textContent}</td></tr>
+                    <tr><th>ثمن كرتونة</th><td>${document.getElementById('viewCartonPrice').textContent}</td></tr>
+                    <tr><th>ثمن الطبلية</th><td>${document.getElementById('viewPalletPrice').textContent}</td></tr>
+                </table>
+            </div>
+            
+            <div class="section">
+                <h3>تكاليف إضافية</h3>
+                <table>
+                    <tr><th>مصاريف إضافية</th><td>${document.getElementById('viewAdditionalExpenses').textContent}</td></tr>
+                    <tr><th>مصروف عمال</th><td>${document.getElementById('viewLaborCost').textContent}</td></tr>
+                    <tr><th>مواد حافظة</th><td>${document.getElementById('viewPreservativesCost').textContent}</td></tr>
+                </table>
+            </div>
+            
+            <div class="section">
+                <h3>سجل التكاليف</h3>
+                <table>
+                    <thead>
+                        <tr><th>التاريخ</th><th>كلفة القطعة</th><th>كلفة الطرد</th></tr>
+                    </thead>
+                    <tbody id="printCostLogsBody">
+                        ${document.getElementById('costLogsBody').innerHTML}
+                    </tbody>
+                </table>
+            </div>
+        </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.print();
+}
+</script> 

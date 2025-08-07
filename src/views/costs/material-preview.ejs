@@ -1,0 +1,359 @@
+<%- include('../layouts/header') %>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-eye"></i> معاينة المادة</h2>
+                <div>
+                    <button type="button" class="btn btn-primary me-2" onclick="printMaterialDetails()">
+                        <i class="bi bi-printer me-1"></i> طباعة
+                    </button>
+                    <a href="/costs/cost-statement/<%= material.id %>" class="btn btn-info me-2">
+                        <i class="bi bi-pencil me-1"></i> تعديل
+                    </a>
+                    <button type="button" class="btn btn-danger me-2" onclick="deleteMaterial(<%= material.id %>)">
+                        <i class="bi bi-trash me-1"></i> حذف
+                    </button>
+                    <a href="/costs/cost-statement" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-right me-1"></i> العودة لبيان الكلفة
+                    </a>
+                </div>
+            </div>
+
+            <!-- تفاصيل المادة -->
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> تفاصيل المادة</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary mb-3">المعلومات الأساسية</h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>اسم المادة:</strong></td>
+                                    <td><%= material.material_name %></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>نوع المادة:</strong></td>
+                                    <td><%= material.material_type %></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>تاريخ الإضافة:</strong></td>
+                                    <td><%= formatDate(material.created_at) %></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>آخر تحديث:</strong></td>
+                                    <td><%= formatDate(material.updated_at) %></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-success mb-3">نتائج الحساب</h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>كلفة القطعة الواحدة:</strong></td>
+                                    <td class="text-primary fw-bold"><%= parseFloat(material.unit_cost).toFixed(2) %> د.ك</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>كلفة الطرد:</strong></td>
+                                    <td class="text-success fw-bold"><%= parseFloat(material.package_cost).toFixed(2) %> د.ك</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-info mb-3">بيانات التكلفة الأساسية</h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>السعر قبل الهدر:</strong></td>
+                                    <td><%= parseFloat(material.price_before_waste).toFixed(2) %> د.ك/كجم</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>الوزن الجمالي:</strong></td>
+                                    <td><%= parseFloat(material.gross_weight).toFixed(2) %> كجم</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>نسبة الهدر:</strong></td>
+                                    <td><%= parseFloat(material.waste_percentage).toFixed(1) %>%</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>الوزن الصافي:</strong></td>
+                                    <td class="text-info fw-bold"><%= (parseFloat(material.gross_weight) * (1 - parseFloat(material.waste_percentage) / 100)).toFixed(2) %> كجم</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-warning mb-3">بيانات التعبئة</h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>وحدة التعبئة:</strong></td>
+                                    <td><%= material.packaging_unit %></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>وزن وحدة التعبئة:</strong></td>
+                                    <td><%= parseFloat(material.packaging_weight).toFixed(2) %> كجم</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>عدد الحبات في الطرد:</strong></td>
+                                    <td><%= material.pieces_per_package %></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>عدد الطرود في الطبلية:</strong></td>
+                                    <td><%= material.packages_per_pallet %></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-danger mb-3">تكاليف التعبئة</h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>ثمن العبوة الفارغة:</strong></td>
+                                    <td><%= parseFloat(material.empty_package_price).toFixed(2) %> د.ك</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>ثمن اللصاقة:</strong></td>
+                                    <td><%= parseFloat(material.sticker_price).toFixed(2) %> د.ك</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>ثمن كرتونة:</strong></td>
+                                    <td><%= parseFloat(material.carton_price).toFixed(2) %> د.ك</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>ثمن الطبلية:</strong></td>
+                                    <td><%= parseFloat(material.pallet_price).toFixed(2) %> د.ك</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-secondary mb-3">تكاليف إضافية</h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>مصاريف إضافية:</strong></td>
+                                    <td><%= parseFloat(material.additional_expenses).toFixed(2) %> د.ك</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>مصروف عمال:</strong></td>
+                                    <td><%= parseFloat(material.labor_cost).toFixed(2) %> د.ك</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>مواد حافظة:</strong></td>
+                                    <td><%= parseFloat(material.preservatives_cost).toFixed(2) %> د.ك</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- سجل التكاليف -->
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> سجل التكاليف</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped" id="costLogsTable">
+                            <thead>
+                                <tr>
+                                    <th>التاريخ</th>
+                                    <th>كلفة القطعة</th>
+                                    <th>كلفة الطرد</th>
+                                </tr>
+                            </thead>
+                            <tbody id="costLogsBody">
+                                <!-- سيتم ملؤها بالبيانات -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+
+<script>
+// دالة تنسيق التاريخ
+function formatDate(dateString) {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+}
+
+// دالة جلب سجل التكاليف
+function loadCostLogs() {
+    fetch(`/costs/cost-statement/<%= material.id %>/logs`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const tbody = document.getElementById('costLogsBody');
+                tbody.innerHTML = '';
+                
+                data.logs.forEach(log => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${formatDate(log.calculation_date)}</td>
+                        <td>${parseFloat(log.unit_cost).toFixed(2)} د.ك</td>
+                        <td>${parseFloat(log.package_cost).toFixed(2)} د.ك</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('خطأ في جلب سجل التكاليف:', error);
+        });
+}
+
+// دالة طباعة تفاصيل المادة
+function printMaterialDetails() {
+    const printWindow = window.open('', '_blank');
+    const materialName = '<%= material.material_name %>';
+    
+    printWindow.document.write(`
+        <html dir="rtl">
+        <head>
+            <title>معاينة المادة - ${materialName}</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .header { text-align: center; margin-bottom: 30px; }
+                .section { margin-bottom: 20px; }
+                .section h3 { color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 5px; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
+                th { background-color: #f8f9fa; }
+                .highlight { background-color: #e3f2fd; font-weight: bold; }
+                @media print { .no-print { display: none; } }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>معاينة المادة</h1>
+                <h2>${materialName}</h2>
+            </div>
+            
+            <div class="section">
+                <h3>المعلومات الأساسية</h3>
+                <table>
+                    <tr><th>اسم المادة</th><td>${materialName}</td></tr>
+                    <tr><th>نوع المادة</th><td><%= material.material_type %></td></tr>
+                    <tr><th>تاريخ الإضافة</th><td><%= formatDate(material.created_at) %></td></tr>
+                    <tr><th>آخر تحديث</th><td><%= formatDate(material.updated_at) %></td></tr>
+                </table>
+            </div>
+            
+            <div class="section">
+                <h3>نتائج الحساب</h3>
+                <table>
+                    <tr class="highlight"><th>كلفة القطعة الواحدة</th><td><%= parseFloat(material.unit_cost).toFixed(2) %> د.ك</td></tr>
+                    <tr class="highlight"><th>كلفة الطرد</th><td><%= parseFloat(material.package_cost).toFixed(2) %> د.ك</td></tr>
+                </table>
+            </div>
+            
+            <div class="section">
+                <h3>بيانات التكلفة الأساسية</h3>
+                <table>
+                    <tr><th>السعر قبل الهدر</th><td><%= parseFloat(material.price_before_waste).toFixed(2) %> د.ك/كجم</td></tr>
+                    <tr><th>الوزن الجمالي</th><td><%= parseFloat(material.gross_weight).toFixed(2) %> كجم</td></tr>
+                    <tr><th>نسبة الهدر</th><td><%= parseFloat(material.waste_percentage).toFixed(1) %>%</td></tr>
+                    <tr><th>الوزن الصافي</th><td><%= (parseFloat(material.gross_weight) * (1 - parseFloat(material.waste_percentage) / 100)).toFixed(2) %> كجم</td></tr>
+                </table>
+            </div>
+            
+            <div class="section">
+                <h3>بيانات التعبئة</h3>
+                <table>
+                    <tr><th>وحدة التعبئة</th><td><%= material.packaging_unit %></td></tr>
+                    <tr><th>وزن وحدة التعبئة</th><td><%= parseFloat(material.packaging_weight).toFixed(2) %> كجم</td></tr>
+                    <tr><th>عدد الحبات في الطرد</th><td><%= material.pieces_per_package %></td></tr>
+                    <tr><th>عدد الطرود في الطبلية</th><td><%= material.packages_per_pallet %></td></tr>
+                </table>
+            </div>
+            
+            <div class="section">
+                <h3>تكاليف التعبئة</h3>
+                <table>
+                    <tr><th>ثمن العبوة الفارغة</th><td><%= parseFloat(material.empty_package_price).toFixed(2) %> د.ك</td></tr>
+                    <tr><th>ثمن اللصاقة</th><td><%= parseFloat(material.sticker_price).toFixed(2) %> د.ك</td></tr>
+                    <tr><th>ثمن كرتونة</th><td><%= parseFloat(material.carton_price).toFixed(2) %> د.ك</td></tr>
+                    <tr><th>ثمن الطبلية</th><td><%= parseFloat(material.pallet_price).toFixed(2) %> د.ك</td></tr>
+                </table>
+            </div>
+            
+            <div class="section">
+                <h3>تكاليف إضافية</h3>
+                <table>
+                    <tr><th>مصاريف إضافية</th><td><%= parseFloat(material.additional_expenses).toFixed(2) %> د.ك</td></tr>
+                    <tr><th>مصروف عمال</th><td><%= parseFloat(material.labor_cost).toFixed(2) %> د.ك</td></tr>
+                    <tr><th>مواد حافظة</th><td><%= parseFloat(material.preservatives_cost).toFixed(2) %> د.ك</td></tr>
+                </table>
+            </div>
+        </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.print();
+}
+
+// دالة حذف المادة
+function deleteMaterial(materialId) {
+    if (confirm('هل أنت متأكد من حذف هذه المادة؟')) {
+        fetch(`/costs/cost-statement/${materialId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('تم حذف المادة بنجاح', 'success');
+                setTimeout(() => {
+                    window.location.href = '/costs/cost-statement';
+                }, 1500);
+            } else {
+                showAlert(data.message || 'حدث خطأ في حذف المادة', 'error');
+            }
+        })
+        .catch(error => {
+            showAlert('حدث خطأ في حذف المادة', 'error');
+        });
+    }
+}
+
+// دالة عرض التنبيهات
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
+// تحميل سجل التكاليف عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    loadCostLogs();
+});
+</script>
+
+<%- include('../layouts/footer') %> 

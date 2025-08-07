@@ -3,13 +3,30 @@ const router = express.Router();
 const { isAuthenticated, isAdmin } = require('../middleware/auth');
 const costsController = require('../controllers/costsController');
 
-// عرض صفحة التكاليف الرئيسية
+// الصفحة الرئيسية للتكاليف
 router.get('/', isAuthenticated, isAdmin, costsController.getCosts);
 
-// عرض صفحة إنشاء تكلفة جديدة
-router.get('/create', isAuthenticated, isAdmin, costsController.getCreateCost);
+// المرحلة الأولى: بيان الكلفة
+router.get('/cost-statement', isAuthenticated, isAdmin, costsController.getCostStatement);
+router.get('/cost-statement/:id', isAuthenticated, isAdmin, costsController.getMaterial);
+router.get('/cost-statement/:id/logs', isAuthenticated, isAdmin, costsController.getMaterialCostLogs);
+router.get('/cost-statement/:id/preview', isAuthenticated, isAdmin, costsController.getMaterialPreview);
+router.post('/cost-statement', isAuthenticated, isAdmin, costsController.createMaterial);
+router.put('/cost-statement/:id', isAuthenticated, isAdmin, costsController.updateMaterial);
+router.delete('/cost-statement/:id', isAuthenticated, isAdmin, costsController.deleteMaterial);
 
-// إنشاء تكلفة جديدة
-router.post('/create', isAuthenticated, isAdmin, costsController.createCost);
+// المرحلة الثانية: عروض الأسعار
+router.get('/quotations', isAuthenticated, isAdmin, costsController.getQuotations);
+router.post('/quotations', isAuthenticated, isAdmin, costsController.createQuotation);
+router.get('/quotations/:id', isAuthenticated, isAdmin, costsController.getQuotationDetails);
+router.delete('/quotations/:id', isAuthenticated, isAdmin, costsController.deleteQuotation);
+
+// المرحلة الثالثة: الطلبيات
+router.get('/orders', isAuthenticated, isAdmin, costsController.getOrders);
+router.get('/orders/:id', isAuthenticated, isAdmin, costsController.getOrder);
+router.post('/orders', isAuthenticated, isAdmin, costsController.createOrder);
+router.put('/orders/:id', isAuthenticated, isAdmin, costsController.updateOrder);
+router.put('/orders/:id/status', isAuthenticated, isAdmin, costsController.updateOrderStatus);
+router.delete('/orders/:id', isAuthenticated, isAdmin, costsController.deleteOrder);
 
 module.exports = router; 

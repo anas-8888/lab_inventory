@@ -1,30 +1,100 @@
-<div class="container-fluid">
+<div class="container mt-4">
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="mb-0">
-                    <i class="bi bi-cash-stack text-success me-2"></i>
-                    التكاليف
-                </h2>
-                <a href="/costs/create" class="btn btn-success">
-                    <i class="bi bi-plus-circle me-2"></i>
-                    إضافة تكلفة جديدة
-                </a>
+                <h2><i class="bi bi-cash-stack"></i> إدارة التكاليف</h2>
             </div>
-        </div>
-    </div>
 
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white">
-                    <h5 class="card-title mb-0">قائمة التكاليف</h5>
+            <!-- إحصائيات سريعة -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">المواد</h4>
+                                    <h2 class="mb-0"><%= materials ? materials.length : 0 %></h2>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="bi bi-box-seam fs-1"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div class="text-center py-5">
-                        <i class="bi bi-cash-stack text-muted" style="font-size: 3rem;"></i>
-                        <h4 class="text-muted mt-3">لا توجد تكاليف مسجلة</h4>
-                        <p class="text-muted">سيتم إضافة محتوى التكاليف هنا لاحقاً</p>
+                <div class="col-md-4">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">عروض الأسعار</h4>
+                                    <h2 class="mb-0"><%= quotations ? quotations.length : 0 %></h2>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="bi bi-file-earmark-text fs-1"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">الطلبيات</h4>
+                                    <h2 class="mb-0"><%= orders ? orders.length : 0 %></h2>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="bi bi-cart-check fs-1"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- البطاقات الرئيسية -->
+            <div class="row g-3">
+                <!-- بيان الكلفة -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="card shadow">
+                        <div class="card-body text-center py-4">
+                            <i class="bi bi-calculator fs-1 text-primary mb-3"></i>
+                            <h5 class="card-title">بيان الكلفة</h5>
+                            <p class="card-text">حساب كلفة المواد وتحديث الأسعار</p>
+                            <a href="/costs/cost-statement" class="btn btn-primary">
+                                <i class="bi me-1"></i> إدارة المواد
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- عروض الأسعار -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="card shadow">
+                        <div class="card-body text-center py-4">
+                            <i class="bi bi-file-earmark-text fs-1 text-success mb-3"></i>
+                            <h5 class="card-title">عروض الأسعار</h5>
+                            <p class="card-text">إنشاء وإدارة عروض الأسعار للعملاء</p>
+                            <a href="/costs/quotations" class="btn btn-success">
+                                <i class="bi me-1"></i> إدارة العروض
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- الطلبيات -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="card shadow">
+                        <div class="card-body text-center py-4">
+                            <i class="bi bi-cart-check fs-1 text-success mb-3"></i>
+                            <h5 class="card-title">الطلبيات</h5>
+                            <p class="card-text">تسجيل وإدارة طلبيات العملاء</p>
+                            <a href="/costs/orders" class="btn btn-success">
+                                <i class="bi me-1"></i> إدارة الطلبيات
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>

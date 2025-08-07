@@ -1,0 +1,157 @@
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-file-earmark-text"></i> عرض السعر <%= quotation.quotation_number %></h2>
+                <div>
+                    <button type="button" class="btn btn-outline-primary me-2" onclick="window.print()">
+                        <i class="bi bi-printer"></i> طباعة
+                    </button>
+                    <a href="/costs/quotations" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-right me-1"></i> العودة للعروض
+                    </a>
+                </div>
+            </div>
+
+            <!-- تفاصيل العرض -->
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">تفاصيل العرض</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>رقم العرض:</strong></td>
+                                    <td><%= quotation.quotation_number %></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>التاريخ:</strong></td>
+                                    <td><%= formatDate(quotation.created_at) %></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>اسم العميل:</strong></td>
+                                    <td><%= quotation.client_name %></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>رقم الهاتف:</strong></td>
+                                    <td><%= quotation.client_phone || '-' %></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>العنوان:</strong></td>
+                                    <td><%= quotation.client_address || '-' %></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>نسبة الربح العامة:</strong></td>
+                                    <td><%= parseFloat(quotation.general_profit_percentage).toFixed(1) %>%</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>المبلغ الإجمالي:</strong></td>
+                                    <td><strong class="text-primary"><%= parseFloat(quotation.total_amount).toFixed(2) %> د.ك</strong></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>عدد المواد:</strong></td>
+                                    <td><%= items.length %></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>ملاحظات:</strong></td>
+                                    <td><%= quotation.notes || '-' %></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- جدول المواد -->
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">المواد المطلوبة</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>اسم المادة</th>
+                                    <th>كلفة القطعة</th>
+                                    <th>نسبة الربح</th>
+                                    <th>السعر النهائي</th>
+                                    <th>الكمية</th>
+                                    <th>المجموع</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% items.forEach((item, index) => { %>
+                                <tr>
+                                    <td><%= index + 1 %></td>
+                                    <td><%= item.material_name %></td>
+                                    <td><%= parseFloat(item.unit_cost).toFixed(2) %> د.ك</td>
+                                    <td><%= parseFloat(item.profit_percentage).toFixed(1) %>%</td>
+                                    <td><%= parseFloat(item.final_price).toFixed(2) %> د.ك</td>
+                                    <td><%= item.quantity %></td>
+                                    <td><strong><%= parseFloat(item.total_price).toFixed(2) %> د.ك</strong></td>
+                                </tr>
+                                <% }); %>
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-info">
+                                    <td colspan="6" class="text-end"><strong>المجموع الإجمالي:</strong></td>
+                                    <td><strong><%= parseFloat(quotation.total_amount).toFixed(2) %> د.ك</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ملاحظات إضافية -->
+            <% if (quotation.notes) { %>
+            <div class="card shadow mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">ملاحظات</h5>
+                </div>
+                <div class="card-body">
+                    <p><%= quotation.notes %></p>
+                </div>
+            </div>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .btn, .no-print {
+        display: none !important;
+    }
+    
+    .card {
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+    }
+    
+    .card-header {
+        background-color: #f8f9fa !important;
+        border-bottom: 1px solid #000 !important;
+    }
+    
+    body {
+        font-size: 12px;
+    }
+    
+    .table {
+        font-size: 11px;
+    }
+    
+    .table th, .table td {
+        padding: 4px;
+    }
+}
+</style> 
