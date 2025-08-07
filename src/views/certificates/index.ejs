@@ -1,7 +1,7 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2>الشهادات</h2>
-        <% if (user.role === 'editor') { %>
+        <% if (user.role === 'editor' || user.role === 'admin') { %>
             <div class="d-flex gap-2 mb-3">
                 <button id="deleteSelectedBtn" class="btn btn-danger" disabled>
                     <i class="fas fa-trash me-1"></i> حذف نهائي
@@ -52,7 +52,7 @@
                 <table class="table table-hover">
                     <thead>
                         <tr>
-                            <% if (user.role === 'editor') { %>
+                            <% if (user.role === 'editor' || user.role === 'admin') { %>
                             <th><input type="checkbox" id="selectAllCertificates"></th>
                             <% } %>
                             <th>رقم الشهادة</th>
@@ -66,7 +66,7 @@
                         <% if (certificates && certificates.length > 0) { %>
                             <% certificates.forEach(certificate => { %>
                                 <tr>
-                                    <% if (user.role === 'editor') { %>
+                                    <% if (user.role === 'editor' || user.role === 'admin') { %>
                                     <td>
                                         <input type="checkbox" class="certificate-checkbox" data-id="<%= certificate.id %>">
                                     </td>
@@ -92,7 +92,7 @@
                             <% }); %>
                         <% } else { %>
                             <tr>
-                                <td colspan="<%= user.role === 'editor' ? '6' : '5' %>" class="text-center">لا توجد شهادات</td>
+                                <td colspan="<%= (user.role === 'editor' || user.role === 'admin') ? '6' : '5' %>" class="text-center">لا توجد شهادات</td>
                             </tr>
                         <% } %>
                     </tbody>
@@ -218,7 +218,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Bulk actions functionality
-    <% if (user.role === 'editor') { %>
+    <% if (user.role === 'editor' || user.role === 'admin') { %>
     // Select all functionality
     const selectAllCheckbox = document.getElementById('selectAllCertificates');
     if (selectAllCheckbox) {

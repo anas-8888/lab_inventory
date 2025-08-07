@@ -15,8 +15,9 @@
           <label for="role" class="form-label">الدور</label>
           <select class="form-select" id="role" name="role" required>
             <option value="">اختر الدور</option>
+            <option value="viewer" <%= locals.userItem && userItem.role === 'viewer' ? 'selected' : '' %>>مستعرض</option>
             <option value="editor" <%= locals.userItem && userItem.role === 'editor' ? 'selected' : '' %>>محرر</option>
-            <option value="user" <%= locals.userItem && userItem.role === 'user' ? 'selected' : '' %>>مستخدم</option>
+            <option value="admin" <%= locals.userItem && userItem.role === 'admin' ? 'selected' : '' %>>مسؤول</option>
           </select>
         </div>
 

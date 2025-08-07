@@ -45,7 +45,7 @@
             </div>
 
             <!-- المستخدمين -->
-            <% if (locals.user && user.role === 'editor') { %>
+            <% if (locals.user && (user.role === 'editor' || user.role === 'admin')) { %>
               <div class="col-md-6 col-lg-3">
                 <div class="card h-100">
                   <div class="card-body text-center">
@@ -53,6 +53,20 @@
                     <h5 class="card-title">المستخدمين</h5>
                     <p class="card-text">إدارة المستخدمين والصلاحيات</p>
                     <a href="/users" class="btn btn-success">عرض المستخدمين</a>
+                  </div>
+                </div>
+              </div>
+            <% } %>
+
+            <!-- التكاليف -->
+            <% if (locals.user && user.role === 'admin') { %>
+              <div class="col-md-6 col-lg-3">
+                <div class="card h-100">
+                  <div class="card-body text-center">
+                    <i class="bi bi-cash-stack fs-1 text-danger mb-3"></i>
+                    <h5 class="card-title">التكاليف</h5>
+                    <p class="card-text">إدارة التكاليف والمصروفات</p>
+                    <a href="/costs" class="btn btn-danger">عرض التكاليف</a>
                   </div>
                 </div>
               </div>

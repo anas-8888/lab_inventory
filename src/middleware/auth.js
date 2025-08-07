@@ -84,10 +84,29 @@ const isAuthenticated = (req, res, next) => {
     res.redirect('/auth/login');
 };
 
-// التحقق من صلاحية المحرر
+// التحقق من صلاحية المحرر أو المسؤول
 const isEditor = (req, res, next) => {
 
-    if (req.session.user && (req.session.user.role === 'editor')) {
+    if (req.session.user && (req.session.user.role === 'editor' || req.session.user.role === 'admin')) {
+        return next();
+    }
+
+    // التحقق مما إذا كان الطلب هو طلب API
+    if (req.xhr || req.headers.accept.includes('application/json')) {
+        return res.status(403).json({
+            error: 'ليس لديك صلاحية للوصول إلى هذه الصفحة'
+        });
+    }
+
+    // إذا كان طلب صفحة عادية
+    req.flash('error_msg', 'ليس لديك صلاحية للوصول إلى هذه الصفحة');
+    res.redirect('/');
+};
+
+// التحقق من صلاحية المسؤول فقط
+const isAdmin = (req, res, next) => {
+
+    if (req.session.user && req.session.user.role === 'admin') {
         return next();
     }
 
@@ -111,4 +130,5 @@ module.exports = {
     destroySession,
     isAuthenticated,
     isEditor,
+    isAdmin,
 }; 

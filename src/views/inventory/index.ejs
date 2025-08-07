@@ -42,7 +42,7 @@ function formatNumberDisplay(value) {
       <button type="button" class="btn btn-success" id="filterTodayBtn">
         <i class="fas fa-calendar-day me-1"></i> عرض نتائج اليوم
       </button>
-      <% if (user && user.role==='editor' ) { %>
+      <% if (user && (user.role==='editor' || user.role==='admin')) { %>
         <a href="/inventory/create" class="btn btn-success">
           <i class="fas fa-plus"></i> إضافة عينة جديدة
         </a>
@@ -92,7 +92,7 @@ function formatNumberDisplay(value) {
     <div class="card-header py-3 d-flex justify-content-between align-items-center no-print">
       <h6 class="m-0 font-weight-bold text-primary inventory-header-title">المخزون</h6>
       <div class="inventory-header-actions">
-        <% if (user && user.role==='editor' ) { %>
+        <% if (user && (user.role==='editor' || user.role==='admin')) { %>
           <button type="button" class="btn btn-sm btn-danger me-2" id="deleteSelectedBtn" disabled>
             <i class="fas fa-trash"></i> حذف المحدد نهائيا
           </button>
@@ -206,7 +206,7 @@ function formatNumberDisplay(value) {
                         <a href="/inventory/<%= item.id %>" class="btn btn-sm btn-info btn-xs me-1" title="معاينة">
                             <i class="bi bi-eye-fill"></i>
                         </a>
-                        <% if (user && user.role==='editor' ) { %>
+                        <% if (user && (user.role==='editor' || user.role==='admin')) { %>
                             <a href="/inventory/<%= item.id %>/edit" class="btn btn-sm btn-warning btn-xs me-1" title="تعديل">
                                 <i class="bi bi-pencil-fill"></i>
                             </a>

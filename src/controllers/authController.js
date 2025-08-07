@@ -54,6 +54,8 @@ exports.postLogin = async (req, res) => {
             roleName = 'editor';
         } else if (user.role_id === 3) {
             roleName = 'viewer';
+        } else if (user.role_id === 4) {
+            roleName = 'admin';
         } else {
             roleName = 'unknown'; // Default or handle other roles
         }
@@ -65,7 +67,7 @@ exports.postLogin = async (req, res) => {
         };
 
         req.flash('success_msg', 'تم تسجيل الدخول بنجاح');
-        res.redirect('/');
+        res.redirect('/home');
     } catch (error) {
         console.error('Login error:', error);
         req.flash('error_msg', 'حدث خطأ أثناء تسجيل الدخول');

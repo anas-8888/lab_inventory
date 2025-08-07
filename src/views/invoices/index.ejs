@@ -38,6 +38,11 @@ function formatNumberDisplay(value) {
                     <i class="fas fa-file-invoice"></i> الفواتير
                 </h2>
                 <div class="d-flex gap-2 mb-3">
+                    <% if (user && (user.role === 'editor' || user.role === 'admin')) { %>
+                        <a href="/invoices/create" class="btn btn-success">
+                            <i class="fas fa-plus me-1"></i> إضافة فاتورة جديدة
+                        </a>
+                    <% } %>
                     <button id="deleteSelectedBtn" class="btn btn-danger" disabled>حذف نهائي</button>
                     <button id="trashSelectedBtn" class="btn btn-warning" disabled>نقل إلى سلة المحذوفات</button>
                     <a href="/invoices/deleted" class="btn btn-primary">سلة المحذوفات</a>

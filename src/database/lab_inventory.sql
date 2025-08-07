@@ -2,9 +2,9 @@
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
--- Host: localhost
--- Generation Time: Aug 05, 2025 at 12:00 PM
--- Server version: 10.11.13-MariaDB
+-- Host: 127.0.0.1
+-- Generation Time: Aug 07, 2025 at 01:17 PM
+-- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -97,7 +97,8 @@ INSERT INTO `certificates` (`id`, `certificate_number`, `year`, `type`, `date`, 
 (132, '44', 2025, 'external', '2025-08-03', 'حكيم ناصر', NULL, NULL, 'محمد خالد العثمانلي', NULL, '[{\"sample_number\":null,\"quantity\":1,\"packaging_unit\":\"0\",\"packaging_weight\":0,\"total_weight\":0,\"ph\":6.1,\"peroxide\":79.5,\"abs_232\":3.084,\"abs_270\":1.723,\"abs_268\":null,\"abs_262\":null,\"abs_274\":1.628,\"abs_266\":1.755,\"k_232\":null,\"k_270\":null,\"delta_k\":0.031,\"stigmastadiene\":null},{\"sample_number\":null,\"quantity\":2,\"packaging_unit\":\"0\",\"packaging_weight\":0,\"total_weight\":0,\"ph\":5.35,\"peroxide\":47.5,\"abs_232\":3.034,\"abs_270\":1.167,\"abs_268\":null,\"abs_262\":null,\"abs_274\":1.098,\"abs_266\":1.152,\"k_232\":null,\"k_270\":null,\"delta_k\":0.042,\"stigmastadiene\":null},{\"sample_number\":null,\"quantity\":3,\"packaging_unit\":\"0\",\"packaging_weight\":0,\"total_weight\":0,\"ph\":7,\"peroxide\":51.5,\"abs_232\":3.045,\"abs_270\":1.155,\"abs_268\":null,\"abs_262\":null,\"abs_274\":1.104,\"abs_266\":1.137,\"k_232\":null,\"k_270\":null,\"delta_k\":0.035,\"stigmastadiene\":null}]', 6.00, 0.00, '40d5d133', 13, '2025-08-03 15:49:47', '2025-08-03 15:49:47', NULL),
 (133, '45', 2025, 'internal', '2025-08-04', 'السيد عبدو فهيم المحترم', NULL, 'حلب - عفرين', 'محمد خالد العثمانلي', 'نتيجة تحليل زيت وارد', '[{\"sample_number\":\"1299\",\"quantity\":250,\"packaging_unit\":\"تنكة\",\"packaging_weight\":0.1,\"total_weight\":1,\"ph\":0.8,\"peroxide\":11.5,\"abs_232\":1.826,\"abs_270\":0.147,\"abs_268\":null,\"abs_262\":null,\"abs_274\":0.141,\"abs_266\":0.156,\"k_232\":null,\"k_270\":null,\"delta_k\":-0.002,\"stigmastadiene\":0},{\"sample_number\":\"1300\",\"quantity\":250,\"packaging_unit\":\"تنكة\",\"packaging_weight\":0.1,\"total_weight\":1,\"ph\":0.9,\"peroxide\":13,\"abs_232\":1.817,\"abs_270\":0.15,\"abs_268\":null,\"abs_262\":null,\"abs_274\":0.143,\"abs_266\":0.156,\"k_232\":null,\"k_270\":null,\"delta_k\":0,\"stigmastadiene\":0}]', 500.00, 2.00, 'dad5eeab', 13, '2025-08-04 10:42:01', '2025-08-04 10:42:01', NULL),
 (134, '46', 2025, 'internal', '2025-08-04', 'محمود نورس', NULL, 'ادلب-كورين', 'محمد خالد العثمانلي', 'تنك فرز (تحليل الحموضة والبروكسيد وهمي)', '[{\"sample_number\":\"1304\",\"quantity\":5,\"packaging_unit\":\"تنك\",\"packaging_weight\":0.101,\"total_weight\":1,\"ph\":1,\"peroxide\":1,\"abs_232\":2.374,\"abs_270\":0.405,\"abs_268\":null,\"abs_262\":null,\"abs_274\":0.389,\"abs_266\":0.391,\"k_232\":null,\"k_270\":null,\"delta_k\":0.015,\"stigmastadiene\":0}]', 5.00, 1.00, '32828b18', 13, '2025-08-04 12:49:24', '2025-08-04 12:49:24', NULL),
-(135, '47', 2025, 'internal', '2025-08-04', 'السيد ابراهيم ياسر الابراهيم', NULL, 'ادلب - كورين', 'محمد خالد صفوان عثمانلي', 'عينة داخلية زيت جورة مخالفة', '[{\"sample_number\":\"1306\",\"quantity\":181,\"packaging_unit\":\"تنكة\",\"packaging_weight\":0.101,\"total_weight\":2888.1,\"ph\":3.35,\"peroxide\":0,\"abs_232\":3.22,\"abs_270\":1.175,\"abs_268\":null,\"abs_262\":null,\"abs_274\":1.112,\"abs_266\":1.19,\"k_232\":null,\"k_270\":null,\"delta_k\":0.025,\"stigmastadiene\":0}]', 181.00, 2888.10, '2dec3fb9', 3, '2025-08-04 20:30:10', '2025-08-04 20:30:10', NULL);
+(135, '47', 2025, 'internal', '2025-08-04', 'السيد ابراهيم ياسر الابراهيم', NULL, 'ادلب - كورين', 'محمد خالد صفوان عثمانلي', 'عينة داخلية زيت جورة مخالفة', '[{\"sample_number\":\"1306\",\"quantity\":181,\"packaging_unit\":\"تنكة\",\"packaging_weight\":0.101,\"total_weight\":2888.1,\"ph\":3.35,\"peroxide\":0,\"abs_232\":3.22,\"abs_270\":1.175,\"abs_268\":null,\"abs_262\":null,\"abs_274\":1.112,\"abs_266\":1.19,\"k_232\":null,\"k_270\":null,\"delta_k\":0.025,\"stigmastadiene\":0}]', 181.00, 2888.10, '2dec3fb9', 3, '2025-08-04 20:30:10', '2025-08-04 20:30:10', NULL),
+(136, '48', 2025, 'internal', '2025-08-06', 'أنس كيلاني', '0959595959', NULL, 'مالك مدني', NULL, '[{\"sample_number\":\"1305\",\"quantity\":91,\"packaging_unit\":\"لتر\",\"packaging_weight\":0.101,\"total_weight\":1969.65,\"ph\":0.65,\"peroxide\":21.5,\"abs_232\":2.491,\"abs_270\":0.234,\"abs_268\":null,\"abs_262\":null,\"abs_274\":0.222,\"abs_266\":0.249,\"k_232\":null,\"k_270\":null,\"delta_k\":-0.001,\"stigmastadiene\":0}]', 91.00, 1969.65, '3ac06e70', 17, '2025-08-06 10:04:11', '2025-08-06 10:04:11', NULL);
 
 -- --------------------------------------------------------
 
@@ -549,7 +550,7 @@ CREATE TABLE `roles` (
 INSERT INTO `roles` (`id`, `name`, `created_at`) VALUES
 (2, 'editor', '2025-05-19 12:14:12'),
 (3, 'viewer', '2025-05-19 12:14:12'),
-(9, 'admin', '2025-06-01 14:58:41');
+(4, 'admin', '2025-06-01 14:58:41');
 
 -- --------------------------------------------------------
 
@@ -570,63 +571,21 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`session_id`, `expires`, `data`, `created_at`, `updated_at`) VALUES
-('_MiVgobqxherY3kx0hK7t70z8ZgbPhwn', 1754424693, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T20:11:32.744Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-04 20:11:32', '2025-08-04 20:11:32'),
-('0T7OkLnxx9ynT-0y_wMnTUE3taH8_Dqz', 1754427989, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T21:06:28.853Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-04 21:06:28', '2025-08-04 21:06:28'),
 ('1kHGpGraeDQgQ2Nuf3QJebSlmW_vgY8R', 1754480544, '{\"cookie\":{\"originalMaxAge\":86399998,\"expires\":\"2025-08-06T11:42:23.217Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{},\"user\":{\"id\":13,\"username\":\"LABRATORY\",\"role\":\"editor\"}}', '2025-08-02 07:11:07', '2025-08-05 11:42:24'),
-('2SDqvtAoe56IaPEn85KlXGyCK3o1fL10', 1754423238, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T19:47:18.361Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-04 19:47:18', '2025-08-04 19:47:18'),
-('62qPTyoZMOzNOFWPVaZVzDR3m4nb_fuE', 1754430518, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T21:48:37.645Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-04 21:48:37', '2025-08-04 21:48:37'),
-('6VfoGXq2RMumBsPEPyFzTzQq_b4C-lFi', 1754455576, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T04:46:16.270Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 04:46:16', '2025-08-05 04:46:16'),
-('80msoKJTNZ-JkeAh2-8GfWZCcCAqh752', 1754405946, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T14:59:05.764Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-04 14:59:05', '2025-08-04 14:59:05'),
-('9GcZniuAjqrVWJbfWK9OPoKyItPFqpJU', 1754420848, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T19:07:27.754Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-04 19:07:27', '2025-08-04 19:07:27'),
-('A0aWW1Uu-S1lFl-T5uSi1sCwP3NBLbuJ', 1754476291, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T19:07:31.584Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{},\"user\":{\"id\":3,\"username\":\"MOHAMMED AJAJ\",\"role\":\"editor\"}}', '2025-08-04 19:07:28', '2025-08-05 10:31:30'),
-('ay1h0bnnZf6tHEML0B6deHhQOXy-xmbc', 1754474877, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T10:07:57.062Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 10:07:57', '2025-08-05 10:07:57'),
-('AYBEJEIiADkY_nIePFMhJUrSCnL_SNdJ', 1754427988, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T21:06:28.201Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-04 21:06:28', '2025-08-04 21:06:28'),
-('B49CxOCCXGU4KxSzrK-uMPhjIlvsoGeH', 1754443923, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T01:32:03.160Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 01:32:03', '2025-08-05 01:32:03'),
-('BSFDtTKRyLwn9tGY2jYOaw89H6BojRDv', 1754459578, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T05:52:57.555Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 05:52:57', '2025-08-05 05:52:57'),
+('8p2OPaDqAw16CdM8tEQ-enEiYu-1YUl8', 1754564514, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-07T11:01:54.135Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-06 11:01:54', '2025-08-06 11:01:54'),
+('AlxQBSr342-2VE1phOgMu5d4iWBzfdkm', 1754572359, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-07T13:12:39.226Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-06 13:12:39', '2025-08-06 13:12:39'),
+('b4EN2zQiMIngKAkvJojJ-aHrvcYyCrui', 1754489494, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T14:11:33.957Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 14:11:33', '2025-08-05 14:11:33'),
 ('BxLodovAs5fCbBkLiajw134Ln-eYGJAR', 1754481108, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T08:51:47.044Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{},\"user\":{\"id\":3,\"username\":\"MOHAMMED AJAJ\",\"role\":\"editor\"}}', '2025-08-04 14:35:02', '2025-08-05 11:51:48'),
-('ClmsLcjlR1fVKv8KJhVPy_pu0NlUr5aP', 1754444027, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T01:33:47.320Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 01:33:47', '2025-08-05 01:33:47'),
-('DTxT8aATnIBhsmTvs2sMnlxRqKF8tnjv', 1754422930, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T19:42:10.080Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-04 19:42:10', '2025-08-04 19:42:10'),
-('dXu-8XrnXzk9GZmiQK4htdKQNd5XJ5Wz', 1754398194, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T12:49:54.352Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-04 12:49:54', '2025-08-04 12:49:54'),
-('GK9GVEIpZsC4hsVzoXiNTdPhV0TllRdJ', 1754472168, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T09:22:48.462Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 09:22:48', '2025-08-05 09:22:48'),
-('HTKXHZS4DI5IaHf0yLrjlzeBqgJDskk5', 1754425816, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T20:30:16.118Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-04 20:30:16', '2025-08-04 20:30:16'),
-('JFao2cHsZBQtrzjW6OcQOqMbk4bVehu1', 1754408434, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T15:40:34.283Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-04 15:40:34', '2025-08-04 15:40:34'),
-('JgPJ3Vles3Qw9zjSXqNECW8ufE4QWe49', 1754420851, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T19:07:28.703Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-04 19:07:28', '2025-08-04 19:07:30'),
-('JUkirkPQwc-RSekvS9YxMSO7myRll7O_', 1754473656, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T11:30:32.326Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{},\"user\":{\"id\":3,\"username\":\"MOHAMMED AJAJ\",\"role\":\"editor\"}}', '2025-08-04 11:30:25', '2025-08-05 09:47:35'),
-('k5eUSyJkeO-axEmn7qsBZQ0pcUUDSAFD', 1754473042, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T09:37:22.041Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 09:37:22', '2025-08-05 09:37:22'),
-('kbtcj8zFS2IzM0RVqCMoovuxQgbp99kI', 1754475411, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T10:16:50.745Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 10:16:50', '2025-08-05 10:16:50'),
-('KFqkjtgogoPIyueq9DbPxNo8Pkk5fvtL', 1754409922, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-04T17:32:11.076Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{},\"user\":{\"id\":3,\"username\":\"MOHAMMED AJAJ\",\"role\":\"editor\"}}', '2025-08-03 17:31:32', '2025-08-04 16:05:21'),
-('kvkHvQdPYdT10WIXnIwtAKovYKxTjFOh', 1754425825, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T20:30:25.142Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-04 20:30:25', '2025-08-04 20:30:25'),
-('l7jkFrBn6E3N1ZbP4o2vCS5W2ukQ7yFI', 1754460040, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T06:00:39.928Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 06:00:39', '2025-08-05 06:00:39'),
-('mgQ0FV6dLpij4bso-FeOIlng3cV8kejN', 1754443893, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T01:31:33.223Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 01:31:33', '2025-08-05 01:31:33'),
-('mNgpgBwJruyDeYRvQPtd8zkIolUJd3pV', 1754447327, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T02:28:47.107Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 02:28:47', '2025-08-05 02:28:47'),
-('ncIwOqqL_5-dNuSJpQukmTtYQ__49QSQ', 1754476767, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T10:39:26.533Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 10:39:26', '2025-08-05 10:39:26'),
-('NmeYSn1olf3ir02vGx31j1J2sWDJ5THe', 1754425825, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T20:30:25.141Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-04 20:30:25', '2025-08-04 20:30:25'),
-('pgq0H0qNcIpN929uGCqY_QYManEamfyJ', 1754468973, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T08:29:32.752Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 08:29:32', '2025-08-05 08:29:32'),
-('pO1SiQzESk8IkDZDZE7NPgHebTjYH9E2', 1754425825, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T20:30:25.140Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-04 20:30:25', '2025-08-04 20:30:25'),
-('pUoRN9STgD4wbqXRnfAr3oc1qbnvDFmw', 1754439545, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T00:19:04.623Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 00:19:04', '2025-08-05 00:19:04'),
-('QomqophbPRr-d76msL-YqwAxAX9lDZ0p', 1754399974, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T13:19:33.988Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-04 13:19:33', '2025-08-04 13:19:33'),
-('qzn7fRc7ia7MjFEf4lDq8HCY__ap9Feh', 1754424693, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T20:11:32.740Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-04 20:11:32', '2025-08-04 20:11:32'),
-('QzQ7YgqR99zH04LCR4jl_MPxTdODDv5V', 1754474297, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T09:58:16.509Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 09:58:16', '2025-08-05 09:58:16'),
-('r25Qj_XaDC6b_93KzCEvpjidiVxpc9g1', 1754453380, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T04:09:39.993Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 04:09:40', '2025-08-05 04:09:40'),
-('rMbq4yzI2rOQz-rEJEEEN4kgCDvVfyJp', 1754438145, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T23:55:45.495Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-04 23:55:45', '2025-08-04 23:55:45'),
-('RYZu9FOJfaqGoneg5DhKcdOjwN2pWXnJ', 1754398027, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T12:47:07.229Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-04 12:47:07', '2025-08-04 12:47:07'),
-('SduWIOkka_HMiDmweU_nVdwkmcHbMlu0', 1754423232, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T19:47:12.120Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-04 19:47:12', '2025-08-04 19:47:12'),
+('DZZPSLLBElfyTta0cC1KHMHQ6DJ5776D', 1754569011, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T12:26:23.698Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{},\"user\":{\"id\":17,\"username\":\"anas\",\"role\":\"editor\"}}', '2025-08-05 12:26:21', '2025-08-06 12:16:51'),
+('grMbwiQxgLAqtFenvrap6Np9-7FRNs1X', 1754572368, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-07T12:55:36.065Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{},\"user\":{\"id\":17,\"username\":\"anas\",\"role\":\"editor\"}}', '2025-08-06 12:55:31', '2025-08-06 13:12:48'),
+('MxQLFc0s4H7moJzhAWUlRfgJUFd_bxte', 1754483161, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T12:26:01.219Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 12:26:01', '2025-08-05 12:26:01'),
+('nE1ltaAUvXpG2QoAVv2qAJZVvuQlE7QS', 1754483142, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T12:08:21.754Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{},\"user\":{\"id\":17,\"username\":\"anas\",\"role\":\"editor\"}}', '2025-08-05 12:01:01', '2025-08-05 12:25:42'),
+('pq076kFvHhbmqowQ8LvBABK4hFRkXkU1', 1754491129, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T14:38:48.568Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 14:38:48', '2025-08-05 14:38:48'),
+('qtdBzanxWOQAusO6u0wA3GttirlHBJVQ', 1754489093, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T14:04:53.443Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 14:04:53', '2025-08-05 14:04:53'),
+('Rk6JZGLoRo3qPbWac73LjNMNkqdwokw-', 1754488935, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T14:02:15.163Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 14:02:15', '2025-08-05 14:02:15'),
+('tPKB4zdr3vASd1ILDeyrOdmK9H5NcuUC', 1754561518, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-07T10:11:57.581Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-06 10:11:57', '2025-08-06 10:11:57'),
 ('tS0FsH2TZP32eajYAvguttzcF__yRok4', 1754478356, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T10:59:29.095Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{},\"user\":{\"id\":3,\"username\":\"MOHAMMED AJAJ\",\"role\":\"editor\"}}', '2025-08-05 09:37:05', '2025-08-05 11:05:56'),
-('TuiKgakdktzRSpIVRanK4jxHnsGi8mAu', 1754461796, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T06:29:55.570Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 06:29:55', '2025-08-05 06:29:55'),
-('u0PHLtROPEwIiQ3TioGYTVUi5OmkybO6', 1754401339, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T13:42:19.158Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-04 13:42:19', '2025-08-04 13:42:19'),
-('UK7V3LPpwI6nnQMbcexqvNO5TAwA5Xmd', 1754439544, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T00:19:04.431Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 00:19:04', '2025-08-05 00:19:04'),
-('uoNgmVFs1QlhwyheWNLNxybc0b8zTVdp', 1754447327, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T02:28:46.528Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 02:28:46', '2025-08-05 02:28:46'),
-('V_AUYUz4ih0zY13WwrPXD9wenXs8rXrb', 1754401416, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-04T13:45:05.738Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{},\"user\":{\"id\":3,\"username\":\"MOHAMMED AJAJ\",\"role\":\"editor\"}}', '2025-08-03 09:43:19', '2025-08-04 13:43:35'),
-('V8wJpvRpZqz2Kfns3U5zra_Tnk9Rx339', 1754445763, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T02:02:42.592Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 02:02:42', '2025-08-05 02:02:42'),
-('wIXEYwSGd9_EFrQ3XRoD9-2fyvEHPRkT', 1754415325, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T17:35:25.321Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-04 17:35:25', '2025-08-04 17:35:25'),
-('WLfGyKCtd_fPbXnm5hRH4oBfGueIZush', 1754443933, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T01:32:13.109Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 01:32:13', '2025-08-05 01:32:13'),
-('wo0SoYKemlFbgESyT65LVd1peOkWAC5p', 1754455670, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T04:47:50.171Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 04:47:50', '2025-08-05 04:47:50'),
-('xFtcMVCWubmwk3njcPdCfeNVgiyfGwhz', 1754407696, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T15:28:15.713Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-04 15:28:15', '2025-08-04 15:28:15'),
-('xitI7GI6NMe50AMQlbJf5hBxn4Welb68', 1754455709, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T04:48:29.082Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 04:48:29', '2025-08-05 04:48:29'),
-('XrvdVp0rcw_1EBhpI9r9_l94Bx-kI2Bq', 1754455709, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T04:48:29.045Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 04:48:29', '2025-08-05 04:48:29'),
-('YB8sQOtuLcS-OE_kNOjr7FQRnzssMtR9', 1754420852, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-05T19:07:27.816Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-04 19:07:27', '2025-08-04 19:07:31'),
-('YZ3wnLbMPwYfmNM_8UCfsHHZ4006VXco', 1754461159, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T06:19:19.217Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 06:19:19', '2025-08-05 06:19:19'),
-('zBqfcFw5hIX5UQKtZgGETynw5Dl45wPm', 1754459424, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-06T05:50:23.662Z\",\"secure\":true,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-05 05:50:23', '2025-08-05 05:50:23');
+('VIUednsEye6HLvVbn4vlGnWOrH7erMi2', 1754565017, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-07T11:10:17.479Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-06 11:10:17', '2025-08-06 11:10:17');
 
 -- --------------------------------------------------------
 
@@ -649,7 +608,11 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id`, `username`, `password_hash`, `role_id`, `created_at`) VALUES
 (3, 'MOHAMMED AJAJ', '$2a$10$hY3xu/P/TRo58F0AJOgUxOKR/vO5wKQYHKQjWWJe/4hTRUew2Bvkq', 2, '2025-05-19 12:19:53'),
 (13, 'LABRATORY', '$2a$10$yCCtJCDAHsPCC.eiIpD/eezWos2EEqUwzYdlA0NzQvEAkwR8TfXSy', 2, '2025-06-16 21:20:57'),
-(16, 'AHMED NOOR', '$2a$10$bVCSlG0jmJ7sn4DR6cqsh.LGhuNNG/2cZQpxLULo.EUiY3xLIBVwi', 3, '2025-07-24 13:40:02');
+(16, 'AHMED NOOR', '$2a$10$bVCSlG0jmJ7sn4DR6cqsh.LGhuNNG/2cZQpxLULo.EUiY3xLIBVwi', 3, '2025-07-24 13:40:02'),
+(17, 'anas', '$2a$10$mzQ7XbXuBf8o2fwnC89lP.7F4qQndtufHGNMyrg24IGvk4myA1QGC', 2, '2025-08-05 12:02:52'),
+(18, 'editor', '$2a$10$mzQ7XbXuBf8o2fwnC89lP.7F4qQndtufHGNMyrg24IGvk4myA1QGC', 2, '2025-08-05 12:02:52'),
+(19, 'viewer', '$2a$10$mzQ7XbXuBf8o2fwnC89lP.7F4qQndtufHGNMyrg24IGvk4myA1QGC', 3, '2025-08-05 12:02:52'),
+(20, 'admin', '$2a$10$mzQ7XbXuBf8o2fwnC89lP.7F4qQndtufHGNMyrg24IGvk4myA1QGC', 4, '2025-08-05 12:02:52');
 
 --
 -- Indexes for dumped tables
@@ -714,7 +677,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `certificates`
 --
 ALTER TABLE `certificates`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=136;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=137;
 
 --
 -- AUTO_INCREMENT for table `inventory`
@@ -744,7 +707,7 @@ ALTER TABLE `roles`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- Constraints for dumped tables

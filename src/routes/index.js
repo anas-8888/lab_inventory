@@ -5,5 +5,6 @@ const { getHome } = require('../controllers/homeController');
 
 // الصفحة الرئيسية - يجب تسجيل الدخول للوصول إليها
 router.get('/', isAuthenticated, getHome);
+router.get('/home', isAuthenticated, getHome);
 
 module.exports = router; 

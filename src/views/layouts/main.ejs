@@ -44,7 +44,10 @@
               <li class="nav-item"><a class="nav-link" href="/inventory"><i class="bi bi-box-seam"></i> المخزون</a></li>
               <li class="nav-item"><a class="nav-link" href="/invoices"><i class="bi bi-receipt"></i> الفواتير</a></li>
               <li class="nav-item"><a class="nav-link" href="/certificates"><i class="bi bi-award"></i> الشهادات</a></li>
-              <% if (user.role === 'editor') { %>
+              <% if (user.role === 'admin') { %>
+                <li class="nav-item"><a class="nav-link" href="/costs"><i class="bi bi-cash-stack"></i> التكاليف</a></li>
+              <% } %>
+              <% if (user.role === 'editor' || user.role === 'admin') { %>
                 <li class="nav-item"><a class="nav-link" href="/users"><i class="bi bi-people"></i> المستخدمين</a></li>
               <% } %>
             </ul>
