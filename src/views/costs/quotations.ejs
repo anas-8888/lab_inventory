@@ -66,7 +66,7 @@
                                     <tfoot>
                                         <tr class="table-info">
                                             <td colspan="5" class="text-end"><strong>المجموع الإجمالي:</strong></td>
-                                            <td><strong id="totalAmount">0.00 د.ك</strong></td>
+                                            <td><strong id="totalAmount">0.00 <%= defaultCurrency ? defaultCurrency.symbol : '$' %></strong></td>
                                             <td></td>
                                         </tr>
                                     </tfoot>
@@ -109,7 +109,7 @@
                                     <td><%= quotation.quotation_number %></td>
                                     <td><%= quotation.client_name %></td>
                                     <td><%= quotation.items_count %></td>
-                                    <td><%= parseFloat(quotation.total_amount).toFixed(2) %> د.ك</td>
+                                    <td><%= parseFloat(quotation.total_amount).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
                                     <td><%= parseFloat(quotation.general_profit_percentage).toFixed(1) %>%</td>
                                     <td><%= formatDate(quotation.created_at) %></td>
                                     <td>
@@ -228,7 +228,7 @@ function calculateRowTotal(rowIndex) {
 // حساب المجموع الإجمالي
 function calculateTotalAmount() {
     const total = materialRows.reduce((sum, row) => sum + row.totalPrice, 0);
-    document.getElementById('totalAmount').textContent = total.toFixed(2) + ' د.ك';
+            document.getElementById('totalAmount').textContent = total.toFixed(2) + ' <%= defaultCurrency ? defaultCurrency.symbol : "$" %>';
 }
 
 // حذف صف مادة

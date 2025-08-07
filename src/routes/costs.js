@@ -29,4 +29,14 @@ router.put('/orders/:id', isAuthenticated, isAdmin, costsController.updateOrder)
 router.put('/orders/:id/status', isAuthenticated, isAdmin, costsController.updateOrderStatus);
 router.delete('/orders/:id', isAuthenticated, isAdmin, costsController.deleteOrder);
 
+// إضافة routes للعملات
+const currencyController = require('../controllers/currencyController');
+
+// إعدادات العملة
+router.get('/currency-settings', isAuthenticated, isAdmin, currencyController.getCurrencySettings);
+router.post('/currency-settings/default', isAuthenticated, isAdmin, currencyController.updateDefaultCurrency);
+router.post('/currency-settings/exchange-rate', isAuthenticated, isAdmin, currencyController.updateExchangeRate);
+router.get('/currency-settings/default', isAuthenticated, isAdmin, currencyController.getDefaultCurrency);
+router.post('/currency-settings/convert', isAuthenticated, isAdmin, currencyController.convertCurrency);
+
 module.exports = router; 

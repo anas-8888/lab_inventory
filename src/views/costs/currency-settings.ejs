@@ -1,0 +1,297 @@
+<%- include('../layouts/header') %>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-currency-exchange"></i> إعدادات العملة</h2>
+                <a href="/costs" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-right me-1"></i> العودة للتكاليف
+                </a>
+            </div>
+
+            <!-- العملة الافتراضية -->
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-gear"></i> العملة الافتراضية</h5>
+                </div>
+                <div class="card-body">
+                    <form id="defaultCurrencyForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">اختر العملة الافتراضية:</label>
+                                <select class="form-select" id="defaultCurrencySelect" name="currency_code">
+                                    <% currencies.forEach(currency => { %>
+                                    <option value="<%= currency.code %>" 
+                                            <%= currency.code === defaultCurrency ? 'selected' : '' %>>
+                                        <%= currency.name %> (<%= currency.symbol %>)
+                                    </option>
+                                    <% }); %>
+                                </select>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save me-1"></i> حفظ العملة الافتراضية
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- أسعار الصرف -->
+            <div class="card shadow mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-graph-up"></i> أسعار الصرف</h5>
+                </div>
+                <div class="card-body">
+                    <form id="exchangeRateForm">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">من عملة:</label>
+                                <select class="form-select" id="fromCurrency" name="from_currency_id" required>
+                                    <option value="">اختر العملة</option>
+                                    <% currencies.forEach(currency => { %>
+                                    <option value="<%= currency.id %>">
+                                        <%= currency.name %> (<%= currency.symbol %>)
+                                    </option>
+                                    <% }); %>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">إلى عملة:</label>
+                                <select class="form-select" id="toCurrency" name="to_currency_id" required>
+                                    <option value="">اختر العملة</option>
+                                    <% currencies.forEach(currency => { %>
+                                    <option value="<%= currency.id %>">
+                                        <%= currency.name %> (<%= currency.symbol %>)
+                                    </option>
+                                    <% }); %>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">سعر الصرف:</label>
+                                <input type="number" class="form-control" id="exchangeRate" name="rate" 
+                                       step="0.0001" required>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-plus-circle me-1"></i> إضافة/تحديث سعر الصرف
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- جدول أسعار الصرف -->
+                    <% if (exchangeRates && exchangeRates.length > 0) { %>
+                    <div class="table-responsive mt-4">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>من عملة</th>
+                                    <th>إلى عملة</th>
+                                    <th>سعر الصرف</th>
+                                    <th>تاريخ التحديث</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% exchangeRates.forEach(rate => { %>
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary">
+                                            <%= rate.from_currency_name %> (<%= rate.from_currency_symbol %>)
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">
+                                            <%= rate.to_currency_name %> (<%= rate.to_currency_symbol %>)
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <strong><%= parseFloat(rate.rate).toFixed(4) %></strong>
+                                    </td>
+                                    <td><%= formatDate(rate.updated_at) %></td>
+                                </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                    <% } else { %>
+                    <div class="text-center mt-4">
+                        <i class="bi bi-info-circle display-4 text-muted"></i>
+                        <h5 class="text-muted mt-2">لا توجد أسعار صرف مسجلة</h5>
+                        <p class="text-muted">قم بإضافة سعر صرف جديد من النموذج أعلاه</p>
+                    </div>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- محول العملات -->
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-calculator"></i> محول العملات</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">المبلغ:</label>
+                            <input type="number" class="form-control" id="convertAmount" 
+                                   step="0.01" placeholder="أدخل المبلغ">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">من عملة:</label>
+                            <select class="form-select" id="convertFromCurrency">
+                                <% currencies.forEach(currency => { %>
+                                <option value="<%= currency.id %>">
+                                    <%= currency.name %> (<%= currency.symbol %>)
+                                </option>
+                                <% }); %>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">إلى عملة:</label>
+                            <select class="form-select" id="convertToCurrency">
+                                <% currencies.forEach(currency => { %>
+                                <option value="<%= currency.id %>">
+                                    <%= currency.name %> (<%= currency.symbol %>)
+                                </option>
+                                <% }); %>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="button" class="btn btn-info" onclick="convertCurrency()">
+                                <i class="bi bi-arrow-left-right me-1"></i> تحويل
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="alert alert-info" id="conversionResult" style="display: none;">
+                                <strong>النتيجة:</strong> <span id="convertedAmount"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// تحديث العملة الافتراضية
+document.getElementById('defaultCurrencyForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('/costs/currency-settings/default', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            currency_code: formData.get('currency_code')
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('تم تحديث العملة الافتراضية بنجاح', 'success');
+        } else {
+            showAlert(data.message || 'حدث خطأ في تحديث العملة الافتراضية', 'error');
+        }
+    })
+    .catch(error => {
+        showAlert('حدث خطأ في تحديث العملة الافتراضية', 'error');
+    });
+});
+
+// تحديث سعر الصرف
+document.getElementById('exchangeRateForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('/costs/currency-settings/exchange-rate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            from_currency_id: formData.get('from_currency_id'),
+            to_currency_id: formData.get('to_currency_id'),
+            rate: formData.get('rate')
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('تم تحديث سعر الصرف بنجاح', 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            showAlert(data.message || 'حدث خطأ في تحديث سعر الصرف', 'error');
+        }
+    })
+    .catch(error => {
+        showAlert('حدث خطأ في تحديث سعر الصرف', 'error');
+    });
+});
+
+// تحويل العملة
+function convertCurrency() {
+    const amount = document.getElementById('convertAmount').value;
+    const fromCurrency = document.getElementById('convertFromCurrency').value;
+    const toCurrency = document.getElementById('convertToCurrency').value;
+    
+    if (!amount || !fromCurrency || !toCurrency) {
+        showAlert('يرجى ملء جميع الحقول', 'error');
+        return;
+    }
+    
+    fetch('/costs/currency-settings/convert', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            amount: amount,
+            from_currency_id: fromCurrency,
+            to_currency_id: toCurrency
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const resultDiv = document.getElementById('conversionResult');
+            const convertedSpan = document.getElementById('convertedAmount');
+            
+            convertedSpan.textContent = `${amount} = ${parseFloat(data.converted_amount).toFixed(2)}`;
+            resultDiv.style.display = 'block';
+        } else {
+            showAlert(data.message || 'حدث خطأ في تحويل العملة', 'error');
+        }
+    })
+    .catch(error => {
+        showAlert('حدث خطأ في تحويل العملة', 'error');
+    });
+}
+
+// دالة عرض التنبيهات
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+</script>
+

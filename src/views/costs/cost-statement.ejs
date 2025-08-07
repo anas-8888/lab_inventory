@@ -37,8 +37,8 @@
                                 <tr>
                                     <td><%= material.material_name %></td>
                                     <td><%= material.material_type %></td>
-                                    <td><%= parseFloat(material.unit_cost).toFixed(2) %> د.ك</td>
-                                    <td><%= parseFloat(material.package_cost).toFixed(2) %> د.ك</td>
+                                    <td><%= parseFloat(material.unit_cost).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
+                                    <td><%= parseFloat(material.package_cost).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
                                     <td><%= formatDate(material.created_at) %></td>
                                     <td>
                                         <div class="btn-group">
@@ -98,7 +98,7 @@
 
                         <!-- السعر قبل الهدر -->
                         <div class="col-md-4">
-                            <label class="form-label">السعر قبل الهدر (د.ك/كجم) *</label>
+                            <label class="form-label">السعر قبل الهدر (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>/كجم) *</label>
                             <input type="number" class="form-control" name="price_before_waste" step="0.01" required>
                         </div>
 
@@ -128,37 +128,37 @@
 
                         <!-- ثمن العبوة الفارغة -->
                         <div class="col-md-4">
-                            <label class="form-label">ثمن العبوة الفارغة (د.ك) *</label>
+                            <label class="form-label">ثمن العبوة الفارغة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
                             <input type="number" class="form-control" name="empty_package_price" step="0.01" required>
                         </div>
 
                         <!-- ثمن اللصاقة -->
                         <div class="col-md-4">
-                            <label class="form-label">ثمن اللصاقة (د.ك) *</label>
+                            <label class="form-label">ثمن اللصاقة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
                             <input type="number" class="form-control" name="sticker_price" step="0.01" required>
                         </div>
 
                         <!-- مصاريف إضافية -->
                         <div class="col-md-4">
-                            <label class="form-label">مصاريف إضافية (د.ك) *</label>
+                            <label class="form-label">مصاريف إضافية (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
                             <input type="number" class="form-control" name="additional_expenses" step="0.01" required>
                         </div>
 
                         <!-- مصروف عمال -->
                         <div class="col-md-4">
-                            <label class="form-label">مصروف عمال (د.ك) *</label>
+                            <label class="form-label">مصروف عمال (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
                             <input type="number" class="form-control" name="labor_cost" step="0.01" required>
                         </div>
 
                         <!-- مواد حافظة -->
                         <div class="col-md-4">
-                            <label class="form-label">مواد حافظة (د.ك) *</label>
+                            <label class="form-label">مواد حافظة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
                             <input type="number" class="form-control" name="preservatives_cost" step="0.01" required>
                         </div>
 
                         <!-- ثمن كرتونة -->
                         <div class="col-md-4">
-                            <label class="form-label">ثمن كرتونة (د.ك) *</label>
+                            <label class="form-label">ثمن كرتونة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
                             <input type="number" class="form-control" name="carton_price" step="0.01" required>
                         </div>
 
@@ -170,7 +170,7 @@
 
                         <!-- ثمن الطبلية -->
                         <div class="col-md-4">
-                            <label class="form-label">ثمن الطبلية (د.ك) *</label>
+                            <label class="form-label">ثمن الطبلية (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
                             <input type="number" class="form-control" name="pallet_price" step="0.01" required>
                         </div>
 
@@ -189,11 +189,11 @@
                                 <div class="row">
                                     <div class="col-6">
                                         <strong>كلفة القطعة الواحدة:</strong>
-                                        <span id="unitCostResult">0.00 د.ك</span>
+                                        <span id="unitCostResult">0.00 <%= defaultCurrency ? defaultCurrency.symbol : '$' %></span>
                                     </div>
                                     <div class="col-6">
                                         <strong>كلفة الطرد:</strong>
-                                        <span id="packageCostResult">0.00 د.ك</span>
+                                        <span id="packageCostResult">0.00 <%= defaultCurrency ? defaultCurrency.symbol : '$' %></span>
                                     </div>
                                 </div>
                             </div>
@@ -236,7 +236,7 @@
 
                         <!-- السعر قبل الهدر -->
                         <div class="col-md-4">
-                            <label class="form-label">السعر قبل الهدر (د.ك/كجم) *</label>
+                            <label class="form-label">السعر قبل الهدر (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>/كجم) *</label>
                             <input type="number" class="form-control" id="editPriceBeforeWaste" name="price_before_waste" step="0.01" required>
                         </div>
 
@@ -266,37 +266,37 @@
 
                         <!-- ثمن العبوة الفارغة -->
                         <div class="col-md-4">
-                            <label class="form-label">ثمن العبوة الفارغة (د.ك) *</label>
+                            <label class="form-label">ثمن العبوة الفارغة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
                             <input type="number" class="form-control" id="editEmptyPackagePrice" name="empty_package_price" step="0.01" required>
                         </div>
 
                         <!-- ثمن اللصاقة -->
                         <div class="col-md-4">
-                            <label class="form-label">ثمن اللصاقة (د.ك) *</label>
+                            <label class="form-label">ثمن اللصاقة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
                             <input type="number" class="form-control" id="editStickerPrice" name="sticker_price" step="0.01" required>
                         </div>
 
                         <!-- مصاريف إضافية -->
                         <div class="col-md-4">
-                            <label class="form-label">مصاريف إضافية (د.ك) *</label>
+                            <label class="form-label">مصاريف إضافية (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
                             <input type="number" class="form-control" id="editAdditionalExpenses" name="additional_expenses" step="0.01" required>
                         </div>
 
                         <!-- مصروف عمال -->
                         <div class="col-md-4">
-                            <label class="form-label">مصروف عمال (د.ك) *</label>
+                            <label class="form-label">مصروف عمال (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
                             <input type="number" class="form-control" id="editLaborCost" name="labor_cost" step="0.01" required>
                         </div>
 
                         <!-- مواد حافظة -->
                         <div class="col-md-4">
-                            <label class="form-label">مواد حافظة (د.ك) *</label>
+                            <label class="form-label">مواد حافظة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
                             <input type="number" class="form-control" id="editPreservativesCost" name="preservatives_cost" step="0.01" required>
                         </div>
 
                         <!-- ثمن كرتونة -->
                         <div class="col-md-4">
-                            <label class="form-label">ثمن كرتونة (د.ك) *</label>
+                            <label class="form-label">ثمن كرتونة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
                             <input type="number" class="form-control" id="editCartonPrice" name="carton_price" step="0.01" required>
                         </div>
 
@@ -308,7 +308,7 @@
 
                         <!-- ثمن الطبلية -->
                         <div class="col-md-4">
-                            <label class="form-label">ثمن الطبلية (د.ك) *</label>
+                            <label class="form-label">ثمن الطبلية (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
                             <input type="number" class="form-control" id="editPalletPrice" name="pallet_price" step="0.01" required>
                         </div>
 
@@ -327,11 +327,11 @@
                                 <div class="row">
                                     <div class="col-6">
                                         <strong>كلفة القطعة الواحدة:</strong>
-                                        <span id="editUnitCostResult">0.00 د.ك</span>
+                                        <span id="editUnitCostResult">0.00 <%= defaultCurrency ? defaultCurrency.symbol : '$' %></span>
                                     </div>
                                     <div class="col-6">
                                         <strong>كلفة الطرد:</strong>
-                                        <span id="editPackageCostResult">0.00 د.ك</span>
+                                        <span id="editPackageCostResult">0.00 <%= defaultCurrency ? defaultCurrency.symbol : '$' %></span>
                                     </div>
                                 </div>
                             </div>
@@ -397,7 +397,7 @@
 
                 <div class="row">
                     <div class="col-md-6">
-                        <h6 class="text-info mb-3">بيانات التكلفة الأساسية</h6>
+                        <h6 class="text-primary mb-3">بيانات التكلفة الأساسية</h6>
                         <table class="table table-borderless">
                             <tr>
                                 <td><strong>السعر قبل الهدر:</strong></td>
@@ -413,12 +413,12 @@
                             </tr>
                             <tr>
                                 <td><strong>الوزن الصافي:</strong></td>
-                                <td id="viewNetWeight" class="text-info fw-bold">-</td>
+                                <td id="viewNetWeight">-</td>
                             </tr>
                         </table>
                     </div>
                     <div class="col-md-6">
-                        <h6 class="text-warning mb-3">بيانات التعبئة</h6>
+                        <h6 class="text-primary mb-3">بيانات التعبئة</h6>
                         <table class="table table-borderless">
                             <tr>
                                 <td><strong>وحدة التعبئة:</strong></td>
@@ -444,7 +444,7 @@
 
                 <div class="row">
                     <div class="col-md-6">
-                        <h6 class="text-danger mb-3">تكاليف التعبئة</h6>
+                        <h6 class="text-primary mb-3">تكاليف التعبئة</h6>
                         <table class="table table-borderless">
                             <tr>
                                 <td><strong>ثمن العبوة الفارغة:</strong></td>
@@ -465,7 +465,7 @@
                         </table>
                     </div>
                     <div class="col-md-6">
-                        <h6 class="text-secondary mb-3">تكاليف إضافية</h6>
+                        <h6 class="text-primary mb-3">تكاليف إضافية</h6>
                         <table class="table table-borderless">
                             <tr>
                                 <td><strong>مصاريف إضافية:</strong></td>
@@ -544,8 +544,9 @@ function calculateCosts() {
     const packageCost = unitCost + palletShare;
 
     // عرض النتائج
-    document.getElementById('unitCostResult').textContent = unitCost.toFixed(2) + ' د.ك';
-    document.getElementById('packageCostResult').textContent = packageCost.toFixed(2) + ' د.ك';
+    const currencySymbol = '<%= defaultCurrency ? defaultCurrency.symbol : "$" %>';
+    document.getElementById('unitCostResult').textContent = unitCost.toFixed(2) + ' ' + currencySymbol;
+    document.getElementById('packageCostResult').textContent = packageCost.toFixed(2) + ' ' + currencySymbol;
 }
 
 // معالجة نموذج إضافة المادة
@@ -653,8 +654,8 @@ function resetAddMaterialForm() {
         form.reset();
         setupAddMaterialForm();
         // إعادة تعيين نتائج الحساب
-        document.getElementById('unitCostResult').textContent = '0.00 د.ك';
-        document.getElementById('packageCostResult').textContent = '0.00 د.ك';
+        document.getElementById('unitCostResult').textContent = '0.00 <%= defaultCurrency ? defaultCurrency.symbol : "$" %>';
+        document.getElementById('packageCostResult').textContent = '0.00 <%= defaultCurrency ? defaultCurrency.symbol : "$" %>';
     }
 }
 
@@ -772,8 +773,9 @@ function calculateEditCosts() {
     const packageCost = unitCost + palletShare;
 
     // عرض النتائج
-    document.getElementById('editUnitCostResult').textContent = unitCost.toFixed(2) + ' د.ك';
-    document.getElementById('editPackageCostResult').textContent = packageCost.toFixed(2) + ' د.ك';
+    const currencySymbol = '<%= defaultCurrency ? defaultCurrency.symbol : "$" %>';
+    document.getElementById('editUnitCostResult').textContent = unitCost.toFixed(2) + ' ' + currencySymbol;
+    document.getElementById('editPackageCostResult').textContent = packageCost.toFixed(2) + ' ' + currencySymbol;
 }
 
 // حفظ تعديل المادة
@@ -847,11 +849,12 @@ function viewMaterial(materialId) {
                     document.getElementById('viewMaterialUpdated').textContent = formatDate(material.updated_at);
                 
                 // ملء نتائج الحساب
-                document.getElementById('viewUnitCost').textContent = (parseFloat(material.unit_cost) || 0).toFixed(2) + ' د.ك';
-                document.getElementById('viewPackageCost').textContent = (parseFloat(material.package_cost) || 0).toFixed(2) + ' د.ك';
+                const currencySymbol = '<%= defaultCurrency ? defaultCurrency.symbol : "$" %>';
+                document.getElementById('viewUnitCost').textContent = (parseFloat(material.unit_cost) || 0).toFixed(2) + ' ' + currencySymbol;
+                document.getElementById('viewPackageCost').textContent = (parseFloat(material.package_cost) || 0).toFixed(2) + ' ' + currencySymbol;
                 
                 // ملء بيانات التكلفة الأساسية
-                document.getElementById('viewPriceBeforeWaste').textContent = (parseFloat(material.price_before_waste) || 0).toFixed(2) + ' د.ك/كجم';
+                document.getElementById('viewPriceBeforeWaste').textContent = (parseFloat(material.price_before_waste) || 0).toFixed(2) + ' ' + currencySymbol + '/كجم';
                 document.getElementById('viewGrossWeight').textContent = (parseFloat(material.gross_weight) || 0).toFixed(2) + ' كجم';
                 document.getElementById('viewWastePercentage').textContent = (parseFloat(material.waste_percentage) || 0).toFixed(1) + '%';
                 
@@ -868,15 +871,15 @@ function viewMaterial(materialId) {
                 document.getElementById('viewPackagesPerPallet').textContent = material.packages_per_pallet || '-';
                 
                 // ملء تكاليف التعبئة
-                document.getElementById('viewEmptyPackagePrice').textContent = (parseFloat(material.empty_package_price) || 0).toFixed(2) + ' د.ك';
-                document.getElementById('viewStickerPrice').textContent = (parseFloat(material.sticker_price) || 0).toFixed(2) + ' د.ك';
-                document.getElementById('viewCartonPrice').textContent = (parseFloat(material.carton_price) || 0).toFixed(2) + ' د.ك';
-                document.getElementById('viewPalletPrice').textContent = (parseFloat(material.pallet_price) || 0).toFixed(2) + ' د.ك';
+                document.getElementById('viewEmptyPackagePrice').textContent = (parseFloat(material.empty_package_price) || 0).toFixed(2) + ' ' + currencySymbol;
+                document.getElementById('viewStickerPrice').textContent = (parseFloat(material.sticker_price) || 0).toFixed(2) + ' ' + currencySymbol;
+                document.getElementById('viewCartonPrice').textContent = (parseFloat(material.carton_price) || 0).toFixed(2) + ' ' + currencySymbol;
+                document.getElementById('viewPalletPrice').textContent = (parseFloat(material.pallet_price) || 0).toFixed(2) + ' ' + currencySymbol;
                 
                 // ملء التكاليف الإضافية
-                document.getElementById('viewAdditionalExpenses').textContent = (parseFloat(material.additional_expenses) || 0).toFixed(2) + ' د.ك';
-                document.getElementById('viewLaborCost').textContent = (parseFloat(material.labor_cost) || 0).toFixed(2) + ' د.ك';
-                document.getElementById('viewPreservativesCost').textContent = (parseFloat(material.preservatives_cost) || 0).toFixed(2) + ' د.ك';
+                document.getElementById('viewAdditionalExpenses').textContent = (parseFloat(material.additional_expenses) || 0).toFixed(2) + ' ' + currencySymbol;
+                document.getElementById('viewLaborCost').textContent = (parseFloat(material.labor_cost) || 0).toFixed(2) + ' ' + currencySymbol;
+                document.getElementById('viewPreservativesCost').textContent = (parseFloat(material.preservatives_cost) || 0).toFixed(2) + ' ' + currencySymbol;
                 
                 // جلب سجل التكاليف
                 loadCostLogs(materialId);
@@ -911,8 +914,8 @@ function loadCostLogs(materialId) {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${formatDate(log.calculation_date)}</td>
-                        <td>${parseFloat(log.unit_cost).toFixed(2)} د.ك</td>
-                        <td>${parseFloat(log.package_cost).toFixed(2)} د.ك</td>
+                                                        <td>${parseFloat(log.unit_cost).toFixed(2)} ${currencySymbol}</td>
+                                <td>${parseFloat(log.package_cost).toFixed(2)} ${currencySymbol}</td>
                     `;
                     tbody.appendChild(row);
                 });

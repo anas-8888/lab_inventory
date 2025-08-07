@@ -10,6 +10,7 @@ const methodOverride = require('method-override');
 const cron = require('node-cron');
 const { pool } = require('./database/db');
 const { authMiddleware } = require('./middleware/auth');
+const { addCurrencyToRequest } = require('./middleware/currency');
 const morgan = require('morgan');
 
 // إنشاء تطبيق Express
@@ -124,6 +125,9 @@ app.use((req, res, next) => {
     res.locals.title = 'نظام إدارة المختبر'; // العنوان الافتراضي
     next();
 });
+
+// إضافة العملة للطلبات
+app.use(addCurrencyToRequest);
 
 // تعطيل layout الافتراضي لمسار طباعة PDF المخزون فقط
 app.use((req, res, next) => {

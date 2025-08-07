@@ -21,10 +21,34 @@ const getCosts = async (req, res) => {
             ORDER BY created_at DESC
         `);
 
+        // اختيار القيم حسب العملة المحددة
+        const displayMaterials = materials.map((material) => {
+            if (req.defaultCurrency && req.defaultCurrency.code === 'SYP') {
+                return {
+                    ...material,
+                    unit_cost: material.unit_cost_syp || material.unit_cost,
+                    package_cost: material.package_cost_syp || material.package_cost
+                };
+            } else {
+                return material;
+            }
+        });
+
+        const displayQuotations = quotations.map((quotation) => {
+            if (req.defaultCurrency && req.defaultCurrency.code === 'SYP') {
+                return {
+                    ...quotation,
+                    total_amount: quotation.total_amount_syp || quotation.total_amount
+                };
+            } else {
+                return quotation;
+            }
+        });
+
         res.render('costs/index', {
             title: 'إدارة التكاليف',
-            materials,
-            quotations,
+            materials: displayMaterials,
+            quotations: displayQuotations,
             orders,
             formatDate
         });
@@ -43,9 +67,22 @@ const getCostStatement = async (req, res) => {
             ORDER BY created_at DESC
         `);
         
+        // اختيار القيم حسب العملة المحددة
+        const displayMaterials = materials.map((material) => {
+            if (req.defaultCurrency && req.defaultCurrency.code === 'SYP') {
+                return {
+                    ...material,
+                    unit_cost: material.unit_cost_syp || material.unit_cost,
+                    package_cost: material.package_cost_syp || material.package_cost
+                };
+            } else {
+                return material;
+            }
+        });
+        
         res.render('costs/cost-statement', {
             title: 'بيان الكلفة',
-            materials,
+            materials: displayMaterials,
             formatDate
         });
     } catch (error) {
@@ -102,28 +139,53 @@ const createMaterial = async (req, res) => {
         const pallet_share = pallet_price_num / packages_per_pallet_num;
         const package_cost = unit_cost + pallet_share;
 
+        // جلب سعر الصرف الحالي
+        const [exchangeRate] = await req.db.query(`
+            SELECT rate FROM exchange_rates 
+            WHERE from_currency_id = (SELECT id FROM currencies WHERE code = 'USD')
+            AND to_currency_id = (SELECT id FROM currencies WHERE code = 'SYP')
+        `);
+        
+        const exchangeRateValue = exchangeRate.length > 0 ? parseFloat(exchangeRate[0].rate) : 13000;
+
+        // حساب القيم بالليرة السورية
+        const price_before_waste_syp = price_before_waste_num * exchangeRateValue;
+        const empty_package_price_syp = empty_package_price_num * exchangeRateValue;
+        const sticker_price_syp = sticker_price_num * exchangeRateValue;
+        const additional_expenses_syp = additional_expenses_num * exchangeRateValue;
+        const labor_cost_syp = labor_cost_num * exchangeRateValue;
+        const preservatives_cost_syp = preservatives_cost_num * exchangeRateValue;
+        const carton_price_syp = carton_price_num * exchangeRateValue;
+        const pallet_price_syp = pallet_price_num * exchangeRateValue;
+        const unit_cost_syp = unit_cost * exchangeRateValue;
+        const package_cost_syp = package_cost * exchangeRateValue;
+
         // حفظ المادة
         const [result] = await req.db.query(`
             INSERT INTO materials (
-                material_type, material_name, price_before_waste, gross_weight,
-                waste_percentage, packaging_unit, packaging_weight, empty_package_price,
-                sticker_price, additional_expenses, labor_cost, preservatives_cost,
-                carton_price, pieces_per_package, pallet_price, packages_per_pallet,
-                unit_cost, package_cost
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                material_type, material_name, price_before_waste, price_before_waste_syp,
+                gross_weight, waste_percentage, packaging_unit, packaging_weight,
+                empty_package_price, empty_package_price_syp, sticker_price, sticker_price_syp,
+                additional_expenses, additional_expenses_syp, labor_cost, labor_cost_syp,
+                preservatives_cost, preservatives_cost_syp, carton_price, carton_price_syp,
+                pieces_per_package, pallet_price, pallet_price_syp, packages_per_pallet,
+                unit_cost, unit_cost_syp, package_cost, package_cost_syp
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
-            material_type, material_name, price_before_waste_num, gross_weight_num,
-            waste_percentage_num, packaging_unit, parseFloat(packaging_weight) || 0, empty_package_price_num,
-            sticker_price_num, additional_expenses_num, labor_cost_num, preservatives_cost_num,
-            carton_price_num, pieces_per_package_num, pallet_price_num, packages_per_pallet_num,
-            unit_cost, package_cost
+            material_type, material_name, price_before_waste_num, price_before_waste_syp,
+            gross_weight_num, waste_percentage_num, packaging_unit, parseFloat(packaging_weight) || 0,
+            empty_package_price_num, empty_package_price_syp, sticker_price_num, sticker_price_syp,
+            additional_expenses_num, additional_expenses_syp, labor_cost_num, labor_cost_syp,
+            preservatives_cost_num, preservatives_cost_syp, carton_price_num, carton_price_syp,
+            pieces_per_package_num, pallet_price_num, pallet_price_syp, packages_per_pallet_num,
+            unit_cost, unit_cost_syp, package_cost, package_cost_syp
         ]);
 
         // حفظ في سجل التكاليف
         await req.db.query(`
-            INSERT INTO cost_logs (material_id, material_name, unit_cost, package_cost)
-            VALUES (?, ?, ?, ?)
-        `, [result.insertId, material_name, unit_cost, package_cost]);
+            INSERT INTO cost_logs (material_id, material_name, unit_cost, unit_cost_syp, package_cost, package_cost_syp)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `, [result.insertId, material_name, unit_cost, unit_cost_syp, package_cost, package_cost_syp]);
 
         res.json({ success: true, message: 'تم حفظ المادة بنجاح' });
     } catch (error) {
@@ -180,28 +242,53 @@ const updateMaterial = async (req, res) => {
         const pallet_share = pallet_price_num / packages_per_pallet_num;
         const package_cost = unit_cost + pallet_share;
 
+        // جلب سعر الصرف الحالي
+        const [exchangeRate] = await req.db.query(`
+            SELECT rate FROM exchange_rates 
+            WHERE from_currency_id = (SELECT id FROM currencies WHERE code = 'USD')
+            AND to_currency_id = (SELECT id FROM currencies WHERE code = 'SYP')
+        `);
+        
+        const exchangeRateValue = exchangeRate.length > 0 ? parseFloat(exchangeRate[0].rate) : 13000;
+
+        // حساب القيم بالليرة السورية
+        const price_before_waste_syp = price_before_waste_num * exchangeRateValue;
+        const empty_package_price_syp = empty_package_price_num * exchangeRateValue;
+        const sticker_price_syp = sticker_price_num * exchangeRateValue;
+        const additional_expenses_syp = additional_expenses_num * exchangeRateValue;
+        const labor_cost_syp = labor_cost_num * exchangeRateValue;
+        const preservatives_cost_syp = preservatives_cost_num * exchangeRateValue;
+        const carton_price_syp = carton_price_num * exchangeRateValue;
+        const pallet_price_syp = pallet_price_num * exchangeRateValue;
+        const unit_cost_syp = unit_cost * exchangeRateValue;
+        const package_cost_syp = package_cost * exchangeRateValue;
+
         // تحديث المادة
         await req.db.query(`
             UPDATE materials SET
-                material_type = ?, material_name = ?, price_before_waste = ?, gross_weight = ?,
-                waste_percentage = ?, packaging_unit = ?, packaging_weight = ?, empty_package_price = ?,
-                sticker_price = ?, additional_expenses = ?, labor_cost = ?, preservatives_cost = ?,
-                carton_price = ?, pieces_per_package = ?, pallet_price = ?, packages_per_pallet = ?,
-                unit_cost = ?, package_cost = ?
+                material_type = ?, material_name = ?, price_before_waste = ?, price_before_waste_syp = ?,
+                gross_weight = ?, waste_percentage = ?, packaging_unit = ?, packaging_weight = ?,
+                empty_package_price = ?, empty_package_price_syp = ?, sticker_price = ?, sticker_price_syp = ?,
+                additional_expenses = ?, additional_expenses_syp = ?, labor_cost = ?, labor_cost_syp = ?,
+                preservatives_cost = ?, preservatives_cost_syp = ?, carton_price = ?, carton_price_syp = ?,
+                pieces_per_package = ?, pallet_price = ?, pallet_price_syp = ?, packages_per_pallet = ?,
+                unit_cost = ?, unit_cost_syp = ?, package_cost = ?, package_cost_syp = ?
             WHERE id = ?
         `, [
-            material_type, material_name, price_before_waste_num, gross_weight_num,
-            waste_percentage_num, packaging_unit, parseFloat(packaging_weight) || 0, empty_package_price_num,
-            sticker_price_num, additional_expenses_num, labor_cost_num, preservatives_cost_num,
-            carton_price_num, pieces_per_package_num, pallet_price_num, packages_per_pallet_num,
-            unit_cost, package_cost, id
+            material_type, material_name, price_before_waste_num, price_before_waste_syp,
+            gross_weight_num, waste_percentage_num, packaging_unit, parseFloat(packaging_weight) || 0,
+            empty_package_price_num, empty_package_price_syp, sticker_price_num, sticker_price_syp,
+            additional_expenses_num, additional_expenses_syp, labor_cost_num, labor_cost_syp,
+            preservatives_cost_num, preservatives_cost_syp, carton_price_num, carton_price_syp,
+            pieces_per_package_num, pallet_price_num, pallet_price_syp, packages_per_pallet_num,
+            unit_cost, unit_cost_syp, package_cost, package_cost_syp, id
         ]);
 
         // حفظ في سجل التكاليف
         await req.db.query(`
-            INSERT INTO cost_logs (material_id, material_name, unit_cost, package_cost)
-            VALUES (?, ?, ?, ?)
-        `, [id, material_name, unit_cost, package_cost]);
+            INSERT INTO cost_logs (material_id, material_name, unit_cost, unit_cost_syp, package_cost, package_cost_syp)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `, [id, material_name, unit_cost, unit_cost_syp, package_cost, package_cost_syp]);
 
         res.json({ success: true, message: 'تم تحديث المادة بنجاح' });
     } catch (error) {
@@ -225,10 +312,34 @@ const getQuotations = async (req, res) => {
             SELECT * FROM materials ORDER BY material_name
         `);
 
+        // اختيار القيم حسب العملة المحددة
+        const displayQuotations = quotations.map((quotation) => {
+            if (req.defaultCurrency && req.defaultCurrency.code === 'SYP') {
+                return {
+                    ...quotation,
+                    total_amount: quotation.total_amount_syp || quotation.total_amount
+                };
+            } else {
+                return quotation;
+            }
+        });
+
+        const displayMaterials = materials.map((material) => {
+            if (req.defaultCurrency && req.defaultCurrency.code === 'SYP') {
+                return {
+                    ...material,
+                    unit_cost: material.unit_cost_syp || material.unit_cost,
+                    package_cost: material.package_cost_syp || material.package_cost
+                };
+            } else {
+                return material;
+            }
+        });
+
         res.render('costs/quotations', {
             title: 'عروض الأسعار',
-            quotations,
-            materials,
+            quotations: displayQuotations,
+            materials: displayMaterials,
             formatDate
         });
     } catch (error) {
@@ -262,13 +373,23 @@ const createQuotation = async (req, res) => {
             quotationNumber = `QT-${String(lastNumber + 1).padStart(3, '0')}`;
         }
 
+        // جلب سعر الصرف الحالي
+        const [exchangeRate] = await req.db.query(`
+            SELECT rate FROM exchange_rates 
+            WHERE from_currency_id = (SELECT id FROM currencies WHERE code = 'USD')
+            AND to_currency_id = (SELECT id FROM currencies WHERE code = 'SYP')
+        `);
+        
+        const exchangeRateValue = exchangeRate.length > 0 ? parseFloat(exchangeRate[0].rate) : 13000;
+
         // حفظ العرض
         const [quotationResult] = await req.db.query(`
-            INSERT INTO quotations (quotation_number, client_name, client_phone, client_address, notes, general_profit_percentage, total_amount)
-            VALUES (?, ?, ?, ?, ?, ?, 0)
+            INSERT INTO quotations (quotation_number, client_name, client_phone, client_address, notes, general_profit_percentage, total_amount, total_amount_syp)
+            VALUES (?, ?, ?, ?, ?, ?, 0, 0)
         `, [quotationNumber, client_name, client_phone, client_address, notes, general_profit_percentage || 0]);
 
         let totalAmount = 0;
+        let totalAmountSyp = 0;
 
         // حفظ بنود العرض
         if (items && Array.isArray(items)) {
@@ -276,20 +397,26 @@ const createQuotation = async (req, res) => {
                 const profitPercentage = item.profit_percentage || general_profit_percentage || 0;
                 const finalPrice = item.unit_cost * (1 + profitPercentage / 100);
                 const totalPrice = finalPrice * item.quantity;
+                
+                // حساب القيم بالليرة السورية
+                const unitCostSyp = item.unit_cost * exchangeRateValue;
+                const finalPriceSyp = finalPrice * exchangeRateValue;
+                const totalPriceSyp = totalPrice * exchangeRateValue;
 
                 await req.db.query(`
-                    INSERT INTO quotation_items (quotation_id, material_id, material_name, unit_cost, profit_percentage, final_price, quantity, total_price)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                `, [quotationResult.insertId, item.material_id, item.material_name, item.unit_cost, profitPercentage, finalPrice, item.quantity, totalPrice]);
+                    INSERT INTO quotation_items (quotation_id, material_id, material_name, unit_cost, unit_cost_syp, profit_percentage, final_price, final_price_syp, quantity, total_price, total_price_syp)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, [quotationResult.insertId, item.material_id, item.material_name, item.unit_cost, unitCostSyp, profitPercentage, finalPrice, finalPriceSyp, item.quantity, totalPrice, totalPriceSyp]);
 
                 totalAmount += totalPrice;
+                totalAmountSyp += totalPriceSyp;
             }
         }
 
         // تحديث المبلغ الإجمالي
         await req.db.query(`
-            UPDATE quotations SET total_amount = ? WHERE id = ?
-        `, [totalAmount, quotationResult.insertId]);
+            UPDATE quotations SET total_amount = ?, total_amount_syp = ? WHERE id = ?
+        `, [totalAmount, totalAmountSyp, quotationResult.insertId]);
 
         res.json({ success: true, message: 'تم إنشاء عرض السعر بنجاح' });
     } catch (error) {
@@ -316,10 +443,31 @@ const getQuotationDetails = async (req, res) => {
             SELECT * FROM quotation_items WHERE quotation_id = ?
         `, [id]);
 
+        // اختيار القيم حسب العملة المحددة
+        const displayQuotation = {
+            ...quotation[0],
+            total_amount: req.defaultCurrency && req.defaultCurrency.code === 'SYP' 
+                ? (quotation[0].total_amount_syp || quotation[0].total_amount)
+                : quotation[0].total_amount
+        };
+
+        const displayItems = items.map((item) => {
+            if (req.defaultCurrency && req.defaultCurrency.code === 'SYP') {
+                return {
+                    ...item,
+                    unit_cost: item.unit_cost_syp || item.unit_cost,
+                    final_price: item.final_price_syp || item.final_price,
+                    total_price: item.total_price_syp || item.total_price
+                };
+            } else {
+                return item;
+            }
+        });
+
         res.render('costs/quotation-details', {
             title: `عرض السعر ${quotation[0].quotation_number}`,
-            quotation: quotation[0],
-            items,
+            quotation: displayQuotation,
+            items: displayItems,
             formatDate
         });
     } catch (error) {
@@ -429,7 +577,20 @@ const getMaterialCostLogs = async (req, res) => {
             ORDER BY calculation_date DESC
         `, [id]);
         
-        res.json({ success: true, logs });
+        // تحويل القيم حسب العملة المحددة
+        const displayLogs = logs.map((log) => {
+            if (req.defaultCurrency && req.defaultCurrency.code === 'SYP') {
+                return {
+                    ...log,
+                    unit_cost: log.unit_cost_syp || log.unit_cost,
+                    package_cost: log.package_cost_syp || log.package_cost
+                };
+            } else {
+                return log;
+            }
+        });
+        
+        res.json({ success: true, logs: displayLogs });
     } catch (error) {
         console.error('خطأ في جلب سجل التكاليف:', error);
         res.status(500).json({ success: false, message: 'حدث خطأ في جلب سجل التكاليف' });
@@ -560,9 +721,44 @@ const getMaterialPreview = async (req, res) => {
         
         const material = materials[0];
         
+        // اختيار القيم حسب العملة المحددة
+        const displayMaterial = {
+            ...material,
+            unit_cost: req.defaultCurrency && req.defaultCurrency.code === 'SYP' 
+                ? (material.unit_cost_syp || material.unit_cost)
+                : material.unit_cost,
+            package_cost: req.defaultCurrency && req.defaultCurrency.code === 'SYP' 
+                ? (material.package_cost_syp || material.package_cost)
+                : material.package_cost,
+            price_before_waste: req.defaultCurrency && req.defaultCurrency.code === 'SYP' 
+                ? (material.price_before_waste_syp || material.price_before_waste)
+                : material.price_before_waste,
+            empty_package_price: req.defaultCurrency && req.defaultCurrency.code === 'SYP' 
+                ? (material.empty_package_price_syp || material.empty_package_price)
+                : material.empty_package_price,
+            sticker_price: req.defaultCurrency && req.defaultCurrency.code === 'SYP' 
+                ? (material.sticker_price_syp || material.sticker_price)
+                : material.sticker_price,
+            carton_price: req.defaultCurrency && req.defaultCurrency.code === 'SYP' 
+                ? (material.carton_price_syp || material.carton_price)
+                : material.carton_price,
+            pallet_price: req.defaultCurrency && req.defaultCurrency.code === 'SYP' 
+                ? (material.pallet_price_syp || material.pallet_price)
+                : material.pallet_price,
+            additional_expenses: req.defaultCurrency && req.defaultCurrency.code === 'SYP' 
+                ? (material.additional_expenses_syp || material.additional_expenses)
+                : material.additional_expenses,
+            labor_cost: req.defaultCurrency && req.defaultCurrency.code === 'SYP' 
+                ? (material.labor_cost_syp || material.labor_cost)
+                : material.labor_cost,
+            preservatives_cost: req.defaultCurrency && req.defaultCurrency.code === 'SYP' 
+                ? (material.preservatives_cost_syp || material.preservatives_cost)
+                : material.preservatives_cost
+        };
+        
         res.render('costs/material-preview', {
             title: 'معاينة المادة',
-            material: material,
+            material: displayMaterial,
             user: req.session.user,
             formatDate: formatDate
         });

@@ -9,12 +9,6 @@
                     <button type="button" class="btn btn-primary me-2" onclick="printMaterialDetails()">
                         <i class="bi bi-printer me-1"></i> طباعة
                     </button>
-                    <a href="/costs/cost-statement/<%= material.id %>" class="btn btn-info me-2">
-                        <i class="bi bi-pencil me-1"></i> تعديل
-                    </a>
-                    <button type="button" class="btn btn-danger me-2" onclick="deleteMaterial(<%= material.id %>)">
-                        <i class="bi bi-trash me-1"></i> حذف
-                    </button>
                     <a href="/costs/cost-statement" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-right me-1"></i> العودة لبيان الكلفة
                     </a>
@@ -50,15 +44,15 @@
                             </table>
                         </div>
                         <div class="col-md-6">
-                            <h6 class="text-success mb-3">نتائج الحساب</h6>
+                            <h6 class="text-primary mb-3">نتائج الحساب</h6>
                             <table class="table table-borderless">
                                 <tr>
                                     <td><strong>كلفة القطعة الواحدة:</strong></td>
-                                    <td class="text-primary fw-bold"><%= parseFloat(material.unit_cost).toFixed(2) %> د.ك</td>
+                                    <td class="text-primary fw-bold"><%= parseFloat(material.unit_cost).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
                                 </tr>
                                 <tr>
                                     <td><strong>كلفة الطرد:</strong></td>
-                                    <td class="text-success fw-bold"><%= parseFloat(material.package_cost).toFixed(2) %> د.ك</td>
+                                    <td class="text-success fw-bold"><%= parseFloat(material.package_cost).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
                                 </tr>
                             </table>
                         </div>
@@ -68,11 +62,11 @@
 
                     <div class="row">
                         <div class="col-md-6">
-                            <h6 class="text-info mb-3">بيانات التكلفة الأساسية</h6>
+                            <h6 class="text-primary mb-3">بيانات التكلفة الأساسية</h6>
                             <table class="table table-borderless">
                                 <tr>
                                     <td><strong>السعر قبل الهدر:</strong></td>
-                                    <td><%= parseFloat(material.price_before_waste).toFixed(2) %> د.ك/كجم</td>
+                                    <td><%= parseFloat(material.price_before_waste).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>/كجم</td>
                                 </tr>
                                 <tr>
                                     <td><strong>الوزن الجمالي:</strong></td>
@@ -84,12 +78,12 @@
                                 </tr>
                                 <tr>
                                     <td><strong>الوزن الصافي:</strong></td>
-                                    <td class="text-info fw-bold"><%= (parseFloat(material.gross_weight) * (1 - parseFloat(material.waste_percentage) / 100)).toFixed(2) %> كجم</td>
+                                    <td><%= (parseFloat(material.gross_weight) * (1 - parseFloat(material.waste_percentage) / 100)).toFixed(2) %> كجم</td>
                                 </tr>
                             </table>
                         </div>
                         <div class="col-md-6">
-                            <h6 class="text-warning mb-3">بيانات التعبئة</h6>
+                            <h6 class="text-primary mb-3">بيانات التعبئة</h6>
                             <table class="table table-borderless">
                                 <tr>
                                     <td><strong>وحدة التعبئة:</strong></td>
@@ -115,40 +109,40 @@
 
                     <div class="row">
                         <div class="col-md-6">
-                            <h6 class="text-danger mb-3">تكاليف التعبئة</h6>
+                            <h6 class="text-primary mb-3">تكاليف التعبئة</h6>
                             <table class="table table-borderless">
                                 <tr>
                                     <td><strong>ثمن العبوة الفارغة:</strong></td>
-                                    <td><%= parseFloat(material.empty_package_price).toFixed(2) %> د.ك</td>
+                                    <td><%= parseFloat(material.empty_package_price).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
                                 </tr>
                                 <tr>
                                     <td><strong>ثمن اللصاقة:</strong></td>
-                                    <td><%= parseFloat(material.sticker_price).toFixed(2) %> د.ك</td>
+                                    <td><%= parseFloat(material.sticker_price).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
                                 </tr>
                                 <tr>
                                     <td><strong>ثمن كرتونة:</strong></td>
-                                    <td><%= parseFloat(material.carton_price).toFixed(2) %> د.ك</td>
+                                    <td><%= parseFloat(material.carton_price).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
                                 </tr>
                                 <tr>
                                     <td><strong>ثمن الطبلية:</strong></td>
-                                    <td><%= parseFloat(material.pallet_price).toFixed(2) %> د.ك</td>
+                                    <td><%= parseFloat(material.pallet_price).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
                                 </tr>
                             </table>
                         </div>
                         <div class="col-md-6">
-                            <h6 class="text-secondary mb-3">تكاليف إضافية</h6>
+                            <h6 class="text-primary mb-3">تكاليف إضافية</h6>
                             <table class="table table-borderless">
                                 <tr>
                                     <td><strong>مصاريف إضافية:</strong></td>
-                                    <td><%= parseFloat(material.additional_expenses).toFixed(2) %> د.ك</td>
+                                    <td><%= parseFloat(material.additional_expenses).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
                                 </tr>
                                 <tr>
                                     <td><strong>مصروف عمال:</strong></td>
-                                    <td><%= parseFloat(material.labor_cost).toFixed(2) %> د.ك</td>
+                                    <td><%= parseFloat(material.labor_cost).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
                                 </tr>
                                 <tr>
                                     <td><strong>مواد حافظة:</strong></td>
-                                    <td><%= parseFloat(material.preservatives_cost).toFixed(2) %> د.ك</td>
+                                    <td><%= parseFloat(material.preservatives_cost).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
                                 </tr>
                             </table>
                         </div>
@@ -195,8 +189,9 @@ function formatDate(dateString) {
     return `${day}/${month}/${year}`;
 }
 
-// دالة جلب سجل التكاليف
-function loadCostLogs() {
+            // دالة جلب سجل التكاليف
+            const currencySymbol = '<%= defaultCurrency ? defaultCurrency.symbol : "$" %>';
+            function loadCostLogs() {
     fetch(`/costs/cost-statement/<%= material.id %>/logs`)
         .then(response => response.json())
         .then(data => {
@@ -208,8 +203,8 @@ function loadCostLogs() {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${formatDate(log.calculation_date)}</td>
-                        <td>${parseFloat(log.unit_cost).toFixed(2)} د.ك</td>
-                        <td>${parseFloat(log.package_cost).toFixed(2)} د.ك</td>
+                                                        <td>${parseFloat(log.unit_cost).toFixed(2)} ${currencySymbol}</td>
+                                <td>${parseFloat(log.package_cost).toFixed(2)} ${currencySymbol}</td>
                     `;
                     tbody.appendChild(row);
                 });
@@ -260,15 +255,15 @@ function printMaterialDetails() {
             <div class="section">
                 <h3>نتائج الحساب</h3>
                 <table>
-                    <tr class="highlight"><th>كلفة القطعة الواحدة</th><td><%= parseFloat(material.unit_cost).toFixed(2) %> د.ك</td></tr>
-                    <tr class="highlight"><th>كلفة الطرد</th><td><%= parseFloat(material.package_cost).toFixed(2) %> د.ك</td></tr>
+                                    <tr class="highlight"><th>كلفة القطعة الواحدة</th><td><%= parseFloat(material.unit_cost).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
+                <tr class="highlight"><th>كلفة الطرد</th><td><%= parseFloat(material.package_cost).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
                 </table>
             </div>
             
             <div class="section">
                 <h3>بيانات التكلفة الأساسية</h3>
                 <table>
-                    <tr><th>السعر قبل الهدر</th><td><%= parseFloat(material.price_before_waste).toFixed(2) %> د.ك/كجم</td></tr>
+                    <tr><th>السعر قبل الهدر</th><td><%= parseFloat(material.price_before_waste).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>/كجم</td></tr>
                     <tr><th>الوزن الجمالي</th><td><%= parseFloat(material.gross_weight).toFixed(2) %> كجم</td></tr>
                     <tr><th>نسبة الهدر</th><td><%= parseFloat(material.waste_percentage).toFixed(1) %>%</td></tr>
                     <tr><th>الوزن الصافي</th><td><%= (parseFloat(material.gross_weight) * (1 - parseFloat(material.waste_percentage) / 100)).toFixed(2) %> كجم</td></tr>
@@ -288,19 +283,19 @@ function printMaterialDetails() {
             <div class="section">
                 <h3>تكاليف التعبئة</h3>
                 <table>
-                    <tr><th>ثمن العبوة الفارغة</th><td><%= parseFloat(material.empty_package_price).toFixed(2) %> د.ك</td></tr>
-                    <tr><th>ثمن اللصاقة</th><td><%= parseFloat(material.sticker_price).toFixed(2) %> د.ك</td></tr>
-                    <tr><th>ثمن كرتونة</th><td><%= parseFloat(material.carton_price).toFixed(2) %> د.ك</td></tr>
-                    <tr><th>ثمن الطبلية</th><td><%= parseFloat(material.pallet_price).toFixed(2) %> د.ك</td></tr>
+                                    <tr><th>ثمن العبوة الفارغة</th><td><%= parseFloat(material.empty_package_price).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
+                <tr><th>ثمن اللصاقة</th><td><%= parseFloat(material.sticker_price).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
+                <tr><th>ثمن كرتونة</th><td><%= parseFloat(material.carton_price).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
+                <tr><th>ثمن الطبلية</th><td><%= parseFloat(material.pallet_price).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
                 </table>
             </div>
             
             <div class="section">
                 <h3>تكاليف إضافية</h3>
                 <table>
-                    <tr><th>مصاريف إضافية</th><td><%= parseFloat(material.additional_expenses).toFixed(2) %> د.ك</td></tr>
-                    <tr><th>مصروف عمال</th><td><%= parseFloat(material.labor_cost).toFixed(2) %> د.ك</td></tr>
-                    <tr><th>مواد حافظة</th><td><%= parseFloat(material.preservatives_cost).toFixed(2) %> د.ك</td></tr>
+                                    <tr><th>مصاريف إضافية</th><td><%= parseFloat(material.additional_expenses).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
+                <tr><th>مصروف عمال</th><td><%= parseFloat(material.labor_cost).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
+                <tr><th>مواد حافظة</th><td><%= parseFloat(material.preservatives_cost).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
                 </table>
             </div>
         </body>
@@ -355,5 +350,3 @@ document.addEventListener('DOMContentLoaded', function() {
     loadCostLogs();
 });
 </script>
-
-<%- include('../layouts/footer') %> 

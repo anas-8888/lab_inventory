@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 07, 2025 at 04:51 PM
+-- Generation Time: Aug 07, 2025 at 06:42 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -126,7 +126,9 @@ CREATE TABLE `cost_logs` (
   `material_id` int(11) DEFAULT NULL,
   `material_name` varchar(255) NOT NULL,
   `unit_cost` decimal(10,2) NOT NULL,
+  `unit_cost_syp` decimal(10,2) DEFAULT NULL,
   `package_cost` decimal(10,2) NOT NULL,
+  `package_cost_syp` decimal(10,2) DEFAULT NULL,
   `calculation_date` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -134,13 +136,62 @@ CREATE TABLE `cost_logs` (
 -- Dumping data for table `cost_logs`
 --
 
-INSERT INTO `cost_logs` (`id`, `material_id`, `material_name`, `unit_cost`, `package_cost`, `calculation_date`) VALUES
-(1, NULL, 'زيت الزيتون', 981793.75, 19635875.00, '2025-08-07 12:09:54'),
-(2, NULL, 'زيت الزيتون', 981793.75, 19635875.00, '2025-08-07 12:22:14'),
-(3, NULL, 'زيت الزيتون', 981793.00, 19635860.00, '2025-08-07 12:51:33'),
-(4, 3, 'تفاحي مكسر', 2.76, 2.86, '2025-08-07 13:40:32'),
-(5, 4, 'تفاحي مكسر', 9.36, 9.46, '2025-08-07 14:45:52'),
-(6, 5, 'تفاحي مكسر', 9.36, 9.46, '2025-08-07 14:50:11');
+INSERT INTO `cost_logs` (`id`, `material_id`, `material_name`, `unit_cost`, `unit_cost_syp`, `package_cost`, `package_cost_syp`, `calculation_date`) VALUES
+(1, NULL, 'زيت الزيتون', 981793.75, 99999999.99, 19635875.00, 99999999.99, '2025-08-07 12:09:54'),
+(2, NULL, 'زيت الزيتون', 981793.75, 99999999.99, 19635875.00, 99999999.99, '2025-08-07 12:22:14'),
+(3, NULL, 'زيت الزيتون', 981793.00, 99999999.99, 19635860.00, 99999999.99, '2025-08-07 12:51:33'),
+(4, NULL, 'تفاحي مكسر', 2.76, 35880.00, 2.86, 37180.00, '2025-08-07 13:40:32'),
+(5, NULL, 'تفاحي مكسر', 9.36, 121680.00, 9.46, 122980.00, '2025-08-07 14:45:52'),
+(6, NULL, 'تفاحي مكسر', 9.36, 121680.00, 9.46, 122980.00, '2025-08-07 14:50:11'),
+(7, NULL, 'تفاحي مكسر2', 9.36, 121680.00, 9.46, 122980.00, '2025-08-07 14:53:11'),
+(8, NULL, 'تفاحي مكسر3', 9.36, 121680.00, 9.46, 122980.00, '2025-08-07 14:53:40'),
+(9, 7, 'تفاحي مكسر', 9.36, 98280.00, 9.46, 99373.75, '2025-08-07 16:24:24');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `currencies`
+--
+
+CREATE TABLE `currencies` (
+  `id` int(11) NOT NULL,
+  `code` varchar(10) NOT NULL,
+  `name` varchar(50) NOT NULL,
+  `symbol` varchar(10) NOT NULL,
+  `is_default` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `currencies`
+--
+
+INSERT INTO `currencies` (`id`, `code`, `name`, `symbol`, `is_default`, `created_at`, `updated_at`) VALUES
+(1, 'USD', 'دولار أمريكي', '$', 1, '2025-08-07 15:36:40', '2025-08-07 15:36:40'),
+(2, 'SYP', 'ليرة سورية', 'ل.س', 0, '2025-08-07 15:36:40', '2025-08-07 15:36:40');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `exchange_rates`
+--
+
+CREATE TABLE `exchange_rates` (
+  `id` int(11) NOT NULL,
+  `from_currency_id` int(11) NOT NULL,
+  `to_currency_id` int(11) NOT NULL,
+  `rate` decimal(10,4) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `exchange_rates`
+--
+
+INSERT INTO `exchange_rates` (`id`, `from_currency_id`, `to_currency_id`, `rate`, `created_at`, `updated_at`) VALUES
+(1, 1, 2, 10500.0000, '2025-08-07 15:36:40', '2025-08-07 15:42:56');
 
 -- --------------------------------------------------------
 
@@ -584,21 +635,31 @@ CREATE TABLE `materials` (
   `material_type` varchar(100) NOT NULL,
   `material_name` varchar(255) NOT NULL,
   `price_before_waste` decimal(10,2) NOT NULL,
+  `price_before_waste_syp` decimal(10,2) DEFAULT NULL,
   `gross_weight` decimal(10,2) NOT NULL,
   `waste_percentage` decimal(5,2) NOT NULL,
   `packaging_unit` varchar(50) NOT NULL,
   `packaging_weight` decimal(10,2) NOT NULL,
   `empty_package_price` decimal(10,2) NOT NULL,
+  `empty_package_price_syp` decimal(10,2) DEFAULT NULL,
   `sticker_price` decimal(10,2) NOT NULL,
+  `sticker_price_syp` decimal(10,2) DEFAULT NULL,
   `additional_expenses` decimal(10,2) NOT NULL,
+  `additional_expenses_syp` decimal(10,2) DEFAULT NULL,
   `labor_cost` decimal(10,2) NOT NULL,
+  `labor_cost_syp` decimal(10,2) DEFAULT NULL,
   `preservatives_cost` decimal(10,2) NOT NULL,
+  `preservatives_cost_syp` decimal(10,2) DEFAULT NULL,
   `carton_price` decimal(10,2) NOT NULL,
+  `carton_price_syp` decimal(10,2) DEFAULT NULL,
   `pieces_per_package` int(11) NOT NULL,
   `pallet_price` decimal(10,2) NOT NULL,
+  `pallet_price_syp` decimal(10,2) DEFAULT NULL,
   `packages_per_pallet` int(11) NOT NULL,
   `unit_cost` decimal(10,2) NOT NULL,
+  `unit_cost_syp` decimal(10,2) DEFAULT NULL,
   `package_cost` decimal(10,2) NOT NULL,
+  `package_cost_syp` decimal(10,2) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -607,10 +668,8 @@ CREATE TABLE `materials` (
 -- Dumping data for table `materials`
 --
 
-INSERT INTO `materials` (`id`, `material_type`, `material_name`, `price_before_waste`, `gross_weight`, `waste_percentage`, `packaging_unit`, `packaging_weight`, `empty_package_price`, `sticker_price`, `additional_expenses`, `labor_cost`, `preservatives_cost`, `carton_price`, `pieces_per_package`, `pallet_price`, `packages_per_pallet`, `unit_cost`, `package_cost`, `created_at`, `updated_at`) VALUES
-(3, 'زيتون', 'تفاحي مكسر', 1.10, 1.00, 0.00, 'سطل', 7.00, 1.36, 0.05, 0.05, 0.05, 0.15, 0.00, 1, 10.00, 96, 2.76, 2.86, '2025-08-07 13:40:32', '2025-08-07 13:40:32'),
-(4, 'زيتون', 'تفاحي مكسر', 1.10, 1.00, 0.00, 'سطل', 7.00, 1.36, 0.05, 0.05, 0.05, 0.15, 0.00, 1, 10.00, 96, 9.36, 9.46, '2025-08-07 14:45:52', '2025-08-07 14:45:52'),
-(5, 'زيتون', 'تفاحي مكسر', 1.10, 1.00, 0.00, 'سطل', 7.00, 1.36, 0.05, 0.05, 0.05, 0.15, 0.00, 1, 10.00, 96, 9.36, 9.46, '2025-08-07 14:50:11', '2025-08-07 14:50:11');
+INSERT INTO `materials` (`id`, `material_type`, `material_name`, `price_before_waste`, `price_before_waste_syp`, `gross_weight`, `waste_percentage`, `packaging_unit`, `packaging_weight`, `empty_package_price`, `empty_package_price_syp`, `sticker_price`, `sticker_price_syp`, `additional_expenses`, `additional_expenses_syp`, `labor_cost`, `labor_cost_syp`, `preservatives_cost`, `preservatives_cost_syp`, `carton_price`, `carton_price_syp`, `pieces_per_package`, `pallet_price`, `pallet_price_syp`, `packages_per_pallet`, `unit_cost`, `unit_cost_syp`, `package_cost`, `package_cost_syp`, `created_at`, `updated_at`) VALUES
+(7, 'زيتون', 'تفاحي مكسر', 1.10, 11550.00, 1.00, 0.00, 'سطل', 7.00, 1.36, 14280.00, 0.05, 525.00, 0.05, 525.00, 0.05, 525.00, 0.15, 1575.00, 0.00, 0.00, 1, 10.00, 105000.00, 96, 9.36, 98280.00, 9.46, 99373.75, '2025-08-07 16:24:24', '2025-08-07 16:24:24');
 
 -- --------------------------------------------------------
 
@@ -647,6 +706,7 @@ CREATE TABLE `quotations` (
   `client_address` text DEFAULT NULL,
   `notes` text DEFAULT NULL,
   `total_amount` decimal(10,2) NOT NULL,
+  `total_amount_syp` decimal(10,2) DEFAULT NULL,
   `general_profit_percentage` decimal(5,2) DEFAULT 0.00,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
@@ -656,8 +716,8 @@ CREATE TABLE `quotations` (
 -- Dumping data for table `quotations`
 --
 
-INSERT INTO `quotations` (`id`, `quotation_number`, `client_id`, `client_name`, `client_phone`, `client_address`, `notes`, `total_amount`, `general_profit_percentage`, `created_at`, `updated_at`) VALUES
-(3, 'QT-001', NULL, 'efdfd', '4324343', 'بي', 'بيبي', 2.76, 0.00, '2025-08-07 13:50:46', '2025-08-07 13:50:46');
+INSERT INTO `quotations` (`id`, `quotation_number`, `client_id`, `client_name`, `client_phone`, `client_address`, `notes`, `total_amount`, `total_amount_syp`, `general_profit_percentage`, `created_at`, `updated_at`) VALUES
+(3, 'QT-001', NULL, 'efdfd', '4324343', 'بي', 'بيبي', 2.76, 35880.00, 0.00, '2025-08-07 13:50:46', '2025-08-07 16:03:49');
 
 -- --------------------------------------------------------
 
@@ -671,18 +731,21 @@ CREATE TABLE `quotation_items` (
   `material_id` int(11) DEFAULT NULL,
   `material_name` varchar(255) NOT NULL,
   `unit_cost` decimal(10,2) NOT NULL,
+  `unit_cost_syp` decimal(10,2) DEFAULT NULL,
   `profit_percentage` decimal(5,2) DEFAULT 0.00,
   `final_price` decimal(10,2) NOT NULL,
+  `final_price_syp` decimal(10,2) DEFAULT NULL,
   `quantity` int(11) DEFAULT 1,
-  `total_price` decimal(10,2) NOT NULL
+  `total_price` decimal(10,2) NOT NULL,
+  `total_price_syp` decimal(10,2) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `quotation_items`
 --
 
-INSERT INTO `quotation_items` (`id`, `quotation_id`, `material_id`, `material_name`, `unit_cost`, `profit_percentage`, `final_price`, `quantity`, `total_price`) VALUES
-(3, 3, 3, 'تفاحي مكسر', 2.76, 0.00, 2.76, 1, 2.76);
+INSERT INTO `quotation_items` (`id`, `quotation_id`, `material_id`, `material_name`, `unit_cost`, `unit_cost_syp`, `profit_percentage`, `final_price`, `final_price_syp`, `quantity`, `total_price`, `total_price_syp`) VALUES
+(3, 3, NULL, 'تفاحي مكسر', 2.76, 35880.00, 0.00, 2.76, 35880.00, 1, 2.76, 35880.00);
 
 -- --------------------------------------------------------
 
@@ -724,7 +787,28 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`session_id`, `expires`, `data`, `created_at`, `updated_at`) VALUES
-('xu95LL-_Dqf9pcXQuC476eYcK-U2U3f7', 1754664613, '{\"cookie\":{\"originalMaxAge\":86399998,\"expires\":\"2025-08-08T12:28:01.249Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{},\"user\":{\"id\":20,\"username\":\"admin\",\"role\":\"admin\"}}', '2025-08-07 11:20:48', '2025-08-07 14:50:13');
+('xu95LL-_Dqf9pcXQuC476eYcK-U2U3f7', 1754671247, '{\"cookie\":{\"originalMaxAge\":86399998,\"expires\":\"2025-08-08T12:28:01.249Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{},\"user\":{\"id\":20,\"username\":\"admin\",\"role\":\"admin\"}}', '2025-08-07 11:20:48', '2025-08-07 16:40:46');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `system_settings`
+--
+
+CREATE TABLE `system_settings` (
+  `id` int(11) NOT NULL,
+  `setting_key` varchar(50) NOT NULL,
+  `setting_value` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `system_settings`
+--
+
+INSERT INTO `system_settings` (`id`, `setting_key`, `setting_value`, `created_at`, `updated_at`) VALUES
+(1, 'default_currency', 'SYP', '2025-08-07 15:36:40', '2025-08-07 16:35:33');
 
 -- --------------------------------------------------------
 
@@ -778,7 +862,23 @@ ALTER TABLE `clients`
 ALTER TABLE `cost_logs`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_cost_logs_material` (`material_id`),
-  ADD KEY `idx_cost_logs_date` (`calculation_date`);
+  ADD KEY `idx_cost_logs_date` (`calculation_date`),
+  ADD KEY `idx_cost_logs_currency` (`unit_cost`,`unit_cost_syp`,`package_cost`,`package_cost_syp`);
+
+--
+-- Indexes for table `currencies`
+--
+ALTER TABLE `currencies`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `code` (`code`);
+
+--
+-- Indexes for table `exchange_rates`
+--
+ALTER TABLE `exchange_rates`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_rate` (`from_currency_id`,`to_currency_id`),
+  ADD KEY `to_currency_id` (`to_currency_id`);
 
 --
 -- Indexes for table `inventory`
@@ -806,7 +906,8 @@ ALTER TABLE `invoice_items`
 --
 ALTER TABLE `materials`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_materials_name` (`material_name`);
+  ADD KEY `idx_materials_name` (`material_name`),
+  ADD KEY `idx_materials_currency` (`unit_cost`,`unit_cost_syp`);
 
 --
 -- Indexes for table `orders`
@@ -825,7 +926,8 @@ ALTER TABLE `quotations`
   ADD UNIQUE KEY `quotation_number` (`quotation_number`),
   ADD KEY `client_id` (`client_id`),
   ADD KEY `idx_quotations_number` (`quotation_number`),
-  ADD KEY `idx_quotations_client` (`client_name`);
+  ADD KEY `idx_quotations_client` (`client_name`),
+  ADD KEY `idx_quotations_currency` (`total_amount`,`total_amount_syp`);
 
 --
 -- Indexes for table `quotation_items`
@@ -833,7 +935,8 @@ ALTER TABLE `quotations`
 ALTER TABLE `quotation_items`
   ADD PRIMARY KEY (`id`),
   ADD KEY `quotation_id` (`quotation_id`),
-  ADD KEY `material_id` (`material_id`);
+  ADD KEY `material_id` (`material_id`),
+  ADD KEY `idx_quotation_items_currency` (`unit_cost`,`unit_cost_syp`,`final_price`,`final_price_syp`);
 
 --
 -- Indexes for table `roles`
@@ -847,6 +950,13 @@ ALTER TABLE `roles`
 --
 ALTER TABLE `sessions`
   ADD PRIMARY KEY (`session_id`);
+
+--
+-- Indexes for table `system_settings`
+--
+ALTER TABLE `system_settings`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `setting_key` (`setting_key`);
 
 --
 -- Indexes for table `users`
@@ -876,7 +986,19 @@ ALTER TABLE `clients`
 -- AUTO_INCREMENT for table `cost_logs`
 --
 ALTER TABLE `cost_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+
+--
+-- AUTO_INCREMENT for table `currencies`
+--
+ALTER TABLE `currencies`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `exchange_rates`
+--
+ALTER TABLE `exchange_rates`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `inventory`
@@ -900,7 +1022,7 @@ ALTER TABLE `invoice_items`
 -- AUTO_INCREMENT for table `materials`
 --
 ALTER TABLE `materials`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -927,6 +1049,12 @@ ALTER TABLE `roles`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
+-- AUTO_INCREMENT for table `system_settings`
+--
+ALTER TABLE `system_settings`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
@@ -941,6 +1069,13 @@ ALTER TABLE `users`
 --
 ALTER TABLE `cost_logs`
   ADD CONSTRAINT `cost_logs_ibfk_1` FOREIGN KEY (`material_id`) REFERENCES `materials` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `exchange_rates`
+--
+ALTER TABLE `exchange_rates`
+  ADD CONSTRAINT `exchange_rates_ibfk_1` FOREIGN KEY (`from_currency_id`) REFERENCES `currencies` (`id`),
+  ADD CONSTRAINT `exchange_rates_ibfk_2` FOREIGN KEY (`to_currency_id`) REFERENCES `currencies` (`id`);
 
 --
 -- Constraints for table `invoices`
