@@ -237,7 +237,7 @@
                         <!-- السعر قبل الهدر -->
                         <div class="col-md-4">
                             <label class="form-label">السعر قبل الهدر (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>/كجم) *</label>
-                            <input type="number" class="form-control" id="editPriceBeforeWaste" name="price_before_waste" step="0.01" required>
+                            <input type="number" class="form-control currency-input" id="editPriceBeforeWaste" name="price_before_waste" step="0.01" required data-field="price_before_waste">
                         </div>
 
                         <!-- الوزن الجمالي -->
@@ -267,37 +267,37 @@
                         <!-- ثمن العبوة الفارغة -->
                         <div class="col-md-4">
                             <label class="form-label">ثمن العبوة الفارغة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                            <input type="number" class="form-control" id="editEmptyPackagePrice" name="empty_package_price" step="0.01" required>
+                            <input type="number" class="form-control currency-input" id="editEmptyPackagePrice" name="empty_package_price" step="0.01" required data-field="empty_package_price">
                         </div>
 
                         <!-- ثمن اللصاقة -->
                         <div class="col-md-4">
                             <label class="form-label">ثمن اللصاقة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                            <input type="number" class="form-control" id="editStickerPrice" name="sticker_price" step="0.01" required>
+                            <input type="number" class="form-control currency-input" id="editStickerPrice" name="sticker_price" step="0.01" required data-field="sticker_price">
                         </div>
 
                         <!-- مصاريف إضافية -->
                         <div class="col-md-4">
                             <label class="form-label">مصاريف إضافية (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                            <input type="number" class="form-control" id="editAdditionalExpenses" name="additional_expenses" step="0.01" required>
+                            <input type="number" class="form-control currency-input" id="editAdditionalExpenses" name="additional_expenses" step="0.01" required data-field="additional_expenses">
                         </div>
 
                         <!-- مصروف عمال -->
                         <div class="col-md-4">
                             <label class="form-label">مصروف عمال (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                            <input type="number" class="form-control" id="editLaborCost" name="labor_cost" step="0.01" required>
+                            <input type="number" class="form-control currency-input" id="editLaborCost" name="labor_cost" step="0.01" required data-field="labor_cost">
                         </div>
 
                         <!-- مواد حافظة -->
                         <div class="col-md-4">
                             <label class="form-label">مواد حافظة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                            <input type="number" class="form-control" id="editPreservativesCost" name="preservatives_cost" step="0.01" required>
+                            <input type="number" class="form-control currency-input" id="editPreservativesCost" name="preservatives_cost" step="0.01" required data-field="preservatives_cost">
                         </div>
 
                         <!-- ثمن كرتونة -->
                         <div class="col-md-4">
                             <label class="form-label">ثمن كرتونة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                            <input type="number" class="form-control" id="editCartonPrice" name="carton_price" step="0.01" required>
+                            <input type="number" class="form-control currency-input" id="editCartonPrice" name="carton_price" step="0.01" required data-field="carton_price">
                         </div>
 
                         <!-- عدد الحبات في الطرد -->
@@ -309,7 +309,7 @@
                         <!-- ثمن الطبلية -->
                         <div class="col-md-4">
                             <label class="form-label">ثمن الطبلية (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                            <input type="number" class="form-control" id="editPalletPrice" name="pallet_price" step="0.01" required>
+                            <input type="number" class="form-control currency-input" id="editPalletPrice" name="pallet_price" step="0.01" required data-field="pallet_price">
                         </div>
 
                         <!-- عدد الطرود في الطبلية -->
@@ -715,20 +715,34 @@ function editMaterial(materialId) {
                 document.getElementById('editMaterialId').value = material.id;
                 document.getElementById('editMaterialType').value = material.material_type;
                 document.getElementById('editMaterialName').value = material.material_name;
-                document.getElementById('editPriceBeforeWaste').value = material.price_before_waste;
                 document.getElementById('editGrossWeight').value = material.gross_weight;
                 document.getElementById('editWastePercentage').value = material.waste_percentage;
                 document.getElementById('editPackagingUnit').value = material.packaging_unit;
                 document.getElementById('editPackagingWeight').value = material.packaging_weight;
-                document.getElementById('editEmptyPackagePrice').value = material.empty_package_price;
-                document.getElementById('editStickerPrice').value = material.sticker_price;
-                document.getElementById('editAdditionalExpenses').value = material.additional_expenses;
-                document.getElementById('editLaborCost').value = material.labor_cost;
-                document.getElementById('editPreservativesCost').value = material.preservatives_cost;
-                document.getElementById('editCartonPrice').value = material.carton_price;
                 document.getElementById('editPiecesPerPackage').value = material.pieces_per_package;
-                document.getElementById('editPalletPrice').value = material.pallet_price;
                 document.getElementById('editPackagesPerPallet').value = material.packages_per_pallet;
+                
+                // ملء حقول العملة حسب العملة المحددة
+                const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
+                if (currentCurrency === 'SYP') {
+                    document.getElementById('editPriceBeforeWaste').value = material.price_before_waste_syp || material.price_before_waste;
+                    document.getElementById('editEmptyPackagePrice').value = material.empty_package_price_syp || material.empty_package_price;
+                    document.getElementById('editStickerPrice').value = material.sticker_price_syp || material.sticker_price;
+                    document.getElementById('editAdditionalExpenses').value = material.additional_expenses_syp || material.additional_expenses;
+                    document.getElementById('editLaborCost').value = material.labor_cost_syp || material.labor_cost;
+                    document.getElementById('editPreservativesCost').value = material.preservatives_cost_syp || material.preservatives_cost;
+                    document.getElementById('editCartonPrice').value = material.carton_price_syp || material.carton_price;
+                    document.getElementById('editPalletPrice').value = material.pallet_price_syp || material.pallet_price;
+                } else {
+                    document.getElementById('editPriceBeforeWaste').value = material.price_before_waste;
+                    document.getElementById('editEmptyPackagePrice').value = material.empty_package_price;
+                    document.getElementById('editStickerPrice').value = material.sticker_price;
+                    document.getElementById('editAdditionalExpenses').value = material.additional_expenses;
+                    document.getElementById('editLaborCost').value = material.labor_cost;
+                    document.getElementById('editPreservativesCost').value = material.preservatives_cost;
+                    document.getElementById('editCartonPrice').value = material.carton_price;
+                    document.getElementById('editPalletPrice').value = material.pallet_price;
+                }
                 
                 // حساب التكاليف
                 calculateEditCosts();
@@ -744,6 +758,42 @@ function editMaterial(materialId) {
             showAlert('حدث خطأ في جلب بيانات المادة', 'error');
         });
 }
+
+// دالة تحويل العملة في نموذج التعديل
+function convertCurrencyInEditForm() {
+    const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
+    const exchangeRate = 13000; // يمكن جلبها من قاعدة البيانات
+    
+    // تحديث جميع حقول العملة
+    const currencyInputs = document.querySelectorAll('#editMaterialModal .currency-input');
+    currencyInputs.forEach(input => {
+        const field = input.getAttribute('data-field');
+        const value = parseFloat(input.value) || 0;
+        
+        if (currentCurrency === 'SYP') {
+            // تحويل من الليرة السورية إلى الدولار
+            const usdValue = value / exchangeRate;
+            input.setAttribute('data-usd-value', usdValue.toFixed(2));
+            input.setAttribute('data-syp-value', value.toFixed(2));
+        } else {
+            // تحويل من الدولار إلى الليرة السورية
+            const sypValue = value * exchangeRate;
+            input.setAttribute('data-usd-value', value.toFixed(2));
+            input.setAttribute('data-syp-value', sypValue.toFixed(2));
+        }
+    });
+}
+
+// إضافة مستمع الأحداث لحقول العملة في نموذج التعديل
+document.addEventListener('DOMContentLoaded', function() {
+    const currencyInputs = document.querySelectorAll('#editMaterialModal .currency-input');
+    currencyInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            convertCurrencyInEditForm();
+            calculateEditCosts();
+        });
+    });
+});
 
 // حساب التكاليف في نموذج التعديل
 function calculateEditCosts() {
@@ -776,30 +826,48 @@ function calculateEditCosts() {
     const currencySymbol = '<%= defaultCurrency ? defaultCurrency.symbol : "$" %>';
     document.getElementById('editUnitCostResult').textContent = unitCost.toFixed(2) + ' ' + currencySymbol;
     document.getElementById('editPackageCostResult').textContent = packageCost.toFixed(2) + ' ' + currencySymbol;
+    
+    // تحديث قيم العملة المحولة
+    convertCurrencyInEditForm();
 }
 
 // حفظ تعديل المادة
 function saveMaterialEdit() {
     const materialId = document.getElementById('editMaterialId').value;
+    const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
+    const exchangeRate = 13000;
     
+    // جمع القيم مع تحويل العملة
     const formData = {
         material_type: document.getElementById('editMaterialType').value,
         material_name: document.getElementById('editMaterialName').value,
-        price_before_waste: document.getElementById('editPriceBeforeWaste').value,
         gross_weight: document.getElementById('editGrossWeight').value,
         waste_percentage: document.getElementById('editWastePercentage').value,
         packaging_unit: document.getElementById('editPackagingUnit').value,
         packaging_weight: document.getElementById('editPackagingWeight').value,
-        empty_package_price: document.getElementById('editEmptyPackagePrice').value,
-        sticker_price: document.getElementById('editStickerPrice').value,
-        additional_expenses: document.getElementById('editAdditionalExpenses').value,
-        labor_cost: document.getElementById('editLaborCost').value,
-        preservatives_cost: document.getElementById('editPreservativesCost').value,
-        carton_price: document.getElementById('editCartonPrice').value,
         pieces_per_package: document.getElementById('editPiecesPerPackage').value,
-        pallet_price: document.getElementById('editPalletPrice').value,
         packages_per_pallet: document.getElementById('editPackagesPerPallet').value
     };
+    
+    // إضافة حقول العملة مع التحويل
+    const currencyFields = [
+        'price_before_waste', 'empty_package_price', 'sticker_price', 
+        'additional_expenses', 'labor_cost', 'preservatives_cost', 
+        'carton_price', 'pallet_price'
+    ];
+    
+    currencyFields.forEach(field => {
+        const input = document.getElementById('edit' + field.charAt(0).toUpperCase() + field.slice(1));
+        const value = parseFloat(input.value) || 0;
+        
+        if (currentCurrency === 'SYP') {
+            // إذا كانت العملة الحالية هي الليرة السورية، نحول إلى الدولار
+            formData[field] = (value / exchangeRate).toFixed(2);
+        } else {
+            // إذا كانت العملة الحالية هي الدولار، نرسلها كما هي
+            formData[field] = value.toFixed(2);
+        }
+    });
     
     fetch(`/costs/cost-statement/${materialId}`, {
         method: 'PUT',
