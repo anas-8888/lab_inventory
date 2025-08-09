@@ -518,6 +518,8 @@
 <script>
 // حساب التكاليف تلقائياً
 function calculateCosts() {
+    const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
+    const exchangeRate = <%= exchangeRate %>;
     const priceBeforeWaste = parseFloat(document.querySelector('input[name="price_before_waste"]').value) || 0;
     const grossWeight = parseFloat(document.querySelector('input[name="gross_weight"]').value) || 0;
     const wastePercentage = parseFloat(document.querySelector('input[name="waste_percentage"]').value) || 0;
@@ -545,8 +547,19 @@ function calculateCosts() {
 
     // عرض النتائج
     const currencySymbol = '<%= defaultCurrency ? defaultCurrency.symbol : "$" %>';
-    document.getElementById('unitCostResult').textContent = unitCost.toFixed(2) + ' ' + currencySymbol;
-    document.getElementById('packageCostResult').textContent = packageCost.toFixed(2) + ' ' + currencySymbol;
+    let unitCostUSD = unitCost;
+    let packageCostUSD = packageCost;
+    let unitCostSYP = unitCost;
+    let packageCostSYP = packageCost;
+    if (currentCurrency === 'SYP') {
+        unitCostUSD = unitCost / exchangeRate;
+        packageCostUSD = packageCost / exchangeRate;
+    } else {
+        unitCostSYP = unitCost * exchangeRate;
+        packageCostSYP = packageCost * exchangeRate;
+    }
+    document.getElementById('unitCostResult').textContent = `${unitCost.toFixed(2)} ${currencySymbol} ( ${unitCostUSD.toFixed(2)} $ / ${unitCostSYP.toFixed(2)} ل.س )`;
+    document.getElementById('packageCostResult').textContent = `${packageCost.toFixed(2)} ${currencySymbol} ( ${packageCostUSD.toFixed(2)} $ / ${packageCostSYP.toFixed(2)} ل.س )`;
 }
 
 // معالجة نموذج إضافة المادة
@@ -554,30 +567,43 @@ document.getElementById('materialForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
     const formData = new FormData(this);
-    
+    const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
+    const exchangeRate = <%= exchangeRate %>;
+
+    // تجهيز الحقول الرقمية غير المرتبطة بالعملة كما هي
+    const bodyPayload = {
+        material_type: formData.get('material_type'),
+        material_name: formData.get('material_name'),
+        gross_weight: formData.get('gross_weight'),
+        waste_percentage: formData.get('waste_percentage'),
+        packaging_unit: formData.get('packaging_unit'),
+        packaging_weight: formData.get('packaging_weight'),
+        pieces_per_package: formData.get('pieces_per_package'),
+        packages_per_pallet: formData.get('packages_per_pallet')
+    };
+
+    // تحويل الحقول المرتبطة بالعملة إلى الدولار عند كون العملة الحالية ل.س
+    const currencyFields = [
+        'price_before_waste', 'empty_package_price', 'sticker_price', 
+        'additional_expenses', 'labor_cost', 'preservatives_cost', 
+        'carton_price', 'pallet_price'
+    ];
+
+    currencyFields.forEach((field) => {
+        const raw = parseFloat(formData.get(field) || '0') || 0;
+        if (currentCurrency === 'SYP') {
+            bodyPayload[field] = (raw / exchangeRate).toFixed(2);
+        } else {
+            bodyPayload[field] = raw.toFixed(2);
+        }
+    });
+
     fetch('/costs/cost-statement', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-            material_type: formData.get('material_type'),
-            material_name: formData.get('material_name'),
-            price_before_waste: formData.get('price_before_waste'),
-            gross_weight: formData.get('gross_weight'),
-            waste_percentage: formData.get('waste_percentage'),
-            packaging_unit: formData.get('packaging_unit'),
-            packaging_weight: formData.get('packaging_weight'),
-            empty_package_price: formData.get('empty_package_price'),
-            sticker_price: formData.get('sticker_price'),
-            additional_expenses: formData.get('additional_expenses'),
-            labor_cost: formData.get('labor_cost'),
-            preservatives_cost: formData.get('preservatives_cost'),
-            carton_price: formData.get('carton_price'),
-            pieces_per_package: formData.get('pieces_per_package'),
-            pallet_price: formData.get('pallet_price'),
-            packages_per_pallet: formData.get('packages_per_pallet')
-        })
+        body: JSON.stringify(bodyPayload)
     })
     .then(response => response.json())
     .then(data => {
@@ -762,7 +788,7 @@ function editMaterial(materialId) {
 // دالة تحويل العملة في نموذج التعديل
 function convertCurrencyInEditForm() {
     const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
-    const exchangeRate = 13000; // يمكن جلبها من قاعدة البيانات
+    const exchangeRate = <%= exchangeRate %>; // استخدام سعر الصرف من الخادم
     
     // تحديث جميع حقول العملة
     const currencyInputs = document.querySelectorAll('#editMaterialModal .currency-input');
@@ -797,6 +823,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // حساب التكاليف في نموذج التعديل
 function calculateEditCosts() {
+    const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
+    const exchangeRate = <%= exchangeRate %>;
     const priceBeforeWaste = parseFloat(document.getElementById('editPriceBeforeWaste').value) || 0;
     const grossWeight = parseFloat(document.getElementById('editGrossWeight').value) || 0;
     const wastePercentage = parseFloat(document.getElementById('editWastePercentage').value) || 0;
@@ -824,8 +852,19 @@ function calculateEditCosts() {
 
     // عرض النتائج
     const currencySymbol = '<%= defaultCurrency ? defaultCurrency.symbol : "$" %>';
-    document.getElementById('editUnitCostResult').textContent = unitCost.toFixed(2) + ' ' + currencySymbol;
-    document.getElementById('editPackageCostResult').textContent = packageCost.toFixed(2) + ' ' + currencySymbol;
+    let unitCostUSD = unitCost;
+    let packageCostUSD = packageCost;
+    let unitCostSYP = unitCost;
+    let packageCostSYP = packageCost;
+    if (currentCurrency === 'SYP') {
+        unitCostUSD = unitCost / exchangeRate;
+        packageCostUSD = packageCost / exchangeRate;
+    } else {
+        unitCostSYP = unitCost * exchangeRate;
+        packageCostSYP = packageCost * exchangeRate;
+    }
+    document.getElementById('editUnitCostResult').textContent = `${unitCost.toFixed(2)} ${currencySymbol} ( ${unitCostUSD.toFixed(2)} $ / ${unitCostSYP.toFixed(2)} ل.س )`;
+    document.getElementById('editPackageCostResult').textContent = `${packageCost.toFixed(2)} ${currencySymbol} ( ${packageCostUSD.toFixed(2)} $ / ${packageCostSYP.toFixed(2)} ل.س )`;
     
     // تحديث قيم العملة المحولة
     convertCurrencyInEditForm();
@@ -835,7 +874,7 @@ function calculateEditCosts() {
 function saveMaterialEdit() {
     const materialId = document.getElementById('editMaterialId').value;
     const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
-    const exchangeRate = 13000;
+    const exchangeRate = <%= exchangeRate %>;
     
     // جمع القيم مع تحويل العملة
     const formData = {
@@ -857,15 +896,21 @@ function saveMaterialEdit() {
     ];
     
     currencyFields.forEach(field => {
-        const input = document.getElementById('edit' + field.charAt(0).toUpperCase() + field.slice(1));
-        const value = parseFloat(input.value) || 0;
-        
+        // تحويل snake_case إلى PascalCase لبناء المعرّف الصحيح
+        const idSuffix = field
+            .split('_')
+            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+            .join('');
+        const input = document.getElementById('edit' + idSuffix);
+        const numericValue = parseFloat((input && input.value) ? input.value : '0') || 0;
+
         if (currentCurrency === 'SYP') {
-            // إذا كانت العملة الحالية هي الليرة السورية، نحول إلى الدولار
-            formData[field] = (value / exchangeRate).toFixed(2);
+            // إذا كانت العملة الحالية هي الليرة السورية، نحول إلى الدولار ونرسل أيضًا القيمة بالليرة كما أدخلها المستخدم
+            formData[field] = (numericValue / exchangeRate);
+            formData[field + '_syp'] = numericValue;
         } else {
-            // إذا كانت العملة الحالية هي الدولار، نرسلها كما هي
-            formData[field] = value.toFixed(2);
+            // إذا كانت العملة الحالية هي الدولار، نرسلها كما هي بدون تقطيع
+            formData[field] = numericValue;
         }
     });
     
