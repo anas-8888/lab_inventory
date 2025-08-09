@@ -37,8 +37,18 @@
                                 <tr>
                                     <td><%= material.material_name %></td>
                                     <td><%= material.material_type %></td>
-                                    <td><%= parseFloat(material.unit_cost).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
-                                    <td><%= parseFloat(material.package_cost).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
+                                    <td>
+                                        <%= (defaultCurrency && defaultCurrency.code === 'SYP')
+                                            ? String(Math.round(parseFloat(material.unit_cost) || 0))
+                                            : (parseFloat(material.unit_cost) || 0).toFixed(2)
+                                        %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                                    </td>
+                                    <td>
+                                        <%= (defaultCurrency && defaultCurrency.code === 'SYP')
+                                            ? String(Math.round(parseFloat(material.package_cost) || 0))
+                                            : (parseFloat(material.package_cost) || 0).toFixed(2)
+                                        %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                                    </td>
                                     <td><%= formatDate(material.created_at) %></td>
                                     <td>
                                         <div class="btn-group">
@@ -189,11 +199,11 @@
                                 <div class="row">
                                     <div class="col-6">
                                         <strong>كلفة القطعة الواحدة:</strong>
-                                        <span id="unitCostResult">0.00 <%= defaultCurrency ? defaultCurrency.symbol : '$' %></span>
+                                        <span id="unitCostResult"><%= (defaultCurrency && defaultCurrency.code === 'SYP') ? '0' : '0.00' %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></span>
                                     </div>
                                     <div class="col-6">
                                         <strong>كلفة الطرد:</strong>
-                                        <span id="packageCostResult">0.00 <%= defaultCurrency ? defaultCurrency.symbol : '$' %></span>
+                                        <span id="packageCostResult"><%= (defaultCurrency && defaultCurrency.code === 'SYP') ? '0' : '0.00' %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></span>
                                     </div>
                                 </div>
                             </div>
@@ -327,11 +337,11 @@
                                 <div class="row">
                                     <div class="col-6">
                                         <strong>كلفة القطعة الواحدة:</strong>
-                                        <span id="editUnitCostResult">0.00 <%= defaultCurrency ? defaultCurrency.symbol : '$' %></span>
+                                        <span id="editUnitCostResult"><%= (defaultCurrency && defaultCurrency.code === 'SYP') ? '0' : '0.00' %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></span>
                                     </div>
                                     <div class="col-6">
                                         <strong>كلفة الطرد:</strong>
-                                        <span id="editPackageCostResult">0.00 <%= defaultCurrency ? defaultCurrency.symbol : '$' %></span>
+                                        <span id="editPackageCostResult"><%= (defaultCurrency && defaultCurrency.code === 'SYP') ? '0' : '0.00' %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></span>
                                     </div>
                                 </div>
                             </div>
@@ -558,8 +568,12 @@ function calculateCosts() {
         unitCostSYP = unitCost * exchangeRate;
         packageCostSYP = packageCost * exchangeRate;
     }
-    document.getElementById('unitCostResult').textContent = `${unitCost.toFixed(2)} ${currencySymbol} ( ${unitCostUSD.toFixed(2)} $ / ${unitCostSYP.toFixed(2)} ل.س )`;
-    document.getElementById('packageCostResult').textContent = `${packageCost.toFixed(2)} ${currencySymbol} ( ${packageCostUSD.toFixed(2)} $ / ${packageCostSYP.toFixed(2)} ل.س )`;
+    const formatUSD = (v) => v.toFixed(2);
+    const formatSYP = (v) => String(Math.round(v));
+    const unitMain = currentCurrency === 'SYP' ? formatSYP(unitCost) : formatUSD(unitCost);
+    const packMain = currentCurrency === 'SYP' ? formatSYP(packageCost) : formatUSD(packageCost);
+    document.getElementById('unitCostResult').textContent = `${unitMain} ${currencySymbol} ( ${formatUSD(unitCostUSD)} $ / ${formatSYP(unitCostSYP)} ل.س )`;
+    document.getElementById('packageCostResult').textContent = `${packMain} ${currencySymbol} ( ${formatUSD(packageCostUSD)} $ / ${formatSYP(packageCostSYP)} ل.س )`;
 }
 
 // معالجة نموذج إضافة المادة
@@ -863,8 +877,12 @@ function calculateEditCosts() {
         unitCostSYP = unitCost * exchangeRate;
         packageCostSYP = packageCost * exchangeRate;
     }
-    document.getElementById('editUnitCostResult').textContent = `${unitCost.toFixed(2)} ${currencySymbol} ( ${unitCostUSD.toFixed(2)} $ / ${unitCostSYP.toFixed(2)} ل.س )`;
-    document.getElementById('editPackageCostResult').textContent = `${packageCost.toFixed(2)} ${currencySymbol} ( ${packageCostUSD.toFixed(2)} $ / ${packageCostSYP.toFixed(2)} ل.س )`;
+    const formatUSD2 = (v) => v.toFixed(2);
+    const formatSYP2 = (v) => String(Math.round(v));
+    const unitMain2 = currentCurrency === 'SYP' ? formatSYP2(unitCost) : formatUSD2(unitCost);
+    const packMain2 = currentCurrency === 'SYP' ? formatSYP2(packageCost) : formatUSD2(packageCost);
+    document.getElementById('editUnitCostResult').textContent = `${unitMain2} ${currencySymbol} ( ${formatUSD2(unitCostUSD)} $ / ${formatSYP2(unitCostSYP)} ل.س )`;
+    document.getElementById('editPackageCostResult').textContent = `${packMain2} ${currencySymbol} ( ${formatUSD2(packageCostUSD)} $ / ${formatSYP2(packageCostSYP)} ل.س )`;
     
     // تحديث قيم العملة المحولة
     convertCurrencyInEditForm();

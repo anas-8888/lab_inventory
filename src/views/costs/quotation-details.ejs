@@ -52,7 +52,12 @@
                                 </tr>
                                 <tr>
                                     <td><strong>المبلغ الإجمالي:</strong></td>
-                                    <td><strong class="text-primary"><%= parseFloat(quotation.total_amount).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></strong></td>
+                                    <td><strong class="text-primary">
+                                        <%= (defaultCurrency && defaultCurrency.code === 'SYP')
+                                            ? String(Math.round(parseFloat(quotation.total_amount) || 0))
+                                            : (parseFloat(quotation.total_amount) || 0).toFixed(2)
+                                        %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                                    </strong></td>
                                 </tr>
                                 <tr>
                                     <td><strong>عدد المواد:</strong></td>
@@ -92,18 +97,38 @@
                                 <tr>
                                     <td><%= index + 1 %></td>
                                     <td><%= item.material_name %></td>
-                                                                    <td><%= parseFloat(item.unit_cost).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
+                                    <td>
+                                        <%= (defaultCurrency && defaultCurrency.code === 'SYP')
+                                            ? String(Math.round(parseFloat(item.unit_cost) || 0))
+                                            : (parseFloat(item.unit_cost) || 0).toFixed(2)
+                                        %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                                    </td>
                                 <td><%= parseFloat(item.profit_percentage).toFixed(1) %>%</td>
-                                <td><%= parseFloat(item.final_price).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
+                                    <td>
+                                        <%= (defaultCurrency && defaultCurrency.code === 'SYP')
+                                            ? String(Math.round(parseFloat(item.final_price) || 0))
+                                            : (parseFloat(item.final_price) || 0).toFixed(2)
+                                        %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                                    </td>
                                 <td><%= item.quantity %></td>
-                                <td><strong><%= parseFloat(item.total_price).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></strong></td>
+                                    <td><strong>
+                                        <%= (defaultCurrency && defaultCurrency.code === 'SYP')
+                                            ? String(Math.round(parseFloat(item.total_price) || 0))
+                                            : (parseFloat(item.total_price) || 0).toFixed(2)
+                                        %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                                    </strong></td>
                                 </tr>
                                 <% }); %>
                             </tbody>
                             <tfoot>
                                 <tr class="table-info">
                                     <td colspan="6" class="text-end"><strong>المجموع الإجمالي:</strong></td>
-                                    <td><strong><%= parseFloat(quotation.total_amount).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></strong></td>
+                                    <td><strong>
+                                        <%= (defaultCurrency && defaultCurrency.code === 'SYP')
+                                            ? String(Math.round(parseFloat(quotation.total_amount) || 0))
+                                            : (parseFloat(quotation.total_amount) || 0).toFixed(2)
+                                        %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                                    </strong></td>
                                 </tr>
                             </tfoot>
                         </table>

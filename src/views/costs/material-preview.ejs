@@ -48,11 +48,21 @@
                             <table class="table table-borderless">
                                 <tr>
                                     <td><strong>كلفة القطعة الواحدة:</strong></td>
-                                    <td class="text-primary fw-bold"><%= parseFloat(material.unit_cost).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
+                            <td class="text-primary fw-bold">
+                                <%= (defaultCurrency && defaultCurrency.code === 'SYP')
+                                    ? String(Math.round(parseFloat(material.unit_cost) || 0))
+                                    : (parseFloat(material.unit_cost) || 0).toFixed(2)
+                                %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                            </td>
                                 </tr>
                                 <tr>
                                     <td><strong>كلفة الطرد:</strong></td>
-                                    <td class="text-success fw-bold"><%= parseFloat(material.package_cost).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
+                            <td class="text-success fw-bold">
+                                <%= (defaultCurrency && defaultCurrency.code === 'SYP')
+                                    ? String(Math.round(parseFloat(material.package_cost) || 0))
+                                    : (parseFloat(material.package_cost) || 0).toFixed(2)
+                                %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                            </td>
                                 </tr>
                             </table>
                         </div>
@@ -66,7 +76,12 @@
                             <table class="table table-borderless">
                                 <tr>
                                     <td><strong>السعر قبل الهدر:</strong></td>
-                                    <td><%= parseFloat(material.price_before_waste).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>/كجم</td>
+                            <td>
+                                <%= (defaultCurrency && defaultCurrency.code === 'SYP')
+                                    ? String(Math.round(parseFloat(material.price_before_waste) || 0))
+                                    : (parseFloat(material.price_before_waste) || 0).toFixed(2)
+                                %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>/كجم
+                            </td>
                                 </tr>
                                 <tr>
                                     <td><strong>الوزن الجمالي:</strong></td>
@@ -113,19 +128,39 @@
                             <table class="table table-borderless">
                                 <tr>
                                     <td><strong>ثمن العبوة الفارغة:</strong></td>
-                                    <td><%= parseFloat(material.empty_package_price).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
+                            <td>
+                                <%= (defaultCurrency && defaultCurrency.code === 'SYP')
+                                    ? String(Math.round(parseFloat(material.empty_package_price) || 0))
+                                    : (parseFloat(material.empty_package_price) || 0).toFixed(2)
+                                %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                            </td>
                                 </tr>
                                 <tr>
                                     <td><strong>ثمن اللصاقة:</strong></td>
-                                    <td><%= parseFloat(material.sticker_price).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
+                            <td>
+                                <%= (defaultCurrency && defaultCurrency.code === 'SYP')
+                                    ? String(Math.round(parseFloat(material.sticker_price) || 0))
+                                    : (parseFloat(material.sticker_price) || 0).toFixed(2)
+                                %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                            </td>
                                 </tr>
                                 <tr>
                                     <td><strong>ثمن كرتونة:</strong></td>
-                                    <td><%= parseFloat(material.carton_price).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
+                            <td>
+                                <%= (defaultCurrency && defaultCurrency.code === 'SYP')
+                                    ? String(Math.round(parseFloat(material.carton_price) || 0))
+                                    : (parseFloat(material.carton_price) || 0).toFixed(2)
+                                %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                            </td>
                                 </tr>
                                 <tr>
                                     <td><strong>ثمن الطبلية:</strong></td>
-                                    <td><%= parseFloat(material.pallet_price).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
+                            <td>
+                                <%= (defaultCurrency && defaultCurrency.code === 'SYP')
+                                    ? String(Math.round(parseFloat(material.pallet_price) || 0))
+                                    : (parseFloat(material.pallet_price) || 0).toFixed(2)
+                                %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                            </td>
                                 </tr>
                             </table>
                         </div>
@@ -134,15 +169,30 @@
                             <table class="table table-borderless">
                                 <tr>
                                     <td><strong>مصاريف إضافية:</strong></td>
-                                    <td><%= parseFloat(material.additional_expenses).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
+                            <td>
+                                <%= (defaultCurrency && defaultCurrency.code === 'SYP')
+                                    ? String(Math.round(parseFloat(material.additional_expenses) || 0))
+                                    : (parseFloat(material.additional_expenses) || 0).toFixed(2)
+                                %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                            </td>
                                 </tr>
                                 <tr>
                                     <td><strong>مصروف عمال:</strong></td>
-                                    <td><%= parseFloat(material.labor_cost).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
+                            <td>
+                                <%= (defaultCurrency && defaultCurrency.code === 'SYP')
+                                    ? String(Math.round(parseFloat(material.labor_cost) || 0))
+                                    : (parseFloat(material.labor_cost) || 0).toFixed(2)
+                                %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                            </td>
                                 </tr>
                                 <tr>
                                     <td><strong>مواد حافظة:</strong></td>
-                                    <td><%= parseFloat(material.preservatives_cost).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
+                            <td>
+                                <%= (defaultCurrency && defaultCurrency.code === 'SYP')
+                                    ? String(Math.round(parseFloat(material.preservatives_cost) || 0))
+                                    : (parseFloat(material.preservatives_cost) || 0).toFixed(2)
+                                %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                            </td>
                                 </tr>
                             </table>
                         </div>
