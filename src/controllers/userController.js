@@ -14,7 +14,13 @@ exports.getUsers = async (req, res) => {
         // تحويل role_id إلى نص وصفي
         const formattedUsers = users.map(user => ({
             ...user,
-            role: user.role_id === 2 ? 'editor' : user.role_id === 3 ? 'viewer' : 'unknown'
+            role: user.role_id === 2
+                ? 'editor'
+                : user.role_id === 3
+                ? 'viewer'
+                : user.role_id === 4
+                ? 'admin'
+                : 'unknown'
         }));
 
         res.render('users/index', {
@@ -91,7 +97,14 @@ exports.getEditForm = async (req, res) => {
 
         const editUser = {
             ...users[0],
-            role: users[0].role_id === 2 ? 'editor' : users[0].role_id === 3 ? 'viewer' : 'unknown'
+            role:
+                users[0].role_id === 2
+                    ? 'editor'
+                    : users[0].role_id === 3
+                    ? 'viewer'
+                    : users[0].role_id === 4
+                    ? 'admin'
+                    : 'unknown'
         };
 
         res.render('users/edit', {
