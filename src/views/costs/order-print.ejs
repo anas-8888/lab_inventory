@@ -1,0 +1,190 @@
+<% function fmtDate(d){ if(!d) return '-'; const dt=new Date(d); const dd=String(dt.getDate()).padStart(2,'0'); const mm=String(dt.getMonth()+1).padStart(2,'0'); const yy=dt.getFullYear(); return `${dd}/${mm}/${yy}`; }
+function formatNumberDisplay(value) {
+  if (value === null || value === undefined || value === '') return '-';
+  const num = parseFloat(value);
+  if (isNaN(num)) return '-';
+  if (num === 0) return '0';
+  let result = '';
+  if (Number.isInteger(num)) { result = num.toString(); }
+  else {
+    const decimalStr = num.toString().split('.')[1];
+    if (!decimalStr) result = num.toString();
+    else if (decimalStr.length <= 2) result = num.toString();
+    else result = num.toFixed(3);
+  }
+  if (num < 0) { return '\u200E' + result; }
+  return result;
+}
+const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '';
+%>
+
+<div class="container-fluid" style="direction: rtl; font-family: 'Cairo', 'Amiri', sans-serif;">
+  <!-- Header -->
+  <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+    <tr>
+      <td style="text-align: right; font-weight: bold; line-height: 1.4; width: 37%; font-size: 10pt;">
+        <div>مؤسسة عجاج أخوان التجارية</div>
+        <div>لإنتاج وتعبئة المواد الغذائية</div>
+        <div>وتجارة زيت الزيتون البكر</div>
+        <div style="font-size: 12px;">س.ت 10369 – س.ص 10</div>
+      </td>
+      <td style="text-align: center; width: 26%;">
+        <img src="/public/images/nexa.png" alt="شعار" style="width: 90px; height: 90px;">
+      </td>
+      <td style="text-align: left; font-weight: bold; line-height: 1.4; width: 37%; font-size: 10pt;">
+        <div>Ajaj Brothers Commercial Foundation</div>
+        <div>For Food Production and Packaging</div>
+        <div>And Virgin Olive Oil Trade</div>
+        <div style="font-size: 12px;">C.R. 10369 – I.R. 10</div>
+      </td>
+    </tr>
+  </table>
+  <hr>
+
+  <!-- Title -->
+  <div style="text-align:center; margin: 12px 0;">
+    <div style="font-size: 13pt; font-weight: 700;">طلبية رقم (<%= order.order_number %>)</div>
+  </div>
+
+  <!-- Order Info -->
+  <div class="info-stack">
+    <div class="box-compact">
+      <h6 class="section-title">بيانات الزبون</h6>
+      <div class="grid-kv">
+        <div class="kv"><span>الاسم:</span><span><%= order.client_name || '-' %></span></div>
+        <% if (order.client_phone) { %><div class="kv"><span>الهاتف:</span><span><%= order.client_phone %></span></div><% } %>
+        <% if (order.client_address) { %><div class="kv full"><span>العنوان:</span><span><%= order.client_address %></span></div><% } %>
+      </div>
+    </div>
+    <div class="box-compact">
+      <h6 class="section-title">بيانات الطلبية</h6>
+      <div class="grid-kv">
+        <div class="kv"><span>التاريخ:</span><span><%= fmtDate(order.order_date) %></span></div>
+        <div class="kv"><span>تاريخ التسليم:</span><span><%= fmtDate(order.delivery_date) %></span></div>
+        <div class="kv"><span>الحالة:</span><span><%= order.status === 'pending' ? 'قيد الانتظار' : order.status === 'processing' ? 'قيد المعالجة' : order.status === 'completed' ? 'مكتمل' : 'ملغي' %></span></div>
+        <% if (order.responsible_worker) { %><div class="kv"><span>المسؤول:</span><span><%= order.responsible_worker %></span></div><% } %>
+        <% if (order.quality_controller) { %><div class="kv"><span>مراقب الجودة:</span><span><%= order.quality_controller %></span></div><% } %>
+        <% if (order.pallets_count != null) { %><div class="kv"><span>عدد الطبالي:</span><span><%= formatNumberDisplay(order.pallets_count) %></span></div><% } %>
+        <% if (order.container_number) { %><div class="kv"><span>رقم الحاوية:</span><span><%= order.container_number %></span></div><% } %>
+        <% if (order.packages_count != null) { %><div class="kv"><span>عدد الطرود:</span><span><%= formatNumberDisplay(order.packages_count) %></span></div><% } %>
+        <% if (order.waybill_number) { %><div class="kv"><span>رقم البوليصة:</span><span><%= order.waybill_number %></span></div><% } %>
+        <% if (order.accreditation_number) { %><div class="kv"><span>رقم الاعتماد:</span><span><%= order.accreditation_number %></span></div><% } %>
+      </div>
+    </div>
+    <% if (order.notes) { %>
+      <div class="box-compact">
+        <h6 class="section-title">ملاحظات الطلبية</h6>
+        <div class="notes"><%= order.notes %></div>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Items Table -->
+  <div class="table-responsive" style="margin-top: 8px;">
+    <table class="table-custom table-bordered text-center align-middle" style="font-size: 10pt; width: 100%;">
+      <thead>
+        <tr>
+          <th style="width: 4%; padding: 6pt 4pt;">#</th>
+          <th style="width: 24%; padding: 6pt 4pt;">اسم المادة</th>
+          <th style="width: 8%; padding: 6pt 4pt;">الوحدة</th>
+          <th style="width: 10%; padding: 6pt 4pt;">الوزن</th>
+          <th style="width: 10%; padding: 6pt 4pt;">الحجم</th>
+          <th style="width: 8%; padding: 6pt 4pt;">الكمية</th>
+          <th style="width: 12%; padding: 6pt 4pt;">سعر الوحدة</th>
+          <th style="width: 12%; padding: 6pt 4pt;">المجموع</th>
+          <th style="width: 12%; padding: 6pt 4pt;">ملاحظات</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% (items || []).forEach((item, idx) => { %>
+          <tr>
+            <td style="padding: 6pt 4pt;"><%= formatNumberDisplay(idx + 1) %></td>
+            <td style="padding: 6pt 4pt; text-align: right;"><%= item.material_name || '-' %></td>
+            <td style="padding: 6pt 4pt;"><%= item.unit || '-' %></td>
+            <td style="padding: 6pt 4pt;"><%= item.weight != null ? formatNumberDisplay(item.weight) : '-' %></td>
+            <td style="padding: 6pt 4pt;"><%= item.volume != null ? formatNumberDisplay(item.volume) : '-' %></td>
+            <td style="padding: 6pt 4pt;"><%= item.requested_quantity != null ? formatNumberDisplay(item.requested_quantity) : '-' %></td>
+            <td style="padding: 6pt 4pt;"><%= item.unit_price != null ? `${formatNumberDisplay(item.unit_price)} ${currencySymbol}` : '-' %></td>
+            <td style="padding: 6pt 4pt;"><%= item.total_price != null ? `${formatNumberDisplay(item.total_price)} ${currencySymbol}` : '-' %></td>
+            <td style="padding: 6pt 4pt; text-align: right;"><%= item.notes || '-' %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3" style="text-align:center; font-weight: 700;">الإجماليات</td>
+          <td style="font-weight:700;"><%= formatNumberDisplay(totals.totalWeight) %></td>
+          <td style="font-weight:700;"><%= formatNumberDisplay(totals.totalVolume) %></td>
+          <td style="font-weight:700;"><%= formatNumberDisplay(totals.totalRequestedQuantity) %></td>
+          <td></td>
+          <td style="font-weight:700;"><%= `${formatNumberDisplay(totals.grandTotal)} ${currencySymbol}` %></td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- Footer -->
+  <div class="print-footer" id="fixed-print-footer" style="text-align:center; font-size: 9pt; margin-top: 10px;">
+    <hr style="margin: 4px 0; border: 0.5px solid #bbb;">
+    سوريا، حماة، أوتستراد دمشق-حلب الدولي، س.ت 10369 – س.ص 10<br>
+    0940500511 – 0988111127 | ajajbrothers@gmail.com<br>
+    جميع الحقوق محفوظة © <%= new Date().getFullYear() %> نظام إدارة المختبر | تم التطوير بواسطة شركة NEXA GROUP COMPANY
+  </div>
+</div>
+
+<script>
+  // طباعة تلقائية عند الفتح
+  window.addEventListener('load', function(){
+    setTimeout(function(){ window.print(); }, 200);
+  });
+
+  // إغلاق التبويب بعد إغلاق نافذة الطباعة (سواء طبع أو ألغى)
+  function closeAfterPrint(){
+    setTimeout(function(){
+      try { window.close(); } catch(e) {}
+    }, 100);
+  }
+  if ('onafterprint' in window) {
+    window.addEventListener('afterprint', closeAfterPrint);
+  }
+  // متصفح قديم: مراقبة التبديل إلى/من وضع الطباعة
+  var mql = window.matchMedia && window.matchMedia('print');
+  if (mql) {
+    if (mql.addEventListener) {
+      mql.addEventListener('change', function(e){ if (!e.matches) closeAfterPrint(); });
+    } else if (mql.addListener) {
+      mql.addListener(function(e){ if (!e.matches) closeAfterPrint(); });
+    }
+  }
+</script>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Amiri:wght@400;500;600;700&display=swap');
+  @page { size: A4 portrait; margin: 1cm; }
+  html, body { background: #fff !important; margin:0; padding:0; direction: rtl; text-align: right; font-family: 'Cairo','Amiri','Noto Naskh Arabic',sans-serif !important; font-size: 10pt; }
+  .table-custom { width: 100%; border-collapse: separate; border-spacing: 0; }
+  .table-custom th, .table-custom td { border: 1px solid #444; padding: 6pt 4pt; }
+  .table-custom th { background: #f5f5f5; font-weight: 700; }
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
+  tr { page-break-inside: avoid; }
+  .table-responsive { overflow-x: visible; }
+
+  .info-stack { display: flex; flex-direction: column; gap: 6px; }
+  .box-compact { border: 1px solid #ccc; padding: 6pt; border-radius: 4px; }
+  .section-title { font-size: 11pt; font-weight: 700; margin: 0 0 4pt 0; }
+  .grid-kv { display: grid; grid-template-columns: 1fr 1fr; gap: 2pt 8pt; }
+  .kv { display: flex; justify-content: space-between; border-bottom: 1px dashed #e0e0e0; padding: 2pt 0; }
+  .kv.full { grid-column: 1 / -1; }
+  .kv span:first-child { color: #333; font-weight: 600; margin-left: 8px; }
+  .notes { white-space: pre-wrap; line-height: 1.6; }
+
+  /* مساحة أسفل المحتوى لمنع تداخل الفوتر المثبت */
+  .container-fluid { padding-bottom: 80px; }
+  .print-footer { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; }
+
+  /* تقليل ارتفاع الصفوف لعدد مواد كبير */
+  .table-custom th, .table-custom td { padding: 4pt 3pt; }
+</style>
+

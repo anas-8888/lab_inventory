@@ -11,6 +11,7 @@ router.get('/cost-statement', isAuthenticated, isAdmin, costsController.getCostS
 router.get('/cost-statement/:id', isAuthenticated, isAdmin, costsController.getMaterial);
 router.get('/cost-statement/:id/logs', isAuthenticated, isAdmin, costsController.getMaterialCostLogs);
 router.get('/cost-statement/:id/preview', isAuthenticated, isAdmin, costsController.getMaterialPreview);
+router.get('/cost-statement/:id/print', isAuthenticated, isAdmin, costsController.getMaterialPrintPage);
 router.post('/cost-statement', isAuthenticated, isAdmin, costsController.createMaterial);
 router.put('/cost-statement/:id', isAuthenticated, isAdmin, costsController.updateMaterial);
 router.delete('/cost-statement/:id', isAuthenticated, isAdmin, costsController.deleteMaterial);
@@ -19,6 +20,7 @@ router.delete('/cost-statement/:id', isAuthenticated, isAdmin, costsController.d
 router.get('/quotations', isAuthenticated, isAdmin, costsController.getQuotations);
 router.post('/quotations', isAuthenticated, isAdmin, costsController.createQuotation);
 router.get('/quotations/:id', isAuthenticated, isAdmin, costsController.getQuotationDetails);
+router.get('/quotations/:id/print', isAuthenticated, isAdmin, costsController.getQuotationPrintPage);
 router.get('/quotations/:id/json', isAuthenticated, isAdmin, costsController.getQuotationJson);
 router.put('/quotations/:id', isAuthenticated, isAdmin, costsController.updateQuotation);
 router.delete('/quotations/:id', isAuthenticated, isAdmin, costsController.deleteQuotation);
@@ -26,6 +28,8 @@ router.delete('/quotations/:id', isAuthenticated, isAdmin, costsController.delet
 // المرحلة الثالثة: الطلبيات
 router.get('/orders', isAuthenticated, isAdmin, costsController.getOrders);
 router.get('/orders/:id', isAuthenticated, isAdmin, costsController.getOrder);
+router.get('/orders/:id/details', isAuthenticated, isAdmin, costsController.getOrderDetailsPage);
+router.get('/orders/:id/print', isAuthenticated, isAdmin, costsController.getOrderPrintPage);
 router.post('/orders', isAuthenticated, isAdmin, costsController.createOrder);
 router.put('/orders/:id', isAuthenticated, isAdmin, costsController.updateOrder);
 router.put('/orders/:id/status', isAuthenticated, isAdmin, costsController.updateOrderStatus);

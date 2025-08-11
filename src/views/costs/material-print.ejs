@@ -1,0 +1,134 @@
+<% function fmtDate(d){ if(!d) return '-'; const dt=new Date(d); const dd=String(dt.getDate()).padStart(2,'0'); const mm=String(dt.getMonth()+1).padStart(2,'0'); const yy=dt.getFullYear(); return `${dd}/${mm}/${yy}`; }
+function formatNumberDisplay(value) {
+  if (value === null || value === undefined || value === '') return '-';
+  const num = parseFloat(value);
+  if (isNaN(num)) return '-';
+  if (num === 0) return '0';
+  let result = '';
+  if (Number.isInteger(num)) result = num.toString();
+  else {
+    const ds = num.toString().split('.')[1];
+    result = !ds ? num.toString() : ds.length <= 2 ? num.toString() : num.toFixed(3);
+  }
+  if (num < 0) return '\u200E' + result;
+  return result;
+}
+const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '';
+%>
+
+<div class="container-fluid" style="direction: rtl; font-family: 'Cairo','Amiri',sans-serif;">
+  <!-- Header -->
+  <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+    <tr>
+      <td style="text-align: right; font-weight: bold; line-height: 1.4; width: 37%; font-size: 10pt;">
+        <div>مؤسسة عجاج أخوان التجارية</div>
+        <div>لإنتاج وتعبئة المواد الغذائية</div>
+        <div>وتجارة زيت الزيتون البكر</div>
+        <div style="font-size: 12px;">س.ت 10369 – س.ص 10</div>
+      </td>
+      <td style="text-align: center; width: 26%;">
+        <img src="/public/images/nexa.png" alt="شعار" style="width: 90px; height: 90px;">
+      </td>
+      <td style="text-align: left; font-weight: bold; line-height: 1.4; width: 37%; font-size: 10pt;">
+        <div>Ajaj Brothers Commercial Foundation</div>
+        <div>For Food Production and Packaging</div>
+        <div>And Virgin Olive Oil Trade</div>
+        <div style="font-size: 12px;">C.R. 10369 – I.R. 10</div>
+      </td>
+    </tr>
+  </table>
+  <hr>
+
+  <!-- Title -->
+  <div style="text-align:center; margin: 12px 0;">
+    <div style="font-size: 13pt; font-weight: 700;">مادة: <%= material.material_name %></div>
+  </div>
+
+  <!-- Material Basic Info -->
+  <div class="info-stack">
+    <div class="box-compact">
+      <h6 class="section-title">المعلومات الأساسية</h6>
+      <div class="grid-kv">
+        <div class="kv"><span>الاسم:</span><span><%= material.material_name %></span></div>
+        <div class="kv"><span>النوع:</span><span><%= material.material_type || '-' %></span></div>
+        <div class="kv"><span>تاريخ الإضافة:</span><span><%= fmtDate(material.created_at) %></span></div>
+        <div class="kv"><span>آخر تحديث:</span><span><%= fmtDate(material.updated_at) %></span></div>
+      </div>
+    </div>
+
+    <div class="box-compact">
+      <h6 class="section-title">نتائج الحساب</h6>
+      <div class="grid-kv">
+        <div class="kv"><span>كلفة القطعة:</span><span><%= `${formatNumberDisplay(material.unit_cost)} ${currencySymbol}` %></span></div>
+        <div class="kv"><span>كلفة الطرد:</span><span><%= `${formatNumberDisplay(material.package_cost)} ${currencySymbol}` %></span></div>
+      </div>
+    </div>
+
+    <div class="box-compact">
+      <h6 class="section-title">بيانات التكلفة الأساسية</h6>
+      <div class="grid-kv">
+        <div class="kv"><span>السعر قبل الهدر (لكل كجم):</span><span><%= `${formatNumberDisplay(material.price_before_waste)} ${currencySymbol}` %></span></div>
+        <div class="kv"><span>الوزن الجمالي (كجم):</span><span><%= formatNumberDisplay(material.gross_weight) %></span></div>
+        <div class="kv"><span>نسبة الهدر (%):</span><span><%= formatNumberDisplay(material.waste_percentage) %></span></div>
+        <div class="kv"><span>وزن التعبئة (كجم):</span><span><%= formatNumberDisplay(material.packaging_weight) %></span></div>
+      </div>
+    </div>
+
+    <div class="box-compact">
+      <h6 class="section-title">بيانات التعبئة</h6>
+      <div class="grid-kv">
+        <div class="kv"><span>وحدة التعبئة:</span><span><%= material.packaging_unit || '-' %></span></div>
+        <div class="kv"><span>شد الكرتون:</span><span><%= formatNumberDisplay(material.pieces_per_package) %></span></div>
+        <div class="kv"><span>عدد الطرود/الطبلية:</span><span><%= formatNumberDisplay(material.packages_per_pallet) %></span></div>
+      </div>
+    </div>
+
+    <div class="box-compact">
+      <h6 class="section-title">تكاليف التعبئة والإضافية</h6>
+      <div class="grid-kv">
+        <div class="kv"><span>العبوة الفارغة:</span><span><%= `${formatNumberDisplay(material.empty_package_price)} ${currencySymbol}` %></span></div>
+        <div class="kv"><span>اللصاقة:</span><span><%= `${formatNumberDisplay(material.sticker_price)} ${currencySymbol}` %></span></div>
+        <div class="kv"><span>كرتونة:</span><span><%= `${formatNumberDisplay(material.carton_price)} ${currencySymbol}` %></span></div>
+        <div class="kv"><span>الطبلية:</span><span><%= `${formatNumberDisplay(material.pallet_price)} ${currencySymbol}` %></span></div>
+        <div class="kv"><span>مصاريف إضافية:</span><span><%= `${formatNumberDisplay(material.additional_expenses)} ${currencySymbol}` %></span></div>
+        <div class="kv"><span>مصروف عمال:</span><span><%= `${formatNumberDisplay(material.labor_cost)} ${currencySymbol}` %></span></div>
+        <div class="kv"><span>مواد حافظة:</span><span><%= `${formatNumberDisplay(material.preservatives_cost)} ${currencySymbol}` %></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="print-footer" id="fixed-print-footer" style="text-align:center; font-size: 9pt; margin-top: 10px;">
+    <hr style="margin: 4px 0; border: 0.5px solid #bbb;">
+    سوريا، حماة، أوتستراد دمشق-حلب الدولي، س.ت 10369 – س.ص 10<br>
+    0940500511 – 0988111127 | ajajbrothers@gmail.com<br>
+    جميع الحقوق محفوظة © <%= new Date().getFullYear() %> نظام إدارة المختبر | تم التطوير بواسطة شركة NEXA GROUP COMPANY
+  </div>
+</div>
+
+<script>
+  window.addEventListener('load', function(){ setTimeout(function(){ window.print(); }, 200); });
+  function closeAfterPrint(){ setTimeout(function(){ try{ window.close(); }catch(e){} }, 100); }
+  if ('onafterprint' in window) { window.addEventListener('afterprint', closeAfterPrint); }
+  var mql = window.matchMedia && window.matchMedia('print');
+  if (mql) {
+    if (mql.addEventListener) { mql.addEventListener('change', function(e){ if(!e.matches) closeAfterPrint(); }); }
+    else if (mql.addListener) { mql.addListener(function(e){ if(!e.matches) closeAfterPrint(); }); }
+  }
+</script>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Amiri:wght@400;500;600;700&display=swap');
+  @page { size: A4 portrait; margin: 1cm; }
+  html, body { background: #fff !important; margin:0; padding:0; direction: rtl; text-align: right; font-family: 'Cairo','Amiri','Noto Naskh Arabic',sans-serif !important; font-size: 10pt; }
+  .info-stack { display: flex; flex-direction: column; gap: 6px; }
+  .box-compact { border: 1px solid #ccc; padding: 6pt; border-radius: 4px; }
+  .section-title { font-size: 11pt; font-weight: 700; margin: 0 0 4pt 0; }
+  .grid-kv { display: grid; grid-template-columns: 1fr 1fr; gap: 2pt 8pt; }
+  .kv { display: flex; justify-content: space-between; border-bottom: 1px dashed #e0e0e0; padding: 2pt 0; }
+  .kv span:first-child { color: #333; font-weight: 600; margin-left: 8px; }
+  .notes { white-space: pre-wrap; line-height: 1.6; }
+  .container-fluid { padding-bottom: 80px; }
+  .print-footer { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; }
+</style>
+

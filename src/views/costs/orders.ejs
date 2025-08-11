@@ -3,57 +3,17 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="bi bi-cart-check"></i> الطلبيات</h2>
-                <a href="/costs" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-right me-1"></i> العودة للتكاليف
-                </a>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createOrderModal">
+                        <i class="bi bi-plus-circle me-1"></i> إنشاء طلبية جديدة
+                    </button>
+                    <a href="/costs" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-right me-1"></i> العودة للتكاليف
+                    </a>
+                </div>
             </div>
 
-            <!-- نموذج إنشاء طلبية جديدة -->
-            <div class="card shadow mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-plus-circle"></i> إنشاء طلبية جديدة</h5>
-                </div>
-                <div class="card-body">
-                    <form id="orderForm" method="POST" action="/costs/orders">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">اسم العميل *</label>
-                                <input type="text" class="form-control" name="client_name" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">رقم الهاتف</label>
-                                <input type="text" class="form-control" name="client_phone">
-                            </div>
-                            <div class="col-md-12">
-                                <label class="form-label">العنوان</label>
-                                <textarea class="form-control" name="client_address" rows="2"></textarea>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">تاريخ التسليم *</label>
-                                <div class="input-group">
-                                    <input type="text" class="form-control datepicker" name="delivery_date" readonly required>
-                                    <button type="button" class="btn btn-outline-secondary" onclick="openDatePicker('delivery_date')">
-                                        <i class="bi bi-calendar"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">اسم العامل المسؤول</label>
-                                <input type="text" class="form-control" name="responsible_worker">
-                            </div>
-                            <div class="col-md-12">
-                                <label class="form-label">ملاحظات</label>
-                                <textarea class="form-control" name="notes" rows="3"></textarea>
-                            </div>
-                            <div class="col-12 text-end">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-save me-1"></i> حفظ الطلبية
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
+            
 
             <!-- جدول الطلبيات الموجودة -->
             <% if (orders && orders.length > 0) { %>
@@ -67,12 +27,17 @@
                             <thead>
                                 <tr>
                                     <th>رقم الطلبية</th>
-                                    <th>اسم العميل</th>
-                                    <th>رقم الهاتف</th>
+                                    <th>اسم الزبون</th>
+                                    <th>تاريخ الطلبية</th>
                                     <th>تاريخ التسليم</th>
-                                    <th>العامل المسؤول</th>
+                                    <th>المسؤول عن التجهيز</th>
+                                    <th>مراقب الجودة</th>
+                                    <th>عدد الطبالي</th>
+                                    <th>رقم الحاوية</th>
+                                    <th>عدد الطرود</th>
+                                    <th>رقم البوليصة</th>
+                                    <th>رقم الاعتماد</th>
                                     <th>الحالة</th>
-                                    <th>التاريخ</th>
                                     <th>الإجراءات</th>
                                 </tr>
                             </thead>
@@ -80,10 +45,16 @@
                                 <% orders.forEach(order => { %>
                                 <tr>
                                     <td><%= order.order_number %></td>
-                                    <td><%= order.client_name %></td>
-                                    <td><%= order.client_phone || '-' %></td>
+                                    <td><%= order.client_name || '-' %></td>
+                                    <td><%= formatDate(order.order_date) %></td>
                                     <td><%= formatDate(order.delivery_date) %></td>
                                     <td><%= order.responsible_worker || '-' %></td>
+                                    <td><%= order.quality_controller || '-' %></td>
+                                    <td><%= order.pallets_count || '-' %></td>
+                                    <td><%= order.container_number || '-' %></td>
+                                    <td><%= order.packages_count || '-' %></td>
+                                    <td><%= order.waybill_number || '-' %></td>
+                                    <td><%= order.accreditation_number || '-' %></td>
                                     <td>
                                         <span class="badge bg-<%= 
                                             order.status === 'pending' ? 'warning' : 
@@ -97,19 +68,19 @@
                                             %>
                                         </span>
                                     </td>
-                                    <td><%= formatDate(order.created_at) %></td>
                                     <td>
                                         <div class="btn-group">
+                                            <a href="/costs/orders/<%= order.id %>/details" class="btn btn-sm btn-secondary" title="معاينة"><i class="bi bi-eye"></i></a>
                                             <button type="button" class="btn btn-sm btn-info" onclick="editOrder(<%= order.id %>)" title="تعديل">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-warning" onclick="updateOrderStatus('<%= order.id %>', 'processing')" <%= order.status !== 'pending' ? 'disabled' : '' %> title="قيد المعالجة">
+                                            <button type="button" class="btn btn-sm btn-warning" onclick="updateOrderStatus('<%= order.id %>', 'processing')" title="قيد المعالجة">
                                                 <i class="bi bi-play"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-success" onclick="updateOrderStatus('<%= order.id %>', 'completed')" <%= order.status === 'completed' || order.status === 'cancelled' ? 'disabled' : '' %> title="مكتمل">
+                                            <button type="button" class="btn btn-sm btn-success" onclick="updateOrderStatus('<%= order.id %>', 'completed')" title="مكتمل">
                                                 <i class="bi bi-check"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-danger" onclick="updateOrderStatus('<%= order.id %>', 'cancelled')" <%= order.status === 'cancelled' ? 'disabled' : '' %> title="إلغاء">
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="updateOrderStatus('<%= order.id %>', 'cancelled')" title="إلغاء">
                                                 <i class="bi bi-x"></i>
                                             </button>
                                             <button type="button" class="btn btn-sm btn-danger" onclick="deleteOrder(<%= order.id %>)" title="حذف">
@@ -123,6 +94,17 @@
                         </table>
                     </div>
                 </div>
+            </div>
+            <% } else { %>
+            <div class="card shadow">
+              <div class="card-body text-center py-5">
+                <i class="bi bi-cart-x fs-1 text-muted mb-3"></i>
+                <h5 class="mb-2">لا توجد طلبيات حتى الآن</h5>
+                <p class="text-muted">ابدأ بإنشاء أول طلبية باستخدام الزر أدناه.</p>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createOrderModal">
+                  <i class="bi bi-plus-circle me-1"></i> إنشاء طلبية جديدة
+                </button>
+              </div>
             </div>
             <% } %>
         </div>
@@ -140,6 +122,7 @@
             <div class="modal-body">
                 <form id="editOrderForm">
                     <input type="hidden" id="editOrderId" name="order_id">
+                    <input type="hidden" id="editOrderDate" name="order_date">
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">اسم العميل *</label>
@@ -166,10 +149,56 @@
                             <label class="form-label">اسم العامل المسؤول</label>
                             <input type="text" class="form-control" id="editResponsibleWorker" name="responsible_worker">
                         </div>
+                        <div class="col-md-6">
+                            <label class="form-label">مراقب جودة للطلبية</label>
+                            <input type="text" class="form-control" id="editQualityController" name="quality_controller">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">عدد الطبالي</label>
+                            <input type="number" class="form-control" id="editPalletsCount" name="pallets_count" min="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">رقم الحاوية</label>
+                            <input type="text" class="form-control" id="editContainerNumber" name="container_number">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">عدد الطرود</label>
+                            <input type="number" class="form-control" id="editPackagesCount" name="packages_count" min="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">رقم البوليصة</label>
+                            <input type="text" class="form-control" id="editWaybillNumber" name="waybill_number">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">رقم الاعتماد</label>
+                            <input type="text" class="form-control" id="editAccreditationNumber" name="accreditation_number">
+                        </div>
                         <div class="col-md-12">
                             <label class="form-label">ملاحظات</label>
                             <textarea class="form-control" id="editNotes" name="notes" rows="3"></textarea>
                         </div>
+                    </div>
+
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">مواد الطلبية</h6>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="addEditOrderItemRow()"><i class="bi bi-plus"></i> إضافة مادة</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="editOrderItemsTable">
+                            <thead>
+                                <tr>
+                                    <th>المادة</th>
+                                    <th>الوحدة</th>
+                                    <th>الكمية المطلوبة</th>
+                                    <th>الوزن</th>
+                                    <th>الحجم</th>
+                                    <th>ملاحظات</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="editOrderItemsBody"></tbody>
+                        </table>
                     </div>
                 </form>
             </div>
@@ -179,6 +208,99 @@
             </div>
         </div>
     </div>
+</div>
+
+<!-- Modal إنشاء طلبية جديدة -->
+<div class="modal fade" id="createOrderModal" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">إنشاء طلبية جديدة</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="orderForm" method="POST" action="/costs/orders">
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label">اسم الزبون</label>
+              <input type="text" class="form-control" name="client_name">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">تاريخ الطلبية</label>
+              <div class="input-group">
+                <input type="text" class="form-control datepicker" id="orderDateInput" name="order_date" readonly>
+                <button type="button" class="btn btn-outline-secondary" onclick="openDatePicker('orderDateInput')"><i class="bi bi-calendar"></i></button>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">تاريخ التسليم</label>
+              <div class="input-group">
+                <input type="text" class="form-control datepicker" id="deliveryDateInput" name="delivery_date" readonly>
+                <button type="button" class="btn btn-outline-secondary" onclick="openDatePicker('deliveryDateInput')"><i class="bi bi-calendar"></i></button>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">المسؤول عن التجهيز</label>
+              <input type="text" class="form-control" name="responsible_worker">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">مراقب جودة للطلبية</label>
+              <input type="text" class="form-control" name="quality_controller">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">عدد الطبالي</label>
+              <input type="number" class="form-control" name="pallets_count" min="0">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">رقم الحاوية</label>
+              <input type="text" class="form-control" name="container_number">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">عدد الطرود</label>
+              <input type="number" class="form-control" name="packages_count" min="0">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">رقم البوليصة</label>
+              <input type="text" class="form-control" name="waybill_number">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">رقم الاعتماد</label>
+              <input type="text" class="form-control" name="accreditation_number">
+            </div>
+            <div class="col-12">
+              <label class="form-label">ملاحظات</label>
+              <textarea class="form-control" name="notes" rows="2"></textarea>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0">مواد الطلبية</h6>
+            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addOrderItemRow()"><i class="bi bi-plus"></i> إضافة مادة</button>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-bordered" id="orderItemsTable">
+              <thead>
+                <tr>
+                  <th>المادة</th>
+                  <th>الوحدة</th>
+                  <th>الكمية المطلوبة</th>
+                  <th>الوزن</th>
+                  <th>الحجم</th>
+                  <th>ملاحظات</th>
+                  <th>الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="orderItemsBody"></tbody>
+            </table>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button type="submit" form="orderForm" class="btn btn-primary">حفظ الطلبية</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Modal التقويم -->
@@ -233,6 +355,8 @@
 </div>
 
 <script>
+// تمرير قائمة المواد من الخادم إلى الواجهة
+window.materials = <%- JSON.stringify(typeof materials !== 'undefined' ? materials : []) %>;
 let currentDateInput = null;
 let selectedDate = null;
 let currentMonth = new Date().getMonth();
@@ -288,7 +412,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const year = selectedDate.getFullYear();
             const formattedDate = `${day}/${month}/${year}`;
             
-            currentDateInput.value = formattedDate;
+            if (currentDateInput) currentDateInput.value = formattedDate;
             
             const modal = bootstrap.Modal.getInstance(document.getElementById('datePickerModal'));
             modal.hide();
@@ -383,7 +507,10 @@ function setDefaultDates() {
     const year = today.getFullYear();
     const formattedDate = `${day}/${month}/${year}`;
     
-    document.querySelector('input[name="delivery_date"]').value = formattedDate;
+    const orderDate = document.getElementById('orderDateInput');
+    if (orderDate) orderDate.value = formattedDate;
+    const deliveryDate = document.getElementById('deliveryDateInput');
+    if (deliveryDate) deliveryDate.value = formattedDate;
 }
 
 // دالة تنسيق التاريخ
@@ -401,15 +528,31 @@ function editOrder(orderId) {
     // جلب بيانات الطلبية
     fetch(`/costs/orders/${orderId}`)
         .then(response => response.json())
-        .then(order => {
+        .then(data => {
+            if (!data.success) throw new Error('LOAD_FAILED');
+            const order = data.order;
+            const items = Array.isArray(data.items) ? data.items : [];
+
             document.getElementById('editOrderId').value = order.id;
-            document.getElementById('editClientName').value = order.client_name;
+            document.getElementById('editClientName').value = order.client_name || '';
             document.getElementById('editClientPhone').value = order.client_phone || '';
             document.getElementById('editClientAddress').value = order.client_address || '';
+            document.getElementById('editOrderDate').value = formatDate(order.order_date);
             document.getElementById('editDeliveryDate').value = formatDate(order.delivery_date);
             document.getElementById('editResponsibleWorker').value = order.responsible_worker || '';
+            document.getElementById('editQualityController').value = order.quality_controller || '';
+            document.getElementById('editPalletsCount').value = order.pallets_count || '';
+            document.getElementById('editContainerNumber').value = order.container_number || '';
+            document.getElementById('editPackagesCount').value = order.packages_count || '';
+            document.getElementById('editWaybillNumber').value = order.waybill_number || '';
+            document.getElementById('editAccreditationNumber').value = order.accreditation_number || '';
             document.getElementById('editNotes').value = order.notes || '';
-            
+
+            // تعبئة مواد الطلبية
+            const tbody = document.getElementById('editOrderItemsBody');
+            tbody.innerHTML = '';
+            items.forEach(it => addEditOrderItemRow(it));
+
             const modal = new bootstrap.Modal(document.getElementById('editOrderModal'));
             modal.show();
         })
@@ -422,6 +565,7 @@ function editOrder(orderId) {
 function saveOrderEdit() {
     const formData = new FormData(document.getElementById('editOrderForm'));
     const orderId = document.getElementById('editOrderId').value;
+    const items = collectEditOrderItems();
     
     fetch(`/costs/orders/${orderId}`, {
         method: 'PUT',
@@ -430,11 +574,19 @@ function saveOrderEdit() {
         },
         body: JSON.stringify({
             client_name: formData.get('client_name'),
+            order_date: formData.get('order_date'),
             client_phone: formData.get('client_phone'),
             client_address: formData.get('client_address'),
             delivery_date: formData.get('delivery_date'),
             responsible_worker: formData.get('responsible_worker'),
+            quality_controller: formData.get('quality_controller'),
+            pallets_count: parseInt(formData.get('pallets_count')||'')||null,
+            container_number: formData.get('container_number'),
+            packages_count: parseInt(formData.get('packages_count')||'')||null,
+            waybill_number: formData.get('waybill_number'),
+            accreditation_number: formData.get('accreditation_number'),
             notes: formData.get('notes')
+            ,items
         })
     })
     .then(response => response.json())
@@ -512,6 +664,7 @@ document.getElementById('orderForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
     const formData = new FormData(this);
+    const items = collectOrderItems();
     
     fetch('/costs/orders', {
         method: 'POST',
@@ -520,11 +673,17 @@ document.getElementById('orderForm').addEventListener('submit', function(e) {
         },
         body: JSON.stringify({
             client_name: formData.get('client_name'),
-            client_phone: formData.get('client_phone'),
-            client_address: formData.get('client_address'),
+            order_date: formData.get('order_date'),
             delivery_date: formData.get('delivery_date'),
             responsible_worker: formData.get('responsible_worker'),
-            notes: formData.get('notes')
+            quality_controller: formData.get('quality_controller'),
+            pallets_count: parseInt(formData.get('pallets_count')||'')||null,
+            container_number: formData.get('container_number'),
+            packages_count: parseInt(formData.get('packages_count')||'')||null,
+            waybill_number: formData.get('waybill_number'),
+            accreditation_number: formData.get('accreditation_number'),
+            notes: formData.get('notes'),
+            items
         })
     })
     .then(response => response.json())
@@ -559,6 +718,135 @@ function showAlert(message, type) {
             alertDiv.remove();
         }
     }, 5000);
+}
+
+// مواد الطلبية: إضافة/حذف/جمع
+function addOrderItemRow(){
+  const tbody = document.getElementById('orderItemsBody');
+  const tr = document.createElement('tr');
+  const materialOptions = (window.materials || []).map(m => `<option value="${m.id}" data-unit="${m.packaging_unit||''}">${m.material_name}</option>`).join('');
+  tr.innerHTML = `
+    <td>
+      <select class="form-select order-material" onchange="onOrderMaterialChange(this)">
+        <option value="">اختر المادة</option>
+        ${materialOptions}
+      </select>
+    </td>
+    <td><input type="text" class="form-control order-unit" readonly></td>
+    <td><input type="number" class="form-control order-qty" step="0.001" min="0"></td>
+    <td><input type="number" class="form-control order-weight" step="0.001" min="0"></td>
+    <td><input type="number" class="form-control order-volume" step="0.001" min="0"></td>
+    <td><input type="text" class="form-control order-notes"></td>
+    <td><button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()"><i class="bi bi-trash"></i></button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function onOrderMaterialChange(selectEl){
+  const tr = selectEl.closest('tr');
+  const unit = selectEl.selectedOptions[0]?.getAttribute('data-unit')||'';
+  tr.querySelector('.order-unit').value = unit;
+}
+
+function collectOrderItems(){
+  const items = [];
+  document.querySelectorAll('#orderItemsBody tr').forEach(tr =>{
+    const sel = tr.querySelector('.order-material');
+    const materialId = sel && sel.value ? parseInt(sel.value) : null;
+    const materialName = sel && sel.selectedOptions[0] ? sel.selectedOptions[0].textContent.trim() : '';
+    const unit = tr.querySelector('.order-unit')?.value || null;
+    const qty = parseFloat(tr.querySelector('.order-qty')?.value||'');
+    const weight = parseFloat(tr.querySelector('.order-weight')?.value||'');
+    const volume = parseFloat(tr.querySelector('.order-volume')?.value||'');
+    const notes = tr.querySelector('.order-notes')?.value || null;
+    if (materialId || materialName){
+      items.push({
+        material_id: materialId,
+        material_name: materialName,
+        unit,
+        requested_quantity: isNaN(qty)? null : qty,
+        weight: isNaN(weight)? null : weight,
+        volume: isNaN(volume)? null : volume,
+        notes
+      });
+    }
+  });
+  return items;
+}
+
+// مواد الطلبية (التعديل)
+function addEditOrderItemRow(item){
+  const tbody = document.getElementById('editOrderItemsBody');
+  const tr = document.createElement('tr');
+  const materials = Array.isArray(window.materials) ? window.materials : [];
+  const materialOptions = materials.map(m => `<option value="${m.id}" data-unit="${m.packaging_unit||''}">${m.material_name}</option>`).join('');
+  const selectedId = item && item.material_id ? String(item.material_id) : '';
+  const selectedUnit = item && item.unit ? item.unit : '';
+  const selectedName = item && item.material_name ? item.material_name : '';
+
+  tr.innerHTML = `
+    <td>
+      <select class="form-select edit-order-material" onchange="onEditOrderMaterialChange(this)">
+        <option value="">اختر المادة</option>
+        ${materialOptions}
+      </select>
+    </td>
+    <td><input type="text" class="form-control edit-order-unit" value="${selectedUnit}" readonly></td>
+    <td><input type="number" class="form-control edit-order-qty" step="0.001" min="0" value="${item && item.requested_quantity != null ? item.requested_quantity : ''}"></td>
+    <td><input type="number" class="form-control edit-order-weight" step="0.001" min="0" value="${item && item.weight != null ? item.weight : ''}"></td>
+    <td><input type="number" class="form-control edit-order-volume" step="0.001" min="0" value="${item && item.volume != null ? item.volume : ''}"></td>
+    <td><input type="text" class="form-control edit-order-notes" value="${item && item.notes ? item.notes : ''}"></td>
+    <td><button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()"><i class="bi bi-trash"></i></button></td>
+  `;
+
+  tbody.appendChild(tr);
+
+  const selectEl = tr.querySelector('.edit-order-material');
+  if (selectedId && Array.from(selectEl.options).some(o => o.value === selectedId)){
+    selectEl.value = selectedId;
+    const unit = selectEl.selectedOptions[0]?.getAttribute('data-unit')||'';
+    tr.querySelector('.edit-order-unit').value = unit || selectedUnit;
+  } else if (selectedName){
+    // مادة غير موجودة في القائمة، أضفها مؤقتاً
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = selectedName;
+    opt.selected = true;
+    selectEl.appendChild(opt);
+    tr.querySelector('.edit-order-unit').value = selectedUnit;
+  }
+}
+
+function onEditOrderMaterialChange(selectEl){
+  const tr = selectEl.closest('tr');
+  const unit = selectEl.selectedOptions[0]?.getAttribute('data-unit')||'';
+  tr.querySelector('.edit-order-unit').value = unit;
+}
+
+function collectEditOrderItems(){
+  const items = [];
+  document.querySelectorAll('#editOrderItemsBody tr').forEach(tr =>{
+    const sel = tr.querySelector('.edit-order-material');
+    const materialId = sel && sel.value ? parseInt(sel.value) : null;
+    const materialName = sel && sel.selectedOptions[0] ? sel.selectedOptions[0].textContent.trim() : '';
+    const unit = tr.querySelector('.edit-order-unit')?.value || null;
+    const qty = parseFloat(tr.querySelector('.edit-order-qty')?.value||'');
+    const weight = parseFloat(tr.querySelector('.edit-order-weight')?.value||'');
+    const volume = parseFloat(tr.querySelector('.edit-order-volume')?.value||'');
+    const notes = tr.querySelector('.edit-order-notes')?.value || null;
+    if (materialId || materialName){
+      items.push({
+        material_id: materialId,
+        material_name: materialName,
+        unit,
+        requested_quantity: isNaN(qty)? null : qty,
+        weight: isNaN(weight)? null : weight,
+        volume: isNaN(volume)? null : volume,
+        notes
+      });
+    }
+  });
+  return items;
 }
 </script>
 

@@ -582,6 +582,18 @@ const getQuotationDetails = async (req, res) => {
             SELECT * FROM quotation_items WHERE quotation_id = ?
         `, [id]);
 
+        // اجلب بيانات المواد لاستخدامها كقيمة احتياطية للحقل المفقود
+        const materialIds = items.map(i => i.material_id).filter(Boolean);
+        let materialsMap = new Map();
+        if (materialIds.length > 0) {
+            const [materials] = await req.db.query(
+                `SELECT id, material_type, packaging_unit, packaging_weight, pieces_per_package, package_cost, package_cost_syp 
+                 FROM materials WHERE id IN (${materialIds.map(()=>'?').join(',')})`,
+                materialIds
+            );
+            materials.forEach(m => materialsMap.set(m.id, m));
+        }
+
         // اختيار القيم حسب العملة المحددة
         const displayQuotation = {
             ...quotation[0],
@@ -590,17 +602,23 @@ const getQuotationDetails = async (req, res) => {
                 : quotation[0].total_amount
         };
 
+        const isSyp = req.defaultCurrency && req.defaultCurrency.code === 'SYP';
         const displayItems = items.map((item) => {
-            if (req.defaultCurrency && req.defaultCurrency.code === 'SYP') {
-                return {
-                    ...item,
-                    unit_cost: item.unit_cost_syp || item.unit_cost,
-                    final_price: item.final_price_syp || item.final_price,
-                    total_price: item.total_price_syp || item.total_price
-                };
-            } else {
-                return item;
-            }
+            const mat = item.material_id ? materialsMap.get(item.material_id) : null;
+            const packageCostFromMat = mat ? (isSyp ? (mat.package_cost_syp || mat.package_cost || 0) : (mat.package_cost || 0)) : 0;
+            const packageCost = (isSyp ? (item.package_cost_syp || item.package_cost) : item.package_cost);
+            const resolvedPackageCost = (packageCost != null ? packageCost : packageCostFromMat);
+            return {
+                ...item,
+                unit_cost: isSyp ? (item.unit_cost_syp || item.unit_cost) : item.unit_cost,
+                final_price: isSyp ? (item.final_price_syp || item.final_price) : item.final_price,
+                total_price: isSyp ? (item.total_price_syp || item.total_price) : item.total_price,
+                package_cost: resolvedPackageCost,
+                material_type: item.material_type || (mat ? mat.material_type : null),
+                packaging_unit: item.packaging_unit || (mat ? mat.packaging_unit : null),
+                packaging_weight: item.packaging_weight != null ? item.packaging_weight : (mat ? mat.packaging_weight : null),
+                pieces_per_package: item.pieces_per_package != null ? item.pieces_per_package : (mat ? mat.pieces_per_package : null)
+            };
         });
 
         res.render('costs/quotation-details', {
@@ -616,6 +634,104 @@ const getQuotationDetails = async (req, res) => {
     }
 };
 
+// طباعة عرض سعر
+const getQuotationPrintPage = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [qRows] = await req.db.query(`SELECT * FROM quotations WHERE id = ?`, [id]);
+        if (qRows.length === 0) {
+            req.flash('error_msg', 'عرض السعر غير موجود');
+            return res.redirect('/costs/quotations');
+        }
+        const quotation = qRows[0];
+        const [items] = await req.db.query(`SELECT * FROM quotation_items WHERE quotation_id = ?`, [id]);
+
+        // اجلب حقول التغليف من materials عند نقصها في عناصر العرض
+        const materialIds = items.map(i => i.material_id).filter(Boolean);
+        let materialsMap = new Map();
+        if (materialIds.length > 0) {
+            const [materials] = await req.db.query(
+                `SELECT id, material_type, packaging_unit, packaging_weight, pieces_per_package, package_cost, package_cost_syp 
+                 FROM materials WHERE id IN (${materialIds.map(()=>'?').join(',')})`,
+                materialIds
+            );
+            materials.forEach(m => materialsMap.set(m.id, m));
+        }
+
+        const isSyp = req.defaultCurrency && req.defaultCurrency.code === 'SYP';
+        const displayItems = items.map((item) => {
+            const mat = item.material_id ? materialsMap.get(item.material_id) : null;
+            const final = isSyp ? (item.final_price_syp || item.final_price || 0) : (item.final_price || 0);
+            const total = isSyp ? (item.total_price_syp || item.total_price || (final * (item.quantity || 1))) : (item.total_price || (final * (item.quantity || 1)));
+            const packageCostFromMat = mat ? (isSyp ? (mat.package_cost_syp || mat.package_cost || 0) : (mat.package_cost || 0)) : 0;
+            const packageCost = (isSyp ? (item.package_cost_syp || item.package_cost) : item.package_cost);
+            const resolvedPackageCost = (packageCost != null ? packageCost : packageCostFromMat);
+            return {
+                ...item,
+                final_price: final,
+                total_price: total,
+                package_cost: resolvedPackageCost,
+                material_type: item.material_type || (mat ? mat.material_type : null),
+                packaging_unit: item.packaging_unit || (mat ? mat.packaging_unit : null),
+                packaging_weight: item.packaging_weight != null ? item.packaging_weight : (mat ? mat.packaging_weight : null),
+                pieces_per_package: item.pieces_per_package != null ? item.pieces_per_package : (mat ? mat.pieces_per_package : null)
+            };
+        });
+        const grandTotal = displayItems.reduce((s, it) => s + (parseFloat(it.total_price) || 0), 0);
+
+        res.render('costs/quotation-print', {
+            title: `طباعة عرض السعر ${quotation.quotation_number}`,
+            quotation,
+            items: displayItems,
+            grandTotal,
+            defaultCurrency: req.defaultCurrency || null,
+            layout: false
+        });
+    } catch (error) {
+        console.error('خطأ في طباعة عرض السعر:', error);
+        req.flash('error_msg', 'حدث خطأ في طباعة عرض السعر');
+        res.redirect('/costs/quotations');
+    }
+};
+
+// طباعة مادة
+const getMaterialPrintPage = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [materials] = await req.db.query(`SELECT * FROM materials WHERE id = ?`, [id]);
+        if (materials.length === 0) {
+            req.flash('error_msg', 'المادة غير موجودة');
+            return res.redirect('/costs/cost-statement');
+        }
+        const material = materials[0];
+        // اختيار القيم حسب العملة المحددة
+        const isSyp = req.defaultCurrency && req.defaultCurrency.code === 'SYP';
+        const displayMaterial = {
+            ...material,
+            unit_cost: isSyp ? (material.unit_cost_syp || material.unit_cost) : material.unit_cost,
+            package_cost: isSyp ? (material.package_cost_syp || material.package_cost) : material.package_cost,
+            price_before_waste: isSyp ? (material.price_before_waste_syp || material.price_before_waste) : material.price_before_waste,
+            empty_package_price: isSyp ? (material.empty_package_price_syp || material.empty_package_price) : material.empty_package_price,
+            sticker_price: isSyp ? (material.sticker_price_syp || material.sticker_price) : material.sticker_price,
+            additional_expenses: isSyp ? (material.additional_expenses_syp || material.additional_expenses) : material.additional_expenses,
+            labor_cost: isSyp ? (material.labor_cost_syp || material.labor_cost) : material.labor_cost,
+            preservatives_cost: isSyp ? (material.preservatives_cost_syp || material.preservatives_cost) : material.preservatives_cost,
+            carton_price: isSyp ? (material.carton_price_syp || material.carton_price) : material.carton_price,
+            pallet_price: isSyp ? (material.pallet_price_syp || material.pallet_price) : material.pallet_price,
+        };
+
+        res.render('costs/material-print', {
+            title: `طباعة مادة ${displayMaterial.material_name}`,
+            material: displayMaterial,
+            defaultCurrency: req.defaultCurrency || null,
+            layout: false
+        });
+    } catch (error) {
+        console.error('خطأ في طباعة المادة:', error);
+        req.flash('error_msg', 'حدث خطأ في طباعة المادة');
+        res.redirect('/costs/cost-statement');
+    }
+};
 // دالة تنسيق التاريخ
 const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -632,10 +748,14 @@ const getOrders = async (req, res) => {
         const [orders] = await req.db.query(`
             SELECT * FROM orders ORDER BY created_at DESC
         `);
+        const [materials] = await req.db.query(`
+            SELECT id, material_name, packaging_unit, packaging_weight FROM materials ORDER BY material_name
+        `);
 
         res.render('costs/orders', {
             title: 'الطلبيات',
             orders,
+            materials,
             formatDate
         });
     } catch (error) {
@@ -650,16 +770,27 @@ const createOrder = async (req, res) => {
     try {
         const {
             client_name,
-            client_phone,
-            client_address,
+            order_date,
             delivery_date,
             responsible_worker,
-            notes
+            quality_controller,
+            pallets_count,
+            container_number,
+            packages_count,
+            waybill_number,
+            accreditation_number,
+            notes,
+            items
         } = req.body;
 
-        // تحويل التاريخ من DD/MM/YYYY إلى YYYY-MM-DD
-        const [day, month, year] = delivery_date.split('/');
-        const formattedDate = `${year}-${month}-${day}`;
+        // تحويل التواريخ من DD/MM/YYYY إلى YYYY-MM-DD
+        const parseDmy = (dmy) => {
+            if (!dmy) return null;
+            const [d, m, y] = dmy.split('/');
+            return `${y}-${m}-${d}`;
+        };
+        const orderDateSql = parseDmy(order_date) || new Date().toISOString().slice(0, 10);
+        const deliveryDateSql = parseDmy(delivery_date);
 
         // توليد رقم الطلبية
         const [lastOrder] = await req.db.query(`
@@ -673,10 +804,36 @@ const createOrder = async (req, res) => {
             orderNumber = `ORD-${String(lastNumber + 1).padStart(3, '0')}`;
         }
 
-        await req.db.query(`
-            INSERT INTO orders (order_number, client_name, client_phone, client_address, delivery_date, responsible_worker, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        `, [orderNumber, client_name, client_phone, client_address, formattedDate, responsible_worker, notes]);
+        const [orderResult] = await req.db.query(`
+            INSERT INTO orders (
+                order_number, client_name, order_date, delivery_date,
+                responsible_worker, quality_controller, pallets_count, container_number,
+                packages_count, waybill_number, accreditation_number, notes
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            orderNumber, client_name || null, orderDateSql, deliveryDateSql,
+            responsible_worker || null, quality_controller || null, pallets_count || null, container_number || null,
+            packages_count || null, waybill_number || null, accreditation_number || null, notes || null
+        ]);
+
+        // حفظ بنود الطلبية إن وُجدت
+        if (items && Array.isArray(items)) {
+            for (const item of items) {
+                await req.db.query(`
+                    INSERT INTO order_items (order_id, material_id, material_name, unit, requested_quantity, weight, volume, notes)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                `, [
+                    orderResult.insertId,
+                    item.material_id || null,
+                    item.material_name || '',
+                    item.unit || null,
+                    item.requested_quantity || null,
+                    item.weight || null,
+                    item.volume || null,
+                    item.notes || null
+                ]);
+            }
+        }
 
         res.json({ success: true, message: 'تم إنشاء الطلبية بنجاح' });
     } catch (error) {
@@ -791,8 +948,11 @@ const getOrder = async (req, res) => {
         if (orders.length === 0) {
             return res.status(404).json({ success: false, message: 'الطلبية غير موجودة' });
         }
-        
-        res.json({ success: true, order: orders[0] });
+        const [items] = await req.db.query(`
+            SELECT * FROM order_items WHERE order_id = ?
+        `, [id]);
+
+        res.json({ success: true, order: orders[0], items });
     } catch (error) {
         console.error('خطأ في جلب بيانات الطلبية:', error);
         res.status(500).json({ success: false, message: 'حدث خطأ في جلب بيانات الطلبية' });
@@ -805,28 +965,162 @@ const updateOrder = async (req, res) => {
         const { id } = req.params;
         const {
             client_name,
-            client_phone,
-            client_address,
+            order_date,
             delivery_date,
             responsible_worker,
-            notes
+            quality_controller,
+            pallets_count,
+            container_number,
+            packages_count,
+            waybill_number,
+            accreditation_number,
+            notes,
+            items
         } = req.body;
-        
-        // تحويل التاريخ من DD/MM/YYYY إلى YYYY-MM-DD
-        const [day, month, year] = delivery_date.split('/');
-        const formattedDate = `${year}-${month}-${day}`;
+
+        const parseDmy = (dmy) => {
+            if (!dmy) return null;
+            const [d, m, y] = dmy.split('/');
+            return `${y}-${m}-${d}`;
+        };
+        const orderDateSql = parseDmy(order_date);
+        const deliveryDateSql = parseDmy(delivery_date);
         
         await req.db.query(`
             UPDATE orders SET
-                client_name = ?, client_phone = ?, client_address = ?,
-                delivery_date = ?, responsible_worker = ?, notes = ?
+                client_name = ?, order_date = ?, delivery_date = ?,
+                responsible_worker = ?, quality_controller = ?, pallets_count = ?, container_number = ?,
+                packages_count = ?, waybill_number = ?, accreditation_number = ?, notes = ?
             WHERE id = ?
-        `, [client_name, client_phone, client_address, formattedDate, responsible_worker, notes, id]);
+        `, [
+            client_name || null, orderDateSql, deliveryDateSql,
+            responsible_worker || null, quality_controller || null, pallets_count || null, container_number || null,
+            packages_count || null, waybill_number || null, accreditation_number || null, notes || null, id
+        ]);
+
+        // حدّث البنود
+        await req.db.query('DELETE FROM order_items WHERE order_id = ?', [id]);
+        if (items && Array.isArray(items)) {
+            for (const item of items) {
+                await req.db.query(`
+                    INSERT INTO order_items (order_id, material_id, material_name, unit, requested_quantity, weight, volume, notes)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                `, [
+                    id,
+                    item.material_id || null,
+                    item.material_name || '',
+                    item.unit || null,
+                    item.requested_quantity || null,
+                    item.weight || null,
+                    item.volume || null,
+                    item.notes || null
+                ]);
+            }
+        }
         
         res.json({ success: true, message: 'تم تحديث الطلبية بنجاح' });
     } catch (error) {
         console.error('خطأ في تحديث الطلبية:', error);
         res.status(500).json({ success: false, message: 'حدث خطأ في تحديث الطلبية' });
+    }
+};
+
+// عرض تفاصيل الطلبية
+const getOrderDetailsPage = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [orders] = await req.db.query('SELECT * FROM orders WHERE id = ?', [id]);
+        if (orders.length === 0) {
+            req.flash('error_msg', 'الطلبية غير موجودة');
+            return res.redirect('/costs/orders');
+        }
+        const [items] = await req.db.query('SELECT * FROM order_items WHERE order_id = ?', [id]);
+
+        // اجلب أسعار المواد (كلفة الطرد) عند توفر material_id
+        const materialIds = items.map(i => i.material_id).filter(Boolean);
+        let materialsMap = new Map();
+        if (materialIds.length > 0) {
+            const [materials] = await req.db.query(
+                `SELECT id, package_cost, package_cost_syp FROM materials WHERE id IN (${materialIds.map(()=>'?').join(',')})`,
+                materialIds
+            );
+            materials.forEach(m => materialsMap.set(m.id, m));
+        }
+
+        const isSyp = req.defaultCurrency && req.defaultCurrency.code === 'SYP';
+        const displayItems = items.map(it => {
+            const mat = it.material_id ? materialsMap.get(it.material_id) : null;
+            const unitPrice = mat ? (isSyp ? (mat.package_cost_syp || mat.package_cost || 0) : (mat.package_cost || 0)) : 0;
+            const qty = parseFloat(it.requested_quantity) || 0;
+            const totalPrice = unitPrice * qty;
+            return { ...it, unit_price: unitPrice, total_price: totalPrice };
+        });
+        const grandTotal = displayItems.reduce((s, it) => s + (parseFloat(it.total_price) || 0), 0);
+
+        res.render('costs/order-details', {
+            title: `تفاصيل الطلبية ${orders[0].order_number}`,
+            order: orders[0],
+            items: displayItems,
+            grandTotal,
+            defaultCurrency: req.defaultCurrency || null
+        });
+    } catch (error) {
+        console.error('خطأ في عرض تفاصيل الطلبية:', error);
+        req.flash('error_msg', 'حدث خطأ في عرض تفاصيل الطلبية');
+        res.redirect('/costs/orders');
+    }
+};
+
+// طباعة تفاصيل الطلبية
+const getOrderPrintPage = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [orders] = await req.db.query('SELECT * FROM orders WHERE id = ?', [id]);
+        if (orders.length === 0) {
+            req.flash('error_msg', 'الطلبية غير موجودة');
+            return res.redirect('/costs/orders');
+        }
+        const [items] = await req.db.query('SELECT * FROM order_items WHERE order_id = ?', [id]);
+
+        // اجلب أسعار المواد
+        const materialIds = items.map(i => i.material_id).filter(Boolean);
+        let materialsMap = new Map();
+        if (materialIds.length > 0) {
+            const [materials] = await req.db.query(
+                `SELECT id, package_cost, package_cost_syp FROM materials WHERE id IN (${materialIds.map(()=>'?').join(',')})`,
+                materialIds
+            );
+            materials.forEach(m => materialsMap.set(m.id, m));
+        }
+
+        const isSyp = req.defaultCurrency && req.defaultCurrency.code === 'SYP';
+        const pricedItems = items.map(it => {
+            const mat = it.material_id ? materialsMap.get(it.material_id) : null;
+            const unitPrice = mat ? (isSyp ? (mat.package_cost_syp || mat.package_cost || 0) : (mat.package_cost || 0)) : 0;
+            const qty = parseFloat(it.requested_quantity) || 0;
+            const totalPrice = unitPrice * qty;
+            return { ...it, unit_price: unitPrice, total_price: totalPrice };
+        });
+
+        const totals = {
+            totalRequestedQuantity: pricedItems.reduce((s, it) => s + (parseFloat(it.requested_quantity) || 0), 0),
+            totalWeight: pricedItems.reduce((s, it) => s + (parseFloat(it.weight) || 0), 0),
+            totalVolume: pricedItems.reduce((s, it) => s + (parseFloat(it.volume) || 0), 0),
+            grandTotal: pricedItems.reduce((s, it) => s + (parseFloat(it.total_price) || 0), 0)
+        };
+
+        res.render('costs/order-print', {
+            title: `طباعة طلبية ${orders[0].order_number}`,
+            order: orders[0],
+            items: pricedItems,
+            totals,
+            defaultCurrency: req.defaultCurrency || null,
+            layout: false
+        });
+    } catch (error) {
+        console.error('خطأ في طباعة تفاصيل الطلبية:', error);
+        req.flash('error_msg', 'حدث خطأ في طباعة تفاصيل الطلبية');
+        res.redirect('/costs/orders');
     }
 };
 
@@ -923,6 +1217,10 @@ module.exports = {
     updateQuotation,
     getOrders,
     getOrder,
+    getOrderDetailsPage,
+    getOrderPrintPage,
+    getQuotationPrintPage,
+    getMaterialPrintPage,
     createOrder,
     updateOrder,
     updateOrderStatus,

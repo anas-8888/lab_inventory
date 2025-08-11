@@ -1,0 +1,209 @@
+<% function formatDate(dateString){
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2,'0');
+  const month = String(date.getMonth()+1).padStart(2,'0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+function formatNumberDisplay(value) {
+  if (value === null || value === undefined || value === '') return '-';
+  const num = parseFloat(value);
+  if (isNaN(num)) return '-';
+  if (num === 0) return '0';
+  let result = '';
+  if (Number.isInteger(num)) {
+    result = num.toString();
+  } else {
+    const decimalStr = num.toString().split('.')[1];
+    if (!decimalStr) {
+      result = num.toString();
+    } else if (decimalStr.length <= 2) {
+      result = num.toString();
+    } else {
+      result = num.toFixed(3);
+    }
+  }
+  if (num < 0) {
+    return '\u200E' + result;
+  }
+  return result;
+} %>
+
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-file-earmark-text"></i> تفاصيل الطلبية <%= order.order_number %></h2>
+        <div>
+          <a href="/costs/orders/<%= order.id %>/print" target="_blank" class="btn btn-outline-primary me-2 no-print">
+            <i class="bi bi-printer"></i> طباعة
+          </a>
+          <a href="/costs/orders" class="btn btn-outline-secondary no-print">
+            <i class="bi bi-arrow-right me-1"></i> العودة للطلبيات
+          </a>
+        </div>
+      </div>
+
+      <div class="card shadow mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">معلومات الطلبية</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <table class="table table-borderless">
+                <tr>
+                  <td><strong>رقم الطلبية:</strong></td>
+                  <td><%= order.order_number %></td>
+                </tr>
+                <tr>
+                  <td><strong>اسم الزبون:</strong></td>
+                  <td><%= order.client_name || '-' %></td>
+                </tr>
+                <tr>
+                  <td><strong>تاريخ الطلبية:</strong></td>
+                  <td><%= formatDate(order.order_date) %></td>
+                </tr>
+                <tr>
+                  <td><strong>تاريخ التسليم:</strong></td>
+                  <td><%= formatDate(order.delivery_date) %></td>
+                </tr>
+                <tr>
+                  <td><strong>الحالة:</strong></td>
+                  <td>
+                    <span class="badge bg-<%= 
+                      order.status === 'pending' ? 'warning' : 
+                      order.status === 'processing' ? 'info' : 
+                      order.status === 'completed' ? 'success' : 'danger' 
+                    %>">
+                      <%= 
+                        order.status === 'pending' ? 'قيد الانتظار' :
+                        order.status === 'processing' ? 'قيد المعالجة' :
+                        order.status === 'completed' ? 'مكتمل' : 'ملغي'
+                      %>
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <div class="col-md-6">
+              <table class="table table-borderless">
+                <tr>
+                  <td><strong>المسؤول عن التجهيز:</strong></td>
+                  <td><%= order.responsible_worker || '-' %></td>
+                </tr>
+                <tr>
+                  <td><strong>مراقب الجودة:</strong></td>
+                  <td><%= order.quality_controller || '-' %></td>
+                </tr>
+                <tr>
+                  <td><strong>عدد الطبالي:</strong></td>
+                  <td><%= order.pallets_count != null ? formatNumberDisplay(order.pallets_count) : '-' %></td>
+                </tr>
+                <tr>
+                  <td><strong>رقم الحاوية:</strong></td>
+                  <td><%= order.container_number || '-' %></td>
+                </tr>
+                <tr>
+                  <td><strong>عدد الطرود:</strong></td>
+                  <td><%= order.packages_count != null ? formatNumberDisplay(order.packages_count) : '-' %></td>
+                </tr>
+                <tr>
+                  <td><strong>رقم البوليصة:</strong></td>
+                  <td><%= order.waybill_number || '-' %></td>
+                </tr>
+                <tr>
+                  <td><strong>رقم الاعتماد:</strong></td>
+                  <td><%= order.accreditation_number || '-' %></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow">
+        <div class="card-header">
+          <h5 class="mb-0">مواد الطلبية</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-bordered">
+              <thead>
+                <tr>
+                  <th>رقم المادة</th>
+                  <th>اسم المادة</th>
+                  <th>الوحدة</th>
+                  <th>الكمية المطلوبة</th>
+                  <th>الوزن</th>
+                  <th>الحجم</th>
+                  <th>سعر الوحدة</th>
+                  <th>المجموع</th>
+                  <th>ملاحظات</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% (items || []).forEach((item) => { %>
+                  <tr>
+                    <td><%= item.material_id || '-' %></td>
+                    <td><%= item.material_name || '-' %></td>
+                    <td><%= item.unit || '-' %></td>
+                    <td><%= item.weight != null ? formatNumberDisplay(item.weight) : '-' %></td>
+                    <td><%= item.volume != null ? formatNumberDisplay(item.volume) : '-' %></td>
+                    <td><%= item.requested_quantity != null ? formatNumberDisplay(item.requested_quantity) : '-' %></td>
+                    <td><%= (typeof item.unit_price !== 'undefined') ? formatNumberDisplay(item.unit_price) : '-' %> <%= (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '' %></td>
+                    <td><%= (typeof item.total_price !== 'undefined') ? formatNumberDisplay(item.total_price) : '-' %> <%= (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '' %></td>
+                    <td><%= item.notes || '-' %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+              <tfoot>
+                <tr class="table-info">
+                  <td colspan="5" class="text-end"><strong>المجموع الإجمالي:</strong></td>
+                  <td><strong><%= typeof grandTotal !== 'undefined' ? formatNumberDisplay(grandTotal) : '0' %> <%= (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '' %></strong></td>
+                  <td colspan="3"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <% if (order.notes) { %>
+      <div class="card shadow mt-4">
+        <div class="card-header">
+          <h5 class="mb-0">ملاحظات</h5>
+        </div>
+        <div class="card-body">
+          <p><%= order.notes %></p>
+        </div>
+      </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<script>
+function formatDate(dateString){
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2,'0');
+  const month = String(date.getMonth()+1).padStart(2,'0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+</script>
+
+<style>
+@media print {
+  .no-print { display: none !important; }
+  .card { border: 1px solid #000 !important; box-shadow: none !important; }
+  .card-header { background-color: #f8f9fa !important; border-bottom: 1px solid #000 !important; }
+  body { font-size: 12px; }
+  .table { font-size: 11px; }
+  .table th, .table td { padding: 4px; }
+}
+</style>
+

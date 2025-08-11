@@ -4,9 +4,9 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="bi bi-file-earmark-text"></i> عرض السعر <%= quotation.quotation_number %></h2>
                 <div>
-                    <button type="button" class="btn btn-outline-primary me-2" onclick="window.print()">
+                    <a href="/costs/quotations/<%= quotation.id %>/print" target="_blank" class="btn btn-outline-primary me-2">
                         <i class="bi bi-printer"></i> طباعة
-                    </button>
+                    </a>
                     <a href="/costs/quotations" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-right me-1"></i> العودة للعروض
                     </a>
