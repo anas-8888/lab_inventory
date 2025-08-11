@@ -12,7 +12,7 @@ exports.getHome = async (req, res) => {
                 DATE_FORMAT(i.date, '%Y-%m-%d') as date,
                 COALESCE(u.username, 'النظام') as created_by_name
             FROM inventory i
-            LEFT JOIN users u ON i.created_by = u.id
+            LEFT JOIN users u ON i.analyst = u.username
             WHERE i.updated_at IS NOT NULL
             ORDER BY i.date DESC
             LIMIT 3

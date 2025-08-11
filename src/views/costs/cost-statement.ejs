@@ -133,7 +133,7 @@
                         <!-- وزن وحدة التعبئة -->
                         <div class="col-md-4">
                             <label class="form-label">وزن وحدة التعبئة (كجم) *</label>
-                            <input type="number" class="form-control" name="packaging_weight" step="0.01" required>
+                            <input type="number" class="form-control" name="packaging_weight" step="0.001" required>
                         </div>
 
                         <!-- ثمن العبوة الفارغة -->
@@ -271,7 +271,7 @@
                         <!-- وزن وحدة التعبئة -->
                         <div class="col-md-4">
                             <label class="form-label">وزن وحدة التعبئة (كجم) *</label>
-                            <input type="number" class="form-control" id="editPackagingWeight" name="packaging_weight" step="0.01" required>
+                            <input type="number" class="form-control" id="editPackagingWeight" name="packaging_weight" step="0.001" required>
                         </div>
 
                         <!-- ثمن العبوة الفارغة -->
@@ -551,9 +551,10 @@ function calculateCosts() {
     const totalPackagingCosts = emptyPackagePrice + stickerPrice + additionalExpenses + laborCost + preservativesCost;
     const unitCost = materialCostInUnit + totalPackagingCosts;
 
-    // حساب كلفة الطرد
+    // حساب كلفة الطرد وفق الصيغة المطلوبة
+    // (كلفة القطعة الواحدة * عدد الحبات بالطرد) + ثمن الكرتونة + (ثمن الطبلية ÷ عدد الطرود بالطبلية)
     const palletShare = palletPrice / packagesPerPallet;
-    const packageCost = unitCost + palletShare;
+    const packageCost = (unitCost * piecesPerPackage) + cartonPrice + palletShare;
 
     // عرض النتائج
     const currencySymbol = '<%= defaultCurrency ? defaultCurrency.symbol : "$" %>';
@@ -586,14 +587,14 @@ document.getElementById('materialForm').addEventListener('submit', function(e) {
 
     // تجهيز الحقول الرقمية غير المرتبطة بالعملة كما هي
     const bodyPayload = {
-        material_type: formData.get('material_type'),
-        material_name: formData.get('material_name'),
-        gross_weight: formData.get('gross_weight'),
-        waste_percentage: formData.get('waste_percentage'),
-        packaging_unit: formData.get('packaging_unit'),
-        packaging_weight: formData.get('packaging_weight'),
-        pieces_per_package: formData.get('pieces_per_package'),
-        packages_per_pallet: formData.get('packages_per_pallet')
+            material_type: formData.get('material_type'),
+            material_name: formData.get('material_name'),
+            gross_weight: formData.get('gross_weight'),
+            waste_percentage: formData.get('waste_percentage'),
+            packaging_unit: formData.get('packaging_unit'),
+            packaging_weight: formData.get('packaging_weight'),
+            pieces_per_package: formData.get('pieces_per_package'),
+            packages_per_pallet: formData.get('packages_per_pallet')
     };
 
     // تحويل الحقول المرتبطة بالعملة إلى الدولار عند كون العملة الحالية ل.س
@@ -860,9 +861,9 @@ function calculateEditCosts() {
     const totalPackagingCosts = emptyPackagePrice + stickerPrice + additionalExpenses + laborCost + preservativesCost;
     const unitCost = materialCostInUnit + totalPackagingCosts;
 
-    // حساب كلفة الطرد
+    // حساب كلفة الطرد وفق الصيغة المطلوبة
     const palletShare = palletPrice / packagesPerPallet;
-    const packageCost = unitCost + palletShare;
+    const packageCost = (unitCost * piecesPerPackage) + cartonPrice + palletShare;
 
     // عرض النتائج
     const currencySymbol = '<%= defaultCurrency ? defaultCurrency.symbol : "$" %>';
@@ -921,7 +922,7 @@ function saveMaterialEdit() {
             .join('');
         const input = document.getElementById('edit' + idSuffix);
         const numericValue = parseFloat((input && input.value) ? input.value : '0') || 0;
-
+        
         if (currentCurrency === 'SYP') {
             // إذا كانت العملة الحالية هي الليرة السورية، نحول إلى الدولار ونرسل أيضًا القيمة بالليرة كما أدخلها المستخدم
             formData[field] = (numericValue / exchangeRate);

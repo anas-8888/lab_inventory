@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 07, 2025 at 06:42 PM
+-- Generation Time: Aug 11, 2025 at 06:51 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -64,7 +64,6 @@ INSERT INTO `certificates` (`id`, `certificate_number`, `year`, `type`, `date`, 
 (96, '11', 2025, 'external', '2025-07-03', 'ابراهيم أبو ياسر', NULL, 'ادلب-كورين', 'م . زاهر عبد الكريم صبوح', NULL, '[{\"sample_number\":null,\"quantity\":0,\"packaging_unit\":\"0\",\"packaging_weight\":0,\"total_weight\":0,\"ph\":0.7,\"peroxide\":0,\"abs_232\":2.039,\"abs_270\":0.183,\"abs_268\":null,\"abs_262\":null,\"abs_274\":0.174,\"abs_266\":0.196,\"k_232\":null,\"k_270\":null,\"delta_k\":-0.001,\"stigmastadiene\":null}]', 0.00, 0.00, '92afddb1', 13, '2025-07-03 12:56:23', '2025-07-03 12:56:23', NULL),
 (97, '12', 2025, 'internal', '2025-07-03', 'ابراهيم ياسر الابراهيم', NULL, NULL, 'محمد خالد صفوان عثمانلي', NULL, '[{\"sample_number\":\"1235\",\"quantity\":156,\"packaging_unit\":\"لتر\",\"packaging_weight\":156,\"total_weight\":156,\"ph\":0.9,\"peroxide\":13,\"abs_232\":2.166,\"abs_270\":0.2,\"abs_268\":null,\"abs_262\":null,\"abs_274\":0.188,\"abs_266\":0.213,\"k_232\":null,\"k_270\":null,\"delta_k\":-0.001,\"stigmastadiene\":0}]', 156.00, 156.00, 'b7c2ce1d', 3, '2025-07-03 14:30:12', '2025-07-03 14:30:12', NULL),
 (101, '13', 2025, 'external', '2025-07-05', 'عينة شاملة رقم 36', NULL, NULL, 'م . زاهر عبد الكريم صبوح', 'الزمم من 1228 الى 1239', '[{\"sample_number\":null,\"quantity\":0,\"packaging_unit\":\"0\",\"packaging_weight\":0,\"total_weight\":0,\"ph\":0.8,\"peroxide\":15.5,\"abs_232\":2.043,\"abs_270\":0.146,\"abs_268\":null,\"abs_262\":null,\"abs_274\":0.138,\"abs_266\":0.154,\"k_232\":null,\"k_270\":null,\"delta_k\":0,\"stigmastadiene\":0.1}]', 0.00, 0.00, '7202e3e2', 13, '2025-07-05 09:08:20', '2025-07-05 09:08:20', NULL),
-(102, '14', 2025, 'external', '2025-07-05', 'محمد عجاج 350جركل بوزن110كغ صاف', NULL, NULL, 'م . زاهر عبد الكريم صبوح', '350جركل بوز ن صافي 110كغ', '[{\"sample_number\":null,\"quantity\":350,\"packaging_unit\":\"جركل\",\"packaging_weight\":110,\"total_weight\":38500,\"ph\":0.8,\"peroxide\":15.5,\"abs_232\":2.208,\"abs_270\":0.177,\"abs_268\":null,\"abs_262\":null,\"abs_274\":0.168,\"abs_266\":0.188,\"k_232\":null,\"k_270\":null,\"delta_k\":-0.001,\"stigmastadiene\":0.04}]', 350.00, 38500.00, 'fc7445f0', 13, '2025-07-05 10:21:10', '2025-07-05 10:25:36', '2025-07-05 10:25:36'),
 (103, '15', 2025, 'external', '2025-07-05', 'نسيم فرح', NULL, NULL, 'م . زاهر عبد الكريم صبوح', '350برميل بوزن صافي110كغ لكل برميل', '[{\"sample_number\":null,\"quantity\":350,\"packaging_unit\":\"برميل\",\"packaging_weight\":110,\"total_weight\":38500,\"ph\":0.73,\"peroxide\":14,\"abs_232\":2.208,\"abs_270\":0.177,\"abs_268\":null,\"abs_262\":null,\"abs_274\":0.168,\"abs_266\":0.188,\"k_232\":null,\"k_270\":null,\"delta_k\":-0.001,\"stigmastadiene\":0.04}]', 350.00, 38500.00, '4ad22862', 13, '2025-07-05 10:30:01', '2025-07-05 10:30:01', NULL),
 (104, '16', 2025, 'internal', '2025-07-05', 'محمود نورس الابراهيم', NULL, NULL, 'محمد عثمانلي', NULL, '[{\"sample_number\":\"1238\",\"quantity\":9,\"packaging_unit\":\"تنكة\",\"packaging_weight\":0.101,\"total_weight\":143.83,\"ph\":0.6,\"peroxide\":15,\"abs_232\":1.901,\"abs_270\":0.128,\"abs_268\":null,\"abs_262\":null,\"abs_274\":0.12,\"abs_266\":0.138,\"k_232\":null,\"k_270\":null,\"delta_k\":-0.001,\"stigmastadiene\":0},{\"sample_number\":\"1237\",\"quantity\":227,\"packaging_unit\":\"تنكة\",\"packaging_weight\":0.1,\"total_weight\":3627.86,\"ph\":0.7,\"peroxide\":13,\"abs_232\":1.916,\"abs_270\":0.158,\"abs_268\":null,\"abs_262\":null,\"abs_274\":0.148,\"abs_266\":0.168,\"k_232\":null,\"k_270\":null,\"delta_k\":0,\"stigmastadiene\":0},{\"sample_number\":\"1236\",\"quantity\":80,\"packaging_unit\":\"تنكة\",\"packaging_weight\":0.099,\"total_weight\":1715.3,\"ph\":0.5,\"peroxide\":18.5,\"abs_232\":1.985,\"abs_270\":0.148,\"abs_268\":null,\"abs_262\":null,\"abs_274\":0.143,\"abs_266\":0.153,\"k_232\":null,\"k_270\":null,\"delta_k\":0.001,\"stigmastadiene\":0}]', 316.00, 5486.99, '1392d39e', 3, '2025-07-05 18:03:24', '2025-07-05 18:03:24', NULL),
 (105, '17', 2025, 'external', '2025-07-07', 'أبراهيم أبو ياسر', NULL, 'ادلب-كورين', 'محمد خالد العثمانلي', NULL, '[{\"sample_number\":null,\"quantity\":0,\"packaging_unit\":\"0\",\"packaging_weight\":0,\"total_weight\":0,\"ph\":2.15,\"peroxide\":18,\"abs_232\":2.199,\"abs_270\":0.196,\"abs_268\":null,\"abs_262\":null,\"abs_274\":0.186,\"abs_266\":0.199,\"k_232\":null,\"k_270\":null,\"delta_k\":0.004,\"stigmastadiene\":null}]', 0.00, 0.00, 'b9778723', 13, '2025-07-07 08:20:24', '2025-07-07 08:20:24', NULL),
@@ -145,7 +144,18 @@ INSERT INTO `cost_logs` (`id`, `material_id`, `material_name`, `unit_cost`, `uni
 (6, NULL, 'تفاحي مكسر', 9.36, 121680.00, 9.46, 122980.00, '2025-08-07 14:50:11'),
 (7, NULL, 'تفاحي مكسر2', 9.36, 121680.00, 9.46, 122980.00, '2025-08-07 14:53:11'),
 (8, NULL, 'تفاحي مكسر3', 9.36, 121680.00, 9.46, 122980.00, '2025-08-07 14:53:40'),
-(9, 7, 'تفاحي مكسر', 9.36, 98280.00, 9.46, 99373.75, '2025-08-07 16:24:24');
+(9, NULL, 'تفاحي مكسر', 9.36, 98280.00, 9.46, 99373.75, '2025-08-07 16:24:24'),
+(10, NULL, 'تفاحي مكسر', 7.01, 73605.00, 7.09, 74488.75, '2025-08-09 10:09:09'),
+(11, NULL, 'تفاحي مكسر', 6.75, 70875.00, 6.82, 71589.22, '2025-08-09 10:09:36'),
+(12, NULL, 'تفاحي مكسر', 8.08, 84840.00, 8.15, 85554.22, '2025-08-09 10:19:10'),
+(13, NULL, 'تفاحي مكسر', 8.08, 84840.00, 8.15, 85569.53, '2025-08-09 10:20:07'),
+(14, NULL, 'تفاحي مكسر', 8.08, 84840.00, 8.15, 85569.53, '2025-08-09 10:20:37'),
+(15, NULL, 'تفاحي مكسر', 8.08, 84840.00, 8.15, 85569.17, '2025-08-09 10:32:37'),
+(16, NULL, 'تفاحي مكسر', 9.36, 98280.00, 9.46, 99373.75, '2025-08-09 10:36:09'),
+(17, NULL, 'تفاحي مكسر', 9.36, 98280.00, 9.47, 99483.13, '2025-08-09 10:36:50'),
+(18, NULL, 'زيت زيتون واحد ليتر ', 69.94, 727405.71, 70.04, 728445.71, '2025-08-09 11:31:42'),
+(19, NULL, 'زيت زيتون واحد ليتر ', 4.65, 48315.43, 4.75, 49355.43, '2025-08-09 11:33:32'),
+(20, 10, 'زيت زيتون واحد ليتر ', 9.36, 98280.00, 18.82, 197653.75, '2025-08-11 16:43:57');
 
 -- --------------------------------------------------------
 
@@ -191,7 +201,7 @@ CREATE TABLE `exchange_rates` (
 --
 
 INSERT INTO `exchange_rates` (`id`, `from_currency_id`, `to_currency_id`, `rate`, `created_at`, `updated_at`) VALUES
-(1, 1, 2, 10500.0000, '2025-08-07 15:36:40', '2025-08-07 15:42:56');
+(1, 1, 2, 10500.0000, '2025-08-07 15:36:40', '2025-08-09 11:36:01');
 
 -- --------------------------------------------------------
 
@@ -669,7 +679,7 @@ CREATE TABLE `materials` (
 --
 
 INSERT INTO `materials` (`id`, `material_type`, `material_name`, `price_before_waste`, `price_before_waste_syp`, `gross_weight`, `waste_percentage`, `packaging_unit`, `packaging_weight`, `empty_package_price`, `empty_package_price_syp`, `sticker_price`, `sticker_price_syp`, `additional_expenses`, `additional_expenses_syp`, `labor_cost`, `labor_cost_syp`, `preservatives_cost`, `preservatives_cost_syp`, `carton_price`, `carton_price_syp`, `pieces_per_package`, `pallet_price`, `pallet_price_syp`, `packages_per_pallet`, `unit_cost`, `unit_cost_syp`, `package_cost`, `package_cost_syp`, `created_at`, `updated_at`) VALUES
-(7, 'زيتون', 'تفاحي مكسر', 1.10, 11550.00, 1.00, 0.00, 'سطل', 7.00, 1.36, 14280.00, 0.05, 525.00, 0.05, 525.00, 0.05, 525.00, 0.15, 1575.00, 0.00, 0.00, 1, 10.00, 105000.00, 96, 9.36, 98280.00, 9.46, 99373.75, '2025-08-07 16:24:24', '2025-08-07 16:24:24');
+(10, 'زيتون', 'زيت زيتون واحد ليتر ', 1.10, 11550.00, 1.00, 0.00, 'سطل', 7.00, 1.36, 14280.00, 0.05, 525.00, 0.05, 525.00, 0.05, 525.00, 0.15, 1575.00, 0.00, 0.00, 2, 10.00, 105000.00, 96, 9.36, 98280.00, 18.82, 197653.75, '2025-08-11 16:43:57', '2025-08-11 16:43:57');
 
 -- --------------------------------------------------------
 
@@ -717,7 +727,13 @@ CREATE TABLE `quotations` (
 --
 
 INSERT INTO `quotations` (`id`, `quotation_number`, `client_id`, `client_name`, `client_phone`, `client_address`, `notes`, `total_amount`, `total_amount_syp`, `general_profit_percentage`, `created_at`, `updated_at`) VALUES
-(3, 'QT-001', NULL, 'efdfd', '4324343', 'بي', 'بيبي', 2.76, 35880.00, 0.00, '2025-08-07 13:50:46', '2025-08-07 16:03:49');
+(4, 'QT-002', NULL, 'efdfd', '453543543', 'بيلبيلبيلب', 'بلابل', 89082.00, 99999999.99, 10.00, '2025-08-09 11:06:35', '2025-08-09 11:06:35'),
+(5, 'QT-003', NULL, 'efdfd', '', '', '', 513415.02, 99999999.99, 0.00, '2025-08-09 12:20:08', '2025-08-09 12:20:08'),
+(6, 'QT-004', NULL, 'efdfd', '', '', '', 94126.09, 99999999.99, 0.00, '2025-08-09 12:28:27', '2025-08-09 12:28:27'),
+(7, 'QT-005', NULL, 'efdfd', '', '', '', 333146.25, 99999999.99, 0.00, '2025-08-09 12:28:55', '2025-08-09 12:47:48'),
+(8, 'QT-006', NULL, 'efdfd', '', '', '', 672636.93, 99999999.99, 0.00, '2025-08-09 13:27:29', '2025-08-09 13:27:29'),
+(9, 'QT-007', NULL, 'efdfd', '', '', '', 0.00, 0.00, 0.00, '2025-08-09 16:01:18', '2025-08-09 16:01:18'),
+(10, 'QT-008', NULL, 'efdfd', '', '', '', 0.00, 0.00, 0.00, '2025-08-09 16:01:26', '2025-08-09 16:01:26');
 
 -- --------------------------------------------------------
 
@@ -737,15 +753,13 @@ CREATE TABLE `quotation_items` (
   `final_price_syp` decimal(10,2) DEFAULT NULL,
   `quantity` int(11) DEFAULT 1,
   `total_price` decimal(10,2) NOT NULL,
-  `total_price_syp` decimal(10,2) DEFAULT NULL
+  `total_price_syp` decimal(10,2) DEFAULT NULL,
+  `material_type` varchar(100) DEFAULT NULL,
+  `packaging_unit` varchar(50) DEFAULT NULL,
+  `packaging_weight` decimal(10,2) DEFAULT 0.00,
+  `pieces_per_package` int(11) DEFAULT 0,
+  `notes` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `quotation_items`
---
-
-INSERT INTO `quotation_items` (`id`, `quotation_id`, `material_id`, `material_name`, `unit_cost`, `unit_cost_syp`, `profit_percentage`, `final_price`, `final_price_syp`, `quantity`, `total_price`, `total_price_syp`) VALUES
-(3, 3, NULL, 'تفاحي مكسر', 2.76, 35880.00, 0.00, 2.76, 35880.00, 1, 2.76, 35880.00);
 
 -- --------------------------------------------------------
 
@@ -787,7 +801,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`session_id`, `expires`, `data`, `created_at`, `updated_at`) VALUES
-('xu95LL-_Dqf9pcXQuC476eYcK-U2U3f7', 1754671247, '{\"cookie\":{\"originalMaxAge\":86399998,\"expires\":\"2025-08-08T12:28:01.249Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{},\"user\":{\"id\":20,\"username\":\"admin\",\"role\":\"admin\"}}', '2025-08-07 11:20:48', '2025-08-07 16:40:46');
+('50j6bPrsLpadGz19htEG_Sccxs3IbDWs', 1755017344, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-12T16:20:26.886Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{},\"user\":{\"id\":20,\"username\":\"admin\",\"role\":\"admin\"}}', '2025-08-11 16:20:00', '2025-08-11 16:49:04');
 
 -- --------------------------------------------------------
 
@@ -808,7 +822,7 @@ CREATE TABLE `system_settings` (
 --
 
 INSERT INTO `system_settings` (`id`, `setting_key`, `setting_value`, `created_at`, `updated_at`) VALUES
-(1, 'default_currency', 'SYP', '2025-08-07 15:36:40', '2025-08-07 16:35:33');
+(1, 'default_currency', 'USD', '2025-08-07 15:36:40', '2025-08-11 16:21:37');
 
 -- --------------------------------------------------------
 
@@ -986,7 +1000,7 @@ ALTER TABLE `clients`
 -- AUTO_INCREMENT for table `cost_logs`
 --
 ALTER TABLE `cost_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT for table `currencies`
@@ -998,7 +1012,7 @@ ALTER TABLE `currencies`
 -- AUTO_INCREMENT for table `exchange_rates`
 --
 ALTER TABLE `exchange_rates`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `inventory`
@@ -1022,7 +1036,7 @@ ALTER TABLE `invoice_items`
 -- AUTO_INCREMENT for table `materials`
 --
 ALTER TABLE `materials`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -1034,13 +1048,13 @@ ALTER TABLE `orders`
 -- AUTO_INCREMENT for table `quotations`
 --
 ALTER TABLE `quotations`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `quotation_items`
 --
 ALTER TABLE `quotation_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT for table `roles`
@@ -1052,7 +1066,7 @@ ALTER TABLE `roles`
 -- AUTO_INCREMENT for table `system_settings`
 --
 ALTER TABLE `system_settings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `users`

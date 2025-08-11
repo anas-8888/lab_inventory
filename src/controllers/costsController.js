@@ -173,7 +173,8 @@ const createMaterial = async (req, res) => {
             (usd.labor_cost || 0) + (usd.preservatives_cost || 0);
         const unit_cost = material_cost_in_unit_usd + total_packaging_costs_usd;
         const pallet_share_usd = (usd.pallet_price || 0) / packages_per_pallet_num;
-        const package_cost = unit_cost + pallet_share_usd;
+        // (كلفة القطعة الواحدة × عدد الحبات بالطرد) + ثمن الكرتونة + (ثمن الطبلية ÷ عدد الطرود بالطبلية)
+        const package_cost = (unit_cost * pieces_per_package_num) + (usd.carton_price || 0) + pallet_share_usd;
 
         // حساب كلفة القطعة والطرد بالليرة باستخدام قيم SYP للحفاظ على دقة الإدخال
         const price_per_kg_after_waste_syp = (syp.price_before_waste || 0) / (1 - waste_percentage_num / 100);
@@ -183,7 +184,7 @@ const createMaterial = async (req, res) => {
             (syp.labor_cost || 0) + (syp.preservatives_cost || 0);
         const unit_cost_syp = material_cost_in_unit_syp + total_packaging_costs_syp;
         const pallet_share_syp = (syp.pallet_price || 0) / packages_per_pallet_num;
-        const package_cost_syp = unit_cost_syp + pallet_share_syp;
+        const package_cost_syp = (unit_cost_syp * pieces_per_package_num) + (syp.carton_price || 0) + pallet_share_syp;
 
         // حفظ المادة
         const [result] = await req.db.query(`
@@ -302,7 +303,7 @@ const updateMaterial = async (req, res) => {
             (syp.labor_cost || 0) + (syp.preservatives_cost || 0);
         const unit_cost_syp = material_cost_in_unit_syp + total_packaging_costs_syp;
         const pallet_share_syp = (syp.pallet_price || 0) / packages_per_pallet_num;
-        const package_cost_syp = unit_cost_syp + pallet_share_syp;
+        const package_cost_syp = (unit_cost_syp * pieces_per_package_num) + (syp.carton_price || 0) + pallet_share_syp;
 
         // تحديث المادة
         await req.db.query(`
@@ -353,6 +354,14 @@ const getQuotations = async (req, res) => {
             SELECT * FROM materials ORDER BY material_name
         `);
 
+        // جلب سعر الصرف الحالي
+        const [exchangeRate] = await req.db.query(`
+            SELECT rate FROM exchange_rates 
+            WHERE from_currency_id = (SELECT id FROM currencies WHERE code = 'USD')
+            AND to_currency_id = (SELECT id FROM currencies WHERE code = 'SYP')
+        `);
+        const exchangeRateValue = exchangeRate.length > 0 ? parseFloat(exchangeRate[0].rate) : 13000;
+
         // اختيار القيم حسب العملة المحددة
         const displayQuotations = quotations.map((quotation) => {
             if (req.defaultCurrency && req.defaultCurrency.code === 'SYP') {
@@ -381,12 +390,94 @@ const getQuotations = async (req, res) => {
             title: 'عروض الأسعار',
             quotations: displayQuotations,
             materials: displayMaterials,
-            formatDate
+            formatDate,
+            exchangeRate: exchangeRateValue
         });
     } catch (error) {
         console.error('خطأ في عرض عروض الأسعار:', error);
         req.flash('error_msg', 'حدث خطأ في عرض عروض الأسعار');
         res.redirect('/costs');
+    }
+};
+
+// جلب تفاصيل عرض السعر JSON للاستخدام في المودال
+const getQuotationJson = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [quotationRows] = await req.db.query(`SELECT * FROM quotations WHERE id = ?`, [id]);
+        if (quotationRows.length === 0) {
+            return res.status(404).json({ success: false, message: 'عرض السعر غير موجود' });
+        }
+        const quotation = quotationRows[0];
+        const [items] = await req.db.query(`SELECT * FROM quotation_items WHERE quotation_id = ?`, [id]);
+        res.json({ success: true, quotation, items });
+    } catch (error) {
+        console.error('خطأ في جلب عرض السعر JSON:', error);
+        res.status(500).json({ success: false, message: 'حدث خطأ في جلب عرض السعر' });
+    }
+};
+
+// تحديث عرض سعر
+const updateQuotation = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { client_name, client_phone, client_address, notes, items } = req.body;
+
+        // جلب سعر الصرف الحالي
+        const [exchangeRate] = await req.db.query(`
+            SELECT rate FROM exchange_rates 
+            WHERE from_currency_id = (SELECT id FROM currencies WHERE code = 'USD')
+            AND to_currency_id = (SELECT id FROM currencies WHERE code = 'SYP')
+        `);
+        const exchangeRateValue = exchangeRate.length > 0 ? parseFloat(exchangeRate[0].rate) : 13000;
+
+        // تحديث رأس العرض (بدون نسبة ربح عامة)
+        await req.db.query(
+            `UPDATE quotations SET client_name = ?, client_phone = ?, client_address = ?, notes = ? WHERE id = ?`,
+            [client_name, client_phone, client_address, notes, id]
+        );
+
+        // حذف البنود القديمة
+        await req.db.query(`DELETE FROM quotation_items WHERE quotation_id = ?`, [id]);
+
+        // إعادة الحساب والحفظ
+        let totalAmount = 0;
+        let totalAmountSyp = 0;
+        if (items && Array.isArray(items)) {
+            for (const item of items) {
+                const profitPercentage = item.profit_percentage || 0;
+                const finalPrice = item.unit_cost * (1 + profitPercentage / 100);
+                const totalPrice = finalPrice * item.quantity;
+
+                const unitCostSyp = item.unit_cost * exchangeRateValue;
+                const finalPriceSyp = finalPrice * exchangeRateValue;
+                const totalPriceSyp = totalPrice * exchangeRateValue;
+
+                await req.db.query(
+                    `INSERT INTO quotation_items (
+                        quotation_id, material_id, material_name, unit_cost, unit_cost_syp, profit_percentage, final_price, final_price_syp, quantity, total_price, total_price_syp,
+                        material_type, packaging_unit, packaging_weight, pieces_per_package, package_cost, item_notes
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [
+                        id, item.material_id || null, item.material_name || '',
+                        item.unit_cost || 0, unitCostSyp || 0, profitPercentage,
+                        finalPrice, finalPriceSyp, item.quantity || 1, totalPrice, totalPriceSyp,
+                        item.material_type || null, item.packaging_unit || null, item.packaging_weight || null,
+                        item.pieces_per_package || null, item.package_cost || null, item.item_notes || null
+                    ]
+                );
+
+                totalAmount += totalPrice;
+                totalAmountSyp += totalPriceSyp;
+            }
+        }
+
+        await req.db.query(`UPDATE quotations SET total_amount = ?, total_amount_syp = ? WHERE id = ?`, [totalAmount, totalAmountSyp, id]);
+
+        res.json({ success: true, message: 'تم تحديث عرض السعر بنجاح' });
+    } catch (error) {
+        console.error('خطأ في تحديث عرض السعر:', error);
+        res.status(500).json({ success: false, message: 'حدث خطأ في تحديث عرض السعر' });
     }
 };
 
@@ -435,7 +526,7 @@ const createQuotation = async (req, res) => {
         // حفظ بنود العرض
         if (items && Array.isArray(items)) {
             for (const item of items) {
-                const profitPercentage = item.profit_percentage || general_profit_percentage || 0;
+                const profitPercentage = item.profit_percentage || 0;
                 const finalPrice = item.unit_cost * (1 + profitPercentage / 100);
                 const totalPrice = finalPrice * item.quantity;
                 
@@ -445,9 +536,16 @@ const createQuotation = async (req, res) => {
                 const totalPriceSyp = totalPrice * exchangeRateValue;
 
                 await req.db.query(`
-                    INSERT INTO quotation_items (quotation_id, material_id, material_name, unit_cost, unit_cost_syp, profit_percentage, final_price, final_price_syp, quantity, total_price, total_price_syp)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `, [quotationResult.insertId, item.material_id, item.material_name, item.unit_cost, unitCostSyp, profitPercentage, finalPrice, finalPriceSyp, item.quantity, totalPrice, totalPriceSyp]);
+                    INSERT INTO quotation_items (
+                        quotation_id, material_id, material_name, unit_cost, unit_cost_syp, profit_percentage, final_price, final_price_syp, quantity, total_price, total_price_syp,
+                        material_type, packaging_unit, packaging_weight, pieces_per_package, package_cost, item_notes
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, [
+                    quotationResult.insertId, item.material_id || null, item.material_name || '',
+                    item.unit_cost || 0, unitCostSyp || 0, profitPercentage, finalPrice, finalPriceSyp,
+                    item.quantity || 1, totalPrice, totalPriceSyp, item.material_type || null, item.packaging_unit || null,
+                    item.packaging_weight || null, item.pieces_per_package || null, item.package_cost || null, item.item_notes || null
+                ]);
 
                 totalAmount += totalPrice;
                 totalAmountSyp += totalPriceSyp;
@@ -819,8 +917,10 @@ module.exports = {
     getMaterialPreview,
     updateMaterial,
     getQuotations,
+    getQuotationJson,
     createQuotation,
     getQuotationDetails,
+    updateQuotation,
     getOrders,
     getOrder,
     createOrder,

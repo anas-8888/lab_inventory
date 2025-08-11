@@ -13,6 +13,20 @@
                 </div>
             </div>
 
+            <!-- تحضير التنسيق والحسابات -->
+            <% 
+                const isSYP = (defaultCurrency && defaultCurrency.code === 'SYP');
+                const fmt = (v) => isSYP ? String(Math.round(parseFloat(v) || 0)) : (parseFloat(v) || 0).toFixed(2);
+                let grandTotal = 0;
+                (items || []).forEach(it => {
+                    const unit = parseFloat(it.unit_cost) || 0;
+                    const pct = parseFloat(it.profit_percentage) || 0;
+                    const qty = parseInt(it.quantity) || 1;
+                    const finalPrice = unit * (1 + pct / 100);
+                    grandTotal += finalPrice * qty;
+                });
+            %>
+
             <!-- تفاصيل العرض -->
             <div class="card shadow mb-4">
                 <div class="card-header">
@@ -46,17 +60,11 @@
                         </div>
                         <div class="col-md-6">
                             <table class="table table-borderless">
-                                <tr>
-                                    <td><strong>نسبة الربح العامة:</strong></td>
-                                    <td><%= parseFloat(quotation.general_profit_percentage).toFixed(1) %>%</td>
-                                </tr>
+                                
                                 <tr>
                                     <td><strong>المبلغ الإجمالي:</strong></td>
                                     <td><strong class="text-primary">
-                                        <%= (defaultCurrency && defaultCurrency.code === 'SYP')
-                                            ? String(Math.round(parseFloat(quotation.total_amount) || 0))
-                                            : (parseFloat(quotation.total_amount) || 0).toFixed(2)
-                                        %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                                        <%= fmt(grandTotal) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                                     </strong></td>
                                 </tr>
                                 <tr>
@@ -83,40 +91,41 @@
                         <table class="table table-bordered">
                             <thead>
                                 <tr>
-                                    <th>#</th>
+                                    <th>رقم المادة</th>
                                     <th>اسم المادة</th>
-                                    <th>كلفة القطعة</th>
+                                    <th>نوع المادة</th>
+                                    <th>وحدة التعبئة</th>
+                                    <th>وزن وحدة التعبئة</th>
+                                    <th>شد الكرتون</th>
+                                    <th>كلفة الطرد</th>
                                     <th>نسبة الربح</th>
                                     <th>السعر النهائي</th>
                                     <th>الكمية</th>
                                     <th>المجموع</th>
+                                    <th>ملاحظات</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <% items.forEach((item, index) => { %>
+                                <% (items || []).forEach((item, index) => {
+                                     const unit = parseFloat(item.unit_cost) || 0;
+                                     const profitPct = parseFloat(item.profit_percentage) || 0;
+                                     const final = unit * (1 + profitPct / 100);
+                                     const qty = parseInt(item.quantity) || 1;
+                                     const total = final * qty;
+                                %>
                                 <tr>
-                                    <td><%= index + 1 %></td>
+                                    <td><%= item.material_id || '-' %></td>
                                     <td><%= item.material_name %></td>
-                                    <td>
-                                        <%= (defaultCurrency && defaultCurrency.code === 'SYP')
-                                            ? String(Math.round(parseFloat(item.unit_cost) || 0))
-                                            : (parseFloat(item.unit_cost) || 0).toFixed(2)
-                                        %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
-                                    </td>
-                                <td><%= parseFloat(item.profit_percentage).toFixed(1) %>%</td>
-                                    <td>
-                                        <%= (defaultCurrency && defaultCurrency.code === 'SYP')
-                                            ? String(Math.round(parseFloat(item.final_price) || 0))
-                                            : (parseFloat(item.final_price) || 0).toFixed(2)
-                                        %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
-                                    </td>
-                                <td><%= item.quantity %></td>
-                                    <td><strong>
-                                        <%= (defaultCurrency && defaultCurrency.code === 'SYP')
-                                            ? String(Math.round(parseFloat(item.total_price) || 0))
-                                            : (parseFloat(item.total_price) || 0).toFixed(2)
-                                        %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
-                                    </strong></td>
+                                    <td><%= item.material_type || '-' %></td>
+                                    <td><%= item.packaging_unit || '-' %></td>
+                                    <td><%= item.packaging_weight || '-' %></td>
+                                    <td><%= item.pieces_per_package || '-' %></td>
+                                    <td><%= fmt(unit) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
+                                    <td><%= parseFloat(item.profit_percentage).toFixed(1) %>%</td>
+                                    <td><%= fmt(final) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
+                                    <td><%= item.quantity %></td>
+                                    <td><strong><%= fmt(total) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></strong></td>
+                                    <td><%= item.item_notes || '-' %></td>
                                 </tr>
                                 <% }); %>
                             </tbody>
@@ -124,10 +133,7 @@
                                 <tr class="table-info">
                                     <td colspan="6" class="text-end"><strong>المجموع الإجمالي:</strong></td>
                                     <td><strong>
-                                        <%= (defaultCurrency && defaultCurrency.code === 'SYP')
-                                            ? String(Math.round(parseFloat(quotation.total_amount) || 0))
-                                            : (parseFloat(quotation.total_amount) || 0).toFixed(2)
-                                        %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                                        <%= fmt(grandTotal) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                                     </strong></td>
                                 </tr>
                             </tfoot>

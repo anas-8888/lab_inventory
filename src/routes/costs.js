@@ -19,6 +19,8 @@ router.delete('/cost-statement/:id', isAuthenticated, isAdmin, costsController.d
 router.get('/quotations', isAuthenticated, isAdmin, costsController.getQuotations);
 router.post('/quotations', isAuthenticated, isAdmin, costsController.createQuotation);
 router.get('/quotations/:id', isAuthenticated, isAdmin, costsController.getQuotationDetails);
+router.get('/quotations/:id/json', isAuthenticated, isAdmin, costsController.getQuotationJson);
+router.put('/quotations/:id', isAuthenticated, isAdmin, costsController.updateQuotation);
 router.delete('/quotations/:id', isAuthenticated, isAdmin, costsController.deleteQuotation);
 
 // المرحلة الثالثة: الطلبيات
