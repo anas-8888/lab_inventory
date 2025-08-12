@@ -138,9 +138,10 @@ function formatNumberDisplay(value) {
                   <th>الوحدة</th>
                   <th>الكمية المطلوبة</th>
                   <th>الوزن</th>
+                  <th>الوزن الإجمالي</th>
                   <th>الحجم</th>
-                  <th>سعر الوحدة</th>
-                  <th>المجموع</th>
+                  <th>سعر الطرد</th>
+                  <th>السعر الإجمالي</th>
                   <th>ملاحظات</th>
                 </tr>
               </thead>
@@ -150,9 +151,10 @@ function formatNumberDisplay(value) {
                     <td><%= item.material_id || '-' %></td>
                     <td><%= item.material_name || '-' %></td>
                     <td><%= item.unit || '-' %></td>
-                    <td><%= item.weight != null ? formatNumberDisplay(item.weight) : '-' %></td>
-                    <td><%= item.volume != null ? formatNumberDisplay(item.volume) : '-' %></td>
                     <td><%= item.requested_quantity != null ? formatNumberDisplay(item.requested_quantity) : '-' %></td>
+                    <td><%= item.weight != null ? formatNumberDisplay(item.weight) : '-' %></td>
+                    <td><%= item.weight_total != null ? formatNumberDisplay(item.weight_total) : '-' %></td>
+                    <td><%= item.volume != null ? formatNumberDisplay(item.volume) : '-' %></td>
                     <td><%= (typeof item.unit_price !== 'undefined') ? formatNumberDisplay(item.unit_price) : '-' %> <%= (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '' %></td>
                     <td><%= (typeof item.total_price !== 'undefined') ? formatNumberDisplay(item.total_price) : '-' %> <%= (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '' %></td>
                     <td><%= item.notes || '-' %></td>
@@ -161,9 +163,14 @@ function formatNumberDisplay(value) {
               </tbody>
               <tfoot>
                 <tr class="table-info">
-                  <td colspan="5" class="text-end"><strong>المجموع الإجمالي:</strong></td>
-                  <td><strong><%= typeof grandTotal !== 'undefined' ? formatNumberDisplay(grandTotal) : '0' %> <%= (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '' %></strong></td>
-                  <td colspan="3"></td>
+                  <td colspan="3" class="text-center"><strong>الإجماليات</strong></td>
+                  <td><strong><%= typeof totals !== 'undefined' && totals ? formatNumberDisplay(totals.totalRequestedQuantity) : '0' %></strong></td>
+                  <td></td>
+                  <td><strong><%= typeof totals !== 'undefined' && totals ? formatNumberDisplay(totals.totalWeight) : '0' %></strong></td>
+                  <td><strong><%= typeof totals !== 'undefined' && totals ? formatNumberDisplay(totals.totalVolume) : '0' %></strong></td>
+                  <td></td>
+                  <td><strong><%= typeof totals !== 'undefined' && totals ? formatNumberDisplay(totals.grandTotal) : '0' %> <%= (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '' %></strong></td>
+                  <td></td>
                 </tr>
               </tfoot>
             </table>

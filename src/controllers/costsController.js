@@ -786,14 +786,16 @@ const getOrders = async (req, res) => {
             SELECT * FROM orders ORDER BY created_at DESC
         `);
         const [materials] = await req.db.query(`
-            SELECT id, material_name, packaging_unit, packaging_weight FROM materials ORDER BY material_name
+            SELECT id, material_name, packaging_unit, packaging_weight, gross_package_weight, package_cost, package_cost_syp 
+            FROM materials ORDER BY material_name
         `);
 
         res.render('costs/orders', {
             title: 'الطلبيات',
             orders,
             materials,
-            formatDate
+            formatDate,
+            defaultCurrency: req.defaultCurrency || null
         });
     } catch (error) {
         console.error('خطأ في عرض الطلبيات:', error);
@@ -856,9 +858,9 @@ const createOrder = async (req, res) => {
         // حفظ بنود الطلبية إن وُجدت
         if (items && Array.isArray(items)) {
             for (const item of items) {
-        await req.db.query(`
-                    INSERT INTO order_items (order_id, material_id, material_name, unit, requested_quantity, weight, volume, notes)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                await req.db.query(`
+                    INSERT INTO order_items (order_id, material_id, material_name, unit, requested_quantity, weight, volume, unit_price, total_price, notes)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `, [
                     orderResult.insertId,
                     item.material_id || null,
@@ -867,6 +869,8 @@ const createOrder = async (req, res) => {
                     item.requested_quantity || null,
                     item.weight || null,
                     item.volume || null,
+                    item.unit_price != null ? item.unit_price : null,
+                    item.total_price != null ? item.total_price : (item.unit_price && item.requested_quantity ? (item.unit_price * item.requested_quantity) : null),
                     item.notes || null
                 ]);
             }
@@ -1040,8 +1044,8 @@ const updateOrder = async (req, res) => {
         if (items && Array.isArray(items)) {
             for (const item of items) {
                 await req.db.query(`
-                    INSERT INTO order_items (order_id, material_id, material_name, unit, requested_quantity, weight, volume, notes)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO order_items (order_id, material_id, material_name, unit, requested_quantity, weight, volume, unit_price, total_price, notes)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `, [
                     id,
                     item.material_id || null,
@@ -1050,6 +1054,8 @@ const updateOrder = async (req, res) => {
                     item.requested_quantity || null,
                     item.weight || null,
                     item.volume || null,
+                    item.unit_price != null ? item.unit_price : null,
+                    item.total_price != null ? item.total_price : (item.unit_price && item.requested_quantity ? (item.unit_price * item.requested_quantity) : null),
                     item.notes || null
                 ]);
             }
@@ -1073,32 +1079,27 @@ const getOrderDetailsPage = async (req, res) => {
         }
         const [items] = await req.db.query('SELECT * FROM order_items WHERE order_id = ?', [id]);
 
-        // اجلب أسعار المواد (كلفة الطرد) عند توفر material_id
-        const materialIds = items.map(i => i.material_id).filter(Boolean);
-        let materialsMap = new Map();
-        if (materialIds.length > 0) {
-            const [materials] = await req.db.query(
-                `SELECT id, package_cost, package_cost_syp FROM materials WHERE id IN (${materialIds.map(()=>'?').join(',')})`,
-                materialIds
-            );
-            materials.forEach(m => materialsMap.set(m.id, m));
-        }
-
-        const isSyp = req.defaultCurrency && req.defaultCurrency.code === 'SYP';
+        // استخدم فقط السعر المُدخل من المستخدم إن وُجد، وإلا اتركه فارغاً
         const displayItems = items.map(it => {
-            const mat = it.material_id ? materialsMap.get(it.material_id) : null;
-            const unitPrice = mat ? (isSyp ? (mat.package_cost_syp || mat.package_cost || 0) : (mat.package_cost || 0)) : 0;
             const qty = parseFloat(it.requested_quantity) || 0;
-            const totalPrice = unitPrice * qty;
-            return { ...it, unit_price: unitPrice, total_price: totalPrice };
+            const unitPrice = (it.unit_price != null) ? parseFloat(it.unit_price) : null;
+            const totalPrice = (unitPrice != null) ? (unitPrice * qty) : null;
+            const weight = parseFloat(it.weight) || 0;
+            const weightTotal = qty * weight;
+            return { ...it, unit_price: unitPrice, total_price: totalPrice, weight_total: weightTotal };
         });
-        const grandTotal = displayItems.reduce((s, it) => s + (parseFloat(it.total_price) || 0), 0);
+        const totals = {
+            totalRequestedQuantity: displayItems.reduce((s, it) => s + (parseFloat(it.requested_quantity) || 0), 0),
+            totalWeight: displayItems.reduce((s, it) => s + (parseFloat(it.weight_total) || 0), 0),
+            totalVolume: displayItems.reduce((s, it) => s + (parseFloat(it.volume) || 0), 0),
+            grandTotal: displayItems.reduce((s, it) => s + (it.total_price != null ? parseFloat(it.total_price) : 0), 0)
+        };
 
         res.render('costs/order-details', {
             title: `تفاصيل الطلبية ${orders[0].order_number}`,
             order: orders[0],
             items: displayItems,
-            grandTotal,
+            totals,
             defaultCurrency: req.defaultCurrency || null
         });
     } catch (error) {
@@ -1119,31 +1120,23 @@ const getOrderPrintPage = async (req, res) => {
         }
         const [items] = await req.db.query('SELECT * FROM order_items WHERE order_id = ?', [id]);
 
-        // اجلب أسعار المواد
-        const materialIds = items.map(i => i.material_id).filter(Boolean);
-        let materialsMap = new Map();
-        if (materialIds.length > 0) {
-            const [materials] = await req.db.query(
-                `SELECT id, package_cost, package_cost_syp FROM materials WHERE id IN (${materialIds.map(()=>'?').join(',')})`,
-                materialIds
-            );
-            materials.forEach(m => materialsMap.set(m.id, m));
-        }
-
-        const isSyp = req.defaultCurrency && req.defaultCurrency.code === 'SYP';
+        // استخدم فقط السعر المدخل من المستخدم
         const pricedItems = items.map(it => {
-            const mat = it.material_id ? materialsMap.get(it.material_id) : null;
-            const unitPrice = mat ? (isSyp ? (mat.package_cost_syp || mat.package_cost || 0) : (mat.package_cost || 0)) : 0;
             const qty = parseFloat(it.requested_quantity) || 0;
-            const totalPrice = unitPrice * qty;
+            const unitPrice = (it.unit_price != null) ? parseFloat(it.unit_price) : null;
+            const totalPrice = (unitPrice != null) ? (unitPrice * qty) : null;
             return { ...it, unit_price: unitPrice, total_price: totalPrice };
         });
 
         const totals = {
             totalRequestedQuantity: pricedItems.reduce((s, it) => s + (parseFloat(it.requested_quantity) || 0), 0),
-            totalWeight: pricedItems.reduce((s, it) => s + (parseFloat(it.weight) || 0), 0),
+            totalWeight: pricedItems.reduce((s, it) => {
+                const qty = parseFloat(it.requested_quantity) || 0;
+                const w = parseFloat(it.weight) || 0;
+                return s + (qty * w);
+            }, 0),
             totalVolume: pricedItems.reduce((s, it) => s + (parseFloat(it.volume) || 0), 0),
-            grandTotal: pricedItems.reduce((s, it) => s + (parseFloat(it.total_price) || 0), 0)
+            grandTotal: pricedItems.reduce((s, it) => s + (it.total_price != null ? parseFloat(it.total_price) : 0), 0)
         };
 
         res.render('costs/order-print', {

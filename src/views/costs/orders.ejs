@@ -113,7 +113,7 @@
 
 <!-- Modal تعديل الطلبية -->
 <div class="modal fade" id="editOrderModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">تعديل الطلبية</h5>
@@ -193,6 +193,8 @@
                                     <th>الكمية المطلوبة</th>
                                     <th>الوزن</th>
                                     <th>الحجم</th>
+                                    <th>سعر الطرد</th>
+                                    <th>السعر الإجمالي</th>
                                     <th>ملاحظات</th>
                                     <th>الإجراءات</th>
                                 </tr>
@@ -286,6 +288,8 @@
                   <th>الكمية المطلوبة</th>
                   <th>الوزن</th>
                   <th>الحجم</th>
+                  <th>سعر الطرد</th>
+                  <th>السعر الإجمالي</th>
                   <th>ملاحظات</th>
                   <th>الإجراءات</th>
                 </tr>
@@ -357,6 +361,9 @@
 <script>
 // تمرير قائمة المواد من الخادم إلى الواجهة
 window.materials = <%- JSON.stringify(typeof materials !== 'undefined' ? materials : []) %>;
+const currencySymbol = '<%= (typeof defaultCurrency !== "undefined" && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '' %>';
+const defaultCurrencyCode = '<%= (typeof defaultCurrency !== "undefined" && defaultCurrency && defaultCurrency.code) ? defaultCurrency.code : '' %>';
+const isSyp = defaultCurrencyCode === 'SYP';
 let currentDateInput = null;
 let selectedDate = null;
 let currentMonth = new Date().getMonth();
@@ -724,7 +731,7 @@ function showAlert(message, type) {
 function addOrderItemRow(){
   const tbody = document.getElementById('orderItemsBody');
   const tr = document.createElement('tr');
-  const materialOptions = (window.materials || []).map(m => `<option value="${m.id}" data-unit="${m.packaging_unit||''}">${m.material_name}</option>`).join('');
+  const materialOptions = (window.materials || []).map(m => `<option value="${m.id}" data-unit="${m.packaging_unit||''}" data-weight="${m.gross_package_weight!=null?m.gross_package_weight:''}">${m.material_name}</option>`).join('');
   tr.innerHTML = `
     <td>
       <select class="form-select order-material" onchange="onOrderMaterialChange(this)">
@@ -733,9 +740,21 @@ function addOrderItemRow(){
       </select>
     </td>
     <td><input type="text" class="form-control order-unit" readonly></td>
-    <td><input type="number" class="form-control order-qty" step="0.001" min="0"></td>
-    <td><input type="number" class="form-control order-weight" step="0.001" min="0"></td>
+    <td><input type="number" class="form-control order-qty" step="0.001" min="0" oninput="onOrderCalcRow(this)"></td>
+    <td><input type="number" class="form-control order-weight" step="0.001" min="0" readonly></td>
     <td><input type="number" class="form-control order-volume" step="0.001" min="0"></td>
+    <td>
+      <div class="input-group">
+        <input type="number" class="form-control order-unit-price" step="0.01" min="0" placeholder="اختياري" oninput="onOrderCalcRow(this)">
+        <span class="input-group-text">${currencySymbol}</span>
+      </div>
+    </td>
+    <td>
+      <div class="input-group">
+        <input type="number" class="form-control order-total-price" step="0.01" min="0" readonly>
+        <span class="input-group-text">${currencySymbol}</span>
+      </div>
+    </td>
     <td><input type="text" class="form-control order-notes"></td>
     <td><button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()"><i class="bi bi-trash"></i></button></td>
   `;
@@ -744,8 +763,11 @@ function addOrderItemRow(){
 
 function onOrderMaterialChange(selectEl){
   const tr = selectEl.closest('tr');
-  const unit = selectEl.selectedOptions[0]?.getAttribute('data-unit')||'';
+  const opt = selectEl.selectedOptions[0];
+  const unit = opt?.getAttribute('data-unit')||'';
   tr.querySelector('.order-unit').value = unit;
+  const w = opt?.getAttribute('data-weight');
+  tr.querySelector('.order-weight').value = w ? parseFloat(w).toFixed(3) : '';
 }
 
 function collectOrderItems(){
@@ -758,6 +780,8 @@ function collectOrderItems(){
     const qty = parseFloat(tr.querySelector('.order-qty')?.value||'');
     const weight = parseFloat(tr.querySelector('.order-weight')?.value||'');
     const volume = parseFloat(tr.querySelector('.order-volume')?.value||'');
+    const unitPrice = parseFloat(tr.querySelector('.order-unit-price')?.value||'');
+    const totalPrice = (!isNaN(unitPrice) && !isNaN(qty)) ? (unitPrice * qty) : null;
     const notes = tr.querySelector('.order-notes')?.value || null;
     if (materialId || materialName){
       items.push({
@@ -767,6 +791,8 @@ function collectOrderItems(){
         requested_quantity: isNaN(qty)? null : qty,
         weight: isNaN(weight)? null : weight,
         volume: isNaN(volume)? null : volume,
+        unit_price: isNaN(unitPrice)? null : unitPrice,
+        total_price: totalPrice,
         notes
       });
     }
@@ -774,12 +800,23 @@ function collectOrderItems(){
   return items;
 }
 
+function onOrderCalcRow(el){
+  const tr = el.closest('tr');
+  const qty = parseFloat(tr.querySelector('.order-qty')?.value||'');
+  const unitPrice = parseFloat(tr.querySelector('.order-unit-price')?.value||'');
+  const totalEl = tr.querySelector('.order-total-price');
+  if (totalEl){
+    if (!isNaN(qty) && !isNaN(unitPrice)) totalEl.value = (qty * unitPrice).toFixed(2);
+    else totalEl.value = '';
+  }
+}
+
 // مواد الطلبية (التعديل)
 function addEditOrderItemRow(item){
   const tbody = document.getElementById('editOrderItemsBody');
   const tr = document.createElement('tr');
   const materials = Array.isArray(window.materials) ? window.materials : [];
-  const materialOptions = materials.map(m => `<option value="${m.id}" data-unit="${m.packaging_unit||''}">${m.material_name}</option>`).join('');
+  const materialOptions = materials.map(m => `<option value="${m.id}" data-unit="${m.packaging_unit||''}" data-weight="${m.gross_package_weight!=null?m.gross_package_weight:''}">${m.material_name}</option>`).join('');
   const selectedId = item && item.material_id ? String(item.material_id) : '';
   const selectedUnit = item && item.unit ? item.unit : '';
   const selectedName = item && item.material_name ? item.material_name : '';
@@ -793,8 +830,20 @@ function addEditOrderItemRow(item){
     </td>
     <td><input type="text" class="form-control edit-order-unit" value="${selectedUnit}" readonly></td>
     <td><input type="number" class="form-control edit-order-qty" step="0.001" min="0" value="${item && item.requested_quantity != null ? item.requested_quantity : ''}"></td>
-    <td><input type="number" class="form-control edit-order-weight" step="0.001" min="0" value="${item && item.weight != null ? item.weight : ''}"></td>
+    <td><input type="number" class="form-control edit-order-weight" step="0.001" min="0" value="${item && item.weight != null ? item.weight : ''}" readonly></td>
     <td><input type="number" class="form-control edit-order-volume" step="0.001" min="0" value="${item && item.volume != null ? item.volume : ''}"></td>
+    <td>
+      <div class="input-group">
+        <input type="number" class="form-control edit-order-unit-price" step="0.01" min="0" value="${item && item.unit_price != null ? item.unit_price : ''}" oninput="onEditOrderCalcRow(this)">
+        <span class="input-group-text">${currencySymbol}</span>
+      </div>
+    </td>
+    <td>
+      <div class="input-group">
+        <input type="number" class="form-control edit-order-total-price" step="0.01" min="0" value="${item && item.total_price != null ? item.total_price : ''}" readonly>
+        <span class="input-group-text">${currencySymbol}</span>
+      </div>
+    </td>
     <td><input type="text" class="form-control edit-order-notes" value="${item && item.notes ? item.notes : ''}"></td>
     <td><button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()"><i class="bi bi-trash"></i></button></td>
   `;
@@ -819,8 +868,13 @@ function addEditOrderItemRow(item){
 
 function onEditOrderMaterialChange(selectEl){
   const tr = selectEl.closest('tr');
-  const unit = selectEl.selectedOptions[0]?.getAttribute('data-unit')||'';
+  const opt = selectEl.selectedOptions[0];
+  const unit = opt?.getAttribute('data-unit')||'';
   tr.querySelector('.edit-order-unit').value = unit;
+  const w = opt?.getAttribute('data-weight');
+  const weightEl = tr.querySelector('.edit-order-weight');
+  if (w && weightEl) weightEl.value = parseFloat(w).toFixed(3);
+  onEditOrderCalcRow(tr.querySelector('.edit-order-qty'));
 }
 
 function collectEditOrderItems(){
@@ -830,9 +884,12 @@ function collectEditOrderItems(){
     const materialId = sel && sel.value ? parseInt(sel.value) : null;
     const materialName = sel && sel.selectedOptions[0] ? sel.selectedOptions[0].textContent.trim() : '';
     const unit = tr.querySelector('.edit-order-unit')?.value || null;
-    const qty = parseFloat(tr.querySelector('.edit-order-qty')?.value||'');
+    const qtyVal = parseFloat(tr.querySelector('.edit-order-qty')?.value||'');
     const weight = parseFloat(tr.querySelector('.edit-order-weight')?.value||'');
     const volume = parseFloat(tr.querySelector('.edit-order-volume')?.value||'');
+    const unitPrice = parseFloat(tr.querySelector('.edit-order-unit-price')?.value||'');
+    const qty = qtyVal;
+    const totalPrice = (!isNaN(unitPrice) && !isNaN(qty)) ? (unitPrice * qty) : null;
     const notes = tr.querySelector('.edit-order-notes')?.value || null;
     if (materialId || materialName){
       items.push({
@@ -842,11 +899,24 @@ function collectEditOrderItems(){
         requested_quantity: isNaN(qty)? null : qty,
         weight: isNaN(weight)? null : weight,
         volume: isNaN(volume)? null : volume,
+        unit_price: isNaN(unitPrice)? null : unitPrice,
+        total_price: totalPrice,
         notes
       });
     }
   });
   return items;
+}
+
+function onEditOrderCalcRow(el){
+  const tr = el.closest('tr');
+  const qty = parseFloat(tr.querySelector('.edit-order-qty')?.value||'');
+  const unitPrice = parseFloat(tr.querySelector('.edit-order-unit-price')?.value||'');
+  const totalEl = tr.querySelector('.edit-order-total-price');
+  if (totalEl){
+    if (!isNaN(qty) && !isNaN(unitPrice)) totalEl.value = (qty * unitPrice).toFixed(2);
+    else totalEl.value = '';
+  }
 }
 </script>
 
