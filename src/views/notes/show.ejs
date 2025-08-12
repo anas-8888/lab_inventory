@@ -1,0 +1,31 @@
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-journal-text"></i> عرض ملاحظة</h2>
+    <a href="/notes" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+  </div>
+
+  <div class="card shadow">
+    <div class="card-header"><h5 class="mb-0">بيانات الملاحظة</h5></div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <table class="table table-borderless">
+            <tr><td><strong>اسم المادة:</strong></td><td><%= note.material_name || ('#' + (note.material_id || '-')) %></td></tr>
+            <tr><td><strong>السعر:</strong></td><td><%= (note.price!=null? note.price: '-') %></td></tr>
+            <tr><td><strong>الوزن:</strong></td><td><%= (note.weight!=null? note.weight: '-') %></td></tr>
+          </table>
+        </div>
+        <div class="col-md-6">
+          <table class="table table-borderless">
+            <tr><td><strong>التاريخ:</strong></td><td><%= note.note_date_fmt || '-' %></td></tr>
+          </table>
+        </div>
+      </div>
+
+      <hr>
+      <h6>الملاحظات</h6>
+      <p class="mb-0"><%= note.note_text || '-' %></p>
+    </div>
+  </div>
+</div>
+

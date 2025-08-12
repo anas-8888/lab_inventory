@@ -1,0 +1,180 @@
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-journal-text"></i> الملاحظات</h2>
+    <div>
+      <a href="/" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createNoteModal">
+        <i class="bi bi-plus-circle"></i> إضافة ملاحظة
+      </button>
+    </div>
+  </div>
+
+  <% if (notes && notes.length) { %>
+  <div class="card shadow">
+    <div class="card-header">
+      <h5 class="mb-0">جدول الملاحظات</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>اسم المادة</th>
+              <th>السعر</th>
+              <th>الوزن</th>
+              <th>التاريخ</th>
+              <th>الملاحظات</th>
+              <th>الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% notes.forEach((n, idx) => { %>
+              <tr>
+                <td><%= idx + 1 %></td>
+                <td><%= n.material_name || ('#' + (n.material_id || '-')) %></td>
+                <td><%= (n.price != null) ? n.price : '-' %></td>
+                <td><%= (n.weight != null) ? n.weight : '-' %></td>
+                <td><%= n.note_date || '-' %></td>
+                <td class="text-truncate" style="max-width:260px;"><%= n.note_text || '-' %></td>
+                <td>
+                  <div class="btn-group">
+                    <a href="/notes/<%= n.id %>" class="btn btn-sm btn-secondary" title="عرض"><i class="bi bi-eye"></i></a>
+                    <button type="button" class="btn btn-sm btn-info" onclick="openEditModal(<%= n.id %>)" title="تعديل"><i class="bi bi-pencil"></i></button>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="deleteNote(<%= n.id %>)" title="حذف"><i class="bi bi-trash"></i></button>
+                  </div>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <% } else { %>
+    <div class="card shadow">
+      <div class="card-body text-center py-5">
+        <i class="bi bi-journal-x fs-1 text-muted mb-3"></i>
+        <h5 class="mb-2">لا توجد ملاحظات حتى الآن</h5>
+        <p class="text-muted">ابدأ بإضافة أول ملاحظة باستخدام الزر أعلاه.</p>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- Create Modal -->
+  <div class="modal fade" id="createNoteModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">إضافة ملاحظة</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <form id="createNoteForm">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">اسم المادة</label>
+                <select class="form-select" name="material_id">
+                  <option value="">بدون تحديد</option>
+                  <% (materials||[]).forEach(m => { %>
+                    <option value="<%= m.id %>"><%= m.material_name %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">السعر</label>
+                <input type="number" step="0.01" class="form-control" name="price" placeholder="اختياري">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">الوزن (كغ)</label>
+                <input type="number" step="0.001" class="form-control" name="weight" placeholder="اختياري">
+              </div>
+              
+              <div class="col-12">
+                <label class="form-label">ملاحظات</label>
+                <textarea class="form-control" rows="3" name="note_text"></textarea>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="button" class="btn btn-primary" onclick="submitCreate()">حفظ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="modal fade" id="editNoteModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">تعديل ملاحظة</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <form id="editNoteForm">
+            <input type="hidden" name="id" id="editNoteId">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">اسم المادة</label>
+                <select class="form-select" name="material_id" id="editMaterialId">
+                  <option value="">بدون تحديد</option>
+                  <% (materials||[]).forEach(m => { %>
+                    <option value="<%= m.id %>"><%= m.material_name %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">السعر</label>
+                <input type="number" step="0.01" class="form-control" name="price" id="editPrice">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">الوزن (كغ)</label>
+                <input type="number" step="0.001" class="form-control" name="weight" id="editWeight">
+              </div>
+              
+              <div class="col-12">
+                <label class="form-label">ملاحظات</label>
+                <textarea class="form-control" rows="3" name="note_text" id="editText"></textarea>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="button" class="btn btn-primary" onclick="submitEdit()">حفظ التعديلات</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function submitCreate(){
+  const form = document.getElementById('createNoteForm');
+  const fd = new FormData(form);
+  fetch('/notes', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(Object.fromEntries(fd)) })
+    .then(r=>r.json()).then(d=>{ if(d.success){ location.reload(); } else { alert(d.message||'فشل الحفظ'); } });
+}
+function openEditModal(id){
+  fetch('/notes/'+id, { headers: { 'Accept':'application/json' } })
+    .then(r=> r.ok ? r.json() : Promise.reject())
+    .then(data=>{
+      const n = data.note;
+      document.getElementById('editNoteId').value = n.id;
+      document.getElementById('editMaterialId').value = n.material_id || '';
+      document.getElementById('editPrice').value = (n.price!=null? n.price: '');
+      document.getElementById('editWeight').value = (n.weight!=null? n.weight: '');
+      document.getElementById('editText').value = n.note_text || '';
+      new bootstrap.Modal(document.getElementById('editNoteModal')).show();
+    })
+    .catch(()=> window.location.href = '/notes/'+id);
+}
+function submitEdit(){
+  const fd = new FormData(document.getElementById('editNoteForm'));
+  const id = fd.get('id');
+  fetch('/notes/'+id, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(Object.fromEntries(fd)) })
+    .then(r=>r.json()).then(d=>{ if(d.success){ location.reload(); } else { alert(d.message||'فشل التعديل'); } });
+}
+function deleteNote(id){
+  if(!confirm('هل أنت متأكد من حذف هذه الملاحظة؟')) return;
+  fetch('/notes/'+id, { method:'DELETE' }).then(r=>r.json()).then(d=>{ if(d.success){ location.reload(); } else { alert(d.message||'فشل الحذف'); } });
+}
+</script>
+

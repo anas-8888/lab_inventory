@@ -148,6 +148,7 @@ app.use('/users', require('./routes/users'));
 app.use('/certificates', require('./routes/certificates'));
 app.use('/exports', require('./routes/exports'));
 app.use('/costs', require('./routes/costs'));
+app.use('/notes', require('./routes/notes'));
 
 // معالجة خطأ 404
 app.use((req, res, next) => {
