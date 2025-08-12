@@ -7,9 +7,9 @@
                     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createOrderModal">
                         <i class="bi bi-plus-circle me-1"></i> إنشاء طلبية جديدة
                     </button>
-                    <a href="/costs" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-right me-1"></i> العودة للتكاليف
-                    </a>
+                <a href="/costs" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-right me-1"></i> العودة للتكاليف
+                </a>
                 </div>
             </div>
 
@@ -104,7 +104,7 @@
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createOrderModal">
                   <i class="bi bi-plus-circle me-1"></i> إنشاء طلبية جديدة
                 </button>
-              </div>
+                </div>
             </div>
             <% } %>
         </div>
@@ -298,9 +298,9 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
         <button type="submit" form="orderForm" class="btn btn-primary">حفظ الطلبية</button>
-      </div>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
 <!-- Modal التقويم -->
@@ -552,7 +552,7 @@ function editOrder(orderId) {
             const tbody = document.getElementById('editOrderItemsBody');
             tbody.innerHTML = '';
             items.forEach(it => addEditOrderItemRow(it));
-
+            
             const modal = new bootstrap.Modal(document.getElementById('editOrderModal'));
             modal.show();
         })

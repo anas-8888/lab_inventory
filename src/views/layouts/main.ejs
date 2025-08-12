@@ -11,7 +11,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/airbnb.css">
-  <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/l10n/ar.js">
   <style>
     body { 
       font-family: 'Cairo', sans-serif; 
@@ -70,16 +69,16 @@
     </div>
   </nav>
 
-  <% if (typeof messages !== 'undefined' && messages.error) { %>
+  <% if (Array.isArray(error_msg) && error_msg.length) { %>
     <div class="alert alert-danger alert-dismissible fade show m-3" role="alert">
-      <%= messages.error %>
+      <%= error_msg[0] %>
       <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
   <% } %>
 
-  <% if (typeof messages !== 'undefined' && messages.success) { %>
+  <% if (Array.isArray(success_msg) && success_msg.length) { %>
     <div class="alert alert-success alert-dismissible fade show m-3" role="alert">
-      <%= messages.success %>
+      <%= success_msg[0] %>
       <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
   <% } %>

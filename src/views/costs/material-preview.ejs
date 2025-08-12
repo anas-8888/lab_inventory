@@ -75,12 +75,12 @@
                             <h6 class="text-primary mb-3">بيانات التكلفة الأساسية</h6>
                             <table class="table table-borderless">
                                 <tr>
-                                    <td><strong>السعر قبل الهدر:</strong></td>
+                                    <td><strong>السعر قبل الهدر (إجمالي):</strong></td>
                             <td>
                                 <%= (defaultCurrency && defaultCurrency.code === 'SYP')
                                     ? String(Math.round(parseFloat(material.price_before_waste) || 0))
                                     : (parseFloat(material.price_before_waste) || 0).toFixed(2)
-                                %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>/كجم
+                                %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                             </td>
                                 </tr>
                                 <tr>

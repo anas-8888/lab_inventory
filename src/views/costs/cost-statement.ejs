@@ -106,10 +106,11 @@
                             <input type="text" class="form-control" name="material_name" required>
                         </div>
 
-                        <!-- السعر قبل الهدر -->
+                        <!-- السعر قبل الهدر (سعر كلي للوزن الجمالي) -->
                         <div class="col-md-4">
-                            <label class="form-label">السعر قبل الهدر (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>/كجم) *</label>
+                            <label class="form-label">السعر قبل الهدر (إجمالي) <%= defaultCurrency ? defaultCurrency.symbol : '$' %> *</label>
                             <input type="number" class="form-control" name="price_before_waste" step="0.01" required>
+                            <small class="text-muted">أدخل السعر الكلي، وسيتم احتساب سعر الكيلو تلقائياً = السعر ÷ الوزن الجمالي</small>
                         </div>
 
                         <!-- الوزن الجمالي -->
@@ -244,10 +245,11 @@
                             <input type="text" class="form-control" id="editMaterialName" name="material_name" required>
                         </div>
 
-                        <!-- السعر قبل الهدر -->
+                        <!-- السعر قبل الهدر (سعر كلي) -->
                         <div class="col-md-4">
-                            <label class="form-label">السعر قبل الهدر (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>/كجم) *</label>
+                            <label class="form-label">السعر قبل الهدر (إجمالي) <%= defaultCurrency ? defaultCurrency.symbol : '$' %> *</label>
                             <input type="number" class="form-control currency-input" id="editPriceBeforeWaste" name="price_before_waste" step="0.01" required data-field="price_before_waste">
+                            <small class="text-muted">أدخل السعر الكلي، وسيتم احتساب سعر الكيلو تلقائياً</small>
                         </div>
 
                         <!-- الوزن الجمالي -->
@@ -530,7 +532,7 @@
 function calculateCosts() {
     const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
     const exchangeRate = <%= exchangeRate %>;
-    const priceBeforeWaste = parseFloat(document.querySelector('input[name="price_before_waste"]').value) || 0;
+    const priceBeforeWaste = parseFloat(document.querySelector('input[name="price_before_waste"]').value) || 0; // سعر إجمالي
     const grossWeight = parseFloat(document.querySelector('input[name="gross_weight"]').value) || 0;
     const wastePercentage = parseFloat(document.querySelector('input[name="waste_percentage"]').value) || 0;
     const emptyPackagePrice = parseFloat(document.querySelector('input[name="empty_package_price"]').value) || 0;
@@ -545,7 +547,8 @@ function calculateCosts() {
 
     // حساب كلفة القطعة الواحدة
     const netWeight = grossWeight * (1 - wastePercentage / 100);
-    const pricePerKgAfterWaste = priceBeforeWaste / (1 - wastePercentage / 100);
+    const pricePerKgBeforeWaste = grossWeight > 0 ? (priceBeforeWaste / grossWeight) : 0;
+    const pricePerKgAfterWaste = pricePerKgBeforeWaste / (1 - wastePercentage / 100 || 1);
     const packagingWeight = parseFloat(document.querySelector('input[name="packaging_weight"]').value) || 0;
     const materialCostInUnit = pricePerKgAfterWaste * packagingWeight;
     const totalPackagingCosts = emptyPackagePrice + stickerPrice + additionalExpenses + laborCost + preservativesCost;
@@ -840,7 +843,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function calculateEditCosts() {
     const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
     const exchangeRate = <%= exchangeRate %>;
-    const priceBeforeWaste = parseFloat(document.getElementById('editPriceBeforeWaste').value) || 0;
+    const priceBeforeWaste = parseFloat(document.getElementById('editPriceBeforeWaste').value) || 0; // سعر إجمالي
     const grossWeight = parseFloat(document.getElementById('editGrossWeight').value) || 0;
     const wastePercentage = parseFloat(document.getElementById('editWastePercentage').value) || 0;
     const emptyPackagePrice = parseFloat(document.getElementById('editEmptyPackagePrice').value) || 0;
@@ -855,7 +858,8 @@ function calculateEditCosts() {
 
     // حساب كلفة القطعة الواحدة
     const netWeight = grossWeight * (1 - wastePercentage / 100);
-    const pricePerKgAfterWaste = priceBeforeWaste / (1 - wastePercentage / 100);
+    const pricePerKgBeforeWaste = grossWeight > 0 ? (priceBeforeWaste / grossWeight) : 0;
+    const pricePerKgAfterWaste = pricePerKgBeforeWaste / (1 - wastePercentage / 100 || 1);
     const packagingWeight = parseFloat(document.getElementById('editPackagingWeight').value) || 0;
     const materialCostInUnit = pricePerKgAfterWaste * packagingWeight;
     const totalPackagingCosts = emptyPackagePrice + stickerPrice + additionalExpenses + laborCost + preservativesCost;

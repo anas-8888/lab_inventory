@@ -67,7 +67,7 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
     <div class="box-compact">
       <h6 class="section-title">بيانات التكلفة الأساسية</h6>
       <div class="grid-kv">
-        <div class="kv"><span>السعر قبل الهدر (لكل كجم):</span><span><%= `${formatNumberDisplay(material.price_before_waste)} ${currencySymbol}` %></span></div>
+        <div class="kv"><span>السعر قبل الهدر (إجمالي):</span><span><%= `${formatNumberDisplay(material.price_before_waste)} ${currencySymbol}` %></span></div>
         <div class="kv"><span>الوزن الجمالي (كجم):</span><span><%= formatNumberDisplay(material.gross_weight) %></span></div>
         <div class="kv"><span>نسبة الهدر (%):</span><span><%= formatNumberDisplay(material.waste_percentage) %></span></div>
         <div class="kv"><span>وزن التعبئة (كجم):</span><span><%= formatNumberDisplay(material.packaging_weight) %></span></div>

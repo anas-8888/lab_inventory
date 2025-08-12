@@ -166,7 +166,9 @@ const createMaterial = async (req, res) => {
         const packaging_weight_num = parseFloat(packaging_weight) || 0;
 
         // حساب كلفة القطعة والطرد بالدولار باستخدام قيم USD
-        const price_per_kg_after_waste_usd = (usd.price_before_waste || 0) / (1 - waste_percentage_num / 100);
+        // السعر قبل الهدر أصبح سعراً كلياً للوزن الجمالي، لذا نحسب سعر الكيلو = السعر الكلي / الوزن الجمالي
+        const price_per_kg_before_waste_usd = (gross_weight_num > 0) ? ((usd.price_before_waste || 0) / gross_weight_num) : 0;
+        const price_per_kg_after_waste_usd = price_per_kg_before_waste_usd / (1 - waste_percentage_num / 100 || 1);
         const material_cost_in_unit_usd = price_per_kg_after_waste_usd * packaging_weight_num;
         const total_packaging_costs_usd =
             (usd.empty_package_price || 0) + (usd.sticker_price || 0) + (usd.additional_expenses || 0) +
@@ -177,7 +179,8 @@ const createMaterial = async (req, res) => {
         const package_cost = (unit_cost * pieces_per_package_num) + (usd.carton_price || 0) + pallet_share_usd;
 
         // حساب كلفة القطعة والطرد بالليرة باستخدام قيم SYP للحفاظ على دقة الإدخال
-        const price_per_kg_after_waste_syp = (syp.price_before_waste || 0) / (1 - waste_percentage_num / 100);
+        const price_per_kg_before_waste_syp = (gross_weight_num > 0) ? ((syp.price_before_waste || 0) / gross_weight_num) : 0;
+        const price_per_kg_after_waste_syp = price_per_kg_before_waste_syp / (1 - waste_percentage_num / 100 || 1);
         const material_cost_in_unit_syp = price_per_kg_after_waste_syp * packaging_weight_num;
         const total_packaging_costs_syp =
             (syp.empty_package_price || 0) + (syp.sticker_price || 0) + (syp.additional_expenses || 0) +
@@ -285,8 +288,9 @@ const updateMaterial = async (req, res) => {
         const packages_per_pallet_num = parseInt(packages_per_pallet) || 1;
         const packaging_weight_num = parseFloat(packaging_weight) || 0;
 
-        // حساب كلفة القطعة والطرد بالدولار
-        const price_per_kg_after_waste_usd = (usd.price_before_waste || 0) / (1 - waste_percentage_num / 100);
+        // السعر قبل الهدر أصبح سعراً كلياً للوزن الجمالي
+        const price_per_kg_before_waste_usd = (gross_weight_num > 0) ? ((usd.price_before_waste || 0) / gross_weight_num) : 0;
+        const price_per_kg_after_waste_usd = price_per_kg_before_waste_usd / (1 - waste_percentage_num / 100 || 1);
         const material_cost_in_unit_usd = price_per_kg_after_waste_usd * packaging_weight_num;
         const total_packaging_costs_usd =
             (usd.empty_package_price || 0) + (usd.sticker_price || 0) + (usd.additional_expenses || 0) +
@@ -296,7 +300,8 @@ const updateMaterial = async (req, res) => {
         const package_cost = unit_cost + pallet_share_usd;
 
         // حساب كلفة القطعة والطرد بالليرة باستخدام قيم SYP المدخلة
-        const price_per_kg_after_waste_syp = (syp.price_before_waste || 0) / (1 - waste_percentage_num / 100);
+        const price_per_kg_before_waste_syp = (gross_weight_num > 0) ? ((syp.price_before_waste || 0) / gross_weight_num) : 0;
+        const price_per_kg_after_waste_syp = price_per_kg_before_waste_syp / (1 - waste_percentage_num / 100 || 1);
         const material_cost_in_unit_syp = price_per_kg_after_waste_syp * packaging_weight_num;
         const total_packaging_costs_syp =
             (syp.empty_package_price || 0) + (syp.sticker_price || 0) + (syp.additional_expenses || 0) +
@@ -608,8 +613,8 @@ const getQuotationDetails = async (req, res) => {
             const packageCostFromMat = mat ? (isSyp ? (mat.package_cost_syp || mat.package_cost || 0) : (mat.package_cost || 0)) : 0;
             const packageCost = (isSyp ? (item.package_cost_syp || item.package_cost) : item.package_cost);
             const resolvedPackageCost = (packageCost != null ? packageCost : packageCostFromMat);
-            return {
-                ...item,
+                return {
+                    ...item,
                 unit_cost: isSyp ? (item.unit_cost_syp || item.unit_cost) : item.unit_cost,
                 final_price: isSyp ? (item.final_price_syp || item.final_price) : item.final_price,
                 total_price: isSyp ? (item.total_price_syp || item.total_price) : item.total_price,
@@ -819,7 +824,7 @@ const createOrder = async (req, res) => {
         // حفظ بنود الطلبية إن وُجدت
         if (items && Array.isArray(items)) {
             for (const item of items) {
-                await req.db.query(`
+        await req.db.query(`
                     INSERT INTO order_items (order_id, material_id, material_name, unit, requested_quantity, weight, volume, notes)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 `, [
@@ -951,7 +956,7 @@ const getOrder = async (req, res) => {
         const [items] = await req.db.query(`
             SELECT * FROM order_items WHERE order_id = ?
         `, [id]);
-
+        
         res.json({ success: true, order: orders[0], items });
     } catch (error) {
         console.error('خطأ في جلب بيانات الطلبية:', error);
@@ -977,7 +982,7 @@ const updateOrder = async (req, res) => {
             notes,
             items
         } = req.body;
-
+        
         const parseDmy = (dmy) => {
             if (!dmy) return null;
             const [d, m, y] = dmy.split('/');

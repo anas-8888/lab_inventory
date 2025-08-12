@@ -137,13 +137,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// الصفحة الرئيسية
-app.get('/', (req, res) => {
-    res.render('index', {
-        title: 'نظام إدارة المختبر',
-        user: req.session.user
-    });
-});
+// الصفحة الرئيسية: يدار عبر الراوتر الرئيسي
 
 // المسارات
 app.use('/', require('./routes/index'));
