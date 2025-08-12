@@ -105,8 +105,16 @@
                                     <td><%= material.packaging_unit %></td>
                                 </tr>
                                 <tr>
-                                    <td><strong>وزن وحدة التعبئة:</strong></td>
-                                    <td><%= parseFloat(material.packaging_weight).toFixed(2) %> كجم</td>
+                                    <td><strong>وزن المادة (داخل العبوة):</strong></td>
+                                    <td><%= (material.packaging_weight != null) ? parseFloat(material.packaging_weight).toFixed(3) : '-' %> كجم</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>وزن العبوة الفارغة:</strong></td>
+                                    <td><%= (material.packaging_unit_weight != null) ? parseFloat(material.packaging_unit_weight).toFixed(3) : '-' %> كجم</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>وزن الطرد القائم:</strong></td>
+                                    <td><%= (material.gross_package_weight != null) ? parseFloat(material.gross_package_weight).toFixed(3) : '-' %> كجم</td>
                                 </tr>
                                 <tr>
                                     <td><strong>عدد الحبات في الطرد:</strong></td>
@@ -195,6 +203,50 @@
                             </td>
                                 </tr>
                             </table>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="text-primary mb-3">أوزان إضافية</h6>
+                            <% 
+                              let extras = [];
+                              try {
+                                if (typeof material.extra_weights === 'string') { extras = JSON.parse(material.extra_weights || '[]'); }
+                                else { extras = material.extra_weights || []; }
+                              } catch (e) { extras = []; }
+                              const extrasTotal = (extras || []).reduce((s, ew) => s + (parseFloat(ew.weight) || 0), 0);
+                            %>
+                            <% if (extras && extras.length > 0) { %>
+                              <div class="table-responsive">
+                                <table class="table table-bordered">
+                                  <thead class="table-light">
+                                    <tr>
+                                      <th>اسم المادة الإضافية</th>
+                                      <th>الوزن (كجم)</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    <% extras.forEach(function(ew){ %>
+                                      <tr>
+                                        <td><%= ew.name || '-' %></td>
+                                        <td><%= (parseFloat(ew.weight) || 0).toFixed(3) %></td>
+                                      </tr>
+                                    <% }) %>
+                                  </tbody>
+                                  <tfoot>
+                                    <tr>
+                                      <th class="text-end">المجموع</th>
+                                      <th><%= extrasTotal.toFixed(3) %></th>
+                                    </tr>
+                                  </tfoot>
+                                </table>
+                              </div>
+                            <% } else { %>
+                              <div class="text-muted">لا توجد أوزان إضافية</div>
+                            <% } %>
                         </div>
                     </div>
                 </div>

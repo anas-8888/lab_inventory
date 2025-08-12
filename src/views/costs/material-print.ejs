@@ -70,7 +70,15 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
         <div class="kv"><span>السعر قبل الهدر (إجمالي):</span><span><%= `${formatNumberDisplay(material.price_before_waste)} ${currencySymbol}` %></span></div>
         <div class="kv"><span>الوزن الجمالي (كجم):</span><span><%= formatNumberDisplay(material.gross_weight) %></span></div>
         <div class="kv"><span>نسبة الهدر (%):</span><span><%= formatNumberDisplay(material.waste_percentage) %></span></div>
-        <div class="kv"><span>وزن التعبئة (كجم):</span><span><%= formatNumberDisplay(material.packaging_weight) %></span></div>
+        <div class="kv"><span>وزن المادة (كجم):</span><span><%= formatNumberDisplay(material.packaging_weight) %></span></div>
+        <div class="kv"><span>وزن العبوة الفارغة (كجم):</span><span><%= formatNumberDisplay(material.packaging_unit_weight) %></span></div>
+        <div class="kv"><span>وزن الطرد القائم (كجم):</span><span><%= formatNumberDisplay(material.gross_package_weight) %></span></div>
+        <% 
+          let _extras = []; 
+          try { if (typeof material.extra_weights === 'string') { _extras = JSON.parse(material.extra_weights || '[]'); } else { _extras = material.extra_weights || []; } } catch(e){ _extras = []; }
+          const _extrasTotal = (_extras || []).reduce((s, ew) => s + (parseFloat(ew.weight) || 0), 0);
+        %>
+        <div class="kv"><span>أوزان إضافية (المجموع كجم):</span><span><%= formatNumberDisplay(_extrasTotal) %></span></div>
       </div>
     </div>
 
@@ -95,6 +103,8 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
         <div class="kv"><span>مواد حافظة:</span><span><%= `${formatNumberDisplay(material.preservatives_cost)} ${currencySymbol}` %></span></div>
       </div>
     </div>
+
+    <!-- أزلنا تفصيل الأوزان الإضافية في قسم مستقل والاكتفاء بالمجموع في البيانات الأساسية -->
   </div>
 
   <!-- Footer -->

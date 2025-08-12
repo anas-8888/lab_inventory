@@ -111,6 +111,7 @@ const createMaterial = async (req, res) => {
             waste_percentage,
             packaging_unit,
             packaging_weight,
+            packaging_unit_weight,
             empty_package_price,
             sticker_price,
             additional_expenses,
@@ -119,7 +120,8 @@ const createMaterial = async (req, res) => {
             carton_price,
             pieces_per_package,
             pallet_price,
-            packages_per_pallet
+            packages_per_pallet,
+            extra_weights
         } = req.body;
 
         // جلب سعر الصرف الحالي
@@ -163,12 +165,23 @@ const createMaterial = async (req, res) => {
         const waste_percentage_num = parseFloat(waste_percentage) || 0;
         const pieces_per_package_num = parseInt(pieces_per_package) || 1;
         const packages_per_pallet_num = parseInt(packages_per_pallet) || 1;
-        const packaging_weight_num = parseFloat(packaging_weight) || 0;
+        const packaging_weight_num = parseFloat(packaging_weight) || 0; // وزن المادة داخل العبوة
+        const packaging_unit_weight_num = parseFloat(packaging_unit_weight) || 0; // وزن العبوة الفارغة
+
+        // الأوزان الإضافية وحساب وزن الطرد القائم
+        let extraWeightsArr = [];
+        try {
+            if (Array.isArray(extra_weights)) extraWeightsArr = extra_weights;
+            else if (typeof extra_weights === 'string' && extra_weights.trim()) extraWeightsArr = JSON.parse(extra_weights);
+        } catch (_) { extraWeightsArr = []; }
+        const extraWeightsTotal = (extraWeightsArr || []).reduce((sum, ew) => sum + (parseFloat(ew.weight) || 0), 0);
+        const gross_package_weight = ((packaging_unit_weight_num + packaging_weight_num) * pieces_per_package_num) + extraWeightsTotal;
 
         // حساب كلفة القطعة والطرد بالدولار باستخدام قيم USD
         // السعر قبل الهدر أصبح سعراً كلياً للوزن الجمالي، لذا نحسب سعر الكيلو = السعر الكلي / الوزن الجمالي
         const price_per_kg_before_waste_usd = (gross_weight_num > 0) ? ((usd.price_before_waste || 0) / gross_weight_num) : 0;
-        const price_per_kg_after_waste_usd = price_per_kg_before_waste_usd / (1 - waste_percentage_num / 100 || 1);
+        const denomUsd = (1 - waste_percentage_num / 100);
+        const price_per_kg_after_waste_usd = denomUsd !== 0 ? (price_per_kg_before_waste_usd / denomUsd) : 0;
         const material_cost_in_unit_usd = price_per_kg_after_waste_usd * packaging_weight_num;
         const total_packaging_costs_usd =
             (usd.empty_package_price || 0) + (usd.sticker_price || 0) + (usd.additional_expenses || 0) +
@@ -180,7 +193,8 @@ const createMaterial = async (req, res) => {
 
         // حساب كلفة القطعة والطرد بالليرة باستخدام قيم SYP للحفاظ على دقة الإدخال
         const price_per_kg_before_waste_syp = (gross_weight_num > 0) ? ((syp.price_before_waste || 0) / gross_weight_num) : 0;
-        const price_per_kg_after_waste_syp = price_per_kg_before_waste_syp / (1 - waste_percentage_num / 100 || 1);
+        const denomSyp = (1 - waste_percentage_num / 100);
+        const price_per_kg_after_waste_syp = denomSyp !== 0 ? (price_per_kg_before_waste_syp / denomSyp) : 0;
         const material_cost_in_unit_syp = price_per_kg_after_waste_syp * packaging_weight_num;
         const total_packaging_costs_syp =
             (syp.empty_package_price || 0) + (syp.sticker_price || 0) + (syp.additional_expenses || 0) +
@@ -194,20 +208,24 @@ const createMaterial = async (req, res) => {
             INSERT INTO materials (
                 material_type, material_name, price_before_waste, price_before_waste_syp,
                 gross_weight, waste_percentage, packaging_unit, packaging_weight,
+                packaging_unit_weight,
                 empty_package_price, empty_package_price_syp, sticker_price, sticker_price_syp,
                 additional_expenses, additional_expenses_syp, labor_cost, labor_cost_syp,
                 preservatives_cost, preservatives_cost_syp, carton_price, carton_price_syp,
                 pieces_per_package, pallet_price, pallet_price_syp, packages_per_pallet,
-                unit_cost, unit_cost_syp, package_cost, package_cost_syp
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                unit_cost, unit_cost_syp, package_cost, package_cost_syp,
+                extra_weights, gross_package_weight
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
             material_type, material_name, (usd.price_before_waste || 0), (syp.price_before_waste || 0),
             gross_weight_num, waste_percentage_num, packaging_unit, packaging_weight_num,
+            packaging_unit_weight_num,
             (usd.empty_package_price || 0), (syp.empty_package_price || 0), (usd.sticker_price || 0), (syp.sticker_price || 0),
             (usd.additional_expenses || 0), (syp.additional_expenses || 0), (usd.labor_cost || 0), (syp.labor_cost || 0),
             (usd.preservatives_cost || 0), (syp.preservatives_cost || 0), (usd.carton_price || 0), (syp.carton_price || 0),
             pieces_per_package_num, (usd.pallet_price || 0), (syp.pallet_price || 0), packages_per_pallet_num,
-            unit_cost, unit_cost_syp, package_cost, package_cost_syp
+            unit_cost, unit_cost_syp, package_cost, package_cost_syp,
+            JSON.stringify(extraWeightsArr || []), gross_package_weight
         ]);
 
         // حفظ في سجل التكاليف
@@ -235,6 +253,7 @@ const updateMaterial = async (req, res) => {
             waste_percentage,
             packaging_unit,
             packaging_weight,
+            packaging_unit_weight,
             empty_package_price,
             sticker_price,
             additional_expenses,
@@ -243,7 +262,8 @@ const updateMaterial = async (req, res) => {
             carton_price,
             pieces_per_package,
             pallet_price,
-            packages_per_pallet
+            packages_per_pallet,
+            extra_weights
         } = req.body;
 
         // جلب سعر الصرف الحالي
@@ -287,6 +307,16 @@ const updateMaterial = async (req, res) => {
         const pieces_per_package_num = parseInt(pieces_per_package) || 1;
         const packages_per_pallet_num = parseInt(packages_per_pallet) || 1;
         const packaging_weight_num = parseFloat(packaging_weight) || 0;
+        const packaging_unit_weight_num = parseFloat(packaging_unit_weight) || 0;
+
+        // الأوزان الإضافية وحساب وزن الطرد القائم
+        let extraWeightsArr = [];
+        try {
+            if (Array.isArray(extra_weights)) extraWeightsArr = extra_weights;
+            else if (typeof extra_weights === 'string' && extra_weights.trim()) extraWeightsArr = JSON.parse(extra_weights);
+        } catch (_) { extraWeightsArr = []; }
+        const extraWeightsTotal = (extraWeightsArr || []).reduce((sum, ew) => sum + (parseFloat(ew.weight) || 0), 0);
+        const gross_package_weight = ((packaging_unit_weight_num + packaging_weight_num) * pieces_per_package_num) + extraWeightsTotal;
 
         // السعر قبل الهدر أصبح سعراً كلياً للوزن الجمالي
         const price_per_kg_before_waste_usd = (gross_weight_num > 0) ? ((usd.price_before_waste || 0) / gross_weight_num) : 0;
@@ -314,21 +344,23 @@ const updateMaterial = async (req, res) => {
         await req.db.query(`
             UPDATE materials SET
                 material_type = ?, material_name = ?, price_before_waste = ?, price_before_waste_syp = ?,
-                gross_weight = ?, waste_percentage = ?, packaging_unit = ?, packaging_weight = ?,
+                gross_weight = ?, waste_percentage = ?, packaging_unit = ?, packaging_weight = ?, packaging_unit_weight = ?,
                 empty_package_price = ?, empty_package_price_syp = ?, sticker_price = ?, sticker_price_syp = ?,
                 additional_expenses = ?, additional_expenses_syp = ?, labor_cost = ?, labor_cost_syp = ?,
                 preservatives_cost = ?, preservatives_cost_syp = ?, carton_price = ?, carton_price_syp = ?,
                 pieces_per_package = ?, pallet_price = ?, pallet_price_syp = ?, packages_per_pallet = ?,
-                unit_cost = ?, unit_cost_syp = ?, package_cost = ?, package_cost_syp = ?
+                unit_cost = ?, unit_cost_syp = ?, package_cost = ?, package_cost_syp = ?,
+                extra_weights = ?, gross_package_weight = ?
             WHERE id = ?
         `, [
             material_type, material_name, (usd.price_before_waste || 0), (syp.price_before_waste || 0),
-            gross_weight_num, waste_percentage_num, packaging_unit, packaging_weight_num,
+            gross_weight_num, waste_percentage_num, packaging_unit, packaging_weight_num, packaging_unit_weight_num,
             (usd.empty_package_price || 0), (syp.empty_package_price || 0), (usd.sticker_price || 0), (syp.sticker_price || 0),
             (usd.additional_expenses || 0), (syp.additional_expenses || 0), (usd.labor_cost || 0), (syp.labor_cost || 0),
             (usd.preservatives_cost || 0), (syp.preservatives_cost || 0), (usd.carton_price || 0), (syp.carton_price || 0),
             pieces_per_package_num, (usd.pallet_price || 0), (syp.pallet_price || 0), packages_per_pallet_num,
-            unit_cost, unit_cost_syp, package_cost, package_cost_syp, id
+            unit_cost, unit_cost_syp, package_cost, package_cost_syp,
+            JSON.stringify(extraWeightsArr || []), gross_package_weight, id
         ]);
 
         // حفظ في سجل التكاليف
