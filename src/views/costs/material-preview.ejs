@@ -9,6 +9,9 @@
                     <a href="/costs/cost-statement/<%= material.id %>/print" target="_blank" class="btn btn-primary me-2">
                         <i class="bi bi-printer me-1"></i> طباعة
                     </a>
+                    <button id="exportMaterialPdfBtn" class="btn btn-success me-2">
+                        <i class="bi bi-file-earmark-pdf"></i> تصدير PDF
+                    </button>
                     <a href="/costs/cost-statement" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-right me-1"></i> العودة لبيان الكلفة
                     </a>
@@ -17,6 +20,28 @@
 
             <!-- تفاصيل المادة -->
             <div class="card shadow mb-4">
+                <!-- PDF Export Modal -->
+                <div id="materialPdfExportModal" class="modal fade" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title"><i class="bi bi-file-earmark-pdf me-2 text-success"></i> تم إنشاء ملف PDF</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                            </div>
+                            <div class="modal-body text-center">
+                                <div class="mb-3">
+                                    <input type="text" id="materialPdfLinkInput" class="form-control text-center" readonly style="direction:ltr; font-size:0.95em;" />
+                                </div>
+                                <div class="d-flex justify-content-center gap-2 mb-2">
+                                    <button id="copyMaterialPdfLinkBtn" class="btn btn-outline-primary btn-sm"><i class="bi bi-clipboard me-1"></i> نسخ الرابط</button>
+                                    <a id="openMaterialPdfLinkBtn" class="btn btn-outline-info btn-sm" target="_blank"><i class="bi bi-box-arrow-up-right me-1"></i> فتح الرابط</a>
+                                    <a id="whatsappMaterialShareBtn" class="btn btn-outline-success btn-sm" target="_blank"><i class="bi bi-whatsapp me-1"></i> ارسال عبر واتساب</a>
+                                </div>
+                                <div class="alert alert-success py-2 mb-0">يمكنك مشاركة الرابط مع أي شخص لتحميل تفاصيل المادة مباشرة</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="card-header">
                     <h5 class="mb-0"><i class="bi bi-info-circle"></i> تفاصيل المادة</h5>
                 </div>
@@ -450,5 +475,41 @@ function showAlert(message, type) {
 // تحميل سجل التكاليف عند تحميل الصفحة
 document.addEventListener('DOMContentLoaded', function() {
     loadCostLogs();
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const exportBtn = document.getElementById('exportMaterialPdfBtn');
+  const modalElem = document.getElementById('materialPdfExportModal');
+  const modal = modalElem ? new bootstrap.Modal(modalElem) : null;
+  const linkInput = document.getElementById('materialPdfLinkInput');
+  const copyBtn = document.getElementById('copyMaterialPdfLinkBtn');
+  const openBtn = document.getElementById('openMaterialPdfLinkBtn');
+  const waBtn = document.getElementById('whatsappMaterialShareBtn');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', async function(){
+      exportBtn.disabled = true;
+      exportBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري التصدير...';
+      try {
+        const res = await fetch(`/costs/cost-statement/<%= material.id %>/pdf`);
+        const data = await res.json();
+        if (data.success && data.url) {
+          if (linkInput) linkInput.value = data.url;
+          if (openBtn) openBtn.href = data.url;
+          if (waBtn) waBtn.href = `https://wa.me/?text=${encodeURIComponent(data.url)}`;
+          if (modal) modal.show();
+        } else {
+          alert(data.message || 'حدث خطأ أثناء توليد ملف PDF');
+        }
+      } catch (e) {
+        alert('حدث خطأ في الاتصال بالخادم');
+      }
+      exportBtn.disabled = false;
+      exportBtn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> تصدير PDF';
+    });
+  }
+  if (copyBtn && linkInput) {
+    copyBtn.addEventListener('click', function(){ linkInput.select(); document.execCommand('copy'); });
+  }
 });
 </script>

@@ -731,6 +731,35 @@ const getQuotationPrintPage = async (req, res) => {
     }
 };
 
+// تصدير عرض سعر PDF
+const exportQuotationPDF = async (req, res) => {
+    const pdf = require('html-pdf-node');
+    const path = require('path');
+    const fs = require('fs');
+    const { v4: uuidv4 } = require('uuid');
+    try {
+        const { id } = req.params;
+        const url = `${process.env.BASE_URL}/costs/quotations/${id}/print-pdf-raw`;
+        const options = { format: 'A4' };
+        const file = { url };
+        const fileName = `${uuidv4()}.pdf`;
+        const savePath = path.join(__dirname, '../public/quotations_pdf', fileName);
+        const pdfBuffer = await pdf.generatePdf(file, options);
+        fs.mkdirSync(path.dirname(savePath), { recursive: true });
+        fs.writeFileSync(savePath, pdfBuffer);
+        const fileUrl = `${process.env.BASE_URL}/public/quotations_pdf/${fileName}`;
+        res.json({ success: true, url: fileUrl });
+    } catch (error) {
+        console.error('Error exporting quotation PDF:', error);
+        res.status(500).json({ success: false, message: 'حدث خطأ أثناء تصدير عرض السعر كـ PDF' });
+    }
+};
+
+// طباعة عرض سعر بدون حماية (للتوليد)
+const getQuotationPrintRaw = async (req, res) => {
+    return getQuotationPrintPage(req, res);
+};
+
 // طباعة مادة
 const getMaterialPrintPage = async (req, res) => {
     try {
@@ -1154,6 +1183,35 @@ const getOrderPrintPage = async (req, res) => {
     }
 };
 
+// تصدير طلبية PDF
+const exportOrderPDF = async (req, res) => {
+    const pdf = require('html-pdf-node');
+    const path = require('path');
+    const fs = require('fs');
+    const { v4: uuidv4 } = require('uuid');
+    try {
+        const { id } = req.params;
+        const url = `${process.env.BASE_URL}/costs/orders/${id}/print-pdf-raw`;
+        const options = { format: 'A4' };
+        const file = { url };
+        const fileName = `${uuidv4()}.pdf`;
+        const savePath = path.join(__dirname, '../public/orders_pdf', fileName);
+        const pdfBuffer = await pdf.generatePdf(file, options);
+        fs.mkdirSync(path.dirname(savePath), { recursive: true });
+        fs.writeFileSync(savePath, pdfBuffer);
+        const fileUrl = `${process.env.BASE_URL}/public/orders_pdf/${fileName}`;
+        res.json({ success: true, url: fileUrl });
+    } catch (error) {
+        console.error('Error exporting order PDF:', error);
+        res.status(500).json({ success: false, message: 'حدث خطأ أثناء تصدير الطلبية كـ PDF' });
+    }
+};
+
+// طباعة طلبية بدون حماية (للتوليد)
+const getOrderPrintRaw = async (req, res) => {
+    return getOrderPrintPage(req, res);
+};
+
 // حذف طلبية
 const deleteOrder = async (req, res) => {
     try {
@@ -1250,11 +1308,15 @@ module.exports = {
     getOrderDetailsPage,
     getOrderPrintPage,
     getQuotationPrintPage,
+    getQuotationPrintRaw,
+    exportQuotationPDF,
     getMaterialPrintPage,
     createOrder,
     updateOrder,
     updateOrderStatus,
     deleteMaterial,
     deleteQuotation,
-    deleteOrder
+    deleteOrder,
+    exportOrderPDF,
+    getOrderPrintRaw
 }; 

@@ -577,6 +577,31 @@
                 <button type="button" class="btn btn-primary" onclick="printMaterialDetails()">
                     <i class="bi bi-printer"></i> طباعة
                 </button>
+                <button type="button" class="btn btn-success" id="exportMaterialPdfBtn">
+                    <i class="bi bi-file-earmark-pdf"></i> تصدير PDF
+                </button>
+            </div>
+            <!-- PDF Export Modal -->
+            <div id="materialPdfExportModal" class="modal fade" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-file-earmark-pdf me-2 text-success"></i> تم إنشاء ملف PDF</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                  </div>
+                  <div class="modal-body text-center">
+                    <div class="mb-3">
+                      <input type="text" id="materialPdfLinkInput" class="form-control text-center" readonly style="direction:ltr; font-size:0.95em;" />
+                    </div>
+                    <div class="d-flex justify-content-center gap-2 mb-2">
+                      <button id="copyMaterialPdfLinkBtn" class="btn btn-outline-primary btn-sm"><i class="bi bi-clipboard me-1"></i> نسخ الرابط</button>
+                      <a id="openMaterialPdfLinkBtn" class="btn btn-outline-info btn-sm" target="_blank"><i class="bi bi-box-arrow-up-right me-1"></i> فتح الرابط</a>
+                      <a id="whatsappMaterialShareBtn" class="btn btn-outline-success btn-sm" target="_blank"><i class="bi bi-whatsapp me-1"></i> ارسال عبر واتساب</a>
+                    </div>
+                    <div class="alert alert-success py-2 mb-0">يمكنك مشاركة الرابط مع أي شخص لتحميل تفاصيل المادة مباشرة</div>
+                  </div>
+                </div>
+              </div>
             </div>
         </div>
     </div>
@@ -1342,4 +1367,52 @@ function printMaterialDetails() {
     printWindow.document.close();
     printWindow.print();
 }
-</script> 
+</script>
+
+<script>
+// تصدير PDF لتفاصيل المادة
+document.addEventListener('DOMContentLoaded', function(){
+  const exportBtn = document.getElementById('exportMaterialPdfBtn');
+  if (!exportBtn) return;
+  exportBtn.addEventListener('click', async function(){
+    // الحصول على معرف المادة من سياق المعاينة
+    let materialId = null;
+    const viewModal = document.getElementById('viewMaterialModal');
+    if (viewModal && viewModal.getAttribute('data-material-id')) {
+      materialId = viewModal.getAttribute('data-material-id');
+    }
+    if (!materialId) {
+      // كحل مؤقت إن لم يتوفر، اطلب من المستخدم
+      materialId = prompt('أدخل معرّف المادة المراد تصديرها كـ PDF:');
+    }
+    if (!materialId) return;
+    exportBtn.disabled = true;
+    exportBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري التصدير...';
+    try {
+      const res = await fetch(`/costs/cost-statement/${materialId}/pdf`);
+      const data = await res.json();
+      if (data.success && data.url) {
+        const linkInput = document.getElementById('materialPdfLinkInput');
+        const openBtn = document.getElementById('openMaterialPdfLinkBtn');
+        const waBtn = document.getElementById('whatsappMaterialShareBtn');
+        if (linkInput) linkInput.value = data.url;
+        if (openBtn) openBtn.href = data.url;
+        if (waBtn) waBtn.href = `https://wa.me/?text=${encodeURIComponent(data.url)}`;
+        const modal = new bootstrap.Modal(document.getElementById('materialPdfExportModal'));
+        modal.show();
+      } else {
+        alert(data.message || 'حدث خطأ أثناء توليد ملف PDF');
+      }
+    } catch (e) {
+      alert('حدث خطأ في الاتصال بالخادم');
+    }
+    exportBtn.disabled = false;
+    exportBtn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> تصدير PDF';
+  });
+  const copyBtn = document.getElementById('copyMaterialPdfLinkBtn');
+  const linkInput = document.getElementById('materialPdfLinkInput');
+  if (copyBtn && linkInput) {
+    copyBtn.addEventListener('click', function(){ linkInput.select(); document.execCommand('copy'); });
+  }
+});
+</script>

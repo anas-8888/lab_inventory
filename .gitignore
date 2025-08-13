@@ -8,6 +8,9 @@ src/*.rar
 src/public/certificates_pdf
 src/public/invoices_pdf
 src/public/inventory_pdf
+src/public/orders_pdf
+src/public/quotations_pdf
+src/public/materials_pdf
 src/public/images
 
 node_modules/

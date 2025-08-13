@@ -8,7 +8,10 @@ const authMiddleware = async (req, res, next) => {
     req.path.startsWith('/certificates/public/') ||
     (/^\/invoices\/\d+\/print-pdf-raw$/.test(req.path)) ||
     (/^\/certificates\/\d+\/print-pdf-raw$/.test(req.path)) ||
-    (/^\/inventory\/print-pdf-raw$/.test(req.path))
+    (/^\/inventory\/print-pdf-raw$/.test(req.path)) ||
+    (/^\/costs\/cost-statement\/\d+\/print-pdf-raw$/.test(req.path)) ||
+    (/^\/costs\/quotations\/\d+\/print-pdf-raw$/.test(req.path)) ||
+    (/^\/costs\/orders\/\d+\/print-pdf-raw$/.test(req.path))
   ) {
     return next();
   }

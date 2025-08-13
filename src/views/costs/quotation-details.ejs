@@ -7,6 +7,9 @@
                     <a href="/costs/quotations/<%= quotation.id %>/print" target="_blank" class="btn btn-outline-primary me-2">
                         <i class="bi bi-printer"></i> طباعة
                     </a>
+                    <button id="exportQuotationPdfBtn" class="btn btn-success me-2">
+                        <i class="bi bi-file-earmark-pdf"></i> تصدير PDF
+                    </button>
                     <a href="/costs/quotations" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-right me-1"></i> العودة للعروض
                     </a>
@@ -29,6 +32,28 @@
 
             <!-- تفاصيل العرض -->
             <div class="card shadow mb-4">
+                <!-- PDF Export Modal -->
+                <div id="quotationPdfExportModal" class="modal fade" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title"><i class="bi bi-file-earmark-pdf me-2 text-success"></i> تم إنشاء ملف PDF</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                            </div>
+                            <div class="modal-body text-center">
+                                <div class="mb-3">
+                                    <input type="text" id="quotationPdfLinkInput" class="form-control text-center" readonly style="direction:ltr; font-size:0.95em;" />
+                                </div>
+                                <div class="d-flex justify-content-center gap-2 mb-2">
+                                    <button id="copyQuotationPdfLinkBtn" class="btn btn-outline-primary btn-sm"><i class="bi bi-clipboard me-1"></i> نسخ الرابط</button>
+                                    <a id="openQuotationPdfLinkBtn" class="btn btn-outline-info btn-sm" target="_blank"><i class="bi bi-box-arrow-up-right me-1"></i> فتح الرابط</a>
+                                    <a id="whatsappQuotationShareBtn" class="btn btn-outline-success btn-sm" target="_blank"><i class="bi bi-whatsapp me-1"></i> ارسال عبر واتساب</a>
+                                </div>
+                                <div class="alert alert-success py-2 mb-0">يمكنك مشاركة الرابط مع أي شخص لتحميل عرض السعر مباشرة</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="card-header">
                     <h5 class="mb-0">تفاصيل العرض</h5>
                 </div>
@@ -157,6 +182,42 @@
     </div>
 </div>
 
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const exportBtn = document.getElementById('exportQuotationPdfBtn');
+    const modalElem = document.getElementById('quotationPdfExportModal');
+    const modal = modalElem ? new bootstrap.Modal(modalElem) : null;
+    const linkInput = document.getElementById('quotationPdfLinkInput');
+    const copyBtn = document.getElementById('copyQuotationPdfLinkBtn');
+    const openBtn = document.getElementById('openQuotationPdfLinkBtn');
+    const waBtn = document.getElementById('whatsappQuotationShareBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', async function () {
+            exportBtn.disabled = true;
+            exportBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري التصدير...';
+            try {
+                const res = await fetch(`/costs/quotations/<%= quotation.id %>/pdf`);
+                const data = await res.json();
+                if (data.success && data.url) {
+                    if (linkInput) linkInput.value = data.url;
+                    if (openBtn) openBtn.href = data.url;
+                    if (waBtn) waBtn.href = `https://wa.me/?text=${encodeURIComponent(data.url)}`;
+                    if (modal) modal.show();
+                } else {
+                    alert(data.message || 'حدث خطأ أثناء توليد ملف PDF');
+                }
+            } catch (e) {
+                alert('حدث خطأ في الاتصال بالخادم');
+            }
+            exportBtn.disabled = false;
+            exportBtn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> تصدير PDF';
+        });
+    }
+    if (copyBtn && linkInput) {
+        copyBtn.addEventListener('click', function(){ linkInput.select(); document.execCommand('copy'); });
+    }
+});
+</script>
 <style>
 @media print {
     .btn, .no-print {
