@@ -18,18 +18,18 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
 
 <div class="container-fluid" style="direction: rtl; font-family: 'Cairo','Amiri',sans-serif;">
   <!-- Header -->
-  <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+  <table style="width: 100%; border-collapse: collapse; margin-top: 4px;">
     <tr>
-      <td style="text-align: right; font-weight: bold; line-height: 1.4; width: 37%; font-size: 10pt;">
+      <td style="text-align: right; font-weight: bold; line-height: 1.2; width: 37%; font-size: 9pt;">
         <div>مؤسسة عجاج أخوان التجارية</div>
         <div>لإنتاج وتعبئة المواد الغذائية</div>
         <div>وتجارة زيت الزيتون البكر</div>
         <div style="font-size: 12px;">س.ت 10369 – س.ص 10</div>
       </td>
       <td style="text-align: center; width: 26%;">
-        <img src="/public/images/nexa.png" alt="شعار" style="width: 90px; height: 90px;">
+        <img src="/public/images/nexa.png" alt="شعار" style="width: 70px; height: 70px;">
       </td>
-      <td style="text-align: left; font-weight: bold; line-height: 1.4; width: 37%; font-size: 10pt;">
+      <td style="text-align: left; font-weight: bold; line-height: 1.2; width: 37%; font-size: 9pt;">
         <div>Ajaj Brothers Commercial Foundation</div>
         <div>For Food Production and Packaging</div>
         <div>And Virgin Olive Oil Trade</div>
@@ -37,15 +37,15 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
       </td>
     </tr>
   </table>
-  <hr>
+  <hr style="margin: 4px 0; border: 0.5px solid #bbb;">
 
   <!-- Title -->
-  <div style="text-align:center; margin: 12px 0;">
-    <div style="font-size: 13pt; font-weight: 700;">عرض سعر رقم (<%= quotation.quotation_number %>)</div>
+  <div style="text-align:center; margin: 6px 0;">
+    <div style="font-size: 11pt; font-weight: 700;">عرض سعر رقم (<%= quotation.quotation_number %>)</div>
   </div>
 
   <!-- Customer/Quotation Info -->
-  <div class="info-stack">
+  <div class="info-grid">
     <div class="box-compact">
       <h6 class="section-title">بيانات العميل</h6>
       <div class="grid-kv">
@@ -71,52 +71,66 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
   </div>
 
   <!-- Items Table -->
-  <div class="table-responsive" style="margin-top: 8px;">
+  <div class="table-responsive" style="margin-top: 6px;">
     <table class="table-custom table-bordered text-center align-middle" style="font-size: 10pt; width: 100%;">
       <thead>
         <tr>
-          <th style="width: 4%; padding: 6pt 4pt;">#</th>
-          <th style="width: 26%; padding: 6pt 4pt;">اسم المادة</th>
-          <th style="width: 10%; padding: 6pt 4pt;">وحدة التعبئة</th>
-          <th style="width: 10%; padding: 6pt 4pt;">وزن التعبئة</th>
-          <th style="width: 10%; padding: 6pt 4pt;">شد الكرتون</th>
-          <th style="width: 12%; padding: 6pt 4pt;">السعر</th>
-          <th style="width: 8%; padding: 6pt 4pt;">الكمية</th>
-          <th style="width: 20%; padding: 6pt 4pt;">المجموع</th>
+          <th style="width: 4%; padding: 2pt 2pt;">#</th>
+          <th style="width: 26%; padding: 2pt 2pt;">اسم المادة</th>
+          <th style="width: 10%; padding: 2pt 2pt;">وحدة التعبئة</th>
+          <th style="width: 10%; padding: 2pt 2pt;">وزن التعبئة</th>
+          <th style="width: 10%; padding: 2pt 2pt;">شد الكرتون</th>
+          <th style="width: 12%; padding: 2pt 2pt;">السعر</th>
+          <th style="width: 8%; padding: 2pt 2pt;">الكمية</th>
+          <th style="width: 20%; padding: 2pt 2pt;">المجموع</th>
         </tr>
       </thead>
       <tbody>
+        <% const rowsPerPage = 36; const rowsOnFirstPage = 21; %>
         <% (items || []).forEach((item, idx) => { %>
+          <% if (idx === rowsOnFirstPage || (idx > rowsOnFirstPage && ((idx - rowsOnFirstPage) % rowsPerPage) === 0)) { %>
+            <tr class="page-break"><td colspan="8"></td></tr>
+          <% } %>
           <tr>
-            <td style="padding: 6pt 4pt;"><%= formatNumberDisplay(idx + 1) %></td>
-            <td style="padding: 6pt 4pt; text-align: right;">
+            <td style="padding: 2pt 2pt;"><%= formatNumberDisplay(idx + 1) %></td>
+            <td style="padding: 2pt 2pt; text-align: right; line-height: 1.15;">
               <div><%= item.material_name || '-' %></div>
-              <% if (item.material_type) { %><div style="color:#666; font-size:9pt;">(<%= item.material_type %>)</div><% } %>
             </td>
-            <td style="padding: 6pt 4pt;"><%= item.packaging_unit || '-' %></td>
-            <td style="padding: 6pt 4pt;"><%= item.packaging_weight != null ? formatNumberDisplay(item.packaging_weight) : '-' %></td>
-            <td style="padding: 6pt 4pt;"><%= item.pieces_per_package != null ? formatNumberDisplay(item.pieces_per_package) : '-' %></td>
-            <td style="padding: 6pt 4pt;"><%= `${formatNumberDisplay(item.final_price)} ${currencySymbol}` %></td>
-            <td style="padding: 6pt 4pt;"><%= item.quantity != null ? formatNumberDisplay(item.quantity) : '-' %></td>
-            <td style="padding: 6pt 4pt;"><%= `${formatNumberDisplay(item.total_price)} ${currencySymbol}` %></td>
+            <td style="padding: 2pt 2pt;"><%= item.packaging_unit || '-' %></td>
+            <td style="padding: 2pt 2pt;"><%= item.packaging_weight != null ? formatNumberDisplay(item.packaging_weight) : '-' %></td>
+            <td style="padding: 2pt 2pt;"><%= item.pieces_per_package != null ? formatNumberDisplay(item.pieces_per_package) : '-' %></td>
+            <td style="padding: 2pt 2pt;"><%= `${formatNumberDisplay(item.final_price)} ${currencySymbol}` %></td>
+            <td style="padding: 2pt 2pt;"><%= item.quantity != null ? formatNumberDisplay(item.quantity) : '-' %></td>
+            <td style="padding: 2pt 2pt;"><%= `${formatNumberDisplay(item.total_price)} ${currencySymbol}` %></td>
           </tr>
         <% }) %>
+        <% if ((items||[]).length <= rowsOnFirstPage) { %>
+          <tr class="total-row">
+            <td colspan="7" style="text-align: center; font-weight: 700;">الإجمالي</td>
+            <td style="font-weight:700;"><%= `${formatNumberDisplay(grandTotal)} ${currencySymbol}` %></td>
+          </tr>
+        <% } else { %>
+          <% const remainder = ((items||[]).length - rowsOnFirstPage) % rowsPerPage; %>
+          <% const isExactMultiple = remainder === 0; %>
+          <% if (isExactMultiple) { %>
+            <tr class="page-break"><td colspan="8"></td></tr>
+          <% } %>
+          <tr class="total-row">
+            <td colspan="7" style="text-align: center; font-weight: 700;">الإجمالي</td>
+            <td style="font-weight:700;"><%= `${formatNumberDisplay(grandTotal)} ${currencySymbol}` %></td>
+          </tr>
+        <% } %>
       </tbody>
-      <tfoot>
-        <tr>
-          <td colspan="7" style="text-align: center; font-weight: 700;">الإجمالي</td>
-          <td style="font-weight:700;"><%= `${formatNumberDisplay(grandTotal)} ${currencySymbol}` %></td>
-        </tr>
-      </tfoot>
+      
     </table>
   </div>
 
   <!-- Footer -->
-  <div class="print-footer" id="fixed-print-footer" style="text-align:center; font-size: 9pt; margin-top: 10px;">
+  <div class="print-footer" id="fixed-print-footer" style="text-align:center; font-size: 8.5pt; margin-top: 6px;">
     <hr style="margin: 4px 0; border: 0.5px solid #bbb;">
     سوريا، حماة، أوتستراد دمشق-حلب الدولي، س.ت 10369 – س.ص 10<br>
     0940500511 – 0988111127 | ajajbrothers@gmail.com<br>
-    جميع الحقوق محفوظة © <%= new Date().getFullYear() %> نظام إدارة المختبر | تم التطوير بواسطة شركة NEXA GROUP COMPANY
+    جميع الحقوق محفوظة © <%= new Date().getFullYear() %> نظام إدارة المختبر | تم التطوير بواسطة شركة NEXA GROUP
   </div>
 </div>
 
@@ -133,26 +147,29 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
 
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Amiri:wght@400;500;600;700&display=swap');
-  @page { size: A4 portrait; margin: 1cm; }
-  html, body { background: #fff !important; margin:0; padding:0; direction: rtl; text-align: right; font-family: 'Cairo','Amiri','Noto Naskh Arabic',sans-serif !important; font-size: 10pt; }
+  @page { size: A4 portrait; margin: 1cm 1cm 0.8cm 1cm; }
+  html, body { background: #fff !important; margin:0; padding:0; direction: rtl; text-align: right; font-family: 'Cairo','Amiri','Noto Naskh Arabic',sans-serif !important; font-size: 9.5pt; }
   .table-custom { width: 100%; border-collapse: separate; border-spacing: 0; }
-  .table-custom th, .table-custom td { border: 1px solid #444; padding: 6pt 4pt; }
+  .table-custom th, .table-custom td { border: 0.7px solid #444; }
   .table-custom th { background: #f5f5f5; font-weight: 700; }
   thead { display: table-header-group; }
-  tfoot { display: table-footer-group; }
+  tfoot { display: none; }
   tr { page-break-inside: avoid; }
   .table-responsive { overflow-x: visible; }
-  .info-stack { display: flex; flex-direction: column; gap: 6px; }
-  .box-compact { border: 1px solid #ccc; padding: 6pt; border-radius: 4px; }
-  .section-title { font-size: 11pt; font-weight: 700; margin: 0 0 4pt 0; }
-  .grid-kv { display: grid; grid-template-columns: 1fr 1fr; gap: 2pt 8pt; }
-  .kv { display: grid; grid-template-columns: auto 1fr; column-gap: 8pt; border-bottom: 1px dashed #e0e0e0; padding: 2pt 0; align-items: start; }
+  .info-grid { display: grid; grid-template-columns: 1fr; gap: 4pt; }
+  .box-compact { border: 1px solid #ccc; padding: 4pt; border-radius: 3px; }
+  .section-title { font-size: 9pt; font-weight: 700; margin: 0 0 2pt 0; }
+  .grid-kv { display: grid; grid-template-columns: 1fr 1fr; gap: 2pt 6pt; }
+  .kv { display: grid; grid-template-columns: auto 1fr; column-gap: 6pt; border-bottom: 1px dashed #e0e0e0; padding: 1pt 0; align-items: start; }
   .kv.full { grid-column: 1 / -1; }
-  .kv span:first-child { color: #333; font-weight: 600; margin-left: 8px; }
+  .kv span:first-child { color: #333; font-weight: 600; margin-left: 6px; }
   .kv span:last-child { white-space: normal; word-break: break-word; }
-  .notes { white-space: pre-wrap; line-height: 1.6; }
-  .container-fluid { padding-bottom: 80px; }
+  .notes { white-space: pre-wrap; line-height: 1.3; font-size: 9pt; }
+  .container-fluid { padding-bottom: 120px; }
   .print-footer { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; }
-  .table-custom th, .table-custom td { padding: 4pt 3pt; }
+  .table-custom th, .table-custom td { padding: 3pt 2pt; line-height: 1.3; }
+  .page-break { page-break-before: always; break-before: page; height: 0; }
+  .table-custom tr.page-break td { border: 0; padding: 0; height: 0; }
+  .total-row td { background: #f5f5f5; }
 </style>
 
