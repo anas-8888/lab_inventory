@@ -4,11 +4,29 @@
 //  2) Optionally set env: DB_HOST, DB_USER, DB_PASSWORD, DB_NAME
 //  3) Run: node seed_admin.js
 
+const fs = require('fs');
+const path = require('path');
+const dotenv = require('dotenv');
+// Load environment variables early (try src/.env then .env)
+const envCandidates = [path.resolve(__dirname, 'src/.env'), path.resolve(__dirname, '.env')];
+for (const p of envCandidates) {
+  if (fs.existsSync(p)) {
+    dotenv.config({ path: p });
+    break;
+  }
+}
+
 const bcrypt = require('bcryptjs');
 const { pool } = require('./src/database/db');
 
 async function ensureAdminUser() {
   try {
+    // Ensure required roles exist with fixed ids used by the app (2=editor, 3=viewer, 4=admin)
+    await pool.execute(
+      'INSERT IGNORE INTO roles (id, name) VALUES (2, ?), (3, ?), (4, ?)',
+      ['editor', 'viewer', 'admin']
+    );
+
     const username = 'admin';
     const plainPassword = '123456';
     const roleIdAdmin = 4; // per application mapping: 4 = admin
