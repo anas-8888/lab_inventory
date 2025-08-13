@@ -47,7 +47,7 @@
                 <li class="nav-item"><a class="nav-link" href="/costs"><i class="bi bi-cash-stack"></i> التكاليف</a></li>
                 <li class="nav-item"><a class="nav-link" href="/notes"><i class="bi bi-journal-text"></i> الملاحظات</a></li>
               <% } %>
-              <% if (user.role === 'editor' || user.role === 'admin') { %>
+              <% if (user.role === 'admin') { %>
                 <li class="nav-item"><a class="nav-link" href="/users"><i class="bi bi-people"></i> المستخدمين</a></li>
               <% } %>
             </ul>
