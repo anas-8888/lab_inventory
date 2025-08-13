@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 11, 2025 at 07:16 PM
+-- Generation Time: Aug 13, 2025 at 05:25 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -155,9 +155,20 @@ INSERT INTO `cost_logs` (`id`, `material_id`, `material_name`, `unit_cost`, `uni
 (17, NULL, 'تفاحي مكسر', 9.36, 98280.00, 9.47, 99483.13, '2025-08-09 10:36:50'),
 (18, NULL, 'زيت زيتون واحد ليتر ', 69.94, 727405.71, 70.04, 728445.71, '2025-08-09 11:31:42'),
 (19, NULL, 'زيت زيتون واحد ليتر ', 4.65, 48315.43, 4.75, 49355.43, '2025-08-09 11:33:32'),
-(20, 10, 'زيت زيتون واحد ليتر ', 9.36, 98280.00, 18.82, 197653.75, '2025-08-11 16:43:57'),
-(21, 10, 'زيت زيتون واحد ليتر ', 9.36, 98280.00, 9.46, 99373.75, '2025-08-11 17:06:02'),
-(22, 10, 'زيت زيتون واحد ليتر ', 9.36, 98280.00, 9.46, 99373.75, '2025-08-11 17:06:02');
+(20, NULL, 'زيت زيتون واحد ليتر ', 9.36, 98280.00, 18.82, 197653.75, '2025-08-11 16:43:57'),
+(21, NULL, 'زيت زيتون واحد ليتر ', 9.36, 98280.00, 9.46, 99373.75, '2025-08-11 17:06:02'),
+(22, NULL, 'زيت زيتون واحد ليتر ', 9.36, 98280.00, 9.46, 99373.75, '2025-08-11 17:06:02'),
+(23, 11, ' زيتون اخضر تفاحي', 9.36, 98280.00, 9.46, 99373.75, '2025-08-12 11:11:25'),
+(24, 12, 'زيت زيتون عجاج قياس 5 ليتر', 22.04, 231376.71, 44.67, 469053.43, '2025-08-12 11:17:29'),
+(25, 13, 'تفاحي مكسر', 5.00, 52500.00, 6.00, 63000.00, '2025-08-12 12:34:12'),
+(26, 14, 'تفاحي مكسر', 5.00, 52500.00, 6.00, 63000.00, '2025-08-12 13:05:22'),
+(27, 15, 'تفاحي مكسر', 5.00, 52500.00, 6.00, 63000.00, '2025-08-12 13:19:49'),
+(28, 15, 'تفاحي مكسر', 5.00, 52500.00, 6.00, 63000.00, '2025-08-12 13:52:40'),
+(29, 15, 'تفاحي مكسر', 5.00, 52500.00, 6.00, 63000.00, '2025-08-12 13:53:04'),
+(30, 15, 'تفاحي مكسر', 5.00, 52500.00, 6.00, 63000.00, '2025-08-12 13:57:40'),
+(31, 15, 'تفاحي مكسر', 5.00, 52500.00, 6.00, 63000.00, '2025-08-12 13:59:59'),
+(32, 15, 'تفاحي مكسر', 5.00, 52500.00, 6.00, 63000.00, '2025-08-12 14:00:38'),
+(33, 15, 'تفاحي مكسر', 5.00, 52500.00, 6.00, 63000.00, '2025-08-12 14:00:44');
 
 -- --------------------------------------------------------
 
@@ -652,6 +663,7 @@ CREATE TABLE `materials` (
   `waste_percentage` decimal(5,2) NOT NULL,
   `packaging_unit` varchar(50) NOT NULL,
   `packaging_weight` decimal(10,2) NOT NULL,
+  `packaging_unit_weight` float DEFAULT NULL,
   `empty_package_price` decimal(10,2) NOT NULL,
   `empty_package_price_syp` decimal(10,2) DEFAULT NULL,
   `sticker_price` decimal(10,2) NOT NULL,
@@ -672,6 +684,8 @@ CREATE TABLE `materials` (
   `unit_cost_syp` decimal(10,2) DEFAULT NULL,
   `package_cost` decimal(10,2) NOT NULL,
   `package_cost_syp` decimal(10,2) DEFAULT NULL,
+  `extra_weights` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`extra_weights`)),
+  `gross_package_weight` float DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -680,8 +694,37 @@ CREATE TABLE `materials` (
 -- Dumping data for table `materials`
 --
 
-INSERT INTO `materials` (`id`, `material_type`, `material_name`, `price_before_waste`, `price_before_waste_syp`, `gross_weight`, `waste_percentage`, `packaging_unit`, `packaging_weight`, `empty_package_price`, `empty_package_price_syp`, `sticker_price`, `sticker_price_syp`, `additional_expenses`, `additional_expenses_syp`, `labor_cost`, `labor_cost_syp`, `preservatives_cost`, `preservatives_cost_syp`, `carton_price`, `carton_price_syp`, `pieces_per_package`, `pallet_price`, `pallet_price_syp`, `packages_per_pallet`, `unit_cost`, `unit_cost_syp`, `package_cost`, `package_cost_syp`, `created_at`, `updated_at`) VALUES
-(10, 'زيتون', 'زيت زيتون واحد ليتر ', 1.10, 11550.00, 1.00, 0.00, 'سطل', 7.00, 1.36, 14280.00, 0.05, 525.00, 0.05, 525.00, 0.05, 525.00, 0.15, 1575.00, 0.00, 0.00, 1, 10.00, 105000.00, 96, 9.36, 98280.00, 9.46, 99373.75, '2025-08-11 16:43:57', '2025-08-11 17:06:02');
+INSERT INTO `materials` (`id`, `material_type`, `material_name`, `price_before_waste`, `price_before_waste_syp`, `gross_weight`, `waste_percentage`, `packaging_unit`, `packaging_weight`, `packaging_unit_weight`, `empty_package_price`, `empty_package_price_syp`, `sticker_price`, `sticker_price_syp`, `additional_expenses`, `additional_expenses_syp`, `labor_cost`, `labor_cost_syp`, `preservatives_cost`, `preservatives_cost_syp`, `carton_price`, `carton_price_syp`, `pieces_per_package`, `pallet_price`, `pallet_price_syp`, `packages_per_pallet`, `unit_cost`, `unit_cost_syp`, `package_cost`, `package_cost_syp`, `extra_weights`, `gross_package_weight`, `created_at`, `updated_at`) VALUES
+(11, 'زيتون', ' زيتون اخضر تفاحي', 1.10, 11550.00, 1.00, 0.00, 'سطل', 7.00, NULL, 1.36, 14280.00, 0.05, 525.00, 0.05, 525.00, 0.05, 525.00, 0.15, 1575.00, 0.00, 0.00, 1, 10.00, 105000.00, 96, 9.36, 98280.00, 9.46, 99373.75, NULL, NULL, '2025-08-12 11:11:25', '2025-08-12 11:11:25'),
+(12, 'زيت زيتون ', 'زيت زيتون عجاج قياس 5 ليتر', 4.68, 49140.00, 1.00, 2.00, 'pet', 4.56, NULL, 0.15, 1575.00, 0.05, 525.00, 0.00, 0.00, 0.05, 525.00, 0.00, 0.00, 0.50, 5250.00, 2, 10.00, 105000.00, 100, 22.04, 231376.71, 44.67, 469053.43, NULL, NULL, '2025-08-12 11:17:29', '2025-08-12 11:17:29'),
+(13, 'زيتون', 'تفاحي مكسر', 50.00, 525000.00, 10.00, 0.00, 'سطل', 1.00, NULL, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1, 1.00, 10500.00, 1, 5.00, 52500.00, 6.00, 63000.00, NULL, NULL, '2025-08-12 12:34:12', '2025-08-12 12:34:12'),
+(14, 'زيتون', 'تفاحي مكسر', 50.00, 525000.00, 10.00, 0.00, 'سطل', 1.00, 0.1, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1, 1.00, 10500.00, 1, 5.00, 52500.00, 6.00, 63000.00, '[{\"name\":\"بلب\",\"weight\":0.1},{\"name\":\"بلببلبل\",\"weight\":0.2}]', 1.4, '2025-08-12 13:05:22', '2025-08-12 13:05:22'),
+(15, 'زيتون', 'تفاحي مكسر', 50.00, 525000.00, 10.00, 0.00, 'سطل', 1.00, 0, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1, 1.00, 10500.00, 1, 5.00, 52500.00, 6.00, 63000.00, '[]', 1, '2025-08-12 13:19:49', '2025-08-12 14:00:44');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `notes`
+--
+
+CREATE TABLE `notes` (
+  `id` int(11) NOT NULL,
+  `material_id` int(11) DEFAULT NULL,
+  `price` decimal(18,2) DEFAULT NULL,
+  `weight` decimal(18,3) DEFAULT NULL,
+  `note_date` date DEFAULT NULL,
+  `note_text` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `notes`
+--
+
+INSERT INTO `notes` (`id`, `material_id`, `price`, `weight`, `note_date`, `note_text`, `created_at`, `updated_at`) VALUES
+(6, 14, 500.00, 4.000, '2025-08-12', 'hhhhh', '2025-08-12 15:27:22', '2025-08-12 15:32:51'),
+(7, 14, 354.00, 4564.000, '2025-08-12', 'gjhgfhgfhgfhty4t645trg', '2025-08-12 15:32:38', NULL);
 
 -- --------------------------------------------------------
 
@@ -700,8 +743,229 @@ CREATE TABLE `orders` (
   `notes` text DEFAULT NULL,
   `status` enum('pending','processing','completed','cancelled') DEFAULT 'pending',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `order_date` date DEFAULT NULL,
+  `quality_controller` varchar(255) DEFAULT NULL,
+  `pallets_count` int(11) DEFAULT NULL,
+  `container_number` varchar(100) DEFAULT NULL,
+  `packages_count` int(11) DEFAULT NULL,
+  `waybill_number` varchar(100) DEFAULT NULL,
+  `accreditation_number` varchar(100) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `orders`
+--
+
+INSERT INTO `orders` (`id`, `order_number`, `client_name`, `client_phone`, `client_address`, `delivery_date`, `responsible_worker`, `notes`, `status`, `created_at`, `updated_at`, `order_date`, `quality_controller`, `pallets_count`, `container_number`, `packages_count`, `waybill_number`, `accreditation_number`) VALUES
+(4, 'ORD-001', 'محمد عجاج', NULL, NULL, '2025-08-12', 'أحمد نور عجاج', NULL, 'completed', '2025-08-12 11:24:29', '2025-08-12 11:42:18', '2025-08-12', 'محمد عثمانلي', 22, NULL, NULL, NULL, NULL),
+(5, 'ORD-002', 'محمد عجاج', NULL, NULL, '2025-08-12', 'أحمد نور عجاج', NULL, 'pending', '2025-08-12 14:21:17', '2025-08-12 14:21:17', '2025-08-12', 'محمد عثمانلي', 22, NULL, NULL, NULL, NULL),
+(6, 'ORD-003', 'محمد عجاج', NULL, NULL, '2025-08-12', 'أحمد نور عجاج', NULL, 'pending', '2025-08-12 14:54:51', '2025-08-12 14:54:51', '2025-08-12', 'محمد عثمانلي', 22, NULL, NULL, NULL, NULL),
+(7, 'ORD-004', 'محمد عجاج', NULL, NULL, '2025-08-12', 'أحمد نور عجاج', NULL, 'pending', '2025-08-12 14:55:16', '2025-08-12 14:55:16', '2025-08-12', 'محمد عثمانلي', 22, NULL, NULL, NULL, NULL),
+(8, 'ORD-005', 'محمد عجاج', NULL, NULL, '2025-08-12', 'أحمد نور عجاج', NULL, 'pending', '2025-08-12 15:01:25', '2025-08-12 15:01:25', '2025-08-12', 'محمد عثمانلي', 22, NULL, NULL, NULL, NULL),
+(9, 'ORD-006', 'محمد عجاج', NULL, NULL, '2025-08-12', 'أحمد نور عجاج', '22', 'pending', '2025-08-12 15:03:17', '2025-08-12 15:03:17', '2025-08-12', 'محمد عثمانلي', 22, '1', 1, '1', '1');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `order_items`
+--
+
+CREATE TABLE `order_items` (
+  `id` int(11) NOT NULL,
+  `order_id` int(11) NOT NULL,
+  `material_id` int(11) DEFAULT NULL,
+  `material_name` varchar(255) NOT NULL,
+  `unit` varchar(50) DEFAULT NULL,
+  `quantity` decimal(10,3) DEFAULT NULL,
+  `weight` decimal(10,3) DEFAULT NULL,
+  `volume` decimal(10,3) DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `requested_quantity` decimal(10,3) DEFAULT NULL,
+  `unit_price` decimal(18,2) DEFAULT NULL,
+  `total_price` decimal(18,2) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `order_items`
+--
+
+INSERT INTO `order_items` (`id`, `order_id`, `material_id`, `material_name`, `unit`, `quantity`, `weight`, `volume`, `notes`, `requested_quantity`, `unit_price`, `total_price`) VALUES
+(4, 4, 11, 'زيتون اخضر تفاحي', 'سطل', NULL, NULL, NULL, NULL, 1000.000, NULL, NULL),
+(5, 4, 12, 'زيت زيتون عجاج قياس 5 ليتر', 'pet', NULL, NULL, NULL, NULL, 1000.000, NULL, NULL),
+(6, 5, 14, 'تفاحي مكسر', 'سطل', NULL, 1.400, 50.000, 'ملاحظة', 50.000, 50.00, 2500.00),
+(7, 5, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, 40.000, NULL, 40.000, NULL, NULL),
+(8, 6, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, 2.000, 'ملاحظة', 10.000, NULL, NULL),
+(9, 7, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, NULL, 10.000, 50.00, 500.00),
+(10, 8, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, 4.000, NULL, 50.000, NULL, NULL),
+(13, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, 50.000, '22', 50.000, 50.00, 2500.00),
+(14, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(15, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(16, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(17, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(18, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(19, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(20, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(21, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(22, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(23, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(24, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(25, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(26, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(27, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(28, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(29, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(30, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(31, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(32, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(33, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(34, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(35, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(36, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(37, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(38, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(39, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(40, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(41, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(42, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(43, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(44, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(45, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(46, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(47, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(48, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(49, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(50, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(51, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(52, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(53, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(54, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(55, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(56, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(57, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(58, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(59, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(60, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(61, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(62, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(63, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(64, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(65, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(66, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(67, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(68, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(69, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(70, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(71, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(72, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(73, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(74, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(75, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(76, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(77, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(78, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(79, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(80, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(81, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(82, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(83, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(84, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(85, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(86, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(87, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(88, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(89, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(90, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(91, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(92, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(93, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(94, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(95, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(96, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(97, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(98, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(99, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(100, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(101, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(102, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(103, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(104, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(105, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(106, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(107, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(108, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(109, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(110, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(111, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(112, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(113, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(114, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(115, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(116, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(117, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(118, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(119, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(120, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(121, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(122, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(123, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(124, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(125, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(126, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(127, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(128, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(129, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(130, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(131, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(132, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(133, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(134, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(135, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(136, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(137, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(138, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(139, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(140, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(141, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(142, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(143, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(144, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(145, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(146, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(147, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(148, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(149, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(150, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(151, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(152, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(153, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(154, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(155, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(156, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(157, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(158, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(159, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(160, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(161, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(162, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(163, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(164, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(165, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(166, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(167, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(168, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(169, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(170, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(171, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(172, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(173, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(174, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(175, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(176, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(177, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(178, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(179, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL),
+(180, 9, 15, 'تفاحي مكسر', 'سطل', NULL, 1.000, NULL, '22', 40.000, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -723,6 +987,13 @@ CREATE TABLE `quotations` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `quotations`
+--
+
+INSERT INTO `quotations` (`id`, `quotation_number`, `client_id`, `client_name`, `client_phone`, `client_address`, `notes`, `total_amount`, `total_amount_syp`, `general_profit_percentage`, `created_at`, `updated_at`) VALUES
+(17, 'QT-001', NULL, 'محمد عجاج', '0988111127', 'حماه ', 'عرض سعر لمدة أسبوع من تاريخ تقديم العرض', 335.84, 3526301.53, 0.00, '2025-08-12 11:20:28', '2025-08-13 13:14:21');
 
 -- --------------------------------------------------------
 
@@ -747,8 +1018,159 @@ CREATE TABLE `quotation_items` (
   `packaging_unit` varchar(50) DEFAULT NULL,
   `packaging_weight` decimal(10,2) DEFAULT 0.00,
   `pieces_per_package` int(11) DEFAULT 0,
-  `notes` text DEFAULT NULL
+  `notes` text DEFAULT NULL,
+  `package_cost` decimal(10,2) DEFAULT NULL,
+  `item_notes` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `quotation_items`
+--
+
+INSERT INTO `quotation_items` (`id`, `quotation_id`, `material_id`, `material_name`, `unit_cost`, `unit_cost_syp`, `profit_percentage`, `final_price`, `final_price_syp`, `quantity`, `total_price`, `total_price_syp`, `material_type`, `packaging_unit`, `packaging_weight`, `pieces_per_package`, `notes`, `package_cost`, `item_notes`) VALUES
+(39, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 35.31, 12.80, 134403.42, 1, 12.80, 134403.42, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(40, 17, 12, 'زيت زيتون عجاج قياس 5 ليتر', 44.67, 469035.00, 7.45, 48.00, 503978.11, 1, 48.00, 503978.11, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(41, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(42, 17, 13, 'تفاحي مكسر', 6.00, 63000.00, 0.00, 6.00, 63000.00, 1, 6.00, 63000.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(43, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(44, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(45, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(46, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(47, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(48, 17, 13, 'تفاحي مكسر', 6.00, 63000.00, 0.00, 6.00, 63000.00, 1, 6.00, 63000.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(49, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(50, 17, 13, 'تفاحي مكسر', 6.00, 63000.00, 0.00, 6.00, 63000.00, 1, 6.00, 63000.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(51, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(52, 17, 13, 'تفاحي مكسر', 6.00, 63000.00, 0.00, 6.00, 63000.00, 1, 6.00, 63000.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(53, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(54, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(55, 17, 13, 'تفاحي مكسر', 6.00, 63000.00, 0.00, 6.00, 63000.00, 1, 6.00, 63000.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(56, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(57, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(58, 17, 14, 'تفاحي مكسر', 6.00, 63000.00, 0.00, 6.00, 63000.00, 1, 6.00, 63000.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(59, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(60, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(61, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(62, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(63, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(64, 17, 13, 'تفاحي مكسر', 6.00, 63000.00, 0.00, 6.00, 63000.00, 1, 6.00, 63000.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(65, 17, 13, 'تفاحي مكسر', 6.00, 63000.00, 0.00, 6.00, 63000.00, 1, 6.00, 63000.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(66, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(67, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(68, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(69, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(70, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(71, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(72, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(73, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(74, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(75, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(76, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(77, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(78, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(79, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(80, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(81, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(82, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(83, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(84, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(85, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(86, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(87, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(88, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(89, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(90, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(91, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(92, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(93, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(94, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(95, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(96, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(97, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(98, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(99, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(100, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(101, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(102, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(103, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(104, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(105, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(106, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(107, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(108, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(109, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(110, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(111, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(112, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(113, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(114, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(115, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(116, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(117, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(118, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(119, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(120, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(121, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(122, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(123, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(124, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(125, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(126, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(127, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(128, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(129, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(130, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(131, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(132, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(133, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(134, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(135, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(136, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(137, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(138, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(139, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(140, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(141, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(142, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(143, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(144, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(145, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(146, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(147, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(148, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(149, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(150, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(151, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(152, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(153, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(154, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(155, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(156, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(157, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(158, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(159, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(160, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(161, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(162, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(163, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(164, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(165, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(166, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(167, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(168, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(169, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(170, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(171, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(172, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(173, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(174, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(175, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(176, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(177, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(178, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(179, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(180, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(181, 17, 11, 'زيتون اخضر تفاحي', 9.46, 99330.00, 0.00, 9.46, 99330.00, 1, 9.46, 99330.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -790,7 +1212,14 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`session_id`, `expires`, `data`, `created_at`, `updated_at`) VALUES
-('50j6bPrsLpadGz19htEG_Sccxs3IbDWs', 1755018884, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-12T16:20:26.886Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{},\"user\":{\"id\":20,\"username\":\"admin\",\"role\":\"admin\"}}', '2025-08-11 16:20:00', '2025-08-11 17:14:44');
+('57uoqKQ4OLHX34wEtv_fgvQV3B7BWf1E', 1755183812, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-14T15:03:32.035Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-13 15:03:32', '2025-08-13 15:03:32'),
+('5htjK1AFWOlySVDHeMhMmGf1lnGum18K', 1755183762, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-14T15:02:42.105Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-13 15:02:42', '2025-08-13 15:02:42'),
+('8WVg43-nT-8Xy9AAfVU6OXFVAjKt8G5u', 1755183970, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-14T15:06:09.556Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-13 15:06:09', '2025-08-13 15:06:09'),
+('AgaZinS3I1bmn4yh5M3L63JPy69AOxEY', 1755184844, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-14T15:20:44.248Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-13 15:20:44', '2025-08-13 15:20:44'),
+('bZ7cn84iBWcBJQ4IjS7foa2FvZimSln8', 1755184649, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-14T15:17:29.415Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-13 15:17:29', '2025-08-13 15:17:29'),
+('den4cU9ywMnDvHqMcwS1U6KZpLfMxX8Q', 1755184605, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-14T15:16:44.937Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-13 15:16:44', '2025-08-13 15:16:44'),
+('EA07p9qkXIur7jUVf7lwtv322Qc2hZmI', 1755184850, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-14T13:03:04.503Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{},\"user\":{\"id\":20,\"username\":\"admin\",\"role\":\"admin\"}}', '2025-08-13 13:02:59', '2025-08-13 15:20:50'),
+('rPNnSaG46l0AnPlbuM_LOrhFjUiRVrGX', 1755183836, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-14T15:03:56.050Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-13 15:03:56', '2025-08-13 15:03:56');
 
 -- --------------------------------------------------------
 
@@ -811,7 +1240,7 @@ CREATE TABLE `system_settings` (
 --
 
 INSERT INTO `system_settings` (`id`, `setting_key`, `setting_value`, `created_at`, `updated_at`) VALUES
-(1, 'default_currency', 'USD', '2025-08-07 15:36:40', '2025-08-11 16:21:37');
+(1, 'default_currency', 'USD', '2025-08-07 15:36:40', '2025-08-12 11:10:05');
 
 -- --------------------------------------------------------
 
@@ -838,7 +1267,8 @@ INSERT INTO `users` (`id`, `username`, `password_hash`, `role_id`, `created_at`)
 (17, 'anas', '$2a$10$mzQ7XbXuBf8o2fwnC89lP.7F4qQndtufHGNMyrg24IGvk4myA1QGC', 2, '2025-08-05 12:02:52'),
 (18, 'editor', '$2a$10$mzQ7XbXuBf8o2fwnC89lP.7F4qQndtufHGNMyrg24IGvk4myA1QGC', 2, '2025-08-05 12:02:52'),
 (19, 'viewer', '$2a$10$mzQ7XbXuBf8o2fwnC89lP.7F4qQndtufHGNMyrg24IGvk4myA1QGC', 3, '2025-08-05 12:02:52'),
-(20, 'admin', '$2a$10$mzQ7XbXuBf8o2fwnC89lP.7F4qQndtufHGNMyrg24IGvk4myA1QGC', 4, '2025-08-05 12:02:52');
+(20, 'admin', '$2a$10$mzQ7XbXuBf8o2fwnC89lP.7F4qQndtufHGNMyrg24IGvk4myA1QGC', 4, '2025-08-05 12:02:52'),
+(21, 'admin2', '$2a$10$k/Y1XQiyfb9OcGgnog2ClujnphduIByyMomfT.n4xkIyiKx5rc.yK', 4, '2025-08-13 13:02:30');
 
 --
 -- Indexes for dumped tables
@@ -913,6 +1343,13 @@ ALTER TABLE `materials`
   ADD KEY `idx_materials_currency` (`unit_cost`,`unit_cost_syp`);
 
 --
+-- Indexes for table `notes`
+--
+ALTER TABLE `notes`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_notes_material` (`material_id`);
+
+--
 -- Indexes for table `orders`
 --
 ALTER TABLE `orders`
@@ -920,6 +1357,14 @@ ALTER TABLE `orders`
   ADD UNIQUE KEY `order_number` (`order_number`),
   ADD KEY `idx_orders_number` (`order_number`),
   ADD KEY `idx_orders_client` (`client_name`);
+
+--
+-- Indexes for table `order_items`
+--
+ALTER TABLE `order_items`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `order_id` (`order_id`),
+  ADD KEY `material_id` (`material_id`);
 
 --
 -- Indexes for table `quotations`
@@ -989,7 +1434,7 @@ ALTER TABLE `clients`
 -- AUTO_INCREMENT for table `cost_logs`
 --
 ALTER TABLE `cost_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
 
 --
 -- AUTO_INCREMENT for table `currencies`
@@ -1025,25 +1470,37 @@ ALTER TABLE `invoice_items`
 -- AUTO_INCREMENT for table `materials`
 --
 ALTER TABLE `materials`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+
+--
+-- AUTO_INCREMENT for table `notes`
+--
+ALTER TABLE `notes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+
+--
+-- AUTO_INCREMENT for table `order_items`
+--
+ALTER TABLE `order_items`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=181;
 
 --
 -- AUTO_INCREMENT for table `quotations`
 --
 ALTER TABLE `quotations`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `quotation_items`
 --
 ALTER TABLE `quotation_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=182;
 
 --
 -- AUTO_INCREMENT for table `roles`
@@ -1055,13 +1512,13 @@ ALTER TABLE `roles`
 -- AUTO_INCREMENT for table `system_settings`
 --
 ALTER TABLE `system_settings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- Constraints for dumped tables
@@ -1092,6 +1549,19 @@ ALTER TABLE `invoices`
 ALTER TABLE `invoice_items`
   ADD CONSTRAINT `invoice_items_ibfk_1` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `invoice_items_ibfk_2` FOREIGN KEY (`inventory_id`) REFERENCES `inventory` (`id`);
+
+--
+-- Constraints for table `notes`
+--
+ALTER TABLE `notes`
+  ADD CONSTRAINT `fk_notes_material` FOREIGN KEY (`material_id`) REFERENCES `materials` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `order_items`
+--
+ALTER TABLE `order_items`
+  ADD CONSTRAINT `order_items_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `order_items_ibfk_2` FOREIGN KEY (`material_id`) REFERENCES `materials` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `quotations`
