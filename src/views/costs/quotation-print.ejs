@@ -49,7 +49,7 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
     <div class="box-compact">
       <h6 class="section-title">بيانات العميل</h6>
       <div class="grid-kv">
-        <div class="kv"><span>الاسم:</span><span><%= quotation.client_name || '-' %></span></div>
+        <div class="kv"><span>الاسم:</span><span><%= quotation.client_name ? ('السيد/ة ' + quotation.client_name + ' المحترم/ة') : '-' %></span></div>
         <% if (quotation.client_phone) { %><div class="kv"><span>الهاتف:</span><span><%= quotation.client_phone %></span></div><% } %>
         <% if (quotation.client_address) { %><div class="kv full"><span>العنوان:</span><span><%= quotation.client_address %></span></div><% } %>
       </div>
