@@ -24,16 +24,25 @@ app.use(helmet({
             styleSrc: ["'self'", "'unsafe-inline'", "https:", "http:"],
             scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https:", "http:"],
             imgSrc: ["'self'", "data:", "https:", "http:"],
-            connectSrc: ["'self'"],
+            connectSrc: ["'self'", "https:", "http:"],
             fontSrc: ["'self'", "https:", "http:", "data:"],
-            objectSrc: ["'none'"],
+            objectSrc: ["'self'"],
             mediaSrc: ["'self'"],
-            frameSrc: ["'none'"],
+            frameSrc: ["'self'", "https:", "http:"],
         },
     },
 }));
 
 // إعداد الوسائط (middlewares) - يجب أن تكون بهذا الترتيب
+
+// إضافة headers للسماح بالنوافذ المنبثقة
+app.use((req, res, next) => {
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Permissions-Policy', 'popup=(), fullscreen=(), geolocation=()');
+    next();
+});
 
 app.use(express.json({ limit: '50mb' }));
 // تسجيل body للطلبات والردود (اختياري - لمراقبة التفاصيل الدقيقة)
