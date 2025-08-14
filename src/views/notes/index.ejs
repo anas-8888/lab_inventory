@@ -70,13 +70,8 @@
           <form id="createNoteForm">
             <div class="row g-3">
               <div class="col-md-6">
-                <label class="form-label">اسم المادة</label>
-                <select class="form-select" name="material_id">
-                  <option value="">بدون تحديد</option>
-                  <% (materials||[]).forEach(m => { %>
-                    <option value="<%= m.id %>"><%= m.material_name %></option>
-                  <% }) %>
-                </select>
+                <label class="form-label">اسم المادة (اختياري)</label>
+                <input type="text" class="form-control" name="material_name" placeholder="أدخل اسم المادة كنص">
               </div>
               <div class="col-md-3">
                 <label class="form-label">السعر</label>
@@ -112,13 +107,8 @@
             <input type="hidden" name="id" id="editNoteId">
             <div class="row g-3">
               <div class="col-md-6">
-                <label class="form-label">اسم المادة</label>
-                <select class="form-select" name="material_id" id="editMaterialId">
-                  <option value="">بدون تحديد</option>
-                  <% (materials||[]).forEach(m => { %>
-                    <option value="<%= m.id %>"><%= m.material_name %></option>
-                  <% }) %>
-                </select>
+                <label class="form-label">اسم المادة (اختياري)</label>
+                <input type="text" class="form-control" name="material_name" id="editMaterialName" placeholder="أدخل اسم المادة كنص">
               </div>
               <div class="col-md-3">
                 <label class="form-label">السعر</label>
@@ -158,7 +148,8 @@ function openEditModal(id){
     .then(data=>{
       const n = data.note;
       document.getElementById('editNoteId').value = n.id;
-      document.getElementById('editMaterialId').value = n.material_id || '';
+      const editName = document.getElementById('editMaterialName');
+      if (editName) editName.value = (n.material_name && n.material_name.trim()) ? n.material_name : (n.material_id ? ('#'+n.material_id) : '');
       document.getElementById('editPrice').value = (n.price!=null? n.price: '');
       document.getElementById('editWeight').value = (n.weight!=null? n.weight: '');
       document.getElementById('editText').value = n.note_text || '';

@@ -1,9 +1,14 @@
 const listNotes = async (req, res) => {
   try {
     const [rows] = await req.db.query(`
-      SELECT n.id, n.material_id, m.material_name,
-             n.price, n.weight, n.note_text,
-             DATE_FORMAT(n.note_date, '%Y-%m-%d') as note_date
+      SELECT 
+        n.id,
+        n.material_id,
+        COALESCE(NULLIF(n.material_name, ''), m.material_name) AS material_name,
+        n.price,
+        n.weight,
+        n.note_text,
+        DATE_FORMAT(n.note_date, '%Y-%m-%d') AS note_date
       FROM notes n
       LEFT JOIN materials m ON m.id = n.material_id
       ORDER BY n.note_date DESC, n.id DESC
@@ -28,8 +33,14 @@ const viewNote = async (req, res) => {
   try {
     const { id } = req.params;
     const [rows] = await req.db.query(`
-      SELECT n.*, m.material_name,
-             DATE_FORMAT(n.note_date, '%d/%m/%Y') as note_date_fmt
+      SELECT 
+        n.id,
+        n.material_id,
+        COALESCE(NULLIF(n.material_name, ''), m.material_name) AS material_name,
+        n.price,
+        n.weight,
+        n.note_text,
+        DATE_FORMAT(n.note_date, '%d/%m/%Y') AS note_date_fmt
       FROM notes n
       LEFT JOIN materials m ON m.id = n.material_id
       WHERE n.id = ?
@@ -51,20 +62,23 @@ const viewNote = async (req, res) => {
 
 const createNote = async (req, res) => {
   try {
-    const { material_id, price, weight, note_text } = req.body;
+    const { material_id, material_name, price, weight, note_text } = req.body;
     const parsedPrice = (price !== undefined && price !== '') ? parseFloat(price) : null;
     const parsedWeight = (weight !== undefined && weight !== '') ? parseFloat(weight) : null;
+    // material_id اختياري، وإذا لم يُرسل أو غير صالح نتركه NULL
     let materialIdForInsert = null;
-    const maybeId = parseInt(material_id);
-    if (!Number.isNaN(maybeId) && maybeId > 0) {
-      const [mats] = await req.db.query('SELECT id FROM materials WHERE id = ? LIMIT 1', [maybeId]);
-      if (mats.length > 0) materialIdForInsert = maybeId;
+    if (material_id !== undefined && material_id !== '') {
+      const maybeId = parseInt(material_id);
+      if (!Number.isNaN(maybeId) && maybeId > 0) {
+        const [mats] = await req.db.query('SELECT id FROM materials WHERE id = ? LIMIT 1', [maybeId]);
+        if (mats.length > 0) materialIdForInsert = maybeId;
+      }
     }
 
     await req.db.query(`
-      INSERT INTO notes (material_id, price, weight, note_date, note_text)
-      VALUES (?, ?, ?, NOW(), ?)
-    `, [materialIdForInsert, parsedPrice, parsedWeight, note_text || null]);
+      INSERT INTO notes (material_id, material_name, price, weight, note_date, note_text)
+      VALUES (?, ?, ?, ?, NOW(), ?)
+    `, [materialIdForInsert, (material_name || null), parsedPrice, parsedWeight, note_text || null]);
 
     res.json({ success: true });
   } catch (err) {
@@ -76,21 +90,23 @@ const createNote = async (req, res) => {
 const updateNote = async (req, res) => {
   try {
     const { id } = req.params;
-    const { material_id, price, weight, note_text } = req.body;
+    const { material_id, material_name, price, weight, note_text } = req.body;
     const parsedPrice = (price !== undefined && price !== '') ? parseFloat(price) : null;
     const parsedWeight = (weight !== undefined && weight !== '') ? parseFloat(weight) : null;
     let materialIdForUpdate = null;
-    const maybeId = parseInt(material_id);
-    if (!Number.isNaN(maybeId) && maybeId > 0) {
-      const [mats] = await req.db.query('SELECT id FROM materials WHERE id = ? LIMIT 1', [maybeId]);
-      if (mats.length > 0) materialIdForUpdate = maybeId;
+    if (material_id !== undefined && material_id !== '') {
+      const maybeId = parseInt(material_id);
+      if (!Number.isNaN(maybeId) && maybeId > 0) {
+        const [mats] = await req.db.query('SELECT id FROM materials WHERE id = ? LIMIT 1', [maybeId]);
+        if (mats.length > 0) materialIdForUpdate = maybeId;
+      }
     }
 
     await req.db.query(`
       UPDATE notes 
-      SET material_id = ?, price = ?, weight = ?, note_date = NOW(), note_text = ?
+      SET material_id = ?, material_name = ?, price = ?, weight = ?, note_date = NOW(), note_text = ?
       WHERE id = ?
-    `, [materialIdForUpdate, parsedPrice, parsedWeight, note_text || null, id]);
+    `, [materialIdForUpdate, (material_name || null), parsedPrice, parsedWeight, note_text || null, id]);
 
     res.json({ success: true });
   } catch (err) {

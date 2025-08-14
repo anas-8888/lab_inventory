@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 13, 2025 at 05:25 PM
+-- Generation Time: Aug 13, 2025 at 07:20 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -710,6 +710,7 @@ INSERT INTO `materials` (`id`, `material_type`, `material_name`, `price_before_w
 CREATE TABLE `notes` (
   `id` int(11) NOT NULL,
   `material_id` int(11) DEFAULT NULL,
+  `material_name` varchar(255) DEFAULT NULL,
   `price` decimal(18,2) DEFAULT NULL,
   `weight` decimal(18,3) DEFAULT NULL,
   `note_date` date DEFAULT NULL,
@@ -722,9 +723,11 @@ CREATE TABLE `notes` (
 -- Dumping data for table `notes`
 --
 
-INSERT INTO `notes` (`id`, `material_id`, `price`, `weight`, `note_date`, `note_text`, `created_at`, `updated_at`) VALUES
-(6, 14, 500.00, 4.000, '2025-08-12', 'hhhhh', '2025-08-12 15:27:22', '2025-08-12 15:32:51'),
-(7, 14, 354.00, 4564.000, '2025-08-12', 'gjhgfhgfhgfhty4t645trg', '2025-08-12 15:32:38', NULL);
+INSERT INTO `notes` (`id`, `material_id`, `material_name`, `price`, `weight`, `note_date`, `note_text`, `created_at`, `updated_at`) VALUES
+(6, 14, NULL, 500.00, 4.000, '2025-08-12', 'hhhhh', '2025-08-12 15:27:22', '2025-08-12 15:32:51'),
+(7, 14, NULL, 354.00, 4564.000, '2025-08-12', 'gjhgfhgfhgfhty4t645trg', '2025-08-12 15:32:38', NULL),
+(8, NULL, 'fdgtrrgre', NULL, NULL, '2025-08-13', 'gfggfg', '2025-08-13 17:18:37', NULL),
+(9, 11, 'fgfgf', NULL, NULL, '2025-08-13', NULL, '2025-08-13 17:18:59', NULL);
 
 -- --------------------------------------------------------
 
@@ -1218,7 +1221,7 @@ INSERT INTO `sessions` (`session_id`, `expires`, `data`, `created_at`, `updated_
 ('AgaZinS3I1bmn4yh5M3L63JPy69AOxEY', 1755184844, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-14T15:20:44.248Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-13 15:20:44', '2025-08-13 15:20:44'),
 ('bZ7cn84iBWcBJQ4IjS7foa2FvZimSln8', 1755184649, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-14T15:17:29.415Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-13 15:17:29', '2025-08-13 15:17:29'),
 ('den4cU9ywMnDvHqMcwS1U6KZpLfMxX8Q', 1755184605, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-14T15:16:44.937Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-13 15:16:44', '2025-08-13 15:16:44'),
-('EA07p9qkXIur7jUVf7lwtv322Qc2hZmI', 1755184850, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-14T13:03:04.503Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{},\"user\":{\"id\":20,\"username\":\"admin\",\"role\":\"admin\"}}', '2025-08-13 13:02:59', '2025-08-13 15:20:50'),
+('EA07p9qkXIur7jUVf7lwtv322Qc2hZmI', 1755191939, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-14T13:03:04.503Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{},\"user\":{\"id\":20,\"username\":\"admin\",\"role\":\"admin\"}}', '2025-08-13 13:02:59', '2025-08-13 17:18:59'),
 ('rPNnSaG46l0AnPlbuM_LOrhFjUiRVrGX', 1755183836, '{\"cookie\":{\"originalMaxAge\":86400000,\"expires\":\"2025-08-14T15:03:56.050Z\",\"secure\":false,\"httpOnly\":true,\"path\":\"/\",\"sameSite\":\"lax\"},\"flash\":{}}', '2025-08-13 15:03:56', '2025-08-13 15:03:56');
 
 -- --------------------------------------------------------
@@ -1267,7 +1270,7 @@ INSERT INTO `users` (`id`, `username`, `password_hash`, `role_id`, `created_at`)
 (17, 'anas', '$2a$10$mzQ7XbXuBf8o2fwnC89lP.7F4qQndtufHGNMyrg24IGvk4myA1QGC', 2, '2025-08-05 12:02:52'),
 (18, 'editor', '$2a$10$mzQ7XbXuBf8o2fwnC89lP.7F4qQndtufHGNMyrg24IGvk4myA1QGC', 2, '2025-08-05 12:02:52'),
 (19, 'viewer', '$2a$10$mzQ7XbXuBf8o2fwnC89lP.7F4qQndtufHGNMyrg24IGvk4myA1QGC', 3, '2025-08-05 12:02:52'),
-(20, 'admin', '$2a$10$mzQ7XbXuBf8o2fwnC89lP.7F4qQndtufHGNMyrg24IGvk4myA1QGC', 4, '2025-08-05 12:02:52'),
+(20, 'admin', '$2a$10$ONNAaSyypOQM9vPCSphlE.LowbY/.Th7L9aQQaHM7TQ/2QCaPaWj2', 4, '2025-08-05 12:02:52'),
 (21, 'admin2', '$2a$10$k/Y1XQiyfb9OcGgnog2ClujnphduIByyMomfT.n4xkIyiKx5rc.yK', 4, '2025-08-13 13:02:30');
 
 --
@@ -1476,7 +1479,7 @@ ALTER TABLE `materials`
 -- AUTO_INCREMENT for table `notes`
 --
 ALTER TABLE `notes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `orders`
