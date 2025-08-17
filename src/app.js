@@ -12,26 +12,14 @@ const { pool } = require('./database/db');
 const { authMiddleware } = require('./middleware/auth');
 const { addCurrencyToRequest } = require('./middleware/currency');
 const morgan = require('morgan');
+const securityConfig = require('./config/security');
 
 // إنشاء تطبيق Express
 const app = express();
 
 // إعداد ترويسة الأمان باستخدام helmet
-app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https:", "http:"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https:", "http:"],
-            imgSrc: ["'self'", "data:", "https:", "http:"],
-            connectSrc: ["'self'", "https:", "http:"],
-            fontSrc: ["'self'", "https:", "http:", "data:"],
-            objectSrc: ["'self'"],
-            mediaSrc: ["'self'"],
-            frameSrc: ["'self'", "https:", "http:"],
-        },
-    },
-}));
+app.use(helmet(securityConfig.helmet));
+app.use(helmet.contentSecurityPolicy(securityConfig.csp));
 
 // إعداد الوسائط (middlewares) - يجب أن تكون بهذا الترتيب
 
@@ -40,7 +28,7 @@ app.use((req, res, next) => {
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-XSS-Protection', '1; mode=block');
-    res.setHeader('Permissions-Policy', 'popup=(), fullscreen=(), geolocation=()');
+    // إزالة Permissions-Policy header الذي يسبب مشاكل
     next();
 });
 

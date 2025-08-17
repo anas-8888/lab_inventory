@@ -1,5 +1,16 @@
 const { pool } = require('../database/db');
 
+// دالة لتقريب الأرقام العشرية بشكل صحيح
+const roundToDecimal = (value, decimals = 2) => {
+    if (typeof value !== 'number' || isNaN(value)) {
+        return 0;
+    }
+    const factor = Math.pow(10, decimals);
+    const result = Math.round(value * factor) / factor;
+    console.log(`roundToDecimal(${value}, ${decimals}) = ${result}`);
+    return result;
+};
+
 // عرض صفحة التكاليف الرئيسية
 const getCosts = async (req, res) => {
     try {
@@ -147,16 +158,16 @@ const createMaterial = async (req, res) => {
             const sypBody = req.body[`${field}_syp`];
             const sypVal = sypBody !== undefined ? parseFloat(sypBody) : NaN;
             if (!Number.isNaN(usdVal)) {
-                usd[field] = usdVal;
+                usd[field] = roundToDecimal(usdVal, 2);
             } else if (!Number.isNaN(sypVal)) {
-                usd[field] = sypVal / exchangeRateValue;
+                usd[field] = roundToDecimal(sypVal / exchangeRateValue, 2);
             } else {
                 usd[field] = 0;
             }
             if (!Number.isNaN(sypVal)) {
-                syp[field] = sypVal;
+                syp[field] = roundToDecimal(sypVal, 0);
             } else {
-                syp[field] = (usd[field] || 0) * exchangeRateValue;
+                syp[field] = roundToDecimal((usd[field] || 0) * exchangeRateValue, 0);
             }
         });
 
@@ -186,10 +197,10 @@ const createMaterial = async (req, res) => {
         const total_packaging_costs_usd =
             (usd.empty_package_price || 0) + (usd.sticker_price || 0) + (usd.additional_expenses || 0) +
             (usd.labor_cost || 0) + (usd.preservatives_cost || 0);
-        const unit_cost = material_cost_in_unit_usd + total_packaging_costs_usd;
-        const pallet_share_usd = (usd.pallet_price || 0) / packages_per_pallet_num;
+        const unit_cost = roundToDecimal(material_cost_in_unit_usd + total_packaging_costs_usd, 2);
+        const pallet_share_usd = roundToDecimal((usd.pallet_price || 0) / packages_per_pallet_num, 2);
         // (كلفة القطعة الواحدة × عدد الحبات بالطرد) + ثمن الكرتونة + (ثمن الطبلية ÷ عدد الطرود بالطبلية)
-        const package_cost = (unit_cost * pieces_per_package_num) + (usd.carton_price || 0) + pallet_share_usd;
+        const package_cost = roundToDecimal((unit_cost * pieces_per_package_num) + (usd.carton_price || 0) + pallet_share_usd, 2);
 
         // حساب كلفة القطعة والطرد بالليرة باستخدام قيم SYP للحفاظ على دقة الإدخال
         const price_per_kg_before_waste_syp = (gross_weight_num > 0) ? ((syp.price_before_waste || 0) / gross_weight_num) : 0;
@@ -199,9 +210,9 @@ const createMaterial = async (req, res) => {
         const total_packaging_costs_syp =
             (syp.empty_package_price || 0) + (syp.sticker_price || 0) + (syp.additional_expenses || 0) +
             (syp.labor_cost || 0) + (syp.preservatives_cost || 0);
-        const unit_cost_syp = material_cost_in_unit_syp + total_packaging_costs_syp;
-        const pallet_share_syp = (syp.pallet_price || 0) / packages_per_pallet_num;
-        const package_cost_syp = (unit_cost_syp * pieces_per_package_num) + (syp.carton_price || 0) + pallet_share_syp;
+        const unit_cost_syp = roundToDecimal(material_cost_in_unit_syp + total_packaging_costs_syp, 0);
+        const pallet_share_syp = roundToDecimal((syp.pallet_price || 0) / packages_per_pallet_num, 0);
+        const package_cost_syp = roundToDecimal((unit_cost_syp * pieces_per_package_num) + (syp.carton_price || 0) + pallet_share_syp, 0);
 
         // حفظ المادة
         const [result] = await req.db.query(`
@@ -288,16 +299,16 @@ const updateMaterial = async (req, res) => {
             const sypBody = req.body[`${field}_syp`];
             const sypVal = sypBody !== undefined ? parseFloat(sypBody) : NaN;
             if (!Number.isNaN(usdVal)) {
-                usd[field] = usdVal;
+                usd[field] = roundToDecimal(usdVal, 2);
             } else if (!Number.isNaN(sypVal)) {
-                usd[field] = sypVal / exchangeRateValue;
+                usd[field] = roundToDecimal(sypVal / exchangeRateValue, 2);
             } else {
                 usd[field] = 0;
             }
             if (!Number.isNaN(sypVal)) {
-                syp[field] = sypVal;
+                syp[field] = roundToDecimal(sypVal, 0);
             } else {
-                syp[field] = (usd[field] || 0) * exchangeRateValue;
+                syp[field] = roundToDecimal((usd[field] || 0) * exchangeRateValue, 0);
             }
         });
 
@@ -325,9 +336,9 @@ const updateMaterial = async (req, res) => {
         const total_packaging_costs_usd =
             (usd.empty_package_price || 0) + (usd.sticker_price || 0) + (usd.additional_expenses || 0) +
             (usd.labor_cost || 0) + (usd.preservatives_cost || 0);
-        const unit_cost = material_cost_in_unit_usd + total_packaging_costs_usd;
-        const pallet_share_usd = (usd.pallet_price || 0) / packages_per_pallet_num;
-        const package_cost = unit_cost + pallet_share_usd;
+        const unit_cost = roundToDecimal(material_cost_in_unit_usd + total_packaging_costs_usd, 2);
+        const pallet_share_usd = roundToDecimal((usd.pallet_price || 0) / packages_per_pallet_num, 2);
+        const package_cost = roundToDecimal(unit_cost + pallet_share_usd, 2);
 
         // حساب كلفة القطعة والطرد بالليرة باستخدام قيم SYP المدخلة
         const price_per_kg_before_waste_syp = (gross_weight_num > 0) ? ((syp.price_before_waste || 0) / gross_weight_num) : 0;
@@ -336,9 +347,9 @@ const updateMaterial = async (req, res) => {
         const total_packaging_costs_syp =
             (syp.empty_package_price || 0) + (syp.sticker_price || 0) + (syp.additional_expenses || 0) +
             (syp.labor_cost || 0) + (syp.preservatives_cost || 0);
-        const unit_cost_syp = material_cost_in_unit_syp + total_packaging_costs_syp;
-        const pallet_share_syp = (syp.pallet_price || 0) / packages_per_pallet_num;
-        const package_cost_syp = (unit_cost_syp * pieces_per_package_num) + (syp.carton_price || 0) + pallet_share_syp;
+        const unit_cost_syp = roundToDecimal(material_cost_in_unit_syp + total_packaging_costs_syp, 0);
+        const pallet_share_syp = roundToDecimal((syp.pallet_price || 0) / packages_per_pallet_num, 0);
+        const package_cost_syp = roundToDecimal((unit_cost_syp * pieces_per_package_num) + (syp.carton_price || 0) + pallet_share_syp, 0);
 
         // تحديث المادة
         await req.db.query(`
@@ -402,9 +413,13 @@ const getQuotations = async (req, res) => {
         // اختيار القيم حسب العملة المحددة
         const displayQuotations = quotations.map((quotation) => {
             if (req.defaultCurrency && req.defaultCurrency.code === 'SYP') {
+                const totalAmount = quotation.total_amount_syp || quotation.total_amount;
+                console.log(`getQuotations - Quotation ${quotation.id}:`);
+                console.log(`  total_amount_syp: ${quotation.total_amount_syp}, total_amount: ${quotation.total_amount}`);
+                console.log(`  Display total: ${totalAmount}`);
                 return {
                     ...quotation,
-                    total_amount: quotation.total_amount_syp || quotation.total_amount
+                    total_amount: totalAmount
                 };
             } else {
                 return quotation;
@@ -447,7 +462,48 @@ const getQuotationJson = async (req, res) => {
         }
         const quotation = quotationRows[0];
         const [items] = await req.db.query(`SELECT * FROM quotation_items WHERE quotation_id = ?`, [id]);
-        res.json({ success: true, quotation, items });
+        
+        // تحويل البيانات حسب العملة المحددة
+        const displayQuotation = {
+            ...quotation,
+            total_amount: req.defaultCurrency && req.defaultCurrency.code === 'SYP' 
+                ? (quotation.total_amount_syp || quotation.total_amount)
+                : quotation.total_amount
+        };
+        
+        // إضافة رسائل تتبع للعرض الرئيسي
+        if (req.defaultCurrency && req.defaultCurrency.code === 'SYP') {
+            console.log(`getQuotationJson - Quotation ${quotation.id}:`);
+            console.log(`  total_amount_syp: ${quotation.total_amount_syp}, total_amount: ${quotation.total_amount}`);
+            console.log(`  Display total: ${displayQuotation.total_amount}`);
+        }
+        
+        const displayItems = items.map((item) => {
+            if (req.defaultCurrency && req.defaultCurrency.code === 'SYP') {
+                // استخدام القيم المحفوظة بالليرة السورية مع التأكد من صحتها
+                const unitCost = item.unit_cost_syp || item.unit_cost;
+                const finalPrice = item.final_price_syp || item.final_price;
+                const totalPrice = item.total_price_syp || item.total_price;
+                
+                // إضافة رسائل تتبع للتشخيص
+                console.log(`getQuotationJson - Item ${item.id}:`);
+                console.log(`  unit_cost_syp: ${item.unit_cost_syp}, unit_cost: ${item.unit_cost}`);
+                console.log(`  final_price_syp: ${item.final_price_syp}, final_price: ${item.final_price}`);
+                console.log(`  total_price_syp: ${item.total_price_syp}, total_price: ${item.total_price}`);
+                console.log(`  quantity: ${item.quantity}`);
+                
+                return {
+                    ...item,
+                    unit_cost: unitCost,
+                    final_price: finalPrice,
+                    total_price: totalPrice
+                };
+            } else {
+                return item;
+            }
+        });
+        
+        res.json({ success: true, quotation: displayQuotation, items: displayItems });
     } catch (error) {
         console.error('خطأ في جلب عرض السعر JSON:', error);
         res.status(500).json({ success: false, message: 'حدث خطأ في جلب عرض السعر' });
@@ -467,6 +523,11 @@ const updateQuotation = async (req, res) => {
             AND to_currency_id = (SELECT id FROM currencies WHERE code = 'SYP')
         `);
         const exchangeRateValue = exchangeRate.length > 0 ? parseFloat(exchangeRate[0].rate) : 13000;
+        
+        // التأكد من أن سعر الصرف رقم صحيح
+        if (isNaN(exchangeRateValue) || exchangeRateValue <= 0) {
+            return res.status(400).json({ success: false, message: 'سعر الصرف غير صحيح' });
+        }
 
         // تحديث رأس العرض (بدون نسبة ربح عامة)
         await req.db.query(
@@ -482,13 +543,53 @@ const updateQuotation = async (req, res) => {
         let totalAmountSyp = 0;
         if (items && Array.isArray(items)) {
             for (const item of items) {
-                const profitPercentage = item.profit_percentage || 0;
-                const finalPrice = item.unit_cost * (1 + profitPercentage / 100);
-                const totalPrice = finalPrice * item.quantity;
-
-                const unitCostSyp = item.unit_cost * exchangeRateValue;
-                const finalPriceSyp = finalPrice * exchangeRateValue;
-                const totalPriceSyp = totalPrice * exchangeRateValue;
+                // التأكد من أن القيم أرقام صحيحة
+                const unitCost = parseFloat(item.unit_cost) || 0;
+                const profitPercentage = parseFloat(item.profit_percentage) || 0;
+                const quantity = parseFloat(item.quantity) || 1; // تغيير من parseInt إلى parseFloat
+                
+                // حساب القيم بالعملتين بناءً على العملة المدخلة
+                let unitCostUSD, unitCostSYP, finalPriceUSD, finalPriceSYP, totalPriceUSD, totalPriceSYP;
+                
+                if (req.body.currency === 'SYP') {
+                    // إذا كانت العملة المدخلة هي الليرة السورية
+                    unitCostSYP = roundToDecimal(unitCost, 0); // تقريب للصفر منازل لليرة السورية
+                    unitCostUSD = roundToDecimal(unitCost / exchangeRateValue, 2);
+                    
+                    // حساب السعر النهائي بالليرة السورية مباشرة
+                    finalPriceSYP = roundToDecimal(unitCost * (1 + profitPercentage / 100), 0);
+                    totalPriceSYP = roundToDecimal(finalPriceSYP * quantity, 0);
+                    
+                    // تحويل السعر النهائي والإجمالي إلى الدولار
+                    finalPriceUSD = roundToDecimal(finalPriceSYP / exchangeRateValue, 2);
+                    totalPriceUSD = roundToDecimal(totalPriceSYP / exchangeRateValue, 2);
+                } else {
+                    // إذا كانت العملة المدخلة هي الدولار (الافتراضي)
+                    unitCostUSD = roundToDecimal(unitCost, 2);
+                    unitCostSYP = roundToDecimal(unitCost * exchangeRateValue, 0);
+                    
+                    // حساب السعر النهائي بالدولار مباشرة
+                    finalPriceUSD = roundToDecimal(unitCost * (1 + profitPercentage / 100), 2);
+                    totalPriceUSD = roundToDecimal(finalPriceUSD * quantity, 2);
+                    
+                    // تحويل السعر النهائي والإجمالي إلى الليرة السورية
+                    finalPriceSYP = roundToDecimal(finalPriceUSD * exchangeRateValue, 0);
+                    totalPriceSYP = roundToDecimal(totalPriceUSD * exchangeRateValue, 0);
+                }
+                
+                console.log(`Currency: ${req.body.currency}`);
+                console.log(`USD: unitCost=${unitCostUSD}, finalPrice=${finalPriceUSD}, totalPrice=${totalPriceUSD}`);
+                console.log(`SYP: unitCost=${unitCostSYP}, finalPrice=${finalPriceSYP}, totalPrice=${totalPriceSYP}`);
+                console.log(`Exchange Rate: ${exchangeRateValue}, Quantity: ${quantity}`);
+                if (req.body.currency === 'SYP') {
+                    console.log(`Input SYP: ${unitCost}, Expected USD: ${unitCost / exchangeRateValue}`);
+                    console.log(`Final SYP: ${finalPriceSYP}, Total SYP: ${totalPriceSYP}`);
+                    console.log(`Converted USD: ${totalPriceUSD}`);
+                } else {
+                    console.log(`Input USD: ${unitCost}, Expected SYP: ${unitCost * exchangeRateValue}`);
+                    console.log(`Final USD: ${finalPriceUSD}, Total USD: ${totalPriceUSD}`);
+                    console.log(`Converted SYP: ${totalPriceSYP}`);
+                }
 
                 await req.db.query(
                     `INSERT INTO quotation_items (
@@ -497,15 +598,15 @@ const updateQuotation = async (req, res) => {
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     [
                         id, item.material_id || null, item.material_name || '',
-                        item.unit_cost || 0, unitCostSyp || 0, profitPercentage,
-                        finalPrice, finalPriceSyp, item.quantity || 1, totalPrice, totalPriceSyp,
+                        unitCostUSD || 0, unitCostSYP || 0, profitPercentage,
+                        finalPriceUSD, finalPriceSYP, quantity, totalPriceUSD, totalPriceSYP,
                         item.material_type || null, item.packaging_unit || null, item.packaging_weight || null,
                         item.pieces_per_package || null, item.package_cost || null, item.item_notes || null
                     ]
                 );
 
-                totalAmount += totalPrice;
-                totalAmountSyp += totalPriceSyp;
+                totalAmount += totalPriceUSD;
+                totalAmountSyp += totalPriceSYP;
             }
         }
 
@@ -550,6 +651,13 @@ const createQuotation = async (req, res) => {
         `);
         
         const exchangeRateValue = exchangeRate.length > 0 ? parseFloat(exchangeRate[0].rate) : 13000;
+        
+        // التأكد من أن سعر الصرف رقم صحيح
+        if (isNaN(exchangeRateValue) || exchangeRateValue <= 0) {
+            return res.status(400).json({ success: false, message: 'سعر الصرف غير صحيح' });
+        }
+        
+        console.log(`Exchange Rate: ${exchangeRateValue}`);
 
         // حفظ العرض
         const [quotationResult] = await req.db.query(`
@@ -563,14 +671,59 @@ const createQuotation = async (req, res) => {
         // حفظ بنود العرض
         if (items && Array.isArray(items)) {
             for (const item of items) {
-                const profitPercentage = item.profit_percentage || 0;
-                const finalPrice = item.unit_cost * (1 + profitPercentage / 100);
-                const totalPrice = finalPrice * item.quantity;
+                // التأكد من أن القيم أرقام صحيحة
+                const unitCost = parseFloat(item.unit_cost) || 0;
+                const profitPercentage = parseFloat(item.profit_percentage) || 0;
+                const quantity = parseFloat(item.quantity) || 1; // تغيير من parseInt إلى parseFloat
                 
-                // حساب القيم بالليرة السورية
-                const unitCostSyp = item.unit_cost * exchangeRateValue;
-                const finalPriceSyp = finalPrice * exchangeRateValue;
-                const totalPriceSyp = totalPrice * exchangeRateValue;
+                console.log(`Item: unitCost=${unitCost}, profitPercentage=${profitPercentage}, quantity=${quantity}`);
+                
+                // حساب القيم بالعملتين بناءً على العملة المدخلة
+                let unitCostUSD, unitCostSYP, finalPriceUSD, finalPriceSYP, totalPriceUSD, totalPriceSYP;
+                
+                if (req.body.currency === 'SYP') {
+                    // إذا كانت العملة المدخلة هي الليرة السورية
+                    unitCostSYP = roundToDecimal(unitCost, 0); // تقريب للصفر منازل لليرة السورية
+                    unitCostUSD = roundToDecimal(unitCost / exchangeRateValue, 2);
+                    
+                    // حساب السعر النهائي بالليرة السورية مباشرة
+                    finalPriceSYP = roundToDecimal(unitCost * (1 + profitPercentage / 100), 0);
+                    totalPriceSYP = roundToDecimal(finalPriceSYP * quantity, 0);
+                    
+                    // تحويل السعر النهائي والإجمالي إلى الدولار
+                    finalPriceUSD = roundToDecimal(finalPriceSYP / exchangeRateValue, 2);
+                    totalPriceUSD = roundToDecimal(totalPriceSYP / exchangeRateValue, 2);
+                    
+                    console.log(`Calculated SYP: finalPrice=${finalPriceSYP}, totalPrice=${totalPriceSYP}`);
+                } else {
+                    // إذا كانت العملة المدخلة هي الدولار (الافتراضي)
+                    unitCostUSD = roundToDecimal(unitCost, 2);
+                    unitCostSYP = roundToDecimal(unitCost * exchangeRateValue, 0);
+                    
+                    // حساب السعر النهائي بالدولار مباشرة
+                    finalPriceUSD = roundToDecimal(unitCost * (1 + profitPercentage / 100), 2);
+                    totalPriceUSD = roundToDecimal(finalPriceUSD * quantity, 2);
+                    
+                    // تحويل السعر النهائي والإجمالي إلى الليرة السورية
+                    finalPriceSYP = roundToDecimal(finalPriceUSD * exchangeRateValue, 0);
+                    totalPriceSYP = roundToDecimal(totalPriceUSD * exchangeRateValue, 0);
+                    
+                    console.log(`Calculated USD: finalPrice=${finalPriceUSD}, totalPrice=${totalPriceUSD}`);
+                }
+                
+                console.log(`Currency: ${req.body.currency}`);
+                console.log(`USD: unitCost=${unitCostUSD}, finalPrice=${finalPriceUSD}, totalPrice=${totalPriceUSD}`);
+                console.log(`SYP: unitCost=${unitCostSYP}, finalPrice=${finalPriceSYP}, totalPrice=${totalPriceSYP}`);
+                console.log(`Exchange Rate: ${exchangeRateValue}, Quantity: ${quantity}`);
+                if (req.body.currency === 'SYP') {
+                    console.log(`Input SYP: ${unitCost}, Expected USD: ${unitCost / exchangeRateValue}`);
+                    console.log(`Final SYP: ${finalPriceSYP}, Total SYP: ${totalPriceSYP}`);
+                    console.log(`Converted USD: ${totalPriceUSD}`);
+                } else {
+                    console.log(`Input USD: ${unitCost}, Expected SYP: ${unitCost * exchangeRateValue}`);
+                    console.log(`Final USD: ${finalPriceUSD}, Total USD: ${totalPriceUSD}`);
+                    console.log(`Converted SYP: ${totalPriceSYP}`);
+                }
 
                 await req.db.query(`
                     INSERT INTO quotation_items (
@@ -579,13 +732,13 @@ const createQuotation = async (req, res) => {
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `, [
                     quotationResult.insertId, item.material_id || null, item.material_name || '',
-                    item.unit_cost || 0, unitCostSyp || 0, profitPercentage, finalPrice, finalPriceSyp,
-                    item.quantity || 1, totalPrice, totalPriceSyp, item.material_type || null, item.packaging_unit || null,
+                    unitCostUSD || 0, unitCostSYP || 0, profitPercentage, finalPriceUSD, finalPriceSYP,
+                    quantity, totalPriceUSD, totalPriceSYP, item.material_type || null, item.packaging_unit || null,
                     item.packaging_weight || null, item.pieces_per_package || null, item.package_cost || null, item.item_notes || null
                 ]);
 
-                totalAmount += totalPrice;
-                totalAmountSyp += totalPriceSyp;
+                totalAmount += totalPriceUSD;
+                totalAmountSyp += totalPriceSYP;
             }
         }
 
@@ -757,7 +910,60 @@ const exportQuotationPDF = async (req, res) => {
 
 // طباعة عرض سعر بدون حماية (للتوليد)
 const getQuotationPrintRaw = async (req, res) => {
-    return getQuotationPrintPage(req, res);
+    try {
+        const { id } = req.params;
+        const [qRows] = await req.db.query(`SELECT * FROM quotations WHERE id = ?`, [id]);
+        if (qRows.length === 0) {
+            return res.status(404).send('عرض السعر غير موجود');
+        }
+        const quotation = qRows[0];
+        const [items] = await req.db.query(`SELECT * FROM quotation_items WHERE quotation_id = ?`, [id]);
+
+        // اجلب حقول التغليف من materials عند نقصها في عناصر العرض
+        const materialIds = items.map(i => i.material_id).filter(Boolean);
+        let materialsMap = new Map();
+        if (materialIds.length > 0) {
+            const [materials] = await req.db.query(
+                `SELECT id, material_type, packaging_unit, packaging_weight, pieces_per_package, package_cost, package_cost_syp 
+                 FROM materials WHERE id IN (${materialIds.map(()=>'?').join(',')})`,
+                materialIds
+            );
+            materials.forEach(m => materialsMap.set(m.id, m));
+        }
+
+        const isSyp = req.defaultCurrency && req.defaultCurrency.code === 'SYP';
+        const displayItems = items.map((item) => {
+            const mat = item.material_id ? materialsMap.get(item.material_id) : null;
+            const final = isSyp ? (item.final_price_syp || item.final_price || 0) : (item.final_price || 0);
+            const total = isSyp ? (item.total_price_syp || item.total_price || (final * (item.quantity || 1))) : (item.total_price || (final * (item.quantity || 1)));
+            const packageCostFromMat = mat ? (isSyp ? (mat.package_cost_syp || mat.package_cost || 0) : (mat.package_cost || 0)) : 0;
+            const packageCost = (isSyp ? (item.package_cost_syp || item.package_cost) : item.package_cost);
+            const resolvedPackageCost = (packageCost != null ? packageCost : packageCostFromMat);
+            return {
+                ...item,
+                final_price: final,
+                total_price: total,
+                package_cost: resolvedPackageCost,
+                material_type: item.material_type || (mat ? mat.material_type : null),
+                packaging_unit: item.packaging_unit || (mat ? mat.packaging_unit : null),
+                packaging_weight: item.packaging_weight != null ? item.packaging_weight : (mat ? mat.packaging_weight : null),
+                pieces_per_package: item.pieces_per_package != null ? item.pieces_per_package : (mat ? mat.pieces_per_package : null)
+            };
+        });
+        const grandTotal = displayItems.reduce((s, it) => s + (parseFloat(it.total_price) || 0), 0);
+
+        res.render('costs/quotation-print', {
+            title: `طباعة عرض السعر ${quotation.quotation_number}`,
+            quotation,
+            items: displayItems,
+            grandTotal,
+            defaultCurrency: req.defaultCurrency || null,
+            layout: false
+        });
+    } catch (error) {
+        console.error('خطأ في طباعة عرض السعر:', error);
+        res.status(500).send('حدث خطأ في طباعة عرض السعر');
+    }
 };
 
 // طباعة مادة

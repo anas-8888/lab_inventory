@@ -213,7 +213,9 @@
               <tfoot>
                 <tr class="table-info">
                   <td colspan="5" class="text-end"><strong>المجموع الإجمالي:</strong></td>
-                  <td><strong id="editTotalAmount">0.00 <%= defaultCurrency ? defaultCurrency.symbol : '$' %></strong></td>
+                  <td>
+                    <strong id="editTotalAmount">0.00 <%= defaultCurrency ? defaultCurrency.symbol : '$' %></strong>
+                  </td>
                   <td></td>
                 </tr>
               </tfoot>
@@ -234,7 +236,15 @@ const exchangeRate = <%= exchangeRate %>;
 const defaultCurrencyCode = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
 const formatUSD = (v) => (parseFloat(v) || 0).toFixed(2);
 const formatSYP = (v) => String(Math.round(parseFloat(v) || 0));
-const displayMoney = (v) => defaultCurrencyCode === 'SYP' ? formatSYP(v) : formatUSD(v);
+const displayMoney = (v) => {
+  const value = parseFloat(v) || 0;
+  return defaultCurrencyCode === 'SYP' ? formatSYP(value) : formatUSD(value);
+};
+
+// دالة لتقريب الأرقام العشرية بشكل صحيح
+const roundToDecimal = (value, decimals = 2) => {
+  return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
+};
 // المواد المتاحة
 const materials = <%- JSON.stringify(materials || []) %>;
 let materialRows = [];
@@ -327,19 +337,39 @@ function calculateRowTotal(rowIndex) {
     const tr = document.querySelector(`#materialsTableBody tr:nth-child(${rowIndex + 1})`);
     
     const profitPercentage = parseFloat(tr.querySelector('.profit-percentage').value) || 0;
-    const quantity = parseInt(tr.querySelector('.quantity').value) || 1;
+    const quantity = parseFloat(tr.querySelector('.quantity').value) || 1; // تغيير من parseInt إلى parseFloat
     
     row.profitPercentage = profitPercentage;
     row.quantity = quantity;
     
-    const finalPrice = row.unitCost * (1 + profitPercentage / 100);
-    const totalPrice = finalPrice * quantity;
+    // إذا كان السعر النهائي قد تم إدخاله يدوياً، احتفظ به
+    const manualFinalPrice = parseFloat(tr.querySelector('.final-price').value.replace(/,/g, '')) || 0;
+    let finalPrice;
+    
+    if (manualFinalPrice > 0) {
+        // إذا كان هناك سعر نهائي مدخل يدوياً، استخدمه
+        finalPrice = manualFinalPrice;
+        // أعد حساب نسبة الربح بناءً على السعر النهائي المدخل
+        const newProfitPercentage = row.unitCost > 0 ? ((finalPrice / row.unitCost) - 1) * 100 : 0;
+        row.profitPercentage = newProfitPercentage;
+        tr.querySelector('.profit-percentage').value = roundToDecimal(newProfitPercentage, 2).toFixed(2);
+    } else {
+        // إذا لم يكن هناك سعر نهائي مدخل يدوياً، احسبه من نسبة الربح
+        finalPrice = roundToDecimal(row.unitCost * (1 + profitPercentage / 100), defaultCurrencyCode === 'SYP' ? 0 : 2);
+    }
+    
+    const totalPrice = roundToDecimal(finalPrice * quantity, defaultCurrencyCode === 'SYP' ? 0 : 2);
     
     row.finalPrice = finalPrice;
     row.totalPrice = totalPrice;
     
     tr.querySelector('.final-price').value = displayMoney(finalPrice);
     tr.querySelector('.row-total').value = displayMoney(totalPrice);
+    
+    console.log(`calculateRowTotal - Row ${rowIndex}:`);
+    console.log(`  unitCost=${row.unitCost}, profitPercentage=${profitPercentage}, quantity=${quantity}`);
+    console.log(`  manualFinalPrice=${manualFinalPrice}, calculated finalPrice=${finalPrice}`);
+    console.log(`  totalPrice=${totalPrice}`);
     
     calculateTotalAmount();
 }
@@ -352,17 +382,22 @@ function manualFinalPriceChange(rowIndex, inputEl){
   const profit = row.unitCost > 0 ? ((finalPrice / row.unitCost) - 1) * 100 : 0;
   row.finalPrice = finalPrice;
   row.profitPercentage = profit;
-  tr.querySelector('.profit-percentage').value = profit.toFixed(2);
-  const quantity = parseInt(tr.querySelector('.quantity').value) || 1;
+  tr.querySelector('.profit-percentage').value = roundToDecimal(profit, 2).toFixed(2);
+  const quantity = parseFloat(tr.querySelector('.quantity').value) || 1; // تغيير من parseInt إلى parseFloat
   row.quantity = quantity;
-  row.totalPrice = finalPrice * quantity;
+  row.totalPrice = roundToDecimal(finalPrice * quantity, defaultCurrencyCode === 'SYP' ? 0 : 2);
   tr.querySelector('.row-total').value = displayMoney(row.totalPrice);
-    calculateTotalAmount();
+  
+  console.log(`manualFinalPriceChange - Row ${rowIndex}:`);
+  console.log(`  finalPrice=${finalPrice}, quantity=${quantity}`);
+  console.log(`  calculated totalPrice=${row.totalPrice}`);
+  
+  calculateTotalAmount();
 }
 
 // حساب المجموع الإجمالي
 function calculateTotalAmount() {
-    const total = materialRows.reduce((sum, row) => sum + row.totalPrice, 0);
+    const total = roundToDecimal(materialRows.reduce((sum, row) => sum + row.totalPrice, 0), defaultCurrencyCode === 'SYP' ? 0 : 2);
     document.getElementById('totalAmount').textContent = displayMoney(total) + ' <%= defaultCurrency ? defaultCurrency.symbol : "$" %>';
 }
 // فتح مودال تعديل
@@ -380,16 +415,44 @@ function openEditQuotationModal(id) {
     tbody.innerHTML = '';
     items.forEach((it, idx)=>{
       const tr = document.createElement('tr');
-      const unitCostDisplay = displayMoney(it.unit_cost);
-      const finalPrice = it.unit_cost * (1 + (it.profit_percentage||0)/100);
-      const totalPrice = finalPrice * it.quantity;
+      
+      // استخدام القيم المحفوظة مباشرة بدلاً من إعادة حسابها
+      let finalPrice, totalPrice;
+      if (defaultCurrencyCode === 'SYP') {
+        // لليرة السورية، استخدم القيم المحفوظة مباشرة
+        finalPrice = parseFloat(it.final_price_syp) || parseFloat(it.final_price) || 0;
+        totalPrice = parseFloat(it.total_price_syp) || parseFloat(it.total_price) || 0;
+        
+        // تأكد من أن القيم صحيحة
+        console.log(`Using SYP values: final_price_syp=${it.final_price_syp}, total_price_syp=${it.total_price_syp}`);
+        console.log(`Parsed values: finalPrice=${finalPrice}, totalPrice=${totalPrice}`);
+      } else {
+        // للدولار، استخدم القيم المحفوظة مباشرة
+        finalPrice = parseFloat(it.final_price) || 0;
+        totalPrice = parseFloat(it.total_price) || 0;
+      }
+      
+      // إضافة رسائل تتبع للتشخيص
+      console.log(`openEditQuotationModal - Item ${idx}:`);
+      console.log(`  Currency: ${defaultCurrencyCode}`);
+      console.log(`  Original: unit_cost=${it.unit_cost}, profit_percentage=${it.profit_percentage}, quantity=${it.quantity}`);
+      console.log(`  Saved values: final_price_syp=${it.final_price_syp}, total_price_syp=${it.total_price_syp}`);
+      console.log(`  Used values: finalPrice=${finalPrice}, totalPrice=${totalPrice}`);
+      console.log(`  Expected: finalPrice should be 105000, totalPrice should be 210000`);
+      
       tr.innerHTML = `
         <td>${it.material_name}<input type="hidden" class="edit-material-id" value="${it.material_id||''}"></td>
-        <td><input type="number" class="form-control edit-unit-cost" value="${unitCostDisplay}" readonly></td>
+        <td>
+          <input type="number" class="form-control edit-unit-cost" value="${it.unit_cost}" readonly>
+        </td>
         <td><input type="number" class="form-control edit-profit" step="0.01" value="${it.profit_percentage||0}" onchange="recalcEditRow(this)"></td>
-        <td><input type="number" class="form-control edit-final" value="${displayMoney(finalPrice)}" readonly></td>
+        <td>
+          <input type="number" class="form-control edit-final" value="${finalPrice}" onchange="manualEditFinalPriceChange(this)">
+        </td>
         <td><input type="number" class="form-control edit-qty" value="${it.quantity}" min="1" onchange="recalcEditRow(this)"></td>
-        <td><input type="number" class="form-control edit-total" value="${displayMoney(totalPrice)}" readonly></td>
+        <td>
+          <input type="number" class="form-control edit-total" value="${totalPrice}" readonly>
+        </td>
         <td><button type="button" class="btn btn-sm btn-danger" onclick="removeEditMaterialRow(this)"><i class="bi bi-trash"></i></button></td>`;
       tbody.appendChild(tr);
     });
@@ -400,15 +463,63 @@ function openEditQuotationModal(id) {
 
 function recalcEditRow(inputEl){
   const tr = inputEl.closest('tr');
-  const unitCost = parseFloat(tr.querySelector('.edit-unit-cost').value.replace(/,/g,' '))||0;
+  const unitCost = parseFloat(tr.querySelector('.edit-unit-cost').value)||0;
   const profit = parseFloat(tr.querySelector('.edit-profit').value)||0;
-  const qty = parseInt(tr.querySelector('.edit-qty').value)||1;
-  const finalPrice = unitCost * (1 + profit/100);
-  const total = finalPrice * qty;
-  tr.querySelector('.edit-final').value = displayMoney(finalPrice);
-  tr.querySelector('.edit-total').value = displayMoney(total);
+  const qty = parseFloat(tr.querySelector('.edit-qty').value)||1; // تغيير من parseInt إلى parseFloat
+  
+  // إذا كان السعر النهائي قد تم إدخاله يدوياً، احتفظ به
+  const manualFinalPrice = parseFloat(tr.querySelector('.edit-final').value) || 0;
+  let finalPrice;
+  
+  if (manualFinalPrice > 0) {
+    // إذا كان هناك سعر نهائي مدخل يدوياً، استخدمه
+    finalPrice = manualFinalPrice;
+    // أعد حساب نسبة الربح بناءً على السعر النهائي المدخل
+    const newProfit = unitCost > 0 ? ((finalPrice / unitCost) - 1) * 100 : 0;
+    tr.querySelector('.edit-profit').value = roundToDecimal(newProfit, 2).toFixed(2);
+  } else {
+    // إذا لم يكن هناك سعر نهائي مدخل يدوياً، احسبه من نسبة الربح
+    finalPrice = roundToDecimal(unitCost * (1 + profit/100), defaultCurrencyCode === 'SYP' ? 0 : 2);
+  }
+  
+  const total = roundToDecimal(finalPrice * qty, defaultCurrencyCode === 'SYP' ? 0 : 2);
+  
+  console.log(`recalcEditRow:`);
+  console.log(`  unitCost=${unitCost}, profit=${profit}, qty=${qty}`);
+  console.log(`  manualFinalPrice=${manualFinalPrice}, calculated finalPrice=${finalPrice}`);
+  console.log(`  total=${total}`);
+  
+  tr.querySelector('.edit-final').value = finalPrice;
+  tr.querySelector('.edit-total').value = total;
+  
   updateEditTotal();
 }
+
+// تغيير يدوي للسعر النهائي في مودال التعديل مع مزامنة نسبة الربح
+function manualEditFinalPriceChange(inputEl){
+  const tr = inputEl.closest('tr');
+  const unitCost = parseFloat(tr.querySelector('.edit-unit-cost').value)||0;
+  const finalPrice = parseFloat(inputEl.value) || 0;
+  const qty = parseFloat(tr.querySelector('.edit-qty').value) || 1; // تغيير من parseInt إلى parseFloat
+  
+  // حساب نسبة الربح الجديدة
+  const profit = unitCost > 0 ? ((finalPrice / unitCost) - 1) * 100 : 0;
+  
+  // تحديث نسبة الربح
+  tr.querySelector('.edit-profit').value = roundToDecimal(profit, 2).toFixed(2);
+  
+  // حساب المجموع الجديد
+  const total = roundToDecimal(finalPrice * qty, defaultCurrencyCode === 'SYP' ? 0 : 2);
+  tr.querySelector('.edit-total').value = total;
+  
+  console.log(`manualEditFinalPriceChange:`);
+  console.log(`  unitCost=${unitCost}, finalPrice=${finalPrice}, qty=${qty}`);
+  console.log(`  calculated profit=${profit}, total=${total}`);
+  
+  updateEditTotal();
+}
+
+
 
 // إضافة صف مادة جديد داخل مودال التعديل
 function addEditMaterialRow(){
@@ -429,11 +540,17 @@ function addEditMaterialRow(){
         ${materialOptions}
       </select>
     </td>
-    <td><input type="number" class="form-control edit-unit-cost" readonly></td>
+    <td>
+      <input type="number" class="form-control edit-unit-cost" readonly>
+    </td>
     <td><input type="number" class="form-control edit-profit" step="0.01" value="0" onchange="recalcEditRow(this)"></td>
-    <td><input type="number" class="form-control edit-final" value="0" readonly></td>
+    <td>
+      <input type="number" class="form-control edit-final" value="0" onchange="manualEditFinalPriceChange(this)">
+    </td>
     <td><input type="number" class="form-control edit-qty" value="1" min="1" onchange="recalcEditRow(this)"></td>
-    <td><input type="number" class="form-control edit-total" value="0" readonly></td>
+    <td>
+      <input type="number" class="form-control edit-total" value="0" readonly>
+    </td>
     <td><input type="text" class="form-control edit-notes" placeholder="ملاحظات"></td>
     <td><button type="button" class="btn btn-sm btn-danger" onclick="removeEditMaterialRow(this)"><i class="bi bi-trash"></i></button></td>
   `;
@@ -444,7 +561,10 @@ function onSelectEditMaterial(selectEl){
   const tr = selectEl.closest('tr');
   const opt = selectEl.selectedOptions[0];
   const unit = parseFloat(opt?.getAttribute('data-pkg')||'0')||0;
-  tr.querySelector('.edit-unit-cost').value = displayMoney(unit);
+  
+  // تأكد من أن القيمة تُعرض بالعملة الصحيحة
+  tr.querySelector('.edit-unit-cost').value = unit;
+  
   // احفظ بيانات المادة المختارة
   tr.setAttribute('data-material-type', opt?.getAttribute('data-type')||'');
   tr.setAttribute('data-packaging-unit', opt?.getAttribute('data-unit')||'');
@@ -459,6 +579,8 @@ function onSelectEditMaterial(selectEl){
     tr.children[0].appendChild(hidden);
   }
   hidden.value = selectEl.value || '';
+  
+  console.log(`onSelectEditMaterial: unit=${unit}`);
   recalcEditRow(tr.querySelector('.edit-profit'));
 }
 
@@ -470,8 +592,20 @@ function removeEditMaterialRow(btn){
 
 function updateEditTotal(){
   let sum = 0;
-  document.querySelectorAll('#editItemsBody .edit-total').forEach(i=>{ sum += parseFloat(i.value)||0; });
-  document.getElementById('editTotalAmount').textContent = displayMoney(sum) + ' <%= defaultCurrency ? defaultCurrency.symbol : "$" %>';
+  document.querySelectorAll('#editItemsBody .edit-total').forEach((i, idx)=>{
+    const value = parseFloat(i.value) || 0;
+    sum += value;
+    console.log(`updateEditTotal - Row ${idx}: ${i.value} (parsed: ${value})`);
+  });
+  
+  // إضافة رسائل تتبع إضافية
+  console.log(`updateEditTotal - Raw sum: ${sum}`);
+  console.log(`updateEditTotal - Expected sum for 210000: ${210000}`);
+  console.log(`updateEditTotal - Currency: ${defaultCurrencyCode}`);
+  
+  const total = roundToDecimal(sum, defaultCurrencyCode === 'SYP' ? 0 : 2);
+  console.log(`updateEditTotal - Sum: ${sum}, Final Total: ${total}`);
+  document.getElementById('editTotalAmount').textContent = total + ' <%= defaultCurrency ? defaultCurrency.symbol : "$" %>';
 }
 
 function saveEditQuotation(){
@@ -481,6 +615,7 @@ function saveEditQuotation(){
     client_phone: document.getElementById('editClientPhone').value,
     client_address: document.getElementById('editClientAddress').value,
     notes: document.getElementById('editNotes').value,
+    currency: defaultCurrencyCode, // إرسال العملة الحالية
     items: []
   };
   document.querySelectorAll('#editItemsBody tr').forEach(tr=>{
@@ -499,8 +634,27 @@ function saveEditQuotation(){
     const unitCost = parseFloat(tr.querySelector('.edit-unit-cost').value)||0;
     const profit = parseFloat(tr.querySelector('.edit-profit').value)||0;
     const finalPrice = parseFloat(tr.querySelector('.edit-final').value)||0;
-    const qty = parseInt(tr.querySelector('.edit-qty').value)||1;
-    payload.items.push({ material_id: materialId, material_name: name, unit_cost: unitCost, profit_percentage: profit, quantity: qty });
+    const qty = parseFloat(tr.querySelector('.edit-qty').value)||1;
+    const notes = tr.querySelector('.edit-notes')?.value || '';
+    
+    // إضافة بيانات إضافية للمادة إذا كانت متوفرة
+    const materialType = tr.getAttribute('data-material-type') || '';
+    const packagingUnit = tr.getAttribute('data-packaging-unit') || '';
+    const packagingWeight = tr.getAttribute('data-packaging-weight') || '';
+    const piecesPerPackage = tr.getAttribute('data-pieces-per-package') || '';
+    
+    payload.items.push({ 
+      material_id: materialId, 
+      material_name: name, 
+      unit_cost: unitCost, 
+      profit_percentage: profit, 
+      quantity: qty,
+      item_notes: notes,
+      material_type: materialType,
+      packaging_unit: packagingUnit,
+      packaging_weight: packagingWeight,
+      pieces_per_package: piecesPerPackage
+    });
   });
   fetch(`/costs/quotations/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
     .then(r=>r.json()).then(data=>{
@@ -524,6 +678,7 @@ window.manualFinalPriceChange = manualFinalPriceChange;
 window.removeMaterialRow = removeMaterialRow;
 window.saveEditQuotation = saveEditQuotation;
 window.recalcEditRow = recalcEditRow;
+window.manualEditFinalPriceChange = manualEditFinalPriceChange;
 window.addEditMaterialRow = addEditMaterialRow;
 window.removeEditMaterialRow = removeEditMaterialRow;
 window.onSelectEditMaterial = onSelectEditMaterial;
@@ -575,6 +730,7 @@ document.getElementById('quotationForm').addEventListener('submit', function(e) 
             client_address: formData.get('client_address'),
             notes: formData.get('notes'),
             general_profit_percentage: formData.get('general_profit_percentage'),
+            currency: defaultCurrencyCode, // إرسال العملة المختارة
             items: items
         })
     })
