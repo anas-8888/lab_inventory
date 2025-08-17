@@ -19,7 +19,7 @@
                 <div class="modal-content">
                   <div class="modal-header">
                     <h5 class="modal-title"><i class="bi bi-plus-circle"></i> إنشاء عرض سعر جديد</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
                 </div>
                   <div class="modal-body">
                     <form id="quotationForm" method="POST" action="/costs/quotations">
@@ -166,7 +166,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">تعديل عرض السعر</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
       </div>
       <div class="modal-body">
         <form id="editQuotationForm">
@@ -232,6 +232,97 @@
 </div>
 
 <script>
+// تحسين إمكانية الوصول للمودالات
+document.addEventListener('DOMContentLoaded', function() {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        // إزالة aria-hidden من جميع المودالات لمنع تضارب التركيز
+        modal.removeAttribute('aria-hidden');
+        
+        // إضافة inert attribute بدلاً من aria-hidden
+        modal.addEventListener('show.bs.modal', function() {
+            this.removeAttribute('inert');
+        });
+        
+        modal.addEventListener('hidden.bs.modal', function() {
+            this.setAttribute('inert', '');
+            // إزالة backdrop المعلق
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(backdrop => {
+                backdrop.remove();
+            });
+            // إزالة overflow: hidden من body
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        });
+        
+        modal.addEventListener('shown.bs.modal', function() {
+            // التركيز على أول عنصر قابل للتركيز بعد فتح المودال
+            setTimeout(() => {
+                const firstFocusable = this.querySelector('input:not([readonly]):not([disabled]), button:not([disabled]), select:not([disabled]), textarea:not([readonly]):not([disabled])');
+                if (firstFocusable) {
+                    firstFocusable.focus();
+                }
+            }, 100);
+        });
+        
+        // منع Bootstrap من إضافة aria-hidden باستخدام MutationObserver أكثر فعالية
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'aria-hidden') {
+                    // إزالة aria-hidden فوراً
+                    modal.removeAttribute('aria-hidden');
+                    // إضافة inert بدلاً منه إذا كان المودال مخفي
+                    if (!modal.classList.contains('show')) {
+                        modal.setAttribute('inert', '');
+                    }
+                }
+            });
+        });
+        
+        observer.observe(modal, {
+            attributes: true,
+            attributeFilter: ['aria-hidden']
+        });
+        
+        // إضافة inert للمودالات المخفية عند التحميل
+        if (!modal.classList.contains('show')) {
+            modal.setAttribute('inert', '');
+        }
+    });
+    
+    // إضافة مستمع عام لإزالة backdrop المعلق
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal-backdrop')) {
+            e.target.remove();
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        }
+    });
+    
+    // إزالة backdrop المعلق عند تحميل الصفحة
+    const stuckBackdrops = document.querySelectorAll('.modal-backdrop');
+    stuckBackdrops.forEach(backdrop => {
+        backdrop.remove();
+    });
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+});
+
+// دالة إزالة backdrop المعلق
+function removeStuckBackdrop() {
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(backdrop => {
+        backdrop.remove();
+    });
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+}
+
 const exchangeRate = <%= exchangeRate %>;
 const defaultCurrencyCode = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
 const formatUSD = (v) => (parseFloat(v) || 0).toFixed(2);
@@ -660,7 +751,13 @@ function saveEditQuotation(){
     .then(r=>r.json()).then(data=>{
       if(data.success){
         showAlert('تم حفظ التعديلات','success');
-        bootstrap.Modal.getInstance(document.getElementById('editQuotationModal')).hide();
+        // إغلاق المودال بشكل صحيح
+        const modal = bootstrap.Modal.getInstance(document.getElementById('editQuotationModal'));
+        if (modal) {
+            modal.hide();
+        }
+        // إزالة backdrop المعلق
+        removeStuckBackdrop();
         setTimeout(()=>window.location.reload(),1000);
       } else {
         showAlert(data.message||'فشل الحفظ','error');
@@ -765,6 +862,8 @@ function deleteQuotation(id) {
         .then(data => {
             if (data.success) {
                 showAlert('تم حذف عرض السعر بنجاح', 'success');
+                // إزالة backdrop المعلق
+                removeStuckBackdrop();
                 setTimeout(() => window.location.reload(), 1500);
             } else {
                 showAlert(data.message || 'حدث خطأ في حذف عرض السعر', 'error');
@@ -799,4 +898,70 @@ function showAlert(message, type) {
 document.addEventListener('DOMContentLoaded', function() {
     addMaterialRow();
 });
-</script> 
+</script>
+
+<style>
+/* تحسين إمكانية الوصول */
+.btn-close:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    outline: none;
+}
+
+.modal:focus {
+    outline: none;
+}
+
+/* تحسين التركيز للعناصر القابلة للتركيز */
+.form-control:focus,
+.form-select:focus,
+.btn:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    border-color: #86b7fe;
+}
+
+/* منع Bootstrap من إضافة aria-hidden */
+.modal[aria-hidden] {
+    aria-hidden: unset !important;
+}
+
+/* تحسين التركيز للمودالات */
+.modal:not(.show) {
+    display: none !important;
+}
+
+/* دعم inert attribute */
+.modal[inert] {
+    pointer-events: none;
+}
+
+.modal[inert] * {
+    pointer-events: none;
+}
+
+.modal[inert] input,
+.modal[inert] button,
+.modal[inert] select,
+.modal[inert] textarea {
+    pointer-events: none;
+}
+
+/* إصلاح مشكلة backdrop المعلق */
+.modal-backdrop {
+    z-index: 1040;
+}
+
+.modal-backdrop.show {
+    opacity: 0.5;
+}
+
+/* إزالة backdrop المعلق عند عدم وجود مودال مفتوح */
+body:not(.modal-open) .modal-backdrop {
+    display: none !important;
+}
+
+/* تحسين إدارة overflow */
+body.modal-open {
+    overflow: hidden;
+    padding-right: 0 !important;
+}
+</style> 

@@ -117,7 +117,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">تعديل الطلبية</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
             </div>
             <div class="modal-body">
                 <form id="editOrderForm">
@@ -218,15 +218,15 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">إنشاء طلبية جديدة</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
       </div>
       <div class="modal-body">
         <form id="orderForm" method="POST" action="/costs/orders">
           <div class="row g-3 mb-3">
-            <div class="col-md-6">
-              <label class="form-label">اسم الزبون</label>
-              <input type="text" class="form-control" name="client_name">
-            </div>
+                         <div class="col-md-6">
+               <label class="form-label">اسم الزبون *</label>
+               <input type="text" class="form-control" name="client_name" required>
+             </div>
             <div class="col-md-3">
               <label class="form-label">تاريخ الطلبية</label>
               <div class="input-group">
@@ -313,7 +313,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">اختر التاريخ</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
             </div>
             <div class="modal-body">
                 <div class="row mb-3">
@@ -362,8 +362,22 @@
 // تمرير قائمة المواد من الخادم إلى الواجهة
 window.materials = <%- JSON.stringify(typeof materials !== 'undefined' ? materials : []) %>;
 const currencySymbol = '<%= (typeof defaultCurrency !== "undefined" && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '' %>';
+const exchangeRate = <%= exchangeRate %>;
 const defaultCurrencyCode = '<%= (typeof defaultCurrency !== "undefined" && defaultCurrency && defaultCurrency.code) ? defaultCurrency.code : '' %>';
 const isSyp = defaultCurrencyCode === 'SYP';
+
+// دالة تنسيق الأرقام حسب العملة
+const formatUSD = (v) => (parseFloat(v) || 0).toFixed(2);
+const formatSYP = (v) => String(Math.round(parseFloat(v) || 0));
+const displayMoney = (v) => {
+  const value = parseFloat(v) || 0;
+  return defaultCurrencyCode === 'SYP' ? formatSYP(value) : formatUSD(value);
+};
+
+// دالة لتقريب الأرقام العشرية بشكل صحيح
+const roundToDecimal = (value, decimals = 2) => {
+  return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
+};
 let currentDateInput = null;
 let selectedDate = null;
 let currentMonth = new Date().getMonth();
@@ -382,6 +396,37 @@ const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأر�
 document.addEventListener('DOMContentLoaded', function() {
     initializeCalendar();
     setDefaultDates();
+    
+    // تحسين إمكانية الوصول للمودالات
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        // إزالة aria-hidden من جميع المودالات لمنع تضارب التركيز
+        modal.removeAttribute('aria-hidden');
+        
+        modal.addEventListener('shown.bs.modal', function() {
+            // التركيز على أول عنصر قابل للتركيز بعد فتح المودال
+            setTimeout(() => {
+                const firstFocusable = this.querySelector('input:not([readonly]), button:not([disabled]), select, textarea');
+                if (firstFocusable) {
+                    firstFocusable.focus();
+                }
+            }, 100);
+        });
+        
+        // منع Bootstrap من إضافة aria-hidden
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'aria-hidden') {
+                    modal.removeAttribute('aria-hidden');
+                }
+            });
+        });
+        
+        observer.observe(modal, {
+            attributes: true,
+            attributeFilter: ['aria-hidden']
+        });
+    });
     
     // إضافة مستمعي الأحداث
     document.getElementById('prevMonth').addEventListener('click', function() {
@@ -572,6 +617,14 @@ function editOrder(orderId) {
 function saveOrderEdit() {
     const formData = new FormData(document.getElementById('editOrderForm'));
     const orderId = document.getElementById('editOrderId').value;
+    const clientName = formData.get('client_name')?.trim();
+    
+    // التحقق من الحقول المطلوبة
+    if (!clientName) {
+        showAlert('يرجى إدخال اسم العميل', 'error');
+        return;
+    }
+    
     const items = collectEditOrderItems();
     
     fetch(`/costs/orders/${orderId}`, {
@@ -580,7 +633,7 @@ function saveOrderEdit() {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            client_name: formData.get('client_name'),
+            client_name: clientName,
             order_date: formData.get('order_date'),
             client_phone: formData.get('client_phone'),
             client_address: formData.get('client_address'),
@@ -592,8 +645,9 @@ function saveOrderEdit() {
             packages_count: parseInt(formData.get('packages_count')||'')||null,
             waybill_number: formData.get('waybill_number'),
             accreditation_number: formData.get('accreditation_number'),
-            notes: formData.get('notes')
-            ,items
+            notes: formData.get('notes'),
+            currency: defaultCurrencyCode,
+            items
         })
     })
     .then(response => response.json())
@@ -671,6 +725,14 @@ document.getElementById('orderForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
     const formData = new FormData(this);
+    const clientName = formData.get('client_name')?.trim();
+    
+    // التحقق من الحقول المطلوبة
+    if (!clientName) {
+        showAlert('يرجى إدخال اسم الزبون', 'error');
+        return;
+    }
+    
     const items = collectOrderItems();
     
     fetch('/costs/orders', {
@@ -679,7 +741,7 @@ document.getElementById('orderForm').addEventListener('submit', function(e) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            client_name: formData.get('client_name'),
+            client_name: clientName,
             order_date: formData.get('order_date'),
             delivery_date: formData.get('delivery_date'),
             responsible_worker: formData.get('responsible_worker'),
@@ -690,6 +752,7 @@ document.getElementById('orderForm').addEventListener('submit', function(e) {
             waybill_number: formData.get('waybill_number'),
             accreditation_number: formData.get('accreditation_number'),
             notes: formData.get('notes'),
+            currency: defaultCurrencyCode,
             items
         })
     })
@@ -731,7 +794,12 @@ function showAlert(message, type) {
 function addOrderItemRow(){
   const tbody = document.getElementById('orderItemsBody');
   const tr = document.createElement('tr');
-  const materialOptions = (window.materials || []).map(m => `<option value="${m.id}" data-unit="${m.packaging_unit||''}" data-weight="${m.gross_package_weight!=null?m.gross_package_weight:''}">${m.material_name}</option>`).join('');
+  const materialOptions = (window.materials || []).map(m => {
+    const packageCost = defaultCurrencyCode === 'SYP' 
+      ? (m.package_cost_syp || m.package_cost || 0) 
+      : (m.package_cost || 0);
+    return `<option value="${m.id}" data-unit="${m.packaging_unit||''}" data-weight="${m.gross_package_weight!=null?m.gross_package_weight:''}" data-package-cost="${packageCost}" data-package-cost-syp="${m.package_cost_syp || m.package_cost || 0}" data-package-cost-usd="${m.package_cost || 0}">${m.material_name}</option>`;
+  }).join('');
   tr.innerHTML = `
     <td>
       <select class="form-select order-material" onchange="onOrderMaterialChange(this)">
@@ -740,7 +808,7 @@ function addOrderItemRow(){
       </select>
     </td>
     <td><input type="text" class="form-control order-unit" readonly></td>
-    <td><input type="number" class="form-control order-qty" step="0.001" min="0" oninput="onOrderCalcRow(this)"></td>
+    <td><input type="number" class="form-control order-qty" step="0.001" min="0" value="1" oninput="onOrderCalcRow(this)"></td>
     <td><input type="number" class="form-control order-weight" step="0.001" min="0" readonly></td>
     <td><input type="number" class="form-control order-volume" step="0.001" min="0"></td>
     <td>
@@ -748,6 +816,7 @@ function addOrderItemRow(){
         <input type="number" class="form-control order-unit-price" step="0.01" min="0" placeholder="اختياري" oninput="onOrderCalcRow(this)">
         <span class="input-group-text">${currencySymbol}</span>
       </div>
+      <small class="text-muted package-cost-display">اختر مادة لعرض سعر الطرد</small>
     </td>
     <td>
       <div class="input-group">
@@ -768,6 +837,22 @@ function onOrderMaterialChange(selectEl){
   tr.querySelector('.order-unit').value = unit;
   const w = opt?.getAttribute('data-weight');
   tr.querySelector('.order-weight').value = w ? parseFloat(w).toFixed(3) : '';
+  
+  // تعيين الكمية الافتراضية إلى 1 عند اختيار مادة
+  if (opt && opt.value) {
+    tr.querySelector('.order-qty').value = '1';
+    onOrderCalcRow(tr.querySelector('.order-qty'));
+  }
+  
+  // تحديث عرض سعر الطرد
+  const packageCost = opt?.getAttribute('data-package-cost');
+  const displayElement = tr.querySelector('.package-cost-display');
+  if (displayElement && packageCost && opt && opt.value) {
+    const cost = parseFloat(packageCost);
+    displayElement.textContent = `سعر الطرد: ${displayMoney(cost)} ${currencySymbol}`;
+  } else if (displayElement) {
+    displayElement.textContent = `اختر مادة لعرض سعر الطرد`;
+  }
 }
 
 function collectOrderItems(){
@@ -781,8 +866,16 @@ function collectOrderItems(){
     const weight = parseFloat(tr.querySelector('.order-weight')?.value||'');
     const volume = parseFloat(tr.querySelector('.order-volume')?.value||'');
     const unitPrice = parseFloat(tr.querySelector('.order-unit-price')?.value||'');
-    const totalPrice = (!isNaN(unitPrice) && !isNaN(qty)) ? (unitPrice * qty) : null;
+    const totalPrice = (!isNaN(unitPrice) && !isNaN(qty)) ? roundToDecimal(unitPrice * qty, defaultCurrencyCode === 'SYP' ? 0 : 2) : null;
     const notes = tr.querySelector('.order-notes')?.value || null;
+    
+    // جمع بيانات العملات
+    let packageCostSYP = 0, packageCostUSD = 0;
+    if (sel && sel.selectedOptions[0]) {
+      packageCostSYP = parseFloat(sel.selectedOptions[0].getAttribute('data-package-cost-syp') || 0);
+      packageCostUSD = parseFloat(sel.selectedOptions[0].getAttribute('data-package-cost-usd') || 0);
+    }
+    
     if (materialId || materialName){
       items.push({
         material_id: materialId,
@@ -793,6 +886,8 @@ function collectOrderItems(){
         volume: isNaN(volume)? null : volume,
         unit_price: isNaN(unitPrice)? null : unitPrice,
         total_price: totalPrice,
+        package_cost_syp: packageCostSYP,
+        package_cost_usd: packageCostUSD,
         notes
       });
     }
@@ -806,8 +901,12 @@ function onOrderCalcRow(el){
   const unitPrice = parseFloat(tr.querySelector('.order-unit-price')?.value||'');
   const totalEl = tr.querySelector('.order-total-price');
   if (totalEl){
-    if (!isNaN(qty) && !isNaN(unitPrice)) totalEl.value = (qty * unitPrice).toFixed(2);
-    else totalEl.value = '';
+    if (!isNaN(qty) && !isNaN(unitPrice)) {
+      const total = roundToDecimal(qty * unitPrice, defaultCurrencyCode === 'SYP' ? 0 : 2);
+      totalEl.value = total;
+    } else {
+      totalEl.value = '';
+    }
   }
 }
 
@@ -816,7 +915,12 @@ function addEditOrderItemRow(item){
   const tbody = document.getElementById('editOrderItemsBody');
   const tr = document.createElement('tr');
   const materials = Array.isArray(window.materials) ? window.materials : [];
-  const materialOptions = materials.map(m => `<option value="${m.id}" data-unit="${m.packaging_unit||''}" data-weight="${m.gross_package_weight!=null?m.gross_package_weight:''}">${m.material_name}</option>`).join('');
+  const materialOptions = materials.map(m => {
+    const packageCost = defaultCurrencyCode === 'SYP' 
+      ? (m.package_cost_syp || m.package_cost || 0) 
+      : (m.package_cost || 0);
+    return `<option value="${m.id}" data-unit="${m.packaging_unit||''}" data-weight="${m.gross_package_weight!=null?m.gross_package_weight:''}" data-package-cost="${packageCost}" data-package-cost-syp="${m.package_cost_syp || m.package_cost || 0}" data-package-cost-usd="${m.package_cost || 0}">${m.material_name}</option>`;
+  }).join('');
   const selectedId = item && item.material_id ? String(item.material_id) : '';
   const selectedUnit = item && item.unit ? item.unit : '';
   const selectedName = item && item.material_name ? item.material_name : '';
@@ -837,6 +941,7 @@ function addEditOrderItemRow(item){
         <input type="number" class="form-control edit-order-unit-price" step="0.01" min="0" value="${item && item.unit_price != null ? item.unit_price : ''}" oninput="onEditOrderCalcRow(this)">
         <span class="input-group-text">${currencySymbol}</span>
       </div>
+      <small class="text-muted edit-package-cost-display">اختر مادة لعرض سعر الطرد</small>
     </td>
     <td>
       <div class="input-group">
@@ -855,6 +960,14 @@ function addEditOrderItemRow(item){
     selectEl.value = selectedId;
     const unit = selectEl.selectedOptions[0]?.getAttribute('data-unit')||'';
     tr.querySelector('.edit-order-unit').value = unit || selectedUnit;
+    
+         // تحديث عرض سعر الطرد للمادة المختارة
+     const packageCost = selectEl.selectedOptions[0]?.getAttribute('data-package-cost');
+     const displayElement = tr.querySelector('.edit-package-cost-display');
+     if (displayElement && packageCost) {
+       const cost = parseFloat(packageCost);
+       displayElement.textContent = `سعر الطرد: ${displayMoney(cost)} ${currencySymbol}`;
+     }
   } else if (selectedName){
     // مادة غير موجودة في القائمة، أضفها مؤقتاً
     const opt = document.createElement('option');
@@ -874,6 +987,17 @@ function onEditOrderMaterialChange(selectEl){
   const w = opt?.getAttribute('data-weight');
   const weightEl = tr.querySelector('.edit-order-weight');
   if (w && weightEl) weightEl.value = parseFloat(w).toFixed(3);
+  
+  // تحديث عرض سعر الطرد
+  const packageCost = opt?.getAttribute('data-package-cost');
+  const displayElement = tr.querySelector('.edit-package-cost-display');
+  if (displayElement && packageCost && opt && opt.value) {
+    const cost = parseFloat(packageCost);
+    displayElement.textContent = `سعر الطرد: ${displayMoney(cost)} ${currencySymbol}`;
+  } else if (displayElement) {
+    displayElement.textContent = `اختر مادة لعرض سعر الطرد`;
+  }
+  
   onEditOrderCalcRow(tr.querySelector('.edit-order-qty'));
 }
 
@@ -889,8 +1013,16 @@ function collectEditOrderItems(){
     const volume = parseFloat(tr.querySelector('.edit-order-volume')?.value||'');
     const unitPrice = parseFloat(tr.querySelector('.edit-order-unit-price')?.value||'');
     const qty = qtyVal;
-    const totalPrice = (!isNaN(unitPrice) && !isNaN(qty)) ? (unitPrice * qty) : null;
+    const totalPrice = (!isNaN(unitPrice) && !isNaN(qty)) ? roundToDecimal(unitPrice * qty, defaultCurrencyCode === 'SYP' ? 0 : 2) : null;
     const notes = tr.querySelector('.edit-order-notes')?.value || null;
+    
+    // جمع بيانات العملات
+    let packageCostSYP = 0, packageCostUSD = 0;
+    if (sel && sel.selectedOptions[0]) {
+      packageCostSYP = parseFloat(sel.selectedOptions[0].getAttribute('data-package-cost-syp') || 0);
+      packageCostUSD = parseFloat(sel.selectedOptions[0].getAttribute('data-package-cost-usd') || 0);
+    }
+    
     if (materialId || materialName){
       items.push({
         material_id: materialId,
@@ -901,6 +1033,8 @@ function collectEditOrderItems(){
         volume: isNaN(volume)? null : volume,
         unit_price: isNaN(unitPrice)? null : unitPrice,
         total_price: totalPrice,
+        package_cost_syp: packageCostSYP,
+        package_cost_usd: packageCostUSD,
         notes
       });
     }
@@ -914,8 +1048,12 @@ function onEditOrderCalcRow(el){
   const unitPrice = parseFloat(tr.querySelector('.edit-order-unit-price')?.value||'');
   const totalEl = tr.querySelector('.edit-order-total-price');
   if (totalEl){
-    if (!isNaN(qty) && !isNaN(unitPrice)) totalEl.value = (qty * unitPrice).toFixed(2);
-    else totalEl.value = '';
+    if (!isNaN(qty) && !isNaN(unitPrice)) {
+      const total = roundToDecimal(qty * unitPrice, defaultCurrencyCode === 'SYP' ? 0 : 2);
+      totalEl.value = total;
+    } else {
+      totalEl.value = '';
+    }
   }
 }
 </script>
@@ -974,5 +1112,43 @@ function onEditOrderCalcRow(el){
 
 .calendar-day.selected:hover {
     background-color: #218838;
+}
+
+/* تحسين إمكانية الوصول */
+.btn-close:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    outline: none;
+}
+
+.modal:focus {
+    outline: none;
+}
+
+/* تحسين التركيز للعناصر القابلة للتركيز */
+.form-control:focus,
+.form-select:focus,
+.btn:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    border-color: #86b7fe;
+}
+
+/* تحسين إمكانية الوصول للمودالات */
+.modal {
+    pointer-events: auto;
+}
+
+.modal .btn-close:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+/* منع Bootstrap من إضافة aria-hidden */
+.modal[aria-hidden] {
+    aria-hidden: unset !important;
+}
+
+/* تحسين التركيز للمودالات */
+.modal:not(.show) {
+    display: none !important;
 }
 </style> 

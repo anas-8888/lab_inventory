@@ -93,7 +93,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title"><i class="bi bi-plus-circle"></i> إضافة مادة جديدة</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
             </div>
             <div class="modal-body">
                 <form id="materialForm" method="POST" action="/costs/cost-statement">
@@ -267,7 +267,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">تعديل المادة</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
             </div>
             <div class="modal-body">
                 <form id="editMaterialForm">
@@ -420,7 +420,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">تفاصيل المادة</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
             </div>
             <div class="modal-body">
                 <div class="row">
@@ -608,6 +608,177 @@
 </div>
 
 <script>
+// تحسين إمكانية الوصول للمودالات
+document.addEventListener('DOMContentLoaded', function() {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        // إزالة aria-hidden من جميع المودالات لمنع تضارب التركيز
+        modal.removeAttribute('aria-hidden');
+        
+        // إضافة inert attribute بدلاً من aria-hidden
+        modal.addEventListener('show.bs.modal', function() {
+            this.removeAttribute('inert');
+        });
+        
+        modal.addEventListener('hidden.bs.modal', function() {
+            this.setAttribute('inert', '');
+            // إزالة backdrop المعلق
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(backdrop => {
+                backdrop.remove();
+            });
+            // إزالة overflow: hidden من body
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        });
+        
+        modal.addEventListener('shown.bs.modal', function() {
+            // التركيز على أول عنصر قابل للتركيز بعد فتح المودال
+            setTimeout(() => {
+                const firstFocusable = this.querySelector('input:not([readonly]):not([disabled]), button:not([disabled]), select:not([disabled]), textarea:not([readonly]):not([disabled])');
+                if (firstFocusable) {
+                    firstFocusable.focus();
+                }
+            }, 100);
+        });
+        
+        // منع Bootstrap من إضافة aria-hidden باستخدام MutationObserver أكثر فعالية
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'aria-hidden') {
+                    // إزالة aria-hidden فوراً
+                    modal.removeAttribute('aria-hidden');
+                    // إضافة inert بدلاً منه إذا كان المودال مخفي
+                    if (!modal.classList.contains('show')) {
+                        modal.setAttribute('inert', '');
+                    }
+                }
+            });
+        });
+        
+        observer.observe(modal, {
+            attributes: true,
+            attributeFilter: ['aria-hidden']
+        });
+        
+        // إضافة inert للمودالات المخفية عند التحميل
+        if (!modal.classList.contains('show')) {
+            modal.setAttribute('inert', '');
+        }
+    });
+    
+    // إضافة مستمع عام لإزالة backdrop المعلق
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal-backdrop')) {
+            e.target.remove();
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        }
+    });
+    
+    // إزالة backdrop المعلق عند تحميل الصفحة
+    const stuckBackdrops = document.querySelectorAll('.modal-backdrop');
+    stuckBackdrops.forEach(backdrop => {
+        backdrop.remove();
+    });
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+});
+
+// دالة تعديل المادة
+function editMaterial(materialId) {
+    // جلب بيانات المادة
+    fetch(`/costs/cost-statement/${materialId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const material = data.material;
+                
+                // ملء النموذج بالبيانات
+                document.getElementById('editMaterialId').value = material.id;
+                document.getElementById('editMaterialType').value = material.material_type;
+                document.getElementById('editMaterialName').value = material.material_name;
+                document.getElementById('editGrossWeight').value = material.gross_weight;
+                document.getElementById('editWastePercentage').value = material.waste_percentage;
+                document.getElementById('editPackagingUnit').value = material.packaging_unit;
+                document.getElementById('editPackagingWeight').value = material.packaging_weight;
+                document.getElementById('editPiecesPerPackage').value = material.pieces_per_package;
+                document.getElementById('editPackagesPerPallet').value = material.packages_per_pallet;
+                
+                // ملء حقول العملة حسب العملة المحددة
+                const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
+                if (currentCurrency === 'SYP') {
+                    document.getElementById('editPriceBeforeWaste').value = material.price_before_waste_syp || material.price_before_waste;
+                    document.getElementById('editEmptyPackagePrice').value = material.empty_package_price_syp || material.empty_package_price;
+                    document.getElementById('editStickerPrice').value = material.sticker_price_syp || material.sticker_price;
+                    document.getElementById('editAdditionalExpenses').value = material.additional_expenses_syp || material.additional_expenses;
+                    document.getElementById('editLaborCost').value = material.labor_cost_syp || material.labor_cost;
+                    document.getElementById('editPreservativesCost').value = material.preservatives_cost_syp || material.preservatives_cost;
+                    document.getElementById('editCartonPrice').value = material.carton_price_syp || material.carton_price;
+                    document.getElementById('editPalletPrice').value = material.pallet_price_syp || material.pallet_price;
+                } else {
+                    document.getElementById('editPriceBeforeWaste').value = material.price_before_waste;
+                    document.getElementById('editEmptyPackagePrice').value = material.empty_package_price;
+                    document.getElementById('editStickerPrice').value = material.sticker_price;
+                    document.getElementById('editAdditionalExpenses').value = material.additional_expenses;
+                    document.getElementById('editLaborCost').value = material.labor_cost;
+                    document.getElementById('editPreservativesCost').value = material.preservatives_cost;
+                    document.getElementById('editCartonPrice').value = material.carton_price;
+                    document.getElementById('editPalletPrice').value = material.pallet_price;
+                }
+                // وزن العبوة الفارغة
+                document.getElementById('editPackagingUnitWeight').value = material.packaging_unit_weight || '';
+
+                // ملء الأوزان الإضافية
+                try {
+                    // تعبئة الأوزان الإضافية في مودال التعديل
+                    const container = document.getElementById('editExtraWeightsContainer');
+                    if (container) {
+                        container.innerHTML = '';
+                        let extras = [];
+                        if (typeof material.extra_weights === 'string') {
+                            extras = JSON.parse(material.extra_weights || '[]');
+                        } else {
+                            extras = material.extra_weights || [];
+                        }
+                        if (Array.isArray(extras)) {
+                            extras.forEach(ew => {
+                                const tpl = document.getElementById('extraWeightRowTemplate');
+                                if (tpl) {
+                                    const clone = tpl.content.cloneNode(true);
+                                    const row = clone.querySelector('.extra-weight-row');
+                                    row.querySelector('.extra-weight-name').value = ew.name || '';
+                                    row.querySelector('.extra-weight-value').value = (parseFloat(ew.weight) || 0).toFixed(3);
+                                    row.querySelector('.remove-extra').addEventListener('click', function(){
+                                        row.remove();
+                                        calculateEditCosts();
+                                    });
+                                    row.querySelectorAll('input').forEach(inp=>inp.addEventListener('input', calculateEditCosts));
+                                    container.appendChild(clone);
+                                }
+                            });
+                        }
+                    }
+                } catch(e) {}
+                
+                // حساب التكاليف
+                calculateEditCosts();
+                
+                // فتح Modal
+                const modal = new bootstrap.Modal(document.getElementById('editMaterialModal'));
+                modal.show();
+            } else {
+                showAlert(data.message || 'حدث خطأ في جلب بيانات المادة', 'error');
+            }
+        })
+        .catch(error => {
+            showAlert('حدث خطأ في جلب بيانات المادة', 'error');
+        });
+}
+
 // حساب التكاليف تلقائياً
 function calculateCosts() {
     const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
@@ -869,6 +1040,8 @@ function deleteMaterial(id) {
         .then(data => {
             if (data.success) {
                 showAlert('تم حذف المادة بنجاح', 'success');
+                // إزالة backdrop المعلق
+                removeStuckBackdrop();
                 setTimeout(() => window.location.reload(), 1500);
             } else {
                 showAlert(data.message || 'حدث خطأ في حذف المادة', 'error');
@@ -878,6 +1051,17 @@ function deleteMaterial(id) {
             showAlert('حدث خطأ في حذف المادة', 'error');
         });
     }
+}
+
+// دالة إزالة backdrop المعلق
+function removeStuckBackdrop() {
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(backdrop => {
+        backdrop.remove();
+    });
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
 }
 
 // دالة عرض التنبيهات
@@ -897,97 +1081,6 @@ function showAlert(message, type) {
             alertDiv.remove();
         }
     }, 5000);
-}
-
-// دالة تعديل المادة
-function editMaterial(materialId) {
-    // جلب بيانات المادة
-    fetch(`/costs/cost-statement/${materialId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const material = data.material;
-                
-                // ملء النموذج بالبيانات
-                document.getElementById('editMaterialId').value = material.id;
-                document.getElementById('editMaterialType').value = material.material_type;
-                document.getElementById('editMaterialName').value = material.material_name;
-                document.getElementById('editGrossWeight').value = material.gross_weight;
-                document.getElementById('editWastePercentage').value = material.waste_percentage;
-                document.getElementById('editPackagingUnit').value = material.packaging_unit;
-                document.getElementById('editPackagingWeight').value = material.packaging_weight;
-                document.getElementById('editPiecesPerPackage').value = material.pieces_per_package;
-                document.getElementById('editPackagesPerPallet').value = material.packages_per_pallet;
-                
-                // ملء حقول العملة حسب العملة المحددة
-                const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
-                if (currentCurrency === 'SYP') {
-                    document.getElementById('editPriceBeforeWaste').value = material.price_before_waste_syp || material.price_before_waste;
-                    document.getElementById('editEmptyPackagePrice').value = material.empty_package_price_syp || material.empty_package_price;
-                    document.getElementById('editStickerPrice').value = material.sticker_price_syp || material.sticker_price;
-                    document.getElementById('editAdditionalExpenses').value = material.additional_expenses_syp || material.additional_expenses;
-                    document.getElementById('editLaborCost').value = material.labor_cost_syp || material.labor_cost;
-                    document.getElementById('editPreservativesCost').value = material.preservatives_cost_syp || material.preservatives_cost;
-                    document.getElementById('editCartonPrice').value = material.carton_price_syp || material.carton_price;
-                    document.getElementById('editPalletPrice').value = material.pallet_price_syp || material.pallet_price;
-                } else {
-                    document.getElementById('editPriceBeforeWaste').value = material.price_before_waste;
-                    document.getElementById('editEmptyPackagePrice').value = material.empty_package_price;
-                    document.getElementById('editStickerPrice').value = material.sticker_price;
-                    document.getElementById('editAdditionalExpenses').value = material.additional_expenses;
-                    document.getElementById('editLaborCost').value = material.labor_cost;
-                    document.getElementById('editPreservativesCost').value = material.preservatives_cost;
-                    document.getElementById('editCartonPrice').value = material.carton_price;
-                    document.getElementById('editPalletPrice').value = material.pallet_price;
-                }
-                // وزن العبوة الفارغة
-                document.getElementById('editPackagingUnitWeight').value = material.packaging_unit_weight || '';
-
-                // ملء الأوزان الإضافية
-                try {
-                    // تعبئة الأوزان الإضافية في مودال التعديل
-                    const container = document.getElementById('editExtraWeightsContainer');
-                    if (container) {
-                        container.innerHTML = '';
-                        let extras = [];
-                        if (typeof material.extra_weights === 'string') {
-                            extras = JSON.parse(material.extra_weights || '[]');
-                        } else {
-                            extras = material.extra_weights || [];
-                        }
-                        if (Array.isArray(extras)) {
-                            extras.forEach(ew => {
-                                const tpl = document.getElementById('extraWeightRowTemplate');
-                                if (tpl) {
-                                    const clone = tpl.content.cloneNode(true);
-                                    const row = clone.querySelector('.extra-weight-row');
-                                    row.querySelector('.extra-weight-name').value = ew.name || '';
-                                    row.querySelector('.extra-weight-value').value = (parseFloat(ew.weight) || 0).toFixed(3);
-                                    row.querySelector('.remove-extra').addEventListener('click', function(){
-                                        row.remove();
-                                        calculateEditCosts();
-                                    });
-                                    row.querySelectorAll('input').forEach(inp=>inp.addEventListener('input', calculateEditCosts));
-                                    container.appendChild(clone);
-                                }
-                            });
-                        }
-                    }
-                } catch(e) {}
-                
-                // حساب التكاليف
-                calculateEditCosts();
-                
-                // فتح Modal
-                const modal = new bootstrap.Modal(document.getElementById('editMaterialModal'));
-                modal.show();
-            } else {
-                showAlert(data.message || 'حدث خطأ في جلب بيانات المادة', 'error');
-            }
-        })
-        .catch(error => {
-            showAlert('حدث خطأ في جلب بيانات المادة', 'error');
-        });
 }
 
 // دالة تحويل العملة في نموذج التعديل
@@ -1151,6 +1244,13 @@ function saveMaterialEdit() {
     .then(data => {
         if (data.success) {
             showAlert('تم تحديث المادة بنجاح', 'success');
+            // إغلاق المودال بشكل صحيح
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editMaterialModal'));
+            if (modal) {
+                modal.hide();
+            }
+            // إزالة backdrop المعلق
+            removeStuckBackdrop();
             setTimeout(() => window.location.reload(), 1500);
         } else {
             showAlert(data.message || 'حدث خطأ في تحديث المادة', 'error');
@@ -1368,6 +1468,72 @@ function printMaterialDetails() {
     printWindow.print();
 }
 </script>
+
+<style>
+/* تحسين إمكانية الوصول */
+.btn-close:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    outline: none;
+}
+
+.modal:focus {
+    outline: none;
+}
+
+/* تحسين التركيز للعناصر القابلة للتركيز */
+.form-control:focus,
+.form-select:focus,
+.btn:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    border-color: #86b7fe;
+}
+
+/* منع Bootstrap من إضافة aria-hidden */
+.modal[aria-hidden] {
+    aria-hidden: unset !important;
+}
+
+/* تحسين التركيز للمودالات */
+.modal:not(.show) {
+    display: none !important;
+}
+
+/* دعم inert attribute */
+.modal[inert] {
+    pointer-events: none;
+}
+
+.modal[inert] * {
+    pointer-events: none;
+}
+
+.modal[inert] input,
+.modal[inert] button,
+.modal[inert] select,
+.modal[inert] textarea {
+    pointer-events: none;
+}
+
+/* إصلاح مشكلة backdrop المعلق */
+.modal-backdrop {
+    z-index: 1040;
+}
+
+.modal-backdrop.show {
+    opacity: 0.5;
+}
+
+/* إزالة backdrop المعلق عند عدم وجود مودال مفتوح */
+body:not(.modal-open) .modal-backdrop {
+    display: none !important;
+}
+
+/* تحسين إدارة overflow */
+body.modal-open {
+    overflow: hidden;
+    padding-right: 0 !important;
+}
+</style>
 
 <script>
 // تصدير PDF لتفاصيل المادة

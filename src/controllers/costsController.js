@@ -1018,19 +1018,42 @@ const formatDate = (dateString) => {
 const getOrders = async (req, res) => {
     try {
         const [orders] = await req.db.query(`
-            SELECT * FROM orders ORDER BY created_at DESC
+            SELECT o.*, 
+                   COALESCE(SUM(oi.total_price), 0) as total_amount,
+                   COALESCE(SUM(oi.total_price_syp), 0) as total_amount_syp
+            FROM orders o
+            LEFT JOIN order_items oi ON o.id = oi.order_id
+            GROUP BY o.id
+            ORDER BY o.created_at DESC
         `);
         const [materials] = await req.db.query(`
             SELECT id, material_name, packaging_unit, packaging_weight, gross_package_weight, package_cost, package_cost_syp 
             FROM materials ORDER BY material_name
         `);
 
+        // جلب سعر الصرف الحالي
+        const [exchangeRate] = await req.db.query(`
+            SELECT rate FROM exchange_rates 
+            WHERE from_currency_id = (SELECT id FROM currencies WHERE code = 'USD')
+            AND to_currency_id = (SELECT id FROM currencies WHERE code = 'SYP')
+        `);
+        
+        const exchangeRateValue = exchangeRate.length > 0 ? parseFloat(exchangeRate[0].rate) : 13000;
+
+        // اختيار القيم حسب العملة المحددة
+        const isSyp = req.defaultCurrency && req.defaultCurrency.code === 'SYP';
+        const displayOrders = orders.map(order => ({
+            ...order,
+            total_amount: isSyp ? (order.total_amount_syp || order.total_amount) : order.total_amount
+        }));
+
         res.render('costs/orders', {
             title: 'الطلبيات',
-            orders,
+            orders: displayOrders,
             materials,
             formatDate,
-            defaultCurrency: req.defaultCurrency || null
+            defaultCurrency: req.defaultCurrency || null,
+            exchangeRate: exchangeRateValue
         });
     } catch (error) {
         console.error('خطأ في عرض الطلبيات:', error);
@@ -1038,6 +1061,8 @@ const getOrders = async (req, res) => {
         res.redirect('/costs');
     }
 };
+
+
 
 // إنشاء طلبية جديدة
 const createOrder = async (req, res) => {
@@ -1054,8 +1079,31 @@ const createOrder = async (req, res) => {
             waybill_number,
             accreditation_number,
             notes,
+            currency,
             items
         } = req.body;
+
+        // التحقق من الحقول المطلوبة
+        if (!client_name || !client_name.trim()) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'اسم الزبون مطلوب' 
+            });
+        }
+
+        // جلب سعر الصرف الحالي
+        const [exchangeRate] = await req.db.query(`
+            SELECT rate FROM exchange_rates 
+            WHERE from_currency_id = (SELECT id FROM currencies WHERE code = 'USD')
+            AND to_currency_id = (SELECT id FROM currencies WHERE code = 'SYP')
+        `);
+        
+        const exchangeRateValue = exchangeRate.length > 0 ? parseFloat(exchangeRate[0].rate) : 13000;
+        
+        // التأكد من أن سعر الصرف رقم صحيح
+        if (isNaN(exchangeRateValue) || exchangeRateValue <= 0) {
+            return res.status(400).json({ success: false, message: 'سعر الصرف غير صحيح' });
+        }
 
         // تحويل التواريخ من DD/MM/YYYY إلى YYYY-MM-DD
         const parseDmy = (dmy) => {
@@ -1093,19 +1141,48 @@ const createOrder = async (req, res) => {
         // حفظ بنود الطلبية إن وُجدت
         if (items && Array.isArray(items)) {
             for (const item of items) {
+                // التأكد من أن القيم أرقام صحيحة
+                const unitPrice = parseFloat(item.unit_price) || 0;
+                const quantity = parseFloat(item.requested_quantity) || 1;
+                
+                // حساب القيم بالعملتين بناءً على العملة المدخلة
+                let unitPriceUSD, unitPriceSYP, totalPriceUSD, totalPriceSYP;
+                
+                if (currency === 'SYP') {
+                    // إذا كانت العملة المدخلة هي الليرة السورية
+                    unitPriceSYP = roundToDecimal(unitPrice, 0); // تقريب للصفر منازل لليرة السورية
+                    unitPriceUSD = roundToDecimal(unitPrice / exchangeRateValue, 2);
+                    
+                    // حساب السعر الإجمالي بالليرة السورية مباشرة
+                    totalPriceSYP = roundToDecimal(unitPrice * quantity, 0);
+                    totalPriceUSD = roundToDecimal(totalPriceSYP / exchangeRateValue, 2);
+                } else {
+                    // إذا كانت العملة المدخلة هي الدولار (الافتراضي)
+                    unitPriceUSD = roundToDecimal(unitPrice, 2);
+                    unitPriceSYP = roundToDecimal(unitPrice * exchangeRateValue, 0);
+                    
+                    // حساب السعر الإجمالي بالدولار مباشرة
+                    totalPriceUSD = roundToDecimal(unitPrice * quantity, 2);
+                    totalPriceSYP = roundToDecimal(totalPriceUSD * exchangeRateValue, 0);
+                }
+                
                 await req.db.query(`
-                    INSERT INTO order_items (order_id, material_id, material_name, unit, requested_quantity, weight, volume, unit_price, total_price, notes)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO order_items (
+                        order_id, material_id, material_name, unit, requested_quantity, weight, volume, 
+                        unit_price, unit_price_syp, total_price, total_price_syp, notes
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `, [
                     orderResult.insertId,
                     item.material_id || null,
                     item.material_name || '',
                     item.unit || null,
-                    item.requested_quantity || null,
+                    quantity,
                     item.weight || null,
                     item.volume || null,
-                    item.unit_price != null ? item.unit_price : null,
-                    item.total_price != null ? item.total_price : (item.unit_price && item.requested_quantity ? (item.unit_price * item.requested_quantity) : null),
+                    unitPriceUSD,
+                    unitPriceSYP,
+                    totalPriceUSD,
+                    totalPriceSYP,
                     item.notes || null
                 ]);
             }
@@ -1227,8 +1304,16 @@ const getOrder = async (req, res) => {
         const [items] = await req.db.query(`
             SELECT * FROM order_items WHERE order_id = ?
         `, [id]);
+
+        // اختيار القيم حسب العملة المحددة
+        const isSyp = req.defaultCurrency && req.defaultCurrency.code === 'SYP';
+        const displayItems = items.map(it => ({
+            ...it,
+            unit_price: isSyp ? (it.unit_price_syp || it.unit_price) : it.unit_price,
+            total_price: isSyp ? (it.total_price_syp || it.total_price) : it.total_price
+        }));
         
-        res.json({ success: true, order: orders[0], items });
+        res.json({ success: true, order: orders[0], items: displayItems });
     } catch (error) {
         console.error('خطأ في جلب بيانات الطلبية:', error);
         res.status(500).json({ success: false, message: 'حدث خطأ في جلب بيانات الطلبية' });
@@ -1251,8 +1336,31 @@ const updateOrder = async (req, res) => {
             waybill_number,
             accreditation_number,
             notes,
+            currency,
             items
         } = req.body;
+        
+        // التحقق من الحقول المطلوبة
+        if (!client_name || !client_name.trim()) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'اسم العميل مطلوب' 
+            });
+        }
+        
+        // جلب سعر الصرف الحالي
+        const [exchangeRate] = await req.db.query(`
+            SELECT rate FROM exchange_rates 
+            WHERE from_currency_id = (SELECT id FROM currencies WHERE code = 'USD')
+            AND to_currency_id = (SELECT id FROM currencies WHERE code = 'SYP')
+        `);
+        
+        const exchangeRateValue = exchangeRate.length > 0 ? parseFloat(exchangeRate[0].rate) : 13000;
+        
+        // التأكد من أن سعر الصرف رقم صحيح
+        if (isNaN(exchangeRateValue) || exchangeRateValue <= 0) {
+            return res.status(400).json({ success: false, message: 'سعر الصرف غير صحيح' });
+        }
         
         const parseDmy = (dmy) => {
             if (!dmy) return null;
@@ -1278,19 +1386,48 @@ const updateOrder = async (req, res) => {
         await req.db.query('DELETE FROM order_items WHERE order_id = ?', [id]);
         if (items && Array.isArray(items)) {
             for (const item of items) {
+                // التأكد من أن القيم أرقام صحيحة
+                const unitPrice = parseFloat(item.unit_price) || 0;
+                const quantity = parseFloat(item.requested_quantity) || 1;
+                
+                // حساب القيم بالعملتين بناءً على العملة المدخلة
+                let unitPriceUSD, unitPriceSYP, totalPriceUSD, totalPriceSYP;
+                
+                if (currency === 'SYP') {
+                    // إذا كانت العملة المدخلة هي الليرة السورية
+                    unitPriceSYP = roundToDecimal(unitPrice, 0); // تقريب للصفر منازل لليرة السورية
+                    unitPriceUSD = roundToDecimal(unitPrice / exchangeRateValue, 2);
+                    
+                    // حساب السعر الإجمالي بالليرة السورية مباشرة
+                    totalPriceSYP = roundToDecimal(unitPrice * quantity, 0);
+                    totalPriceUSD = roundToDecimal(totalPriceSYP / exchangeRateValue, 2);
+                } else {
+                    // إذا كانت العملة المدخلة هي الدولار (الافتراضي)
+                    unitPriceUSD = roundToDecimal(unitPrice, 2);
+                    unitPriceSYP = roundToDecimal(unitPrice * exchangeRateValue, 0);
+                    
+                    // حساب السعر الإجمالي بالدولار مباشرة
+                    totalPriceUSD = roundToDecimal(unitPrice * quantity, 2);
+                    totalPriceSYP = roundToDecimal(totalPriceUSD * exchangeRateValue, 0);
+                }
+                
                 await req.db.query(`
-                    INSERT INTO order_items (order_id, material_id, material_name, unit, requested_quantity, weight, volume, unit_price, total_price, notes)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO order_items (
+                        order_id, material_id, material_name, unit, requested_quantity, weight, volume, 
+                        unit_price, unit_price_syp, total_price, total_price_syp, notes
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `, [
                     id,
                     item.material_id || null,
                     item.material_name || '',
                     item.unit || null,
-                    item.requested_quantity || null,
+                    quantity,
                     item.weight || null,
                     item.volume || null,
-                    item.unit_price != null ? item.unit_price : null,
-                    item.total_price != null ? item.total_price : (item.unit_price && item.requested_quantity ? (item.unit_price * item.requested_quantity) : null),
+                    unitPriceUSD,
+                    unitPriceSYP,
+                    totalPriceUSD,
+                    totalPriceSYP,
                     item.notes || null
                 ]);
             }
@@ -1314,14 +1451,20 @@ const getOrderDetailsPage = async (req, res) => {
         }
         const [items] = await req.db.query('SELECT * FROM order_items WHERE order_id = ?', [id]);
 
-        // استخدم فقط السعر المُدخل من المستخدم إن وُجد، وإلا اتركه فارغاً
+        // اختيار القيم حسب العملة المحددة
+        const isSyp = req.defaultCurrency && req.defaultCurrency.code === 'SYP';
         const displayItems = items.map(it => {
             const qty = parseFloat(it.requested_quantity) || 0;
-            const unitPrice = (it.unit_price != null) ? parseFloat(it.unit_price) : null;
-            const totalPrice = (unitPrice != null) ? (unitPrice * qty) : null;
+            const unitPrice = isSyp ? (it.unit_price_syp || it.unit_price) : it.unit_price;
+            const totalPrice = isSyp ? (it.total_price_syp || it.total_price) : it.total_price;
             const weight = parseFloat(it.weight) || 0;
             const weightTotal = qty * weight;
-            return { ...it, unit_price: unitPrice, total_price: totalPrice, weight_total: weightTotal };
+            return { 
+                ...it, 
+                unit_price: unitPrice != null ? parseFloat(unitPrice) : null, 
+                total_price: totalPrice != null ? parseFloat(totalPrice) : null, 
+                weight_total: weightTotal 
+            };
         });
         const totals = {
             totalRequestedQuantity: displayItems.reduce((s, it) => s + (parseFloat(it.requested_quantity) || 0), 0),
@@ -1355,12 +1498,17 @@ const getOrderPrintPage = async (req, res) => {
         }
         const [items] = await req.db.query('SELECT * FROM order_items WHERE order_id = ?', [id]);
 
-        // استخدم فقط السعر المدخل من المستخدم
+        // اختيار القيم حسب العملة المحددة
+        const isSyp = req.defaultCurrency && req.defaultCurrency.code === 'SYP';
         const pricedItems = items.map(it => {
             const qty = parseFloat(it.requested_quantity) || 0;
-            const unitPrice = (it.unit_price != null) ? parseFloat(it.unit_price) : null;
-            const totalPrice = (unitPrice != null) ? (unitPrice * qty) : null;
-            return { ...it, unit_price: unitPrice, total_price: totalPrice };
+            const unitPrice = isSyp ? (it.unit_price_syp || it.unit_price) : it.unit_price;
+            const totalPrice = isSyp ? (it.total_price_syp || it.total_price) : it.total_price;
+            return { 
+                ...it, 
+                unit_price: unitPrice != null ? parseFloat(unitPrice) : null, 
+                total_price: totalPrice != null ? parseFloat(totalPrice) : null 
+            };
         });
 
         const totals = {
