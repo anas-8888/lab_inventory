@@ -114,6 +114,8 @@ const getCostStatement = async (req, res) => {
 // حفظ مادة جديدة
 const createMaterial = async (req, res) => {
     try {
+        console.log('Received request body:', JSON.stringify(req.body, null, 2));
+        
         const {
             material_type,
             material_name,
@@ -135,6 +137,14 @@ const createMaterial = async (req, res) => {
             extra_weights
         } = req.body;
 
+        // التحقق من البيانات المطلوبة
+        if (!material_type || !material_name || !price_before_waste || !gross_weight) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'البيانات المطلوبة غير مكتملة' 
+            });
+        }
+
         // جلب سعر الصرف الحالي
         const [exchangeRate] = await req.db.query(`
             SELECT rate FROM exchange_rates 
@@ -143,8 +153,26 @@ const createMaterial = async (req, res) => {
         `);
         
         const exchangeRateValue = exchangeRate.length > 0 ? parseFloat(exchangeRate[0].rate) : 13000;
+        console.log('Exchange rate:', exchangeRateValue);
 
-        // تجهيز الحقول المرتبطة بالعملة: نقبل قيم USD من body ونقبل أيضاً *_syp إن وُجدت للحفاظ على إدخال المستخدم بدقة
+        // تحويل البيانات إلى أرقام مع معالجة الأخطاء
+        const gross_weight_num = parseFloat(gross_weight) || 0;
+        const waste_percentage_num = parseFloat(waste_percentage) || 0;
+        const packaging_weight_num = parseFloat(packaging_weight) || 0;
+        const packaging_unit_weight_num = parseFloat(packaging_unit_weight) || 0;
+        const pieces_per_package_num = parseInt(pieces_per_package) || 0;
+        const packages_per_pallet_num = parseInt(packages_per_pallet) || 0;
+
+        console.log('Parsed numeric values:', {
+            gross_weight_num,
+            waste_percentage_num,
+            packaging_weight_num,
+            packaging_unit_weight_num,
+            pieces_per_package_num,
+            packages_per_pallet_num
+        });
+
+        // تجهيز الحقول المرتبطة بالعملة
         const currencyFields = [
             'price_before_waste', 'empty_package_price', 'sticker_price',
             'additional_expenses', 'labor_cost', 'preservatives_cost',
@@ -153,66 +181,63 @@ const createMaterial = async (req, res) => {
 
         const usd = {};
         const syp = {};
+        
         currencyFields.forEach((field) => {
-            const usdVal = parseFloat(req.body[field]);
-            const sypBody = req.body[`${field}_syp`];
-            const sypVal = sypBody !== undefined ? parseFloat(sypBody) : NaN;
-            if (!Number.isNaN(usdVal)) {
-                usd[field] = roundToDecimal(usdVal, 2);
-            } else if (!Number.isNaN(sypVal)) {
-                usd[field] = roundToDecimal(sypVal / exchangeRateValue, 2);
-            } else {
-                usd[field] = 0;
-            }
-            if (!Number.isNaN(sypVal)) {
-                syp[field] = roundToDecimal(sypVal, 0);
-            } else {
-                syp[field] = roundToDecimal((usd[field] || 0) * exchangeRateValue, 0);
-            }
+            const usdVal = parseFloat(req.body[field]) || 0;
+            usd[field] = usdVal;
+            syp[field] = usdVal * exchangeRateValue;
+            console.log(`${field}: USD=${usdVal}, SYP=${syp[field]}`);
         });
 
-        // تحويل القيم العامة إلى أرقام
-        const gross_weight_num = parseFloat(gross_weight) || 0;
-        const waste_percentage_num = parseFloat(waste_percentage) || 0;
-        const pieces_per_package_num = parseInt(pieces_per_package) || 1;
-        const packages_per_pallet_num = parseInt(packages_per_pallet) || 1;
-        const packaging_weight_num = parseFloat(packaging_weight) || 0; // وزن المادة داخل العبوة
-        const packaging_unit_weight_num = parseFloat(packaging_unit_weight) || 0; // وزن العبوة الفارغة
-
-        // الأوزان الإضافية وحساب وزن الطرد القائم
+        // معالجة الأوزان الإضافية
         let extraWeightsArr = [];
-        try {
-            if (Array.isArray(extra_weights)) extraWeightsArr = extra_weights;
-            else if (typeof extra_weights === 'string' && extra_weights.trim()) extraWeightsArr = JSON.parse(extra_weights);
-        } catch (_) { extraWeightsArr = []; }
-        const extraWeightsTotal = (extraWeightsArr || []).reduce((sum, ew) => sum + (parseFloat(ew.weight) || 0), 0);
-        const gross_package_weight = ((packaging_unit_weight_num + packaging_weight_num) * pieces_per_package_num) + extraWeightsTotal;
+        if (extra_weights && Array.isArray(extra_weights)) {
+            extraWeightsArr = extra_weights.map(item => ({
+                name: item.name || '',
+                weight: parseFloat(item.weight) || 0
+            }));
+        }
+        console.log('Extra weights:', extraWeightsArr);
 
-        // حساب كلفة القطعة والطرد بالدولار باستخدام قيم USD
-        // السعر قبل الهدر أصبح سعراً كلياً للوزن الجمالي، لذا نحسب سعر الكيلو = السعر الكلي / الوزن الجمالي
-        const price_per_kg_before_waste_usd = (gross_weight_num > 0) ? ((usd.price_before_waste || 0) / gross_weight_num) : 0;
-        const denomUsd = (1 - waste_percentage_num / 100);
-        const price_per_kg_after_waste_usd = denomUsd !== 0 ? (price_per_kg_before_waste_usd / denomUsd) : 0;
-        const material_cost_in_unit_usd = price_per_kg_after_waste_usd * packaging_weight_num;
-        const total_packaging_costs_usd =
+        // حساب الوزن الإجمالي للعبوة
+        const gross_package_weight = packaging_weight_num + 
+            extraWeightsArr.reduce((sum, item) => sum + (item.weight || 0), 0);
+
+        // الحسابات الأساسية
+        const price_per_kg_before_waste = gross_weight_num > 0 ? (usd.price_before_waste || 0) / gross_weight_num : 0;
+        const price_per_kg_before_waste_syp = gross_weight_num > 0 ? (syp.price_before_waste || 0) / gross_weight_num : 0;
+        
+        const denom = 1 - (waste_percentage_num / 100);
+        const denomSyp = denom;
+        
+        const price_per_kg_after_waste = denom > 0 ? price_per_kg_before_waste / denom : 0;
+        const price_per_kg_after_waste_syp = denomSyp > 0 ? price_per_kg_before_waste_syp / denomSyp : 0;
+        
+        const material_cost_in_unit = price_per_kg_after_waste * packaging_weight_num;
+        const material_cost_in_unit_syp = price_per_kg_after_waste_syp * packaging_weight_num;
+        
+        const total_packaging_costs = 
             (usd.empty_package_price || 0) + (usd.sticker_price || 0) + (usd.additional_expenses || 0) +
             (usd.labor_cost || 0) + (usd.preservatives_cost || 0);
-        const unit_cost = roundToDecimal(material_cost_in_unit_usd + total_packaging_costs_usd, 2);
-        const pallet_share_usd = roundToDecimal((usd.pallet_price || 0) / packages_per_pallet_num, 2);
-        // (كلفة القطعة الواحدة × عدد الحبات بالطرد) + ثمن الكرتونة + (ثمن الطبلية ÷ عدد الطرود بالطبلية)
-        const package_cost = roundToDecimal((unit_cost * pieces_per_package_num) + (usd.carton_price || 0) + pallet_share_usd, 2);
-
-        // حساب كلفة القطعة والطرد بالليرة باستخدام قيم SYP للحفاظ على دقة الإدخال
-        const price_per_kg_before_waste_syp = (gross_weight_num > 0) ? ((syp.price_before_waste || 0) / gross_weight_num) : 0;
-        const denomSyp = (1 - waste_percentage_num / 100);
-        const price_per_kg_after_waste_syp = denomSyp !== 0 ? (price_per_kg_before_waste_syp / denomSyp) : 0;
-        const material_cost_in_unit_syp = price_per_kg_after_waste_syp * packaging_weight_num;
-        const total_packaging_costs_syp =
+        const total_packaging_costs_syp = 
             (syp.empty_package_price || 0) + (syp.sticker_price || 0) + (syp.additional_expenses || 0) +
             (syp.labor_cost || 0) + (syp.preservatives_cost || 0);
-        const unit_cost_syp = roundToDecimal(material_cost_in_unit_syp + total_packaging_costs_syp, 0);
-        const pallet_share_syp = roundToDecimal((syp.pallet_price || 0) / packages_per_pallet_num, 0);
-        const package_cost_syp = roundToDecimal((unit_cost_syp * pieces_per_package_num) + (syp.carton_price || 0) + pallet_share_syp, 0);
+        
+        const unit_cost = material_cost_in_unit + total_packaging_costs;
+        const unit_cost_syp = material_cost_in_unit_syp + total_packaging_costs_syp;
+        
+        const pallet_share = packages_per_pallet_num > 0 ? (usd.pallet_price || 0) / packages_per_pallet_num : 0;
+        const pallet_share_syp = packages_per_pallet_num > 0 ? (syp.pallet_price || 0) / packages_per_pallet_num : 0;
+        
+        const package_cost = (unit_cost * pieces_per_package_num) + (usd.carton_price || 0) + pallet_share;
+        const package_cost_syp = (unit_cost_syp * pieces_per_package_num) + (syp.carton_price || 0) + pallet_share_syp;
+
+        console.log('Calculated costs:', {
+            unit_cost,
+            unit_cost_syp,
+            package_cost,
+            package_cost_syp
+        });
 
         // حفظ المادة
         const [result] = await req.db.query(`
@@ -245,10 +270,16 @@ const createMaterial = async (req, res) => {
             VALUES (?, ?, ?, ?, ?, ?)
         `, [result.insertId, material_name, unit_cost, unit_cost_syp, package_cost, package_cost_syp]);
 
+        console.log('Material saved successfully with ID:', result.insertId);
         res.json({ success: true, message: 'تم حفظ المادة بنجاح' });
     } catch (error) {
         console.error('خطأ في حفظ المادة:', error);
-        res.status(500).json({ success: false, message: 'حدث خطأ في حفظ المادة' });
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ 
+            success: false, 
+            message: 'حدث خطأ في حفظ المادة',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 };
 
