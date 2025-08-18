@@ -544,8 +544,18 @@ const getQuotationJson = async (req, res) => {
 // تحديث عرض سعر
 const updateQuotation = async (req, res) => {
     try {
+        console.log('Received quotation update request body:', JSON.stringify(req.body, null, 2));
+        
         const { id } = req.params;
         const { client_name, client_phone, client_address, notes, items } = req.body;
+
+        // التحقق من البيانات المطلوبة
+        if (!client_name || !client_name.trim()) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'اسم العميل مطلوب' 
+            });
+        }
 
         // جلب سعر الصرف الحالي
         const [exchangeRate] = await req.db.query(`
@@ -554,6 +564,7 @@ const updateQuotation = async (req, res) => {
             AND to_currency_id = (SELECT id FROM currencies WHERE code = 'SYP')
         `);
         const exchangeRateValue = exchangeRate.length > 0 ? parseFloat(exchangeRate[0].rate) : 13000;
+        console.log('Exchange rate:', exchangeRateValue);
         
         // التأكد من أن سعر الصرف رقم صحيح
         if (isNaN(exchangeRateValue) || exchangeRateValue <= 0) {
@@ -574,17 +585,19 @@ const updateQuotation = async (req, res) => {
         let totalAmountSyp = 0;
         if (items && Array.isArray(items)) {
             for (const item of items) {
-                // التأكد من أن القيم أرقام صحيحة
+                // تحويل البيانات إلى أرقام مع معالجة الأخطاء
                 const unitCost = parseFloat(item.unit_cost) || 0;
                 const profitPercentage = parseFloat(item.profit_percentage) || 0;
-                const quantity = parseFloat(item.quantity) || 1; // تغيير من parseInt إلى parseFloat
+                const quantity = parseFloat(item.quantity) || 1;
+                
+                console.log(`Processing update item: unitCost=${unitCost}, profitPercentage=${profitPercentage}, quantity=${quantity}`);
                 
                 // حساب القيم بالعملتين بناءً على العملة المدخلة
                 let unitCostUSD, unitCostSYP, finalPriceUSD, finalPriceSYP, totalPriceUSD, totalPriceSYP;
                 
                 if (req.body.currency === 'SYP') {
                     // إذا كانت العملة المدخلة هي الليرة السورية
-                    unitCostSYP = roundToDecimal(unitCost, 0); // تقريب للصفر منازل لليرة السورية
+                    unitCostSYP = roundToDecimal(unitCost, 0);
                     unitCostUSD = roundToDecimal(unitCost / exchangeRateValue, 2);
                     
                     // حساب السعر النهائي بالليرة السورية مباشرة
@@ -606,20 +619,6 @@ const updateQuotation = async (req, res) => {
                     // تحويل السعر النهائي والإجمالي إلى الليرة السورية
                     finalPriceSYP = roundToDecimal(finalPriceUSD * exchangeRateValue, 0);
                     totalPriceSYP = roundToDecimal(totalPriceUSD * exchangeRateValue, 0);
-                }
-                
-                console.log(`Currency: ${req.body.currency}`);
-                console.log(`USD: unitCost=${unitCostUSD}, finalPrice=${finalPriceUSD}, totalPrice=${totalPriceUSD}`);
-                console.log(`SYP: unitCost=${unitCostSYP}, finalPrice=${finalPriceSYP}, totalPrice=${totalPriceSYP}`);
-                console.log(`Exchange Rate: ${exchangeRateValue}, Quantity: ${quantity}`);
-                if (req.body.currency === 'SYP') {
-                    console.log(`Input SYP: ${unitCost}, Expected USD: ${unitCost / exchangeRateValue}`);
-                    console.log(`Final SYP: ${finalPriceSYP}, Total SYP: ${totalPriceSYP}`);
-                    console.log(`Converted USD: ${totalPriceUSD}`);
-                } else {
-                    console.log(`Input USD: ${unitCost}, Expected SYP: ${unitCost * exchangeRateValue}`);
-                    console.log(`Final USD: ${finalPriceUSD}, Total USD: ${totalPriceUSD}`);
-                    console.log(`Converted SYP: ${totalPriceSYP}`);
                 }
 
                 await req.db.query(
@@ -643,16 +642,24 @@ const updateQuotation = async (req, res) => {
 
         await req.db.query(`UPDATE quotations SET total_amount = ?, total_amount_syp = ? WHERE id = ?`, [totalAmount, totalAmountSyp, id]);
 
+        console.log('Quotation updated successfully with ID:', id);
         res.json({ success: true, message: 'تم تحديث عرض السعر بنجاح' });
     } catch (error) {
         console.error('خطأ في تحديث عرض السعر:', error);
-        res.status(500).json({ success: false, message: 'حدث خطأ في تحديث عرض السعر' });
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ 
+            success: false, 
+            message: 'حدث خطأ في تحديث عرض السعر',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 };
 
 // إنشاء عرض سعر جديد
 const createQuotation = async (req, res) => {
     try {
+        console.log('Received quotation request body:', JSON.stringify(req.body, null, 2));
+        
         const {
             client_name,
             client_phone,
@@ -661,6 +668,14 @@ const createQuotation = async (req, res) => {
             general_profit_percentage,
             items
         } = req.body;
+
+        // التحقق من البيانات المطلوبة
+        if (!client_name || !client_name.trim()) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'اسم العميل مطلوب' 
+            });
+        }
 
         // توليد رقم العرض
         const [lastQuotation] = await req.db.query(`
@@ -682,13 +697,12 @@ const createQuotation = async (req, res) => {
         `);
         
         const exchangeRateValue = exchangeRate.length > 0 ? parseFloat(exchangeRate[0].rate) : 13000;
+        console.log('Exchange rate:', exchangeRateValue);
         
         // التأكد من أن سعر الصرف رقم صحيح
         if (isNaN(exchangeRateValue) || exchangeRateValue <= 0) {
             return res.status(400).json({ success: false, message: 'سعر الصرف غير صحيح' });
         }
-        
-        console.log(`Exchange Rate: ${exchangeRateValue}`);
 
         // حفظ العرض
         const [quotationResult] = await req.db.query(`
@@ -702,19 +716,19 @@ const createQuotation = async (req, res) => {
         // حفظ بنود العرض
         if (items && Array.isArray(items)) {
             for (const item of items) {
-                // التأكد من أن القيم أرقام صحيحة
+                // تحويل البيانات إلى أرقام مع معالجة الأخطاء
                 const unitCost = parseFloat(item.unit_cost) || 0;
                 const profitPercentage = parseFloat(item.profit_percentage) || 0;
-                const quantity = parseFloat(item.quantity) || 1; // تغيير من parseInt إلى parseFloat
+                const quantity = parseFloat(item.quantity) || 1;
                 
-                console.log(`Item: unitCost=${unitCost}, profitPercentage=${profitPercentage}, quantity=${quantity}`);
+                console.log(`Processing item: unitCost=${unitCost}, profitPercentage=${profitPercentage}, quantity=${quantity}`);
                 
                 // حساب القيم بالعملتين بناءً على العملة المدخلة
                 let unitCostUSD, unitCostSYP, finalPriceUSD, finalPriceSYP, totalPriceUSD, totalPriceSYP;
                 
                 if (req.body.currency === 'SYP') {
                     // إذا كانت العملة المدخلة هي الليرة السورية
-                    unitCostSYP = roundToDecimal(unitCost, 0); // تقريب للصفر منازل لليرة السورية
+                    unitCostSYP = roundToDecimal(unitCost, 0);
                     unitCostUSD = roundToDecimal(unitCost / exchangeRateValue, 2);
                     
                     // حساب السعر النهائي بالليرة السورية مباشرة
@@ -724,8 +738,6 @@ const createQuotation = async (req, res) => {
                     // تحويل السعر النهائي والإجمالي إلى الدولار
                     finalPriceUSD = roundToDecimal(finalPriceSYP / exchangeRateValue, 2);
                     totalPriceUSD = roundToDecimal(totalPriceSYP / exchangeRateValue, 2);
-                    
-                    console.log(`Calculated SYP: finalPrice=${finalPriceSYP}, totalPrice=${totalPriceSYP}`);
                 } else {
                     // إذا كانت العملة المدخلة هي الدولار (الافتراضي)
                     unitCostUSD = roundToDecimal(unitCost, 2);
@@ -738,22 +750,6 @@ const createQuotation = async (req, res) => {
                     // تحويل السعر النهائي والإجمالي إلى الليرة السورية
                     finalPriceSYP = roundToDecimal(finalPriceUSD * exchangeRateValue, 0);
                     totalPriceSYP = roundToDecimal(totalPriceUSD * exchangeRateValue, 0);
-                    
-                    console.log(`Calculated USD: finalPrice=${finalPriceUSD}, totalPrice=${totalPriceUSD}`);
-                }
-                
-                console.log(`Currency: ${req.body.currency}`);
-                console.log(`USD: unitCost=${unitCostUSD}, finalPrice=${finalPriceUSD}, totalPrice=${totalPriceUSD}`);
-                console.log(`SYP: unitCost=${unitCostSYP}, finalPrice=${finalPriceSYP}, totalPrice=${totalPriceSYP}`);
-                console.log(`Exchange Rate: ${exchangeRateValue}, Quantity: ${quantity}`);
-                if (req.body.currency === 'SYP') {
-                    console.log(`Input SYP: ${unitCost}, Expected USD: ${unitCost / exchangeRateValue}`);
-                    console.log(`Final SYP: ${finalPriceSYP}, Total SYP: ${totalPriceSYP}`);
-                    console.log(`Converted USD: ${totalPriceUSD}`);
-                } else {
-                    console.log(`Input USD: ${unitCost}, Expected SYP: ${unitCost * exchangeRateValue}`);
-                    console.log(`Final USD: ${finalPriceUSD}, Total USD: ${totalPriceUSD}`);
-                    console.log(`Converted SYP: ${totalPriceSYP}`);
                 }
 
                 await req.db.query(`
@@ -778,10 +774,16 @@ const createQuotation = async (req, res) => {
             UPDATE quotations SET total_amount = ?, total_amount_syp = ? WHERE id = ?
         `, [totalAmount, totalAmountSyp, quotationResult.insertId]);
 
+        console.log('Quotation saved successfully with ID:', quotationResult.insertId);
         res.json({ success: true, message: 'تم إنشاء عرض السعر بنجاح' });
     } catch (error) {
         console.error('خطأ في إنشاء عرض السعر:', error);
-        res.status(500).json({ success: false, message: 'حدث خطأ في إنشاء عرض السعر' });
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ 
+            success: false, 
+            message: 'حدث خطأ في إنشاء عرض السعر',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 };
 
@@ -1098,6 +1100,8 @@ const getOrders = async (req, res) => {
 // إنشاء طلبية جديدة
 const createOrder = async (req, res) => {
     try {
+        console.log('Received order request body:', JSON.stringify(req.body, null, 2));
+        
         const {
             client_name,
             order_date,
@@ -1130,6 +1134,7 @@ const createOrder = async (req, res) => {
         `);
         
         const exchangeRateValue = exchangeRate.length > 0 ? parseFloat(exchangeRate[0].rate) : 13000;
+        console.log('Exchange rate:', exchangeRateValue);
         
         // التأكد من أن سعر الصرف رقم صحيح
         if (isNaN(exchangeRateValue) || exchangeRateValue <= 0) {
@@ -1172,16 +1177,18 @@ const createOrder = async (req, res) => {
         // حفظ بنود الطلبية إن وُجدت
         if (items && Array.isArray(items)) {
             for (const item of items) {
-                // التأكد من أن القيم أرقام صحيحة
+                // تحويل البيانات إلى أرقام مع معالجة الأخطاء
                 const unitPrice = parseFloat(item.unit_price) || 0;
                 const quantity = parseFloat(item.requested_quantity) || 1;
+                
+                console.log(`Processing order item: unitPrice=${unitPrice}, quantity=${quantity}`);
                 
                 // حساب القيم بالعملتين بناءً على العملة المدخلة
                 let unitPriceUSD, unitPriceSYP, totalPriceUSD, totalPriceSYP;
                 
                 if (currency === 'SYP') {
                     // إذا كانت العملة المدخلة هي الليرة السورية
-                    unitPriceSYP = roundToDecimal(unitPrice, 0); // تقريب للصفر منازل لليرة السورية
+                    unitPriceSYP = roundToDecimal(unitPrice, 0);
                     unitPriceUSD = roundToDecimal(unitPrice / exchangeRateValue, 2);
                     
                     // حساب السعر الإجمالي بالليرة السورية مباشرة
@@ -1219,10 +1226,16 @@ const createOrder = async (req, res) => {
             }
         }
 
+        console.log('Order saved successfully with ID:', orderResult.insertId);
         res.json({ success: true, message: 'تم إنشاء الطلبية بنجاح' });
     } catch (error) {
         console.error('خطأ في إنشاء الطلبية:', error);
-        res.status(500).json({ success: false, message: 'حدث خطأ في إنشاء الطلبية' });
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ 
+            success: false, 
+            message: 'حدث خطأ في إنشاء الطلبية',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 };
 
@@ -1354,6 +1367,8 @@ const getOrder = async (req, res) => {
 // تحديث طلبية
 const updateOrder = async (req, res) => {
     try {
+        console.log('Received order update request body:', JSON.stringify(req.body, null, 2));
+        
         const { id } = req.params;
         const {
             client_name,
@@ -1387,6 +1402,7 @@ const updateOrder = async (req, res) => {
         `);
         
         const exchangeRateValue = exchangeRate.length > 0 ? parseFloat(exchangeRate[0].rate) : 13000;
+        console.log('Exchange rate:', exchangeRateValue);
         
         // التأكد من أن سعر الصرف رقم صحيح
         if (isNaN(exchangeRateValue) || exchangeRateValue <= 0) {
@@ -1417,16 +1433,18 @@ const updateOrder = async (req, res) => {
         await req.db.query('DELETE FROM order_items WHERE order_id = ?', [id]);
         if (items && Array.isArray(items)) {
             for (const item of items) {
-                // التأكد من أن القيم أرقام صحيحة
+                // تحويل البيانات إلى أرقام مع معالجة الأخطاء
                 const unitPrice = parseFloat(item.unit_price) || 0;
                 const quantity = parseFloat(item.requested_quantity) || 1;
+                
+                console.log(`Processing update order item: unitPrice=${unitPrice}, quantity=${quantity}`);
                 
                 // حساب القيم بالعملتين بناءً على العملة المدخلة
                 let unitPriceUSD, unitPriceSYP, totalPriceUSD, totalPriceSYP;
                 
                 if (currency === 'SYP') {
                     // إذا كانت العملة المدخلة هي الليرة السورية
-                    unitPriceSYP = roundToDecimal(unitPrice, 0); // تقريب للصفر منازل لليرة السورية
+                    unitPriceSYP = roundToDecimal(unitPrice, 0);
                     unitPriceUSD = roundToDecimal(unitPrice / exchangeRateValue, 2);
                     
                     // حساب السعر الإجمالي بالليرة السورية مباشرة
@@ -1464,10 +1482,16 @@ const updateOrder = async (req, res) => {
             }
         }
         
+        console.log('Order updated successfully with ID:', id);
         res.json({ success: true, message: 'تم تحديث الطلبية بنجاح' });
     } catch (error) {
         console.error('خطأ في تحديث الطلبية:', error);
-        res.status(500).json({ success: false, message: 'حدث خطأ في تحديث الطلبية' });
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ 
+            success: false, 
+            message: 'حدث خطأ في تحديث الطلبية',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 };
 
