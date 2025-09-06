@@ -94,6 +94,10 @@ exports.getCreateForm = async (req, res) => {
 exports.createInvoice = async (req, res) => {
     const connection = await pool.getConnection();
     try {
+        // إضافة تشخيص للبيانات المرسلة
+        console.log('Request body:', req.body);
+        console.log('Request headers:', req.headers);
+        
         // تعيين timeout للمعاملات
         await connection.query('SET SESSION innodb_lock_wait_timeout = 60');
         await connection.query('SET SESSION lock_wait_timeout = 60');
@@ -109,6 +113,19 @@ exports.createInvoice = async (req, res) => {
             quantities
         } = req.body;
 
+        // التحقق من الحقول المطلوبة
+        if (!customer_name || customer_name.trim() === '') {
+            throw new Error('اسم الزبون مطلوب');
+        }
+        
+        if (!driver_name || driver_name.trim() === '') {
+            throw new Error('اسم السائق مطلوب');
+        }
+        
+        if (!invoice_number || invoice_number.trim() === '') {
+            throw new Error('رقم الفاتورة مطلوب');
+        }
+
         // معالجة quantities إذا كانت نصاً (JSON)
         if (typeof quantities === 'string') {
             try {
@@ -117,6 +134,8 @@ exports.createInvoice = async (req, res) => {
                 throw new Error('خطأ في معالجة الكميات');
             }
         }
+        
+        console.log('Parsed quantities:', quantities);
 
         // التحقق من صحة التاريخ والحصول على السنة
         let invoiceYear;

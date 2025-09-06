@@ -8,21 +8,11 @@ const pool = mysql.createPool({
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'lab_inventory',
     charset: 'utf8mb4',
-    collation: 'utf8mb4_unicode_ci',
     
-    // إعدادات محسنة للاستضافة
+    // إعدادات محسنة للاستضافة - MySQL2 valid options only
     acquireTimeout: hostingConfig.database.acquireTimeout,
-    timeout: hostingConfig.database.timeout,
     connectionLimit: hostingConfig.database.connectionLimit,
     queueLimit: hostingConfig.database.queueLimit,
-    
-    // إعدادات إضافية للاستقرار
-    acquireTimeoutMillis: hostingConfig.database.acquireTimeoutMillis,
-    createTimeoutMillis: hostingConfig.database.createTimeoutMillis,
-    destroyTimeoutMillis: hostingConfig.database.destroyTimeoutMillis,
-    idleTimeoutMillis: hostingConfig.database.idleTimeoutMillis,
-    reapIntervalMillis: hostingConfig.database.reapIntervalMillis,
-    createRetryIntervalMillis: hostingConfig.database.createRetryIntervalMillis,
     
     // إعدادات إضافية للتعامل مع الأرقام الكبيرة
     supportBigNumbers: true,

@@ -7,7 +7,6 @@ const roundToDecimal = (value, decimals = 2) => {
     }
     const factor = Math.pow(10, decimals);
     const result = Math.round(value * factor) / factor;
-    console.log(`roundToDecimal(${value}, ${decimals}) = ${result}`);
     return result;
 };
 
@@ -114,7 +113,6 @@ const getCostStatement = async (req, res) => {
 // حفظ مادة جديدة
 const createMaterial = async (req, res) => {
     try {
-        console.log('Received request body:', JSON.stringify(req.body, null, 2));
         
         const {
             material_type,
@@ -153,7 +151,6 @@ const createMaterial = async (req, res) => {
         `);
         
         const exchangeRateValue = exchangeRate.length > 0 ? parseFloat(exchangeRate[0].rate) : 13000;
-        console.log('Exchange rate:', exchangeRateValue);
 
         // تحويل البيانات إلى أرقام مع معالجة الأخطاء
         const gross_weight_num = parseFloat(gross_weight) || 0;
@@ -163,14 +160,6 @@ const createMaterial = async (req, res) => {
         const pieces_per_package_num = parseInt(pieces_per_package) || 0;
         const packages_per_pallet_num = parseInt(packages_per_pallet) || 0;
 
-        console.log('Parsed numeric values:', {
-            gross_weight_num,
-            waste_percentage_num,
-            packaging_weight_num,
-            packaging_unit_weight_num,
-            pieces_per_package_num,
-            packages_per_pallet_num
-        });
 
         // تجهيز الحقول المرتبطة بالعملة
         const currencyFields = [
@@ -186,7 +175,6 @@ const createMaterial = async (req, res) => {
             const usdVal = parseFloat(req.body[field]) || 0;
             usd[field] = usdVal;
             syp[field] = usdVal * exchangeRateValue;
-            console.log(`${field}: USD=${usdVal}, SYP=${syp[field]}`);
         });
 
         // معالجة الأوزان الإضافية
@@ -197,11 +185,10 @@ const createMaterial = async (req, res) => {
                 weight: parseFloat(item.weight) || 0
             }));
         }
-        console.log('Extra weights:', extraWeightsArr);
 
-        // حساب الوزن الإجمالي للعبوة
-        const gross_package_weight = packaging_weight_num + 
-            extraWeightsArr.reduce((sum, item) => sum + (item.weight || 0), 0);
+        // حساب الوزن الإجمالي للطرد القائم
+        const extraWeightsTotal = extraWeightsArr.reduce((sum, item) => sum + (item.weight || 0), 0);
+        const gross_package_weight = ((packaging_unit_weight_num + packaging_weight_num) * pieces_per_package_num) + extraWeightsTotal;
 
         // الحسابات الأساسية
         const price_per_kg_before_waste = gross_weight_num > 0 ? (usd.price_before_waste || 0) / gross_weight_num : 0;
@@ -232,12 +219,6 @@ const createMaterial = async (req, res) => {
         const package_cost = (unit_cost * pieces_per_package_num) + (usd.carton_price || 0) + pallet_share;
         const package_cost_syp = (unit_cost_syp * pieces_per_package_num) + (syp.carton_price || 0) + pallet_share_syp;
 
-        console.log('Calculated costs:', {
-            unit_cost,
-            unit_cost_syp,
-            package_cost,
-            package_cost_syp
-        });
 
         // حفظ المادة
         const [result] = await req.db.query(`
@@ -270,7 +251,6 @@ const createMaterial = async (req, res) => {
             VALUES (?, ?, ?, ?, ?, ?)
         `, [result.insertId, material_name, unit_cost, unit_cost_syp, package_cost, package_cost_syp]);
 
-        console.log('Material saved successfully with ID:', result.insertId);
         res.json({ success: true, message: 'تم حفظ المادة بنجاح' });
     } catch (error) {
         console.error('خطأ في حفظ المادة:', error);
@@ -369,7 +349,7 @@ const updateMaterial = async (req, res) => {
             (usd.labor_cost || 0) + (usd.preservatives_cost || 0);
         const unit_cost = roundToDecimal(material_cost_in_unit_usd + total_packaging_costs_usd, 2);
         const pallet_share_usd = roundToDecimal((usd.pallet_price || 0) / packages_per_pallet_num, 2);
-        const package_cost = roundToDecimal(unit_cost + pallet_share_usd, 2);
+        const package_cost = roundToDecimal((unit_cost * pieces_per_package_num) + (usd.carton_price || 0) + pallet_share_usd, 2);
 
         // حساب كلفة القطعة والطرد بالليرة باستخدام قيم SYP المدخلة
         const price_per_kg_before_waste_syp = (gross_weight_num > 0) ? ((syp.price_before_waste || 0) / gross_weight_num) : 0;
@@ -445,9 +425,6 @@ const getQuotations = async (req, res) => {
         const displayQuotations = quotations.map((quotation) => {
             if (req.defaultCurrency && req.defaultCurrency.code === 'SYP') {
                 const totalAmount = quotation.total_amount_syp || quotation.total_amount;
-                console.log(`getQuotations - Quotation ${quotation.id}:`);
-                console.log(`  total_amount_syp: ${quotation.total_amount_syp}, total_amount: ${quotation.total_amount}`);
-                console.log(`  Display total: ${totalAmount}`);
                 return {
                     ...quotation,
                     total_amount: totalAmount
@@ -502,12 +479,6 @@ const getQuotationJson = async (req, res) => {
                 : quotation.total_amount
         };
         
-        // إضافة رسائل تتبع للعرض الرئيسي
-        if (req.defaultCurrency && req.defaultCurrency.code === 'SYP') {
-            console.log(`getQuotationJson - Quotation ${quotation.id}:`);
-            console.log(`  total_amount_syp: ${quotation.total_amount_syp}, total_amount: ${quotation.total_amount}`);
-            console.log(`  Display total: ${displayQuotation.total_amount}`);
-        }
         
         const displayItems = items.map((item) => {
             if (req.defaultCurrency && req.defaultCurrency.code === 'SYP') {
@@ -515,13 +486,6 @@ const getQuotationJson = async (req, res) => {
                 const unitCost = item.unit_cost_syp || item.unit_cost;
                 const finalPrice = item.final_price_syp || item.final_price;
                 const totalPrice = item.total_price_syp || item.total_price;
-                
-                // إضافة رسائل تتبع للتشخيص
-                console.log(`getQuotationJson - Item ${item.id}:`);
-                console.log(`  unit_cost_syp: ${item.unit_cost_syp}, unit_cost: ${item.unit_cost}`);
-                console.log(`  final_price_syp: ${item.final_price_syp}, final_price: ${item.final_price}`);
-                console.log(`  total_price_syp: ${item.total_price_syp}, total_price: ${item.total_price}`);
-                console.log(`  quantity: ${item.quantity}`);
                 
                 return {
                     ...item,
@@ -544,8 +508,6 @@ const getQuotationJson = async (req, res) => {
 // تحديث عرض سعر
 const updateQuotation = async (req, res) => {
     try {
-        console.log('Received quotation update request body:', JSON.stringify(req.body, null, 2));
-        
         const { id } = req.params;
         const { client_name, client_phone, client_address, notes, items } = req.body;
 
@@ -564,7 +526,6 @@ const updateQuotation = async (req, res) => {
             AND to_currency_id = (SELECT id FROM currencies WHERE code = 'SYP')
         `);
         const exchangeRateValue = exchangeRate.length > 0 ? parseFloat(exchangeRate[0].rate) : 13000;
-        console.log('Exchange rate:', exchangeRateValue);
         
         // التأكد من أن سعر الصرف رقم صحيح
         if (isNaN(exchangeRateValue) || exchangeRateValue <= 0) {
@@ -589,8 +550,6 @@ const updateQuotation = async (req, res) => {
                 const unitCost = parseFloat(item.unit_cost) || 0;
                 const profitPercentage = parseFloat(item.profit_percentage) || 0;
                 const quantity = parseFloat(item.quantity) || 1;
-                
-                console.log(`Processing update item: unitCost=${unitCost}, profitPercentage=${profitPercentage}, quantity=${quantity}`);
                 
                 // حساب القيم بالعملتين بناءً على العملة المدخلة
                 let unitCostUSD, unitCostSYP, finalPriceUSD, finalPriceSYP, totalPriceUSD, totalPriceSYP;
@@ -642,7 +601,6 @@ const updateQuotation = async (req, res) => {
 
         await req.db.query(`UPDATE quotations SET total_amount = ?, total_amount_syp = ? WHERE id = ?`, [totalAmount, totalAmountSyp, id]);
 
-        console.log('Quotation updated successfully with ID:', id);
         res.json({ success: true, message: 'تم تحديث عرض السعر بنجاح' });
     } catch (error) {
         console.error('خطأ في تحديث عرض السعر:', error);
@@ -658,8 +616,6 @@ const updateQuotation = async (req, res) => {
 // إنشاء عرض سعر جديد
 const createQuotation = async (req, res) => {
     try {
-        console.log('Received quotation request body:', JSON.stringify(req.body, null, 2));
-        
         const {
             client_name,
             client_phone,
@@ -697,7 +653,6 @@ const createQuotation = async (req, res) => {
         `);
         
         const exchangeRateValue = exchangeRate.length > 0 ? parseFloat(exchangeRate[0].rate) : 13000;
-        console.log('Exchange rate:', exchangeRateValue);
         
         // التأكد من أن سعر الصرف رقم صحيح
         if (isNaN(exchangeRateValue) || exchangeRateValue <= 0) {
@@ -720,8 +675,6 @@ const createQuotation = async (req, res) => {
                 const unitCost = parseFloat(item.unit_cost) || 0;
                 const profitPercentage = parseFloat(item.profit_percentage) || 0;
                 const quantity = parseFloat(item.quantity) || 1;
-                
-                console.log(`Processing item: unitCost=${unitCost}, profitPercentage=${profitPercentage}, quantity=${quantity}`);
                 
                 // حساب القيم بالعملتين بناءً على العملة المدخلة
                 let unitCostUSD, unitCostSYP, finalPriceUSD, finalPriceSYP, totalPriceUSD, totalPriceSYP;
@@ -774,7 +727,6 @@ const createQuotation = async (req, res) => {
             UPDATE quotations SET total_amount = ?, total_amount_syp = ? WHERE id = ?
         `, [totalAmount, totalAmountSyp, quotationResult.insertId]);
 
-        console.log('Quotation saved successfully with ID:', quotationResult.insertId);
         res.json({ success: true, message: 'تم إنشاء عرض السعر بنجاح' });
     } catch (error) {
         console.error('خطأ في إنشاء عرض السعر:', error);
@@ -1100,7 +1052,6 @@ const getOrders = async (req, res) => {
 // إنشاء طلبية جديدة
 const createOrder = async (req, res) => {
     try {
-        console.log('Received order request body:', JSON.stringify(req.body, null, 2));
         
         const {
             client_name,
@@ -1134,7 +1085,6 @@ const createOrder = async (req, res) => {
         `);
         
         const exchangeRateValue = exchangeRate.length > 0 ? parseFloat(exchangeRate[0].rate) : 13000;
-        console.log('Exchange rate:', exchangeRateValue);
         
         // التأكد من أن سعر الصرف رقم صحيح
         if (isNaN(exchangeRateValue) || exchangeRateValue <= 0) {
@@ -1181,8 +1131,6 @@ const createOrder = async (req, res) => {
                 const unitPrice = parseFloat(item.unit_price) || 0;
                 const quantity = parseFloat(item.requested_quantity) || 1;
                 
-                console.log(`Processing order item: unitPrice=${unitPrice}, quantity=${quantity}`);
-                
                 // حساب القيم بالعملتين بناءً على العملة المدخلة
                 let unitPriceUSD, unitPriceSYP, totalPriceUSD, totalPriceSYP;
                 
@@ -1226,7 +1174,6 @@ const createOrder = async (req, res) => {
             }
         }
 
-        console.log('Order saved successfully with ID:', orderResult.insertId);
         res.json({ success: true, message: 'تم إنشاء الطلبية بنجاح' });
     } catch (error) {
         console.error('خطأ في إنشاء الطلبية:', error);
@@ -1367,7 +1314,6 @@ const getOrder = async (req, res) => {
 // تحديث طلبية
 const updateOrder = async (req, res) => {
     try {
-        console.log('Received order update request body:', JSON.stringify(req.body, null, 2));
         
         const { id } = req.params;
         const {
@@ -1402,7 +1348,6 @@ const updateOrder = async (req, res) => {
         `);
         
         const exchangeRateValue = exchangeRate.length > 0 ? parseFloat(exchangeRate[0].rate) : 13000;
-        console.log('Exchange rate:', exchangeRateValue);
         
         // التأكد من أن سعر الصرف رقم صحيح
         if (isNaN(exchangeRateValue) || exchangeRateValue <= 0) {
@@ -1436,8 +1381,6 @@ const updateOrder = async (req, res) => {
                 // تحويل البيانات إلى أرقام مع معالجة الأخطاء
                 const unitPrice = parseFloat(item.unit_price) || 0;
                 const quantity = parseFloat(item.requested_quantity) || 1;
-                
-                console.log(`Processing update order item: unitPrice=${unitPrice}, quantity=${quantity}`);
                 
                 // حساب القيم بالعملتين بناءً على العملة المدخلة
                 let unitPriceUSD, unitPriceSYP, totalPriceUSD, totalPriceSYP;
@@ -1482,7 +1425,6 @@ const updateOrder = async (req, res) => {
             }
         }
         
-        console.log('Order updated successfully with ID:', id);
         res.json({ success: true, message: 'تم تحديث الطلبية بنجاح' });
     } catch (error) {
         console.error('خطأ في تحديث الطلبية:', error);

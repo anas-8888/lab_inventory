@@ -143,7 +143,7 @@
                                     <td><%= item.material_name %></td>
                                     <td><%= item.material_type || '-' %></td>
                                     <td><%= item.packaging_unit || '-' %></td>
-                                    <td><%= item.packaging_weight || '-' %></td>
+                                    <td><%= item.packaging_weight != null ? (parseFloat(item.packaging_weight) || 0).toFixed(4).replace(/\.?0+$/, '') : '-' %></td>
                                     <td><%= item.pieces_per_package || '-' %></td>
                                     <td>
                                         <%= fmt(unit) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>

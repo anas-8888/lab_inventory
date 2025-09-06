@@ -167,41 +167,58 @@ let selectedItems = new Map();
 
 // Load inventory items
 async function loadInventory() {
-  alert('Loading inventory...');
   const date = document.getElementById('filterDate').value;
   const sample = document.getElementById('filterSample').value;
 
   try {
-    const response = await fetch(`/api/inventory?date=${date}&sample=${sample}`);
+    const response = await fetch(`/invoices/api/inventory?date=${date}&sample=${sample}`);
     const data = await response.json();
-    alert('Inventory data loaded: ' + JSON.stringify(data));
     
     const tbody = document.querySelector('#inventoryTable tbody');
+    
+    if (!tbody) {
+      console.error('Table tbody not found!');
+      return;
+    }
+    
     tbody.innerHTML = '';
     
-    data.forEach(item => {
+    data.forEach((item, index) => {
+      
+      // معالجة absorption_readings لاستخراج القيم المنفصلة
+      let abs232 = 'غير متوفر', abs270 = 'غير متوفر', deltaK = 'غير متوفر';
+      
+      if (item.absorption_readings) {
+        const readings = item.absorption_readings.split(' ');
+        if (readings.length >= 5) {
+          abs232 = readings[1] || 'غير متوفر';
+          abs270 = readings[2] || 'غير متوفر';
+          deltaK = readings[4] || 'غير متوفر';
+        }
+      }
+      
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>
           <input type="checkbox" class="form-check-input" value="${item.id}"
-                 data-ph="${item.ph}"
-                 data-peroxide="${item.peroxide_value}"
-                 data-abs232="${item.absorption_232}"
-                 data-abs270="${item.absorption_270}"
-                 data-deltak="${item.delta_k}">
+                 data-ph="${item.ph || 'غير متوفر'}"
+                 data-peroxide="${item.peroxide_value || 'غير متوفر'}"
+                 data-abs232="${abs232}"
+                 data-abs270="${abs270}"
+                 data-deltak="${deltaK}">
         </td>
-        <td>${item.sample_number}</td>
-        <td>${item.current_quantity}</td>
-        <td>${item.ph}</td>
-        <td>${item.peroxide_value}</td>
-        <td>${item.absorption_232}</td>
-        <td>${item.absorption_270}</td>
-        <td>${item.delta_k}</td>
+        <td>${item.sample_number || 'غير متوفر'}</td>
+        <td>${item.current_quantity || 'غير متوفر'}</td>
+        <td>${item.ph || 'غير متوفر'}</td>
+        <td>${item.peroxide_value || 'غير متوفر'}</td>
+        <td>${abs232}</td>
+        <td>${abs270}</td>
+        <td>${deltaK}</td>
       `;
       tbody.appendChild(tr);
     });
   } catch (error) {
-    alert('Error loading inventory: ' + error.message);
+    console.error('Error loading inventory:', error.message);
   }
 }
 
@@ -374,7 +391,6 @@ document.getElementById('invoiceForm').addEventListener('submit', function(e) {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-  alert('DOM loaded');
   loadInventory();
   
   // Filter change handlers

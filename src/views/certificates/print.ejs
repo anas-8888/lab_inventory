@@ -126,10 +126,10 @@ function formatNumberDisplay(value) {
                                     <th style="width: 3%; padding: 6pt 4pt;">#</th>
                                     <th style="width: 6%; padding: 6pt 4pt;">الكمية</th>
                                     <th style="width: 7%; padding: 6pt 4pt;">وحدة تعبئة</th>
-                                    <th style="width: 7%; padding: 6pt 4pt;">وزن تعبئة</th>
                                     <th style="width: 7%; padding: 6pt 4pt;">وزن إجمالي</th>
                                     <th style="width: 6%; padding: 6pt 4pt;">درجة الحموضة</th>
                                     <th style="width: 8%; padding: 6pt 4pt;">رقم البيروكسيد</th>
+                                    <th style="width: 7%; padding: 6pt 4pt;">وزن العينة</th>
                                     <th style="width: 7%; padding: 6pt 4pt;">232</th>
                                     <th style="width: 7%; padding: 6pt 4pt;">266</th>
                                     <th style="width: 7%; padding: 6pt 4pt;">270</th>
@@ -151,9 +151,6 @@ function formatNumberDisplay(value) {
                                             <%= item.packaging_unit %>
                                         </td>
                                         <td style="padding: 4pt;">
-                                            <%= formatNumberDisplay(item.packaging_weight) %>
-                                        </td>
-                                        <td style="padding: 4pt;">
                                             <%= formatNumberDisplay(item.total_weight) %>
                                         </td>
                                         <td style="padding: 4pt;">
@@ -161,6 +158,9 @@ function formatNumberDisplay(value) {
                                         </td>
                                         <td style="padding: 4pt;">
                                             <%= formatNumberDisplay(item.peroxide) %>
+                                        </td>
+                                        <td style="padding: 4pt;">
+                                            <%= formatNumberDisplay(item.packaging_weight) %>
                                         </td>
                                         <td style="padding: 4pt;">
                                             <%= parseFloat(item.abs_232).toFixed(3) == NaN ? '' : parseFloat(item.abs_232).toFixed(3) %>
@@ -190,17 +190,17 @@ function formatNumberDisplay(value) {
                                                 <%= formatNumberDisplay(certificate.total_quantity) %>
                                             </strong></td>
                                         <td style="padding: 6pt 4pt;"></td>
-                                        <td style="padding: 6pt 4pt;"></td>
                                         <td style="padding: 6pt 4pt;"><strong>
                                                 <%= formatNumberDisplay(certificate.total_weight) %>
                                             </strong></td>
-                                        <td colspan="8" style="padding: 6pt 4pt;"></td>
+                                        <td colspan="9" style="padding: 6pt 4pt;"></td>
                                     </tr>
                                     <!-- المتوسط المرجح -->
                                     <tr style="background: #e9f7ef; font-weight: bold; border-top: 2px solid #198754;">
-                                        <td colspan="5" style="text-align: center; padding: 6pt 4pt; vertical-align: middle;"><strong>المتوسط المرجح</strong></td>
+                                        <td colspan="4" style="text-align: center; padding: 6pt 4pt; vertical-align: middle;"><strong>المتوسط المرجح</strong></td>
                                         <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatNumberDisplay(totalWeight ? (weightedPH / totalWeight) : 0) %></strong></td>
                                         <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatNumberDisplay(totalWeight ? (weightedPeroxide / totalWeight) : 0) %></strong></td>
+                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"></td>
                                         <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatNumberDisplay(totalWeight ? (weighted232 / totalWeight) : 0) %></strong></td>
                                         <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatNumberDisplay(totalWeight ? (weighted266 / totalWeight) : 0) %></strong></td>
                                         <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatNumberDisplay(totalWeight ? (weighted270 / totalWeight) : 0) %></strong></td>

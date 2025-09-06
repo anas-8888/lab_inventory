@@ -11,7 +11,6 @@ src/public/inventory_pdf
 src/public/orders_pdf
 src/public/quotations_pdf
 src/public/materials_pdf
-src/public/images
 
 node_modules/
 logs/

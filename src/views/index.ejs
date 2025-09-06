@@ -59,33 +59,6 @@
                 </div>
               </div>
             <% } %>
-            <!-- المستخدمين -->
-            <% if (typeof user !== 'undefined' && user && user.role === 'admin') { %>
-              <div class="col-md-6 col-lg-3">
-                <div class="card h-100">
-                  <div class="card-body text-center">
-                    <i class="bi bi-people fs-1 text-success mb-3"></i>
-                    <h5 class="card-title">المستخدمين</h5>
-                    <p class="card-text">إدارة المستخدمين والصلاحيات</p>
-                    <a href="/users" class="btn btn-success">عرض المستخدمين</a>
-                  </div>
-                </div>
-              </div>
-            <% } %>
-
-              <!-- الملاحظات -->
-              <% if (typeof user !== 'undefined' && user && user.role === 'admin') { %>
-              <div class="col-md-6 col-lg-3">
-                <div class="card h-100">
-                  <div class="card-body text-center">
-                    <i class="bi bi-journal-text fs-1 text-success mb-3"></i>
-                    <h5 class="card-title">الملاحظات</h5>
-                    <p class="card-text">إدارة الملاحظات على المواد</p>
-                    <a href="/notes" class="btn btn-success">عرض الملاحظات</a>
-                  </div>
-                </div>
-              </div>
-            <% } %>
           </div>
         </div>
       </div>
