@@ -115,13 +115,12 @@ exports.createInvoice = async (req, res) => {
             throw new Error('اسم الزبون مطلوب');
         }
         
-        if (!driver_name || driver_name.trim() === '') {
-            throw new Error('اسم السائق مطلوب');
-        }
-        
         if (!invoice_number || invoice_number.trim() === '') {
             throw new Error('رقم الفاتورة مطلوب');
         }
+        
+        // driver_name اختياري - تنظيف القيمة فقط
+        driver_name = driver_name ? driver_name.trim() : '';
 
         // معالجة quantities إذا كانت نصاً (JSON)
         if (typeof quantities === 'string') {
@@ -327,6 +326,15 @@ exports.createInvoice = async (req, res) => {
         }
 
         req.flash('success_msg', 'تم إنشاء الفاتورة بنجاح');
+        // Check if it's an AJAX request
+        if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+            return res.json({
+                success: true,
+                invoiceId: invoice_id,
+                message: 'تم إنشاء الفاتورة بنجاح'
+            });
+        }
+        
         res.redirect('/invoices/' + invoice_id);
 
     } catch (error) {

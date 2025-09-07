@@ -7,6 +7,7 @@ const flash = require('connect-flash');
 const expressLayouts = require('express-ejs-layouts');
 const helmet = require('helmet');
 const methodOverride = require('method-override');
+const multer = require('multer');
 const cron = require('node-cron');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -40,6 +41,10 @@ app.use(express.json({ limit: '50mb' }));
 // تسجيل body للطلبات والردود (اختياري - لمراقبة التفاصيل الدقيقة)
 
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// إعداد multer لمعالجة multipart/form-data
+const upload = multer();
+app.use(upload.none()); // للنماذج التي لا تحتوي على ملفات
 
 // إضافة method-override للتعامل مع PUT/DELETE requests
 app.use(methodOverride('_method'));

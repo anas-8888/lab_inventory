@@ -13,8 +13,41 @@ router.get('/api/inventory', isAuthenticated, invoiceController.getInventoryAPI)
 // عرض نموذج إنشاء فاتورة جديدة
 router.get('/create', isAuthenticated, isEditor, invoiceController.getCreateForm);
 
+// Middleware لمعالجة البيانات قبل validation
+const preprocessInvoiceData = (req, res, next) => {
+    
+    // إزالة الحقول quantities[xxx] غير المرغوب فيها
+    if (req.body) {
+        Object.keys(req.body).forEach(key => {
+            if (key.startsWith('quantities[') && key.endsWith(']')) {
+                delete req.body[key];
+            }
+        });
+    }
+    
+    // معالجة quantities إذا كانت string
+    if (req.body.quantities && typeof req.body.quantities === 'string') {
+        try {
+            req.body.quantities = JSON.parse(req.body.quantities);
+        } catch (e) {
+            // سيتم التعامل مع هذا في validation
+        }
+    }
+    
+    // التأكد من أن جميع الحقول النصية مُعرفة
+    if (req.body) {
+        req.body.customer_name = req.body.customer_name || '';
+        req.body.driver_name = req.body.driver_name || '';
+        req.body.date = req.body.date || '';
+        req.body.invoice_number = req.body.invoice_number || '';
+        req.body.notes = req.body.notes || '';
+    }
+    
+    next();
+};
+
 // إنشاء فاتورة جديدة
-router.post('/create', isAuthenticated, isEditor, validateInvoice, validateInventoryAvailability, validate, invoiceController.createInvoice);
+router.post('/create', isAuthenticated, isEditor, preprocessInvoiceData, validateInvoice, validateInventoryAvailability, validate, invoiceController.createInvoice);
 
 // مسارات سلة المحذوفات والحذف الجماعي (يجب أن تكون قبل /:id)
 router.post('/trash-multiple', isAuthenticated, isEditor, invoiceController.trashMultiple);

@@ -97,6 +97,10 @@ exports.validateInvoice = [
         .notEmpty().withMessage('تاريخ الفاتورة مطلوب')
         .custom((value) => {
             // التحقق من صحة التاريخ سواء كان بصيغة YYYY-MM-DD أو DD/MM/YYYY
+            if (!value || typeof value !== 'string') {
+                throw new Error('تاريخ الفاتورة مطلوب');
+            }
+            
             if (value.includes('/')) {
                 const parts = value.split('/');
                 if (parts.length !== 3) {
@@ -124,24 +128,34 @@ exports.validateInvoice = [
         .isNumeric().withMessage('رقم الفاتورة يجب أن يكون رقماً'),
     
     body('customer_name')
-        .notEmpty().withMessage('اسم العميل مطلوب')
         .trim()
-        .isLength({ min: 3 }).withMessage('اسم العميل يجب أن يكون 3 أحرف على الأقل'),
+        .notEmpty().withMessage('اسم العميل مطلوب')
+        .isLength({ min: 2 }).withMessage('اسم العميل يجب أن يكون حرفين على الأقل'),
     
     body('driver_name')
-        .optional()
+        .optional({ checkFalsy: true })
         .trim(),
     
     body('quantities')
         .notEmpty().withMessage('الكميات مطلوبة')
         .custom((value) => {
-            if (typeof value !== 'object') {
+            // إذا كانت string، حاول تحويلها إلى JSON
+            let quantities = value;
+            if (typeof value === 'string') {
+                try {
+                    quantities = JSON.parse(value);
+                } catch (e) {
+                    throw new Error('صيغة الكميات غير صحيحة');
+                }
+            }
+            
+            if (typeof quantities !== 'object' || quantities === null) {
                 throw new Error('الكميات يجب أن تكون كائناً');
             }
-            if (Object.keys(value).length === 0) {
+            if (Object.keys(quantities).length === 0) {
                 throw new Error('يجب اختيار عنصر واحد على الأقل');
             }
-            for (const [key, val] of Object.entries(value)) {
+            for (const [key, val] of Object.entries(quantities)) {
                 if (!Number.isInteger(Number(key))) {
                     throw new Error('معرف العنصر غير صالح');
                 }

@@ -233,12 +233,12 @@ function calculateWeightedAverages() {
   let weightedSumDeltaK = 0;
 
   selectedItems.forEach((row, itemId) => {
-    const quantity = parseFloat(row.querySelector('input[name^="quantities"]').value);
-    const ph = parseFloat(row.dataset.ph);
-    const peroxide = parseFloat(row.dataset.peroxide);
-    const abs232 = parseFloat(row.dataset.abs232);
-    const abs270 = parseFloat(row.dataset.abs270);
-    const deltaK = parseFloat(row.dataset.deltak);
+    const quantity = parseFloat(row.querySelector('input[name^="quantities"]').value) || 0;
+    const ph = parseFloat(row.dataset.ph) || 0;
+    const peroxide = parseFloat(row.dataset.peroxide) || 0;
+    const abs232 = parseFloat(row.dataset.abs232) || 0;
+    const abs270 = parseFloat(row.dataset.abs270) || 0;
+    const deltaK = parseFloat(row.dataset.deltak) || 0;
 
     totalQuantity += quantity;
     totalQuantityLiters += quantity * 16;
@@ -249,14 +249,31 @@ function calculateWeightedAverages() {
     weightedSumDeltaK += quantity * deltaK;
   });
 
+  // Hide/show "no items" message
+  const noItemsRow = document.getElementById('noItems');
+  if (selectedItems.size > 0) {
+    noItemsRow.style.display = 'none';
+  } else {
+    noItemsRow.style.display = '';
+  }
+
   // Update totals
   document.getElementById('totalQuantityTanks').textContent = totalQuantity.toFixed(2);
   document.getElementById('totalQuantityLiters').textContent = totalQuantityLiters.toFixed(2);
-  document.getElementById('avgPH').textContent = (weightedSumPH / totalQuantity).toFixed(2);
-  document.getElementById('avgPeroxide').textContent = (weightedSumPeroxide / totalQuantity).toFixed(2);
-  document.getElementById('avg232').textContent = (weightedSum232 / totalQuantity).toFixed(2);
-  document.getElementById('avg270').textContent = (weightedSum270 / totalQuantity).toFixed(2);
-  document.getElementById('avgDeltaK').textContent = (weightedSumDeltaK / totalQuantity).toFixed(2);
+  
+  if (totalQuantity > 0) {
+    document.getElementById('avgPH').textContent = (weightedSumPH / totalQuantity).toFixed(2);
+    document.getElementById('avgPeroxide').textContent = (weightedSumPeroxide / totalQuantity).toFixed(2);
+    document.getElementById('avg232').textContent = (weightedSum232 / totalQuantity).toFixed(3);
+    document.getElementById('avg270').textContent = (weightedSum270 / totalQuantity).toFixed(3);
+    document.getElementById('avgDeltaK').textContent = (weightedSumDeltaK / totalQuantity).toFixed(3);
+  } else {
+    document.getElementById('avgPH').textContent = '0';
+    document.getElementById('avgPeroxide').textContent = '0';
+    document.getElementById('avg232').textContent = '0';
+    document.getElementById('avg270').textContent = '0';
+    document.getElementById('avgDeltaK').textContent = '0';
+  }
 }
 
 // Add selected items to invoice
@@ -345,10 +362,18 @@ function removeItem(button, itemId) {
 // Handle invoice form submission
 document.getElementById('invoiceForm').addEventListener('submit', function(e) {
     e.preventDefault();
+    
+    // Check if any items are selected
+    if (selectedItems.size === 0) {
+        alert('يرجى اختيار عينة واحدة على الأقل');
+        return;
+    }
+    
     // Validate quantities
     const quantities = {};
     let isValid = true;
     const quantityInputs = document.querySelectorAll('input[name^="quantities"]');
+    
     quantityInputs.forEach(input => {
         const quantity = parseFloat(input.value);
         const max = parseFloat(input.max);
@@ -363,29 +388,81 @@ document.getElementById('invoiceForm').addEventListener('submit', function(e) {
             }
         }
     });
+    
     if (!isValid) {
         alert('يرجى التأكد من صحة الكميات المدخلة');
         return;
     }
-    // Add quantities to form data
+    
+    // Collect form data as object
     const formData = new FormData(this);
-    formData.append('quantities', JSON.stringify(quantities));
+    const data = {};
+    
+    // Convert FormData to object, excluding quantities[xxx] fields
+    for (let [key, value] of formData.entries()) {
+        if (!key.startsWith('quantities[')) {
+            data[key] = value;
+        }
+    }
+    
+    // Add quantities
+    data.quantities = quantities;
+    
+    
     // Submit form
     fetch(this.action, {
         method: 'POST',
-        body: formData
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(data)
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            window.location.href = `/invoices/${data.invoiceId}`;
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const contentType = response.headers.get('content-type');
+        
+        if (contentType && contentType.includes('application/json')) {
+            // Handle JSON response
+            return response.json().then(data => {
+                if (data.success) {
+                    window.location.href = `/invoices/${data.invoiceId}`;
+                } else {
+                    alert(data.message || 'حدث خطأ أثناء إنشاء الفاتورة');
+                }
+            });
+        } else if (response.redirected) {
+            // Handle redirect response
+            window.location.href = response.url;
         } else {
-            alert(data.message || 'حدث خطأ أثناء إنشاء الفاتورة');
+            // Handle HTML response (likely an error page)
+            return response.text().then(html => {
+                if (html.includes('حدث خطأ') || html.includes('Error')) {
+                    alert('حدث خطأ أثناء إنشاء الفاتورة');
+                } else {
+                    // Try to parse invoice ID from redirect
+                    const match = response.url.match(/\/invoices\/(\d+)/);
+                    if (match) {
+                        window.location.href = `/invoices/${match[1]}`;
+                    } else {
+                        window.location.href = '/invoices';
+                    }
+                }
+            });
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        alert('حدث خطأ أثناء إنشاء الفاتورة');
+        console.error('Fetch error:', error);
+        
+        // Check if it's a network error
+        if (error instanceof TypeError && error.message === 'Failed to fetch') {
+            alert('خطأ في الاتصال بالخادم. يرجى التأكد من أن الخادم يعمل والمحاولة مرة أخرى.');
+        } else {
+            alert('حدث خطأ أثناء إنشاء الفاتورة: ' + error.message);
+        }
     });
 });
 
