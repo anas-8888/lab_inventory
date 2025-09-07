@@ -8,14 +8,18 @@ const expressLayouts = require('express-ejs-layouts');
 const helmet = require('helmet');
 const methodOverride = require('method-override');
 const cron = require('node-cron');
+const http = require('http');
+const { Server } = require('socket.io');
 const { pool } = require('./database/db');
 const { authMiddleware } = require('./middleware/auth');
 const { addCurrencyToRequest } = require('./middleware/currency');
+const { trackUserActivity } = require('./middleware/presenceMiddleware');
 const morgan = require('morgan');
 const securityConfig = require('./config/security');
 
-// إنشاء تطبيق Express
+// إنشاء تطبيق Express وخادم HTTP
 const app = express();
+const server = http.createServer(app);
 
 // إعداد ترويسة الأمان باستخدام helmet
 app.use(helmet(securityConfig.helmet));
@@ -118,6 +122,7 @@ app.use((req, res, next) => {
     res.locals.error_msg = req.flash('error_msg');
     res.locals.error = req.flash('error');
     res.locals.user = req.session.user || null;
+    res.locals.session = req.session;
     res.locals.appName = 'نظام إدارة المختبر';
     res.locals.title = 'نظام إدارة المختبر'; // العنوان الافتراضي
     next();
@@ -125,6 +130,9 @@ app.use((req, res, next) => {
 
 // إضافة العملة للطلبات
 app.use(addCurrencyToRequest);
+
+// تتبع نشاط المستخدمين
+app.use(trackUserActivity);
 
 // تعطيل layout الافتراضي لمسار طباعة PDF المخزون فقط
 app.use((req, res, next) => {
@@ -193,8 +201,20 @@ cron.schedule('0 0 * * *', async () => {
     timezone: "Asia/Damascus" // توقيت دمشق
 });
 
+// إعداد Socket.IO
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
+
+// إعداد نظام Presence
+const presenceSystem = require('./services/presenceService')(io, pool);
+
 // تشغيل الخادم
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
+    console.log('Database connected successfully');
 });

@@ -14,18 +14,38 @@
                         <tr>
                             <th>اسم المستخدم</th>
                             <th>الصلاحية</th>
+                            <th>حالة النشاط</th>
                             <th>تاريخ التسجيل</th>
                             <th>الإجراءات</th>
                         </tr>
                     </thead>
                     <tbody>
                         <% users.forEach(function(user) { %>
-                            <tr>
+                            <tr data-user-id="<%= user.id %>">
                                 <td><%= user.username %></td>
                                 <td>
                                     <span class="badge bg-<%= user.role === 'editor' ? 'primary' : user.role === 'admin' ? 'danger' : user.role === 'viewer' ? 'secondary' : 'secondary' %>">
                                         <%= user.role === 'editor' ? 'محرر' : user.role === 'admin' ? 'أدمن' : user.role === 'viewer' ? 'مستعرض' : 'غير معروف' %>
                                     </span>
+                                </td>
+                                <td class="activity-status">
+                                    <span class="badge bg-<%= (user.activity_status === 'online') ? 'success' : 'secondary' %> d-flex align-items-center" style="width: fit-content;">
+                                        <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i>
+                                        <span class="status-text"><%= (user.activity_status === 'online') ? 'متصل' : 'غير متصل' %></span>
+                                    </span>
+                                    <% if (user.activity_status === 'offline' && user.last_seen_at) { %>
+                                        <div class="text-muted small mt-1 last-seen">
+                                            آخر ظهور: <span class="last-seen-time" data-time="<%= user.last_seen_at %>">
+                                                <%= new Date(user.last_seen_at).toLocaleString('ar-EG', { 
+                                                    year: 'numeric', 
+                                                    month: '2-digit', 
+                                                    day: '2-digit',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                }) %>
+                                            </span>
+                                        </div>
+                                    <% } %>
                                 </td>
                                 <td><%= new Date(user.created_at).toLocaleDateString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit' }) %></td>
                                 <td>
@@ -71,4 +91,120 @@
             </div>
         </div>
     </div>
-</div> 
+</div>
+
+<% if (user.role === 'admin') { %>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // استخدام نظام الحضور العام
+    const socket = window.presenceSystem.socket;
+    
+    // تحديث قائمة المستخدمين
+    socket.on('presence:users_list', function(users) {
+        updateUsersTable(users);
+    });
+    
+    // تحديث حالة مستخدم واحد
+    socket.on('presence:update', function(data) {
+        updateUserStatus(data);
+    });
+    
+    // تحديث جدول المستخدمين
+    function updateUsersTable(users) {
+        users.forEach(user => {
+            updateUserStatus({
+                userId: user.id,
+                status: user.activity_status,
+                lastSeenAt: user.last_seen_at
+            });
+        });
+    }
+    
+    // تحديث حالة مستخدم واحد
+    function updateUserStatus(data) {
+        const userRow = document.querySelector(`tr[data-user-id="${data.userId}"]`);
+        if (!userRow) return;
+        
+        const statusCell = userRow.querySelector('.activity-status');
+        if (!statusCell) return;
+        
+        const isOnline = data.status === 'online';
+        const badgeClass = isOnline ? 'bg-success' : 'bg-secondary';
+        const statusText = isOnline ? 'متصل' : 'غير متصل';
+        
+        // تحديث شارة الحالة
+        const badge = statusCell.querySelector('.badge');
+        badge.className = `badge ${badgeClass} d-flex align-items-center`;
+        badge.style.width = 'fit-content';
+        badge.querySelector('.status-text').textContent = statusText;
+        
+        // تحديث آخر ظهور
+        let lastSeenDiv = statusCell.querySelector('.last-seen');
+        if (!isOnline && data.lastSeenAt) {
+            if (!lastSeenDiv) {
+                lastSeenDiv = document.createElement('div');
+                lastSeenDiv.className = 'text-muted small mt-1 last-seen';
+                statusCell.appendChild(lastSeenDiv);
+            }
+            
+            const lastSeenTime = new Date(data.lastSeenAt);
+            const timeAgo = getTimeAgo(lastSeenTime);
+            lastSeenDiv.innerHTML = `آخر ظهور: <span class="last-seen-time" data-time="${data.lastSeenAt}">${timeAgo}</span>`;
+        } else if (isOnline && lastSeenDiv) {
+            lastSeenDiv.remove();
+        }
+    }
+    
+    // حساب الوقت النسبي
+    function getTimeAgo(date) {
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+        
+        if (diffMins < 1) return 'الآن';
+        if (diffMins < 60) return `منذ ${diffMins} دقيقة`;
+        if (diffHours < 24) return `منذ ${diffHours} ساعة`;
+        if (diffDays < 7) return `منذ ${diffDays} يوم`;
+        
+        return date.toLocaleString('ar-EG', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+    
+    // تحديث الأوقات النسبية كل دقيقة
+    setInterval(() => {
+        document.querySelectorAll('.last-seen-time').forEach(timeSpan => {
+            const timestamp = timeSpan.getAttribute('data-time');
+            if (timestamp) {
+                const date = new Date(timestamp);
+                timeSpan.textContent = getTimeAgo(date);
+            }
+        });
+    }, 60000);
+    
+});
+</script>
+<% } %>
+
+<style>
+.activity-status .badge {
+    min-width: 80px;
+}
+.activity-status .badge i {
+    animation: pulse 2s infinite;
+}
+.activity-status .badge.bg-success i {
+    color: #fff;
+}
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+</style> 

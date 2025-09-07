@@ -5,10 +5,11 @@ const { pool } = require('../database/db');
 exports.getUsers = async (req, res) => {
     try {
         const [users] = await pool.query(`
-            SELECT u.id, u.username, u.role_id, u.created_at, r.name as role_name
+            SELECT u.id, u.username, u.role_id, u.created_at, r.name as role_name,
+                   u.activity_status, u.last_seen_at
             FROM users u
             JOIN roles r ON u.role_id = r.id
-            ORDER BY u.username
+            ORDER BY u.activity_status DESC, u.last_seen_at DESC, u.username
         `);
 
         // تحويل role_id إلى نص وصفي

@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const { pool } = require('../database/db');
+const { onUserLogin, onUserLogout } = require('../middleware/presenceMiddleware');
 
 // عرض صفحة تسجيل الدخول
 exports.getLogin = (req, res) => {
@@ -66,6 +67,9 @@ exports.postLogin = async (req, res) => {
             role: roleName // Store the role name string
         };
 
+        // تحديث حالة الحضور
+        await onUserLogin(user.id);
+
         req.flash('success_msg', 'تم تسجيل الدخول بنجاح');
         res.redirect('/home');
     } catch (error) {
@@ -76,13 +80,26 @@ exports.postLogin = async (req, res) => {
 };
 
 // تسجيل الخروج
-exports.logout = (req, res) => {
-    req.session.destroy((err) => {
-        if (err) {
-            console.error('Logout error:', err);
-        }
+exports.logout = async (req, res) => {
+    try {
+        const userId = req.session.user?.id;
+        
+        req.session.destroy(async (err) => {
+            if (err) {
+                console.error('Logout error:', err);
+            }
+            
+            // تحديث حالة الحضور
+            if (userId) {
+                await onUserLogout(userId);
+            }
+            
+            res.redirect('/auth/login');
+        });
+    } catch (error) {
+        console.error('Logout error:', error);
         res.redirect('/auth/login');
-    });
+    }
 };
 
 // عرض صفحة تغيير كلمة المرور

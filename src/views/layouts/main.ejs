@@ -90,9 +90,144 @@
     <div>جميع الحقوق محفوظة &copy; <%= new Date().getFullYear() %> نظام إدارة المختبر | تم التطوير بواسطة شركة NEXA GROUP</div>
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <script src="https://npmcdn.com/flatpickr/dist/l10n/ar.js"></script>
-  <%- typeof script !== 'undefined' ? script : '' %>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/ar.js"></script>
+    
+    <% if (typeof user !== 'undefined' && user && user.role === 'admin') { %>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+    // نظام Presence العام للمشرفين
+    if (typeof window.presenceSystem === 'undefined') {
+        window.presenceSystem = (function() {
+            const socket = io({
+                timeout: 5000,
+                reconnection: true,
+                reconnectionDelay: 1000,
+                reconnectionAttempts: 5,
+                maxReconnectionAttempts: 5
+            });
+            let heartbeatInterval;
+            
+            // المصادقة
+            socket.emit('authenticate', {
+                userId: <%= user.id %>,
+                sessionId: '<%= session.id || 'session_' + user.id + '_' + Date.now() %>'
+            });
+            
+            socket.on('authenticated', function(data) {
+                console.log('نظام الحضور: تم تأكيد المصادقة');
+                startHeartbeat();
+            });
+            
+            socket.on('auth_error', function(error) {
+                console.error('نظام الحضور: خطأ في المصادقة', error);
+            });
+            
+            function startHeartbeat() {
+                heartbeatInterval = setInterval(() => {
+                    if (socket.connected) {
+                        socket.emit('heartbeat');
+                    }
+                }, 10000); // كل 10 ثوان
+            }
+            
+            socket.on('heartbeat_ack', function() {
+                // تأكيد heartbeat
+            });
+            
+            // معالج ping من الخادم
+            socket.on('server_ping', function(data) {
+                // الرد فوراً على ping من الخادم
+                socket.emit('client_pong', { 
+                    timestamp: data.timestamp,
+                    responseTime: Date.now()
+                });
+            });
+            
+            // معالجة إغلاق الصفحة
+            window.addEventListener('beforeunload', function(e) {
+                if (socket.connected) {
+                    socket.emit('client_disconnect');
+                }
+                if (heartbeatInterval) {
+                    clearInterval(heartbeatInterval);
+                }
+            });
+            
+            // معالجة إغلاق التبويب
+            window.addEventListener('unload', function() {
+                if (socket.connected) {
+                    socket.emit('client_disconnect');
+                    socket.disconnect();
+                }
+            });
+            
+            // معالجة فقدان التركيز (عند تغيير التبويب)
+            let hiddenTimer;
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'hidden') {
+                    // إيقاف heartbeat مؤقتاً
+                    if (heartbeatInterval) {
+                        clearInterval(heartbeatInterval);
+                    }
+                    
+                    // إذا بقي مخفي لأكثر من 30 ثانية، اعتبر قطع اتصال
+                    hiddenTimer = setTimeout(function() {
+                        if (socket.connected && document.visibilityState === 'hidden') {
+                            console.log('تبويب مخفي لفترة طويلة، قطع الاتصال');
+                            socket.emit('client_disconnect');
+                        }
+                    }, 30000);
+                    
+                } else if (document.visibilityState === 'visible') {
+                    // إلغاء مؤقت الإخفاء
+                    if (hiddenTimer) {
+                        clearTimeout(hiddenTimer);
+                    }
+                    
+                    // إعادة تشغيل heartbeat
+                    if (socket.connected) {
+                        startHeartbeat();
+                        socket.emit('heartbeat'); // إرسال فوري
+                    }
+                }
+            });
+            
+            // معالج إعادة الاتصال
+            socket.on('connect', function() {
+                console.log('نظام الحضور: تم الاتصال');
+                // إعادة المصادقة عند إعادة الاتصال
+                socket.emit('authenticate', {
+                    userId: <%= user.id %>,
+                    sessionId: '<%= session.id || 'session_' + user.id + '_' + Date.now() %>'
+                });
+            });
+            
+            socket.on('disconnect', function(reason) {
+                console.log('نظام الحضور: انقطع الاتصال -', reason);
+                if (heartbeatInterval) {
+                    clearInterval(heartbeatInterval);
+                }
+            });
+            
+            socket.on('reconnect', function(attemptNumber) {
+                console.log('نظام الحضور: تم إعادة الاتصال بعد', attemptNumber, 'محاولات');
+            });
+            
+            socket.on('reconnect_failed', function() {
+                console.log('نظام الحضور: فشل في إعادة الاتصال');
+            });
+            
+            return {
+                socket: socket,
+                isConnected: () => socket.connected
+            };
+        })();
+    }
+    </script>
+    <% } %>
+    
+    <%- typeof script !== 'undefined' ? script : '' %>
 </body>
 </html>
