@@ -93,6 +93,7 @@ function formatNumberDisplay(value) {
                                     <th>اسم السائق</th>
                                     <th>الكمية الإجمالية</th>
                                     <th>الوزن الإجمالي</th>
+                                    <th>الحالة</th>
                                     <th>ملاحظات</th>
                                     <th class="d-print-none">الإجراءات</th>
                                 </tr>
@@ -111,15 +112,39 @@ function formatNumberDisplay(value) {
                                             <td><%= invoice.driver_name || '-' %></td>
                                             <td><%= formatNumberDisplay(invoice.total_quantity_tanks) %></td>
                                             <td><%= formatNumberDisplay(invoice.total_quantity_liters) %></td>
+                                            <td>
+                                                <span class="badge bg-<%= 
+                                                    invoice.status === 'pending' ? 'warning' : 
+                                                    invoice.status === 'processing' ? 'info' : 
+                                                    invoice.status === 'completed' ? 'success' : 'danger' 
+                                                %>">
+                                                    <%= 
+                                                        invoice.status === 'pending' ? 'قيد الانتظار' :
+                                                        invoice.status === 'processing' ? 'قيد المعالجة' :
+                                                        invoice.status === 'completed' ? 'مكتمل' : 'ملغي'
+                                                    %>
+                                                </span>
+                                            </td>
                                             <td><%= invoice.notes || '-' %></td>
                                             <td class="d-print-none">
                                                 <div class="btn-group">
-                                                    <a href="/invoices/<%= invoice.id %>" class="btn btn-sm btn-info me-1" title="معاينة">
-                                                        <i class="bi bi-eye-fill"></i>
+                                                    <a href="/invoices/<%= invoice.id %>" class="btn btn-sm btn-secondary" title="معاينة">
+                                                        <i class="bi bi-eye"></i>
                                                     </a>
-                                                    <a href="/invoices/<%= invoice.id %>/edit" class="btn btn-sm btn-warning me-1" title="تعديل">
-                                                        <i class="bi bi-pencil-fill"></i>
-                                                    </a>
+                                                    <% if (user && (user.role === 'editor' || user.role === 'admin')) { %>
+                                                        <a href="/invoices/<%= invoice.id %>/edit" class="btn btn-sm btn-info" title="تعديل">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </a>
+                                                        <button type="button" class="btn btn-sm btn-warning" onclick="updateInvoiceStatus('<%= invoice.id %>', 'processing')" title="قيد المعالجة">
+                                                            <i class="bi bi-play"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-success" onclick="updateInvoiceStatus('<%= invoice.id %>', 'completed')" title="مكتمل">
+                                                            <i class="bi bi-check"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-danger" onclick="updateInvoiceStatus('<%= invoice.id %>', 'cancelled')" title="إلغاء">
+                                                            <i class="bi bi-x"></i>
+                                                        </button>
+                                                    <% } %>
                                                 </div>
                                             </td>
                                         </tr>
@@ -380,6 +405,61 @@ function clearFilters() {
     }
     document.querySelector('input[name="customer"]').value = '';
     document.getElementById('filterForm').dispatchEvent(new Event('submit'));
+}
+
+// تحديث حالة الفاتورة
+function updateInvoiceStatus(invoiceId, status) {
+    const statusText = {
+        'pending': 'قيد الانتظار',
+        'processing': 'قيد المعالجة',
+        'completed': 'مكتمل',
+        'cancelled': 'ملغي'
+    };
+    
+    if (confirm(`هل تريد تغيير حالة الفاتورة إلى "${statusText[status]}"؟`)) {
+        fetch(`/invoices/${invoiceId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('تم تحديث حالة الفاتورة بنجاح', 'success');
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                showAlert(data.message || 'حدث خطأ في تحديث حالة الفاتورة', 'error');
+            }
+        })
+        .catch(error => {
+            showAlert('حدث خطأ في تحديث حالة الفاتورة', 'error');
+        });
+    }
+}
+
+// دالة عرض التنبيهات
+function showAlert(message, type) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const alertHtml = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+    
+    // إضافة التنبيه في أعلى الصفحة
+    const container = document.querySelector('.container');
+    container.insertAdjacentHTML('afterbegin', alertHtml);
+    
+    // إزالة التنبيه بعد 5 ثوانٍ
+    setTimeout(() => {
+        const alert = document.querySelector('.alert');
+        if (alert) {
+            alert.remove();
+        }
+    }, 5000);
 }
 
 </script>

@@ -264,7 +264,7 @@ exports.createInvoice = async (req, res) => {
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 invoice_number, customer_name, driver_name,
-                date, totalQuantityLiters, 'unpaid', notes, req.session.user.id,
+                date, totalQuantityLiters, 'pending', notes, req.session.user.id,
                 avgPH, avgPeroxide, avg232, avg270, avgDeltaK,
                 totalQuantity, totalQuantityLiters
             ]
@@ -839,6 +839,30 @@ exports.getInventoryAPI = async (req, res) => {
     } catch (error) {
         console.error('Error fetching inventory:', error);
         res.status(500).json({ error: 'حدث خطأ أثناء جلب المخزون' });
+    }
+};
+
+// تحديث حالة الفاتورة
+exports.updateInvoiceStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        
+        // التحقق من صحة الحالة
+        const validStatuses = ['pending', 'processing', 'completed', 'cancelled'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'حالة غير صحيحة' 
+            });
+        }
+        
+        await pool.query('UPDATE invoices SET status = ? WHERE id = ? AND deleted_at IS NULL', [status, id]);
+        
+        res.json({ success: true, message: 'تم تحديث حالة الفاتورة بنجاح' });
+    } catch (error) {
+        console.error('خطأ في تحديث حالة الفاتورة:', error);
+        res.status(500).json({ success: false, message: 'حدث خطأ في تحديث حالة الفاتورة' });
     }
 };
 

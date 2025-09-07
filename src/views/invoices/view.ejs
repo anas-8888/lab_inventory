@@ -88,7 +88,48 @@ function formatNumberDisplay(value) {
           </a>
         </div>
       </div>
-      <br>
+      
+      <!-- Invoice Status and Actions -->
+      <div class="card mb-3 d-print-none">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-md-6">
+              <h6 class="mb-2">حالة الفاتورة:</h6>
+              <span class="badge bg-<%= 
+                invoice.status === 'pending' ? 'warning' : 
+                invoice.status === 'processing' ? 'info' : 
+                invoice.status === 'completed' ? 'success' : 'danger' 
+              %> fs-6">
+                <%= 
+                  invoice.status === 'pending' ? 'قيد الانتظار' :
+                  invoice.status === 'processing' ? 'قيد المعالجة' :
+                  invoice.status === 'completed' ? 'مكتمل' : 'ملغي'
+                %>
+              </span>
+            </div>
+            <div class="col-md-6">
+              <% if (user && (user.role === 'editor' || user.role === 'admin')) { %>
+                <div class="btn-group">
+                  <button type="button" class="btn btn-sm btn-warning" onclick="updateInvoiceStatus(<%= invoice.id %>, 'processing')" title="قيد المعالجة">
+                    <i class="bi bi-play me-1"></i> قيد المعالجة
+                  </button>
+                  <button type="button" class="btn btn-sm btn-success" onclick="updateInvoiceStatus(<%= invoice.id %>, 'completed')" title="مكتمل">
+                    <i class="bi bi-check me-1"></i> مكتمل
+                  </button>
+                  <button type="button" class="btn btn-sm btn-danger" onclick="updateInvoiceStatus(<%= invoice.id %>, 'cancelled')" title="إلغاء">
+                    <i class="bi bi-x me-1"></i> إلغاء
+                  </button>
+                  <button type="button" class="btn btn-sm btn-secondary" onclick="updateInvoiceStatus(<%= invoice.id %>, 'pending')" title="قيد الانتظار">
+                    <i class="bi bi-clock me-1"></i> قيد الانتظار
+                  </button>
+                </div>
+              <% } else { %>
+                <p class="text-muted mb-0">يحتاج صلاحية محرر أو مشرف لتغيير الحالة</p>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- Invoice Info Table -->
       <div class="row mb-3 d-print-no-shadow">
@@ -542,4 +583,38 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 }
 </style>
+
+<script>
+// تحديث حالة الفاتورة
+function updateInvoiceStatus(invoiceId, status) {
+    const statusText = {
+        'pending': 'قيد الانتظار',
+        'processing': 'قيد المعالجة',
+        'completed': 'مكتمل',
+        'cancelled': 'ملغي'
+    };
+    
+    if (confirm(`هل تريد تغيير حالة الفاتورة إلى "${statusText[status]}"؟`)) {
+        fetch(`/invoices/${invoiceId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('تم تحديث حالة الفاتورة بنجاح');
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                alert(data.message || 'حدث خطأ في تحديث حالة الفاتورة');
+            }
+        })
+        .catch(error => {
+            alert('حدث خطأ في تحديث حالة الفاتورة');
+        });
+    }
+}
+</script>
 

@@ -44,6 +44,9 @@ router.post('/:id/restore', isAuthenticated, isEditor, invoiceController.restore
 // تصدير الفاتورة كـ PDF
 router.get('/:id/pdf', isAuthenticated, invoiceController.exportInvoicePDF);
 
+// تحديث حالة الفاتورة
+router.put('/:id/status', isAuthenticated, isEditor, invoiceController.updateInvoiceStatus);
+
 // عرض فاتورة - يجب أن يكون آخر مسار
 router.get('/:id', isAuthenticated, invoiceController.getInvoice);
 
