@@ -23,8 +23,6 @@ module.exports = (io, pool) => {
             `);
             
             if (affectedRows.affectedRows > 0) {
-                console.log(`تم تحديث ${affectedRows.affectedRows} مستخدم إلى offline بواسطة التنظيف التلقائي`);
-                
                 // إشعار المشرفين بالتحديثات
                 const [offlineUsers] = await pool.query(`
                     SELECT u.id, u.username, u.role_id 
@@ -141,7 +139,6 @@ module.exports = (io, pool) => {
     // بدء مراقبة heartbeat
     function startHeartbeat(socket) {
         const timer = setTimeout(() => {
-            console.log(`Heartbeat timeout for socket ${socket.id} - forcing disconnect`);
             // قطع الاتصال فوراً
             socket.disconnect(true);
         }, OFFLINE_TIMEOUT);
@@ -170,7 +167,6 @@ module.exports = (io, pool) => {
                 
                 // انتظار الرد لمدة 5 ثوان
                 const pongTimeout = setTimeout(() => {
-                    console.log(`No pong received from socket ${socket.id}, disconnecting`);
                     socket.disconnect(true);
                 }, 5000);
                 
@@ -192,7 +188,6 @@ module.exports = (io, pool) => {
     
     // معالج اتصال Socket.IO
     io.on('connection', (socket) => {
-        console.log(`Socket connected: ${socket.id}`);
         
         // التحقق من صحة الجلسة
         socket.on('authenticate', async (data) => {
@@ -252,7 +247,6 @@ module.exports = (io, pool) => {
                     role: roleName
                 });
                 
-                console.log(`User ${user.username} authenticated on socket ${socket.id}`);
                 
                 // إرسال قائمة المستخدمين الحالية للمشرفين
                 if (roleName === 'admin') {
@@ -300,7 +294,6 @@ module.exports = (io, pool) => {
         
         // معالج قطع الاتصال
         socket.on('disconnect', (reason) => {
-            console.log(`Socket disconnected: ${socket.id}, reason: ${reason}, user: ${socket.username || 'unknown'}`);
             removeUserConnection(socket.id);
         });
         
@@ -312,7 +305,6 @@ module.exports = (io, pool) => {
         
         // معالج إغلاق الاتصال بواسطة العميل
         socket.on('client_disconnect', () => {
-            console.log(`Client initiated disconnect for socket ${socket.id}`);
             removeUserConnection(socket.id);
             socket.disconnect();
         });

@@ -116,7 +116,6 @@
             });
             
             socket.on('authenticated', function(data) {
-                console.log('نظام الحضور: تم تأكيد المصادقة');
                 startHeartbeat();
             });
             
@@ -175,7 +174,6 @@
                     // إذا بقي مخفي لأكثر من 30 ثانية، اعتبر قطع اتصال
                     hiddenTimer = setTimeout(function() {
                         if (socket.connected && document.visibilityState === 'hidden') {
-                            console.log('تبويب مخفي لفترة طويلة، قطع الاتصال');
                             socket.emit('client_disconnect');
                         }
                     }, 30000);
@@ -196,7 +194,6 @@
             
             // معالج إعادة الاتصال
             socket.on('connect', function() {
-                console.log('نظام الحضور: تم الاتصال');
                 // إعادة المصادقة عند إعادة الاتصال
                 socket.emit('authenticate', {
                     userId: <%= user.id %>,
@@ -205,18 +202,15 @@
             });
             
             socket.on('disconnect', function(reason) {
-                console.log('نظام الحضور: انقطع الاتصال -', reason);
                 if (heartbeatInterval) {
                     clearInterval(heartbeatInterval);
                 }
             });
             
             socket.on('reconnect', function(attemptNumber) {
-                console.log('نظام الحضور: تم إعادة الاتصال بعد', attemptNumber, 'محاولات');
             });
             
             socket.on('reconnect_failed', function() {
-                console.log('نظام الحضور: فشل في إعادة الاتصال');
             });
             
             return {

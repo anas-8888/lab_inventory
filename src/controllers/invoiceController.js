@@ -94,9 +94,6 @@ exports.getCreateForm = async (req, res) => {
 exports.createInvoice = async (req, res) => {
     const connection = await pool.getConnection();
     try {
-        // إضافة تشخيص للبيانات المرسلة
-        console.log('Request body:', req.body);
-        console.log('Request headers:', req.headers);
         
         // تعيين timeout للمعاملات
         await connection.query('SET SESSION innodb_lock_wait_timeout = 60');
@@ -134,8 +131,6 @@ exports.createInvoice = async (req, res) => {
                 throw new Error('خطأ في معالجة الكميات');
             }
         }
-        
-        console.log('Parsed quantities:', quantities);
 
         // التحقق من صحة التاريخ والحصول على السنة
         let invoiceYear;
