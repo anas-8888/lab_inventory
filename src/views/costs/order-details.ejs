@@ -37,10 +37,10 @@ function formatNumberDisplay(value) {
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="bi bi-file-earmark-text"></i> تفاصيل الطلبية <%= order.order_number %></h2>
         <div>
-          <a href="/costs/orders/<%= order.id %>/print" target="_blank" class="btn btn-outline-primary me-2 no-print">
+          <button id="printOrderBtn" class="btn btn-outline-primary me-2 no-print" data-bs-toggle="modal" data-bs-target="#printTypeModal">
             <i class="bi bi-printer"></i> طباعة
-          </a>
-          <button id="exportOrderPdfBtn" class="btn btn-success me-2 no-print">
+          </button>
+          <button id="exportOrderBtn" class="btn btn-success me-2 no-print" data-bs-toggle="modal" data-bs-target="#exportTypeModal">
             <i class="bi bi-file-earmark-pdf"></i> تصدير PDF
           </button>
           <a href="/costs/orders" class="btn btn-outline-secondary no-print">
@@ -275,5 +275,127 @@ document.addEventListener('DOMContentLoaded', function(){
     copyBtn.addEventListener('click', function(){ linkInput.select(); document.execCommand('copy'); });
   }
 });
+
+// Print and Export Functions
+function printAsOrder() {
+  window.open('/costs/orders/<%= order.id %>/print', '_blank');
+  bootstrap.Modal.getInstance(document.getElementById('printTypeModal')).hide();
+}
+
+function printAsInvoice() {
+  window.open('/costs/orders/<%= order.id %>/print?type=invoice', '_blank');
+  bootstrap.Modal.getInstance(document.getElementById('printTypeModal')).hide();
+}
+
+async function exportAsOrder() {
+  bootstrap.Modal.getInstance(document.getElementById('exportTypeModal')).hide();
+  await exportPDF('/costs/orders/<%= order.id %>/pdf');
+}
+
+async function exportAsInvoice() {
+  bootstrap.Modal.getInstance(document.getElementById('exportTypeModal')).hide();
+  await exportPDF('/costs/orders/<%= order.id %>/pdf?type=invoice');
+}
+
+async function exportPDF(url) {
+  const exportBtn = document.getElementById('exportOrderBtn');
+  exportBtn.disabled = true;
+  exportBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري التصدير...';
+  
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.success && data.url) {
+      const linkInput = document.getElementById('orderPdfLinkInput');
+      const openBtn = document.getElementById('openOrderPdfLinkBtn');
+      const waBtn = document.getElementById('whatsappOrderShareBtn');
+      const modal = new bootstrap.Modal(document.getElementById('orderPdfExportModal'));
+      
+      if (linkInput) linkInput.value = data.url;
+      if (openBtn) openBtn.href = data.url;
+      if (waBtn) waBtn.href = `https://wa.me/?text=${encodeURIComponent(data.url)}`;
+      if (modal) modal.show();
+    } else {
+      alert(data.message || 'حدث خطأ أثناء توليد ملف PDF');
+    }
+  } catch (e) {
+    alert('حدث خطأ في الاتصال بالخادم');
+  }
+  
+  exportBtn.disabled = false;
+  exportBtn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> تصدير PDF';
+}
 </script>
+
+<!-- Print Type Selection Modal -->
+<div class="modal fade" id="printTypeModal" tabindex="-1" aria-labelledby="printTypeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="printTypeModalLabel">
+          <i class="bi bi-printer me-2"></i> اختر نوع الطباعة
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="card h-100 border-primary" style="cursor: pointer;" onclick="printAsOrder()">
+              <div class="card-body text-center">
+                <i class="bi bi-file-earmark-text text-primary" style="font-size: 2rem;"></i>
+                <h6 class="card-title mt-2">طباعة كطلبية</h6>
+                <p class="card-text text-muted small">طباعة الطلبية مع جميع بيانات الطلبية</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card h-100 border-success" style="cursor: pointer;" onclick="printAsInvoice()">
+              <div class="card-body text-center">
+                <i class="bi bi-receipt text-success" style="font-size: 2rem;"></i>
+                <h6 class="card-title mt-2">طباعة كفاتورة</h6>
+                <p class="card-text text-muted small">طباعة كفاتورة بدون بيانات الطلبية</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Export Type Selection Modal -->
+<div class="modal fade" id="exportTypeModal" tabindex="-1" aria-labelledby="exportTypeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exportTypeModalLabel">
+          <i class="bi bi-file-earmark-pdf me-2"></i> اختر نوع التصدير
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="card h-100 border-primary" style="cursor: pointer;" onclick="exportAsOrder()">
+              <div class="card-body text-center">
+                <i class="bi bi-file-earmark-text text-primary" style="font-size: 2rem;"></i>
+                <h6 class="card-title mt-2">تصدير كطلبية</h6>
+                <p class="card-text text-muted small">تصدير الطلبية مع جميع بيانات الطلبية</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card h-100 border-success" style="cursor: pointer;" onclick="exportAsInvoice()">
+              <div class="card-body text-center">
+                <i class="bi bi-receipt text-success" style="font-size: 2rem;"></i>
+                <h6 class="card-title mt-2">تصدير كفاتورة</h6>
+                <p class="card-text text-muted small">تصدير كفاتورة بدون بيانات الطلبية</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 

@@ -43,7 +43,11 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
 
   <!-- Title -->
   <div style="text-align:center; margin: 12px 0;">
-    <div style="font-size: 13pt; font-weight: 700;">طلبية رقم (<%= order.order_number %>)</div>
+    <% if (typeof printType !== 'undefined' && printType === 'invoice') { %>
+      <div style="font-size: 13pt; font-weight: 700;">فاتورة رقم (<%= order.order_number %>)</div>
+    <% } else { %>
+      <div style="font-size: 13pt; font-weight: 700;">طلبية رقم (<%= order.order_number %>)</div>
+    <% } %>
   </div>
 
   <!-- Order Info -->
@@ -56,6 +60,9 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
         <% if (order.client_address) { %><div class="kv full"><span>العنوان:</span><span><%= order.client_address %></span></div><% } %>
       </div>
     </div>
+    
+    <!-- إخفاء بيانات الطلبية عند الطباعة كفاتورة -->
+    <% if (typeof printType === 'undefined' || printType !== 'invoice') { %>
     <div class="box-compact">
       <h6 class="section-title">بيانات الطلبية</h6>
       <div class="grid-kv">
@@ -71,7 +78,9 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
         <% if (order.accreditation_number) { %><div class="kv"><span>رقم الاعتماد:</span><span><%= order.accreditation_number %></span></div><% } %>
       </div>
     </div>
-    <% if (order.notes) { %>
+    <% } %>
+    
+    <% if (order.notes && (typeof printType === 'undefined' || printType !== 'invoice')) { %>
       <div class="box-compact">
         <h6 class="section-title">ملاحظات الطلبية</h6>
         <div class="notes"><%= order.notes %></div>

@@ -1488,6 +1488,8 @@ const getOrderDetailsPage = async (req, res) => {
 const getOrderPrintPage = async (req, res) => {
     try {
         const { id } = req.params;
+        const { type } = req.query; // invoice أو order (افتراضي)
+        
         const [orders] = await req.db.query('SELECT * FROM orders WHERE id = ?', [id]);
         if (orders.length === 0) {
             req.flash('error_msg', 'الطلبية غير موجودة');
@@ -1520,11 +1522,12 @@ const getOrderPrintPage = async (req, res) => {
         };
 
         res.render('costs/order-print', {
-            title: `طباعة طلبية ${orders[0].order_number}`,
+            title: type === 'invoice' ? `فاتورة ${orders[0].order_number}` : `طباعة طلبية ${orders[0].order_number}`,
             order: orders[0],
             items: pricedItems,
             totals,
             defaultCurrency: req.defaultCurrency || null,
+            printType: type || 'order', // order أو invoice
             layout: false
         });
     } catch (error) {
@@ -1542,7 +1545,9 @@ const exportOrderPDF = async (req, res) => {
     const { v4: uuidv4 } = require('uuid');
     try {
         const { id } = req.params;
-        const url = `${process.env.BASE_URL}/costs/orders/${id}/print-pdf-raw`;
+        const { type } = req.query; // invoice أو order (افتراضي)
+        
+        const url = `${process.env.BASE_URL}/costs/orders/${id}/print-pdf-raw${type ? `?type=${type}` : ''}`;
         const options = { format: 'A4' };
         const file = { url };
         const fileName = `${uuidv4()}.pdf`;
