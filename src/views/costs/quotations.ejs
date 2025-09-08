@@ -57,14 +57,14 @@
                                 <table class="table table-bordered" id="materialsTable">
                                     <thead>
                                         <tr>
-                                            <th>المادة</th>
-                                            <th>كلفة الطرد</th>
-                                            <th>نسبة الربح (%)</th>
-                                            <th>السعر النهائي</th>
-                                            <th>الكمية</th>
-                                            <th>المجموع</th>
-                                            <th>ملاحظات</th>
-                                            <th>الإجراءات</th>
+                                            <th style="width: 30%; min-width: 250px;">المادة</th>
+                                            <th style="width: 12%;">كلفة الطرد</th>
+                                            <th style="width: 12%;">نسبة الربح (%)</th>
+                                            <th style="width: 12%;">السعر النهائي</th>
+                                            <th style="width: 8%;">الكمية</th>
+                                            <th style="width: 12%;">المجموع</th>
+                                            <th style="width: 10%;">ملاحظات</th>
+                                            <th style="width: 4%;">الإجراءات</th>
                                         </tr>
                                     </thead>
                                     <tbody id="materialsTableBody">
@@ -162,7 +162,7 @@
 
 <!-- Modal تعديل عرض السعر -->
 <div class="modal fade" id="editQuotationModal" tabindex="-1">
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog modal-xl">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">تعديل عرض السعر</h5>
@@ -200,13 +200,13 @@
             <table class="table table-bordered" id="editItemsTable">
               <thead>
                 <tr>
-                  <th>المادة</th>
-                  <th>كلفة الطرد</th>
-                  <th>نسبة الربح (%)</th>
-                  <th>السعر النهائي</th>
-                  <th>الكمية</th>
-                  <th>المجموع</th>
-                  <th>الإجراءات</th>
+                  <th style="width: 30%; min-width: 250px;">المادة</th>
+                  <th style="width: 12%;">كلفة الطرد</th>
+                  <th style="width: 12%;">نسبة الربح (%)</th>
+                  <th style="width: 12%;">السعر النهائي</th>
+                  <th style="width: 8%;">الكمية</th>
+                  <th style="width: 12%;">المجموع</th>
+                  <th style="width: 14%;">الإجراءات</th>
                 </tr>
               </thead>
               <tbody id="editItemsBody"></tbody>
@@ -349,15 +349,16 @@ function addMaterialRow() {
     const row = document.createElement('tr');
     row.setAttribute('data-row-id', rowId);
     row.innerHTML = `
-        <td>
-            <select class="form-select material-select" onchange="updateMaterialData(${rowId}, this.value)">
+        <td style="width: 30%; min-width: 250px;">
+            <select class="form-select material-select" onchange="updateMaterialData(${rowId}, this.value)" style="width: 100%;">
                 <option value="">اختر المادة</option>
                  ${materials.map(m => `<option value="${m.id}" 
                     data-type="${m.material_type||''}"
                     data-unit="${m.packaging_unit||''}"
                     data-weight="${m.packaging_weight||0}"
                     data-pieces="${m.pieces_per_package||1}"
-                    data-package-cost="${m.package_cost}">
+                    data-package-cost="${m.package_cost}"
+                    title="${m.material_name}">
                     ${m.material_name}
                  </option>`).join('')}
             </select>
@@ -526,7 +527,7 @@ function openEditQuotationModal(id) {
       
       
       tr.innerHTML = `
-        <td>${it.material_name}<input type="hidden" class="edit-material-id" value="${it.material_id||''}"></td>
+        <td style="width: 30%; min-width: 250px; word-wrap: break-word; white-space: normal;">${it.material_name}<input type="hidden" class="edit-material-id" value="${it.material_id||''}"></td>
         <td>
           <input type="number" class="form-control edit-unit-cost" value="${it.unit_cost}" readonly>
         </td>
@@ -611,8 +612,8 @@ function addEditMaterialRow(){
     ${m.material_name}
   </option>`).join('');
   tr.innerHTML = `
-    <td>
-      <select class="form-select edit-material-select" onchange="onSelectEditMaterial(this)">
+    <td style="width: 30%; min-width: 250px;">
+      <select class="form-select edit-material-select" onchange="onSelectEditMaterial(this)" style="width: 100%;">
         <option value="">اختر المادة</option>
         ${materialOptions}
       </select>
@@ -940,5 +941,116 @@ body:not(.modal-open) .modal-backdrop {
 body.modal-open {
     overflow: hidden;
     padding-right: 0 !important;
+}
+
+/* تحسين عرض عمود المادة في جدول اختيار المواد */
+#materialsTable th:first-child,
+#materialsTable td:first-child {
+    width: 30% !important;
+    min-width: 250px !important;
+    max-width: 350px;
+}
+
+#materialsTable .material-select {
+    width: 100% !important;
+    font-size: 0.9rem;
+}
+
+#materialsTable .material-select option {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    padding: 8px 12px;
+}
+
+/* تحسين عرض النص الطويل في خلايا الجدول */
+#materialsTable td {
+    word-wrap: break-word;
+    white-space: normal;
+    vertical-align: top;
+}
+
+/* تحسين جدول التعديل أيضاً */
+#editItemsTable th:first-child,
+#editItemsBody td:first-child {
+    width: 30% !important;
+    min-width: 250px !important;
+    max-width: 350px;
+    word-wrap: break-word;
+    white-space: normal;
+}
+
+#editItemsBody .edit-material-select {
+    width: 100% !important;
+    font-size: 0.9rem;
+}
+
+#editItemsTable .edit-material-select option {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    padding: 8px 12px;
+}
+
+/* تأكد من أن جدول التعديل يأخذ العرض الكامل */
+#editItemsTable {
+    width: 100%;
+    table-layout: fixed;
+}
+
+/* تحسين التمرير الأفقي للجدول */
+.table-responsive {
+    overflow-x: auto;
+    min-height: 200px;
+}
+
+/* تأكد من أن الجدول يأخذ العرض الكامل */
+#materialsTable {
+    width: 100%;
+    table-layout: fixed;
+}
+
+/* تحسين عرض المودالات الكبيرة */
+.modal-xl {
+    max-width: 90vw !important;
+}
+
+@media (max-width: 1200px) {
+    .modal-xl {
+        max-width: 95vw !important;
+    }
+    
+    #materialsTable th:first-child,
+    #materialsTable td:first-child,
+    #editItemsTable th:first-child,
+    #editItemsBody td:first-child {
+        min-width: 200px !important;
+        width: 25% !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .modal-xl {
+        max-width: 98vw !important;
+    }
+    
+    #materialsTable th:first-child,
+    #materialsTable td:first-child,
+    #editItemsTable th:first-child,
+    #editItemsBody td:first-child {
+        min-width: 180px !important;
+        width: 35% !important;
+    }
+    
+    .table-responsive {
+        font-size: 0.85rem;
+    }
+}
+
+/* تحسين padding للمودالات الكبيرة */
+.modal-xl .modal-body {
+    padding: 1.5rem;
+}
+
+.modal-xl .table-responsive {
+    margin-bottom: 1rem;
 }
 </style> 
