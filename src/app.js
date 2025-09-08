@@ -38,13 +38,7 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json({ limit: '50mb' }));
-// تسجيل body للطلبات والردود (اختياري - لمراقبة التفاصيل الدقيقة)
-
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-
-// إعداد multer لمعالجة multipart/form-data
-const upload = multer();
-app.use(upload.none()); // للنماذج التي لا تحتوي على ملفات
 
 // إضافة method-override للتعامل مع PUT/DELETE requests
 app.use(methodOverride('_method'));
@@ -139,10 +133,28 @@ app.use(addCurrencyToRequest);
 // تتبع نشاط المستخدمين
 app.use(trackUserActivity);
 
+// نظام سجل الحركات - يجب أن يكون قبل جميع المسارات
+const contextExtractor = require('./middleware/contextExtractor');
+const activityLogger = require('./middleware/activityLogger');
+
+// استخراج سياق المستخدم
+app.use(contextExtractor);
+
+// تسجيل الحركات
+app.use(activityLogger);
+
 // تعطيل layout الافتراضي لمسار طباعة PDF المخزون فقط
 app.use((req, res, next) => {
   if (req.path.startsWith('/inventory/print-pdf-raw')) {
     res.locals.layout = false;
+  }
+  next();
+});
+
+// تعطيل تسجيل الحركات لمسارات معينة
+app.use((req, res, next) => {
+  if (req.path.startsWith('/activity-logs')) {
+    req.skipActivityLog = true;
   }
   next();
 });
@@ -159,6 +171,7 @@ app.use('/certificates', require('./routes/certificates'));
 app.use('/exports', require('./routes/exports'));
 app.use('/costs', require('./routes/costs'));
 app.use('/notes', require('./routes/notes'));
+app.use('/activity-logs', require('./routes/activity'));
 
 // معالجة خطأ 404
 app.use((req, res, next) => {
