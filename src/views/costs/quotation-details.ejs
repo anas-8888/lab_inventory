@@ -121,7 +121,7 @@
                                     <th>اسم المادة</th>
                                     <th>نوع المادة</th>
                                     <th>وحدة التعبئة</th>
-                                    <th>وزن وحدة التعبئة</th>
+                                    <th>وزن المادة (كغ)</th>
                                     <th>شد الكرتون</th>
                                     <th>كلفة الطرد</th>
                                     <th>نسبة الربح</th>
@@ -143,7 +143,31 @@
                                     <td><%= item.material_name %></td>
                                     <td><%= item.material_type || '-' %></td>
                                     <td><%= item.packaging_unit || '-' %></td>
-                                    <td><%= item.packaging_weight != null ? (parseFloat(item.packaging_weight) || 0).toFixed(4).replace(/\.?0+$/, '') : '-' %></td>
+                                    <td>
+                                        <% if (item.packaging_weight != null) { %>
+                                            <% 
+                                                // عرض وزن التعبئة بدقة مناسبة
+                                                const weight = parseFloat(item.packaging_weight);
+                                                if (isNaN(weight)) {
+                                                    // إذا لم يكن رقماً، اعرضه كما هو
+                                                    %><%= item.packaging_weight %><%
+                                                } else {
+                                                    // إذا كان رقماً صحيحاً، أضف 3 منازل عشرية
+                                                    if (Number.isInteger(weight)) {
+                                                        %><%= weight.toFixed(3) %><%
+                                                    } else {
+                                                        // إذا كان عشرياً، احتفظ بالمنازل الموجودة مع حد أدنى 3
+                                                        const str = weight.toString();
+                                                        const decimalPlaces = str.includes('.') ? str.split('.')[1].length : 0;
+                                                        const minDecimals = Math.max(3, decimalPlaces);
+                                                        %><%= weight.toFixed(minDecimals) %><%
+                                                    }
+                                                }
+                                            %>
+                                        <% } else { %>
+                                            -
+                                        <% } %>
+                                    </td>
                                     <td><%= item.pieces_per_package || '-' %></td>
                                     <td>
                                         <%= fmt(unit) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>

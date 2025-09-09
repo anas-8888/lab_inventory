@@ -419,7 +419,7 @@ function updateMaterialData(rowId, materialId) {
     row.materialName = material.material_name;
     row.materialType = material.material_type || '';
     row.packagingUnit = material.packaging_unit || '';
-    row.packagingWeight = parseFloat(material.packaging_weight) || 0;
+    row.packagingWeight = material.packaging_weight || '0';
     row.piecesPerPackage = parseInt(material.pieces_per_package) || 1;
     row.unitCost = parseFloat(material.package_cost);
     
@@ -540,6 +540,13 @@ function openEditQuotationModal(id) {
           <input type="number" class="form-control edit-total" value="${totalPrice}" readonly>
         </td>
         <td><button type="button" class="btn btn-sm btn-danger" onclick="removeEditMaterialRow(this)"><i class="bi bi-trash"></i></button></td>`;
+      
+      // إضافة data attributes للبيانات المحفوظة
+      tr.setAttribute('data-material-type', it.material_type || '');
+      tr.setAttribute('data-packaging-unit', it.packaging_unit || '');
+      tr.setAttribute('data-packaging-weight', it.packaging_weight || '0');
+      tr.setAttribute('data-pieces-per-package', it.pieces_per_package || '1');
+      
       tbody.appendChild(tr);
     });
     updateEditTotal();

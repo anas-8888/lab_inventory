@@ -1,14 +1,26 @@
 <% function fmtDate(d){ if(!d) return '-'; const dt=new Date(d); const dd=String(dt.getDate()).padStart(2,'0'); const mm=String(dt.getMonth()+1).padStart(2,'0'); const yy=dt.getFullYear(); return `${dd}/${mm}/${yy}`; }
 function formatNumberDisplay(value) {
   if (value === null || value === undefined || value === '') return '-';
+  // للأرقام، نعرضها كما هي محفوظة (كنص) إذا أمكن
+  if (typeof value === 'string' && !isNaN(parseFloat(value))) {
+    return value;
+  }
   const num = parseFloat(value);
   if (isNaN(num)) return '-';
-  if (num === 0) return '0';
+  if (num === 0) return '0.000';
   let result = '';
-  if (Number.isInteger(num)) result = num.toString();
-  else {
+  if (Number.isInteger(num)) {
+    // للأرقام الصحيحة، أضف 3 منازل عشرية
+    result = num.toFixed(3);
+  } else {
     const ds = num.toString().split('.')[1];
-    result = !ds ? num.toString() : ds.length <= 2 ? num.toString() : num.toFixed(3);
+    if (!ds) {
+      result = num.toFixed(3);
+    } else {
+      // احتفظ بالمنازل الموجودة مع حد أدنى 3
+      const minDecimals = Math.max(3, ds.length);
+      result = num.toFixed(minDecimals);
+    }
   }
   if (num < 0) return '\u200E' + result;
   return result;
@@ -78,7 +90,7 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
           <th style="width: 4%; padding: 2pt 2pt;">#</th>
           <th style="width: 26%; padding: 2pt 2pt;">اسم المادة</th>
           <th style="width: 10%; padding: 2pt 2pt;">وحدة التعبئة</th>
-          <th style="width: 10%; padding: 2pt 2pt;">وزن التعبئة</th>
+          <th style="width: 10%; padding: 2pt 2pt;">وزن المادة</th>
           <th style="width: 10%; padding: 2pt 2pt;">شد الكرتون</th>
           <th style="width: 12%; padding: 2pt 2pt;">السعر</th>
           <th style="width: 8%; padding: 2pt 2pt;">الكمية</th>
@@ -98,9 +110,9 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
             </td>
             <td style="padding: 2pt 2pt;"><%= item.packaging_unit || '-' %></td>
             <td style="padding: 2pt 2pt;"><%= item.packaging_weight != null ? formatNumberDisplay(item.packaging_weight) : '-' %></td>
-            <td style="padding: 2pt 2pt;"><%= item.pieces_per_package != null ? formatNumberDisplay(item.pieces_per_package) : '-' %></td>
+            <td style="padding: 2pt 2pt;"><%= item.pieces_per_package != null ? parseFloat(item.pieces_per_package).toFixed(1) : '-' %></td>
             <td style="padding: 2pt 2pt;"><%= `${formatNumberDisplay(item.final_price)} ${currencySymbol}` %></td>
-            <td style="padding: 2pt 2pt;"><%= item.quantity != null ? formatNumberDisplay(item.quantity) : '-' %></td>
+            <td style="padding: 2pt 2pt;"><%= item.quantity != null ? parseFloat(item.quantity).toFixed(1) : '-' %></td>
             <td style="padding: 2pt 2pt;"><%= `${formatNumberDisplay(item.total_price)} ${currencySymbol}` %></td>
           </tr>
         <% }) %>
