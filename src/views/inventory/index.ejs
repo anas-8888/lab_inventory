@@ -192,7 +192,7 @@ function formatNumberDisplay(value) {
                   <td><%= formatNumberDisplay(item.net_weight_total) %></td>
                   <td><%= formatNumberDisplay(item.ph) %></td>
                   <td><%= formatNumberDisplay(item.peroxide_value) %></td>
-                  <td><%= formatNumberDisplay(item.sample_weight) %></td>
+                  <td><%= parseFloat(item.sample_weight).toFixed(3) == NaN ? '-' : parseFloat(item.sample_weight).toFixed(3) %></td>
                   <td><%= absorptions[0] || '-' %></td>
                   <td><%= absorptions[1] || '-' %></td>
                   <td><%= absorptions[2] || '-' %></td>

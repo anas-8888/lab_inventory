@@ -19,6 +19,10 @@
               <div class="col-md-3">
                 <label class="form-label required">رقم الفاتورة</label>
                 <input type="number" class="form-control" name="invoice_number" id="invoice_number" required min="1">
+                <small class="form-text text-muted">
+                  <i class="bi bi-info-circle me-1"></i>
+                  آخر فاتورة: <span class="fw-bold text-primary"><%= lastInvoiceNumber %></span>
+                </small>
               </div>
               <div class="col-md-3">
                 <label class="form-label required">اسم العميل</label>

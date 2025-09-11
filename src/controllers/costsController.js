@@ -117,6 +117,7 @@ const createMaterial = async (req, res) => {
         const {
             material_type,
             material_name,
+            calculation_method,
             price_before_waste,
             gross_weight,
             waste_percentage,
@@ -132,15 +133,37 @@ const createMaterial = async (req, res) => {
             pieces_per_package,
             pallet_price,
             packages_per_pallet,
-            extra_weights
+            extra_weights,
+            components
         } = req.body;
 
         // التحقق من البيانات المطلوبة
-        if (!material_type || !material_name || !price_before_waste || !gross_weight) {
+        if (!material_type || !material_name || !gross_weight) {
             return res.status(400).json({ 
                 success: false, 
                 message: 'البيانات المطلوبة غير مكتملة' 
             });
+        }
+
+        // التحقق من صحة طريقة الحساب
+        const isComponentsMethod = calculation_method === 'components';
+        
+        if (isComponentsMethod) {
+            // للطريقة الجديدة: التحقق من وجود عناصر
+            if (!components || !Array.isArray(components) || components.length === 0) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'يرجى إضافة عنصر واحد على الأقل للمادة' 
+                });
+            }
+        } else {
+            // للطريقة التقليدية: التحقق من وجود السعر
+            if (!price_before_waste) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'السعر قبل الهدر مطلوب للطريقة التقليدية' 
+                });
+            }
         }
 
         // جلب سعر الصرف الحالي
@@ -224,7 +247,7 @@ const createMaterial = async (req, res) => {
         // حفظ المادة
         const [result] = await req.db.query(`
             INSERT INTO materials (
-                material_type, material_name, price_before_waste, price_before_waste_syp,
+                material_type, material_name, calculation_method, price_before_waste, price_before_waste_syp,
                 gross_weight, waste_percentage, packaging_unit, packaging_weight,
                 packaging_unit_weight,
                 empty_package_price, empty_package_price_syp, sticker_price, sticker_price_syp,
@@ -233,9 +256,9 @@ const createMaterial = async (req, res) => {
                 pieces_per_package, pallet_price, pallet_price_syp, packages_per_pallet,
                 unit_cost, unit_cost_syp, package_cost, package_cost_syp,
                 extra_weights, gross_package_weight
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
-            material_type, material_name, (usd.price_before_waste || 0), (syp.price_before_waste || 0),
+            material_type, material_name, calculation_method || 'traditional', (usd.price_before_waste || 0), (syp.price_before_waste || 0),
             gross_weight_num, waste_percentage_num, packaging_unit, packaging_weight,
             packaging_unit_weight_num,
             (usd.empty_package_price || 0), (syp.empty_package_price || 0), (usd.sticker_price || 0), (syp.sticker_price || 0),
@@ -245,6 +268,28 @@ const createMaterial = async (req, res) => {
             unit_cost, unit_cost_syp, package_cost, package_cost_syp,
             JSON.stringify(extraWeightsArr || []), gross_package_weight
         ]);
+
+        // حفظ العناصر الفرعية إذا كانت الطريقة هي العناصر
+        if (isComponentsMethod && components && Array.isArray(components)) {
+            for (const component of components) {
+                if (component.component_name && component.weight_grams && component.price_per_kg) {
+                    // حساب السعر بالليرة السورية
+                    const price_per_kg_syp = parseFloat(component.price_per_kg) * exchangeRateValue;
+                    
+                    await req.db.query(`
+                        INSERT INTO material_components (
+                            material_id, component_name, weight_grams, price_per_kg, price_per_kg_syp
+                        ) VALUES (?, ?, ?, ?, ?)
+                    `, [
+                        result.insertId, 
+                        component.component_name, 
+                        parseFloat(component.weight_grams), 
+                        parseFloat(component.price_per_kg),
+                        price_per_kg_syp
+                    ]);
+                }
+            }
+        }
 
         // حفظ في سجل التكاليف
         await req.db.query(`
@@ -264,6 +309,30 @@ const createMaterial = async (req, res) => {
     }
 };
 
+// جلب العناصر الفرعية للمادة
+const getMaterialComponents = async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const [components] = await req.db.query(`
+            SELECT * FROM material_components 
+            WHERE material_id = ? 
+            ORDER BY component_name
+        `, [id]);
+        
+        res.json({ 
+            success: true, 
+            components: components 
+        });
+    } catch (error) {
+        console.error('خطأ في جلب العناصر الفرعية:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'حدث خطأ في جلب العناصر الفرعية' 
+        });
+    }
+};
+
 // تحديث مادة موجودة
 const updateMaterial = async (req, res) => {
     try {
@@ -271,6 +340,7 @@ const updateMaterial = async (req, res) => {
         const {
             material_type,
             material_name,
+            calculation_method,
             price_before_waste,
             gross_weight,
             waste_percentage,
@@ -286,8 +356,22 @@ const updateMaterial = async (req, res) => {
             pieces_per_package,
             pallet_price,
             packages_per_pallet,
-            extra_weights
+            extra_weights,
+            components
         } = req.body;
+
+        // التحقق من صحة طريقة الحساب
+        const isComponentsMethod = calculation_method === 'components';
+        
+        if (isComponentsMethod) {
+            // للطريقة الجديدة: التحقق من وجود عناصر
+            if (!components || !Array.isArray(components) || components.length === 0) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'يرجى إضافة عنصر واحد على الأقل للمادة' 
+                });
+            }
+        }
 
         // جلب سعر الصرف الحالي
         const [exchangeRate] = await req.db.query(`
@@ -367,7 +451,7 @@ const updateMaterial = async (req, res) => {
         // تحديث المادة
         await req.db.query(`
             UPDATE materials SET
-                material_type = ?, material_name = ?, price_before_waste = ?, price_before_waste_syp = ?,
+                material_type = ?, material_name = ?, calculation_method = ?, price_before_waste = ?, price_before_waste_syp = ?,
                 gross_weight = ?, waste_percentage = ?, packaging_unit = ?, packaging_weight = ?, packaging_unit_weight = ?,
                 empty_package_price = ?, empty_package_price_syp = ?, sticker_price = ?, sticker_price_syp = ?,
                 additional_expenses = ?, additional_expenses_syp = ?, labor_cost = ?, labor_cost_syp = ?,
@@ -377,7 +461,7 @@ const updateMaterial = async (req, res) => {
                 extra_weights = ?, gross_package_weight = ?
             WHERE id = ?
         `, [
-            material_type, material_name, (usd.price_before_waste || 0), (syp.price_before_waste || 0),
+            material_type, material_name, calculation_method || 'traditional', (usd.price_before_waste || 0), (syp.price_before_waste || 0),
             gross_weight_num, waste_percentage_num, packaging_unit, packaging_weight, packaging_unit_weight_num,
             (usd.empty_package_price || 0), (syp.empty_package_price || 0), (usd.sticker_price || 0), (syp.sticker_price || 0),
             (usd.additional_expenses || 0), (syp.additional_expenses || 0), (usd.labor_cost || 0), (syp.labor_cost || 0),
@@ -386,6 +470,35 @@ const updateMaterial = async (req, res) => {
             unit_cost, unit_cost_syp, package_cost, package_cost_syp,
             JSON.stringify(extraWeightsArr || []), gross_package_weight, id
         ]);
+
+        // تحديث العناصر الفرعية
+        if (isComponentsMethod && components && Array.isArray(components)) {
+            // حذف العناصر الفرعية القديمة
+            await req.db.query(`DELETE FROM material_components WHERE material_id = ?`, [id]);
+            
+            // إضافة العناصر الفرعية الجديدة
+            for (const component of components) {
+                if (component.component_name && component.weight_grams && component.price_per_kg) {
+                    // حساب السعر بالليرة السورية
+                    const price_per_kg_syp = parseFloat(component.price_per_kg) * exchangeRateValue;
+                    
+                    await req.db.query(`
+                        INSERT INTO material_components (
+                            material_id, component_name, weight_grams, price_per_kg, price_per_kg_syp
+                        ) VALUES (?, ?, ?, ?, ?)
+                    `, [
+                        id, 
+                        component.component_name, 
+                        parseFloat(component.weight_grams), 
+                        parseFloat(component.price_per_kg),
+                        price_per_kg_syp
+                    ]);
+                }
+            }
+        } else if (!isComponentsMethod) {
+            // إذا تم تغيير الطريقة من العناصر إلى التقليدية، احذف العناصر
+            await req.db.query(`DELETE FROM material_components WHERE material_id = ?`, [id]);
+        }
 
         // حفظ في سجل التكاليف
         await req.db.query(`
@@ -1604,6 +1717,17 @@ const getMaterialPreview = async (req, res) => {
         
         const material = materials[0];
         
+        // جلب العناصر الفرعية إذا كانت الطريقة هي العناصر
+        let components = [];
+        if (material.calculation_method === 'components') {
+            const [componentsResult] = await req.db.query(`
+                SELECT * FROM material_components 
+                WHERE material_id = ? 
+                ORDER BY component_name
+            `, [id]);
+            components = componentsResult;
+        }
+        
         // اختيار القيم حسب العملة المحددة
         const displayMaterial = {
             ...material,
@@ -1642,6 +1766,7 @@ const getMaterialPreview = async (req, res) => {
         res.render('costs/material-preview', {
             title: 'معاينة المادة',
             material: displayMaterial,
+            components: components,
             user: req.session.user,
             formatDate: formatDate
         });
@@ -1657,6 +1782,7 @@ module.exports = {
     getCostStatement,
     createMaterial,
     getMaterial,
+    getMaterialComponents,
     getMaterialCostLogs,
     getMaterialPreview,
     updateMaterial,

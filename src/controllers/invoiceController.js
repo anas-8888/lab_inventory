@@ -78,9 +78,22 @@ exports.getInvoices = async (req, res) => {
 exports.getCreateForm = async (req, res) => {
     try {
         const [inventory] = await pool.query('SELECT * FROM inventory WHERE current_quantity > 0 AND deleted_at IS NULL ORDER BY date DESC');
+        
+        // جلب رقم آخر فاتورة مضافة
+        const [lastInvoice] = await pool.query(`
+            SELECT invoice_number 
+            FROM invoices 
+            WHERE deleted_at IS NULL 
+            ORDER BY id DESC 
+            LIMIT 1
+        `);
+        
+        const lastInvoiceNumber = lastInvoice.length > 0 ? lastInvoice[0].invoice_number : 'لا توجد فواتير سابقة';
+        
         res.render('invoices/create', {
             title: 'إنشاء فاتورة جديدة',
             inventory,
+            lastInvoiceNumber,
             user: req.session.user
         });
     } catch (error) {

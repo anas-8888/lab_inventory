@@ -110,17 +110,99 @@
                             <input type="text" class="form-control" name="material_name" required>
                         </div>
 
+                        <!-- طريقة الحساب -->
+                        <div class="col-12">
+                            <label class="form-label">طريقة حساب التكلفة *</label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="calculation_method" id="traditionalMethod" value="traditional" checked onchange="toggleCalculationMethod()">
+                                        <label class="form-check-label" for="traditionalMethod">
+                                            <strong>الطريقة التقليدية</strong>
+                                            <small class="d-block text-muted">إدخال السعر والوزن الإجمالي مباشرة</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="calculation_method" id="componentsMethod" value="components" onchange="toggleCalculationMethod()">
+                                        <label class="form-check-label" for="componentsMethod">
+                                            <strong>الحساب بالعناصر الفرعية</strong>
+                                            <small class="d-block text-muted">تحديد مكونات المادة بالتفصيل</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- الطريقة التقليدية -->
+                        <div id="traditionalFields" class="col-12">
+                            <div class="row g-3">
                         <!-- السعر قبل الهدر (سعر كلي للوزن الجمالي) -->
-                        <div class="col-md-4">
+                                <div class="col-md-6">
                             <label class="form-label">السعر قبل الهدر (إجمالي) <%= defaultCurrency ? defaultCurrency.symbol : '$' %> *</label>
-                            <input type="number" class="form-control" name="price_before_waste" step="0.01" required>
+                                    <input type="number" class="form-control" name="price_before_waste" step="0.01">
                             <small class="text-muted">أدخل السعر الكلي، وسيتم احتساب سعر الكيلو تلقائياً = السعر ÷ الوزن الجمالي</small>
                         </div>
 
                         <!-- الوزن الجمالي -->
-                        <div class="col-md-4">
+                                <div class="col-md-6">
                             <label class="form-label">الوزن الإجمالي (كجم) *</label>
-                            <input type="number" class="form-control" name="gross_weight" step="0.01" required>
+                                    <input type="number" class="form-control" name="gross_weight" step="0.01">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- الحساب بالعناصر الفرعية -->
+                        <div id="componentsFields" class="col-12" style="display: none;">
+                            <div class="card border-info">
+                                <div class="card-header bg-light">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0"><i class="bi bi-puzzle"></i> العناصر الفرعية للمادة</h6>
+                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="addComponentRow()">
+                                            <i class="bi bi-plus"></i> إضافة عنصر
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered" id="componentsTable">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 35%;">اسم العنصر *</th>
+                                                    <th style="width: 20%;">الوزن (غرام) *</th>
+                                                    <th style="width: 25%;">سعر الكيلو (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</th>
+                                                    <th style="width: 15%;">التكلفة</th>
+                                                    <th style="width: 5%;">الإجراءات</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="componentsTableBody">
+                                                <!-- سيتم إضافة الصفوف ديناميكياً -->
+                                            </tbody>
+                                            <tfoot>
+                                                <tr class="table-info">
+                                                    <th>المجموع</th>
+                                                    <th id="totalWeightGrams">0 غ</th>
+                                                    <th id="avgPricePerKg">0.00 <%= defaultCurrency ? defaultCurrency.symbol : '$' %></th>
+                                                    <th id="totalComponentsCost">0.00 <%= defaultCurrency ? defaultCurrency.symbol : '$' %></th>
+                                                    <th></th>
+                                                </tr>
+                                                <tr class="table-success">
+                                                    <th colspan="2">الوزن الإجمالي: <span id="calculatedTotalWeight">0.000 كجم</span></th>
+                                                    <th colspan="3">السعر الإجمالي: <span id="calculatedTotalPrice">0.00 <%= defaultCurrency ? defaultCurrency.symbol : '$' %></span></th>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                    <div class="alert alert-info mt-3">
+                                        <small>
+                                            <i class="bi bi-info-circle"></i>
+                                            <strong>ملاحظة:</strong> سيتم حساب الوزن الإجمالي والسعر الإجمالي تلقائياً من مجموع العناصر المضافة.
+                                            سعر الكيلو النهائي = السعر الإجمالي ÷ الوزن الإجمالي
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- نسبة الهدر -->
@@ -285,17 +367,99 @@
                             <input type="text" class="form-control" id="editMaterialName" name="material_name" required>
                         </div>
 
+                        <!-- طريقة الحساب -->
+                        <div class="col-12">
+                            <label class="form-label">طريقة حساب التكلفة *</label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="edit_calculation_method" id="editTraditionalMethod" value="traditional" checked onchange="toggleEditCalculationMethod()">
+                                        <label class="form-check-label" for="editTraditionalMethod">
+                                            <strong>الطريقة التقليدية</strong>
+                                            <small class="d-block text-muted">إدخال السعر والوزن الإجمالي مباشرة</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="edit_calculation_method" id="editComponentsMethod" value="components" onchange="toggleEditCalculationMethod()">
+                                        <label class="form-check-label" for="editComponentsMethod">
+                                            <strong>الحساب بالعناصر الفرعية</strong>
+                                            <small class="d-block text-muted">تحديد مكونات المادة بالتفصيل</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- الطريقة التقليدية -->
+                        <div id="editTraditionalFields" class="col-12">
+                            <div class="row g-3">
                         <!-- السعر قبل الهدر (سعر كلي) -->
-                        <div class="col-md-4">
+                                <div class="col-md-6">
                             <label class="form-label">السعر قبل الهدر (إجمالي) <%= defaultCurrency ? defaultCurrency.symbol : '$' %> *</label>
-                            <input type="number" class="form-control currency-input" id="editPriceBeforeWaste" name="price_before_waste" step="0.01" required data-field="price_before_waste">
+                                    <input type="number" class="form-control currency-input" id="editPriceBeforeWaste" name="price_before_waste" step="0.01" data-field="price_before_waste">
                             <small class="text-muted">أدخل السعر الكلي، وسيتم احتساب سعر الكيلو تلقائياً</small>
                         </div>
 
                         <!-- الوزن الجمالي -->
-                        <div class="col-md-4">
+                                <div class="col-md-6">
                             <label class="form-label">الوزن الجمالي (كجم) *</label>
-                            <input type="number" class="form-control" id="editGrossWeight" name="gross_weight" step="0.01" required>
+                                    <input type="number" class="form-control" id="editGrossWeight" name="gross_weight" step="0.01">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- الحساب بالعناصر الفرعية -->
+                        <div id="editComponentsFields" class="col-12" style="display: none;">
+                            <div class="card border-info">
+                                <div class="card-header bg-light">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0"><i class="bi bi-puzzle"></i> العناصر الفرعية للمادة</h6>
+                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="addEditComponentRow()">
+                                            <i class="bi bi-plus"></i> إضافة عنصر
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered" id="editComponentsTable">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 35%;">اسم العنصر *</th>
+                                                    <th style="width: 20%;">الوزن (غرام) *</th>
+                                                    <th style="width: 25%;">سعر الكيلو (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</th>
+                                                    <th style="width: 15%;">التكلفة</th>
+                                                    <th style="width: 5%;">الإجراءات</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="editComponentsTableBody">
+                                                <!-- سيتم إضافة الصفوف ديناميكياً -->
+                                            </tbody>
+                                            <tfoot>
+                                                <tr class="table-info">
+                                                    <th>المجموع</th>
+                                                    <th id="editTotalWeightGrams">0 غ</th>
+                                                    <th id="editAvgPricePerKg">0.00 <%= defaultCurrency ? defaultCurrency.symbol : '$' %></th>
+                                                    <th id="editTotalComponentsCost">0.00 <%= defaultCurrency ? defaultCurrency.symbol : '$' %></th>
+                                                    <th></th>
+                                                </tr>
+                                                <tr class="table-success">
+                                                    <th colspan="2">الوزن الإجمالي: <span id="editCalculatedTotalWeight">0.000 كجم</span></th>
+                                                    <th colspan="3">السعر الإجمالي: <span id="editCalculatedTotalPrice">0.00 <%= defaultCurrency ? defaultCurrency.symbol : '$' %></span></th>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                    <div class="alert alert-info mt-3">
+                                        <small>
+                                            <i class="bi bi-info-circle"></i>
+                                            <strong>ملاحظة:</strong> سيتم حساب الوزن الإجمالي والسعر الإجمالي تلقائياً من مجموع العناصر المضافة.
+                                            سعر الكيلو النهائي = السعر الإجمالي ÷ الوزن الإجمالي
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- نسبة الهدر -->
@@ -708,6 +872,19 @@ function editMaterial(materialId) {
                 document.getElementById('editPiecesPerPackage').value = material.pieces_per_package;
                 document.getElementById('editPackagesPerPallet').value = material.packages_per_pallet;
                 
+                // تحديد طريقة الحساب
+                const calculationMethod = material.calculation_method || 'traditional';
+                if (calculationMethod === 'components') {
+                    document.getElementById('editComponentsMethod').checked = true;
+                    document.getElementById('editTraditionalMethod').checked = false;
+                } else {
+                    document.getElementById('editTraditionalMethod').checked = true;
+                    document.getElementById('editComponentsMethod').checked = false;
+                }
+                
+                // تبديل العرض حسب طريقة الحساب
+                toggleEditCalculationMethod();
+                
                 // ملء حقول العملة حسب العملة المحددة
                 const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
                 if (currentCurrency === 'SYP') {
@@ -764,6 +941,11 @@ function editMaterial(materialId) {
                     }
                 } catch(e) {}
                 
+                // تحميل العناصر الفرعية إذا كانت الطريقة هي العناصر
+                if (calculationMethod === 'components') {
+                    loadEditMaterialComponents(material.id);
+                }
+                
                 // حساب التكاليف
                 calculateEditCosts();
                 
@@ -779,12 +961,422 @@ function editMaterial(materialId) {
         });
 }
 
+// إدارة العناصر الفرعية
+let componentRowCounter = 0;
+
+// تبديل طريقة الحساب
+function toggleCalculationMethod() {
+    const traditionalFields = document.getElementById('traditionalFields');
+    const componentsFields = document.getElementById('componentsFields');
+    const traditionalMethod = document.getElementById('traditionalMethod');
+    const componentsMethod = document.getElementById('componentsMethod');
+    
+    // تحديث required attributes
+    const traditionalInputs = traditionalFields.querySelectorAll('input');
+    const componentsInputs = componentsFields.querySelectorAll('input');
+    
+    if (traditionalMethod.checked) {
+        traditionalFields.style.display = 'block';
+        componentsFields.style.display = 'none';
+        
+        // جعل الحقول التقليدية مطلوبة
+        traditionalInputs.forEach(input => input.setAttribute('required', 'required'));
+        componentsInputs.forEach(input => input.removeAttribute('required'));
+    } else if (componentsMethod.checked) {
+        traditionalFields.style.display = 'none';
+        componentsFields.style.display = 'block';
+        
+        // جعل حقول العناصر مطلوبة
+        traditionalInputs.forEach(input => input.removeAttribute('required'));
+        
+        // إضافة صف افتراضي للعناصر إذا لم يكن موجود
+        if (document.getElementById('componentsTableBody').children.length === 0) {
+            addComponentRow();
+        }
+    }
+    
+    // إعادة حساب التكاليف
+    calculateCosts();
+}
+
+// إضافة صف عنصر جديد
+function addComponentRow() {
+    const tbody = document.getElementById('componentsTableBody');
+    const rowId = ++componentRowCounter;
+    
+    const row = document.createElement('tr');
+    row.setAttribute('data-component-id', rowId);
+    row.innerHTML = `
+        <td>
+            <input type="text" class="form-control component-name" placeholder="مثال: زيتون أخضر" required>
+        </td>
+        <td>
+            <input type="number" class="form-control component-weight" step="0.1" min="0" placeholder="0" onchange="calculateComponentCost(${rowId})" required>
+        </td>
+        <td>
+            <input type="number" class="form-control component-price" step="0.01" min="0" placeholder="0.00" onchange="calculateComponentCost(${rowId})" required>
+        </td>
+        <td>
+            <input type="number" class="form-control component-cost" readonly>
+        </td>
+        <td>
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeComponentRow(${rowId})" title="حذف العنصر">
+                <i class="bi bi-trash"></i>
+            </button>
+        </td>
+    `;
+    
+    tbody.appendChild(row);
+    
+    // إعادة حساب المجاميع
+    calculateComponentsTotals();
+}
+
+// حذف صف عنصر
+function removeComponentRow(rowId) {
+    const row = document.querySelector(`tr[data-component-id="${rowId}"]`);
+    if (row) {
+        row.remove();
+        calculateComponentsTotals();
+    }
+}
+
+// حساب تكلفة عنصر واحد
+function calculateComponentCost(rowId) {
+    const row = document.querySelector(`tr[data-component-id="${rowId}"]`);
+    if (!row) return;
+    
+    const weight = parseFloat(row.querySelector('.component-weight').value) || 0;
+    const price = parseFloat(row.querySelector('.component-price').value) || 0;
+    const cost = (weight / 1000) * price; // تحويل من غرام إلى كيلو
+    
+    row.querySelector('.component-cost').value = cost.toFixed(4);
+    
+    // إعادة حساب المجاميع
+    calculateComponentsTotals();
+}
+
+// حساب مجاميع العناصر
+function calculateComponentsTotals() {
+    const rows = document.querySelectorAll('#componentsTableBody tr');
+    let totalWeight = 0;
+    let totalCost = 0;
+    let validRows = 0;
+    
+    rows.forEach(row => {
+        const weight = parseFloat(row.querySelector('.component-weight').value) || 0;
+        const cost = parseFloat(row.querySelector('.component-cost').value) || 0;
+        
+        if (weight > 0) {
+            totalWeight += weight;
+            totalCost += cost;
+            validRows++;
+        }
+    });
+    
+    // تحديث المجاميع في الجدول
+    document.getElementById('totalWeightGrams').textContent = `${totalWeight.toFixed(1)} غ`;
+    document.getElementById('totalComponentsCost').textContent = `${totalCost.toFixed(4)} <%= defaultCurrency ? defaultCurrency.symbol : '$' %>`;
+    
+    // حساب متوسط السعر
+    const avgPrice = totalWeight > 0 ? (totalCost / (totalWeight / 1000)) : 0;
+    document.getElementById('avgPricePerKg').textContent = `${avgPrice.toFixed(2)} <%= defaultCurrency ? defaultCurrency.symbol : '$' %>`;
+    
+    // تحديث الوزن والسعر الإجماليين
+    const totalWeightKg = totalWeight / 1000;
+    document.getElementById('calculatedTotalWeight').textContent = `${totalWeightKg.toFixed(3)} كجم`;
+    document.getElementById('calculatedTotalPrice').textContent = `${totalCost.toFixed(4)} <%= defaultCurrency ? defaultCurrency.symbol : '$' %>`;
+    
+    // تحديث الحقول المخفية للإرسال
+    updateHiddenComponentsFields(totalWeightKg, totalCost);
+    
+    // إعادة حساب التكاليف الإجمالية
+    calculateCosts();
+}
+
+// تحديث الحقول المخفية للإرسال
+function updateHiddenComponentsFields(totalWeight, totalPrice) {
+    // تحديث أو إنشاء حقول مخفية للوزن والسعر المحسوبين
+    let weightField = document.querySelector('input[name="calculated_gross_weight"]');
+    let priceField = document.querySelector('input[name="calculated_price_before_waste"]');
+    
+    if (!weightField) {
+        weightField = document.createElement('input');
+        weightField.type = 'hidden';
+        weightField.name = 'calculated_gross_weight';
+        document.getElementById('materialForm').appendChild(weightField);
+    }
+    
+    if (!priceField) {
+        priceField = document.createElement('input');
+        priceField.type = 'hidden';
+        priceField.name = 'calculated_price_before_waste';
+        document.getElementById('materialForm').appendChild(priceField);
+    }
+    
+    weightField.value = totalWeight.toFixed(3);
+    priceField.value = totalPrice.toFixed(4);
+}
+
+// جمع بيانات العناصر للإرسال
+function getComponentsData() {
+    const components = [];
+    const rows = document.querySelectorAll('#componentsTableBody tr');
+    
+    rows.forEach(row => {
+        const name = row.querySelector('.component-name').value.trim();
+        const weight = parseFloat(row.querySelector('.component-weight').value) || 0;
+        const price = parseFloat(row.querySelector('.component-price').value) || 0;
+        
+        if (name && weight > 0 && price > 0) {
+            components.push({
+                component_name: name,
+                weight_grams: weight,
+                price_per_kg: price
+            });
+        }
+    });
+    
+    return components;
+}
+
+// إدارة العناصر الفرعية في مودال التعديل
+let editComponentRowCounter = 0;
+
+// تبديل طريقة الحساب في التعديل
+function toggleEditCalculationMethod() {
+    const traditionalFields = document.getElementById('editTraditionalFields');
+    const componentsFields = document.getElementById('editComponentsFields');
+    const traditionalMethod = document.getElementById('editTraditionalMethod');
+    const componentsMethod = document.getElementById('editComponentsMethod');
+    
+    // تحديث required attributes
+    const traditionalInputs = traditionalFields.querySelectorAll('input');
+    const componentsInputs = componentsFields.querySelectorAll('input');
+    
+    if (traditionalMethod.checked) {
+        traditionalFields.style.display = 'block';
+        componentsFields.style.display = 'none';
+        
+        // جعل الحقول التقليدية مطلوبة
+        traditionalInputs.forEach(input => input.setAttribute('required', 'required'));
+        componentsInputs.forEach(input => input.removeAttribute('required'));
+    } else if (componentsMethod.checked) {
+        traditionalFields.style.display = 'none';
+        componentsFields.style.display = 'block';
+        
+        // جعل حقول العناصر مطلوبة
+        traditionalInputs.forEach(input => input.removeAttribute('required'));
+        
+        // إضافة صف افتراضي للعناصر إذا لم يكن موجود
+        if (document.getElementById('editComponentsTableBody').children.length === 0) {
+            addEditComponentRow();
+        }
+    }
+    
+    // إعادة حساب التكاليف
+    calculateEditCosts();
+}
+
+// إضافة صف عنصر جديد في التعديل
+function addEditComponentRow() {
+    const tbody = document.getElementById('editComponentsTableBody');
+    const rowId = ++editComponentRowCounter;
+    
+    const row = document.createElement('tr');
+    row.setAttribute('data-edit-component-id', rowId);
+    row.innerHTML = `
+        <td>
+            <input type="text" class="form-control edit-component-name" placeholder="مثال: زيتون أخضر" required>
+        </td>
+        <td>
+            <input type="number" class="form-control edit-component-weight" step="0.1" min="0" placeholder="0" onchange="calculateEditComponentCost(${rowId})" required>
+        </td>
+        <td>
+            <input type="number" class="form-control edit-component-price" step="0.01" min="0" placeholder="0.00" onchange="calculateEditComponentCost(${rowId})" required>
+        </td>
+        <td>
+            <input type="number" class="form-control edit-component-cost" readonly>
+        </td>
+        <td>
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeEditComponentRow(${rowId})" title="حذف العنصر">
+                <i class="bi bi-trash"></i>
+            </button>
+        </td>
+    `;
+    
+    tbody.appendChild(row);
+    
+    // إعادة حساب المجاميع
+    calculateEditComponentsTotals();
+}
+
+// حذف صف عنصر في التعديل
+function removeEditComponentRow(rowId) {
+    const row = document.querySelector(`tr[data-edit-component-id="${rowId}"]`);
+    if (row) {
+        row.remove();
+        calculateEditComponentsTotals();
+    }
+}
+
+// حساب تكلفة عنصر واحد في التعديل
+function calculateEditComponentCost(rowId) {
+    const row = document.querySelector(`tr[data-edit-component-id="${rowId}"]`);
+    if (!row) return;
+    
+    const weight = parseFloat(row.querySelector('.edit-component-weight').value) || 0;
+    const price = parseFloat(row.querySelector('.edit-component-price').value) || 0;
+    const cost = (weight / 1000) * price; // تحويل من غرام إلى كيلو
+    
+    row.querySelector('.edit-component-cost').value = cost.toFixed(4);
+    
+    // إعادة حساب المجاميع
+    calculateEditComponentsTotals();
+}
+
+// حساب مجاميع العناصر في التعديل
+function calculateEditComponentsTotals() {
+    const rows = document.querySelectorAll('#editComponentsTableBody tr');
+    let totalWeight = 0;
+    let totalCost = 0;
+    let validRows = 0;
+    
+    rows.forEach(row => {
+        const weight = parseFloat(row.querySelector('.edit-component-weight').value) || 0;
+        const cost = parseFloat(row.querySelector('.edit-component-cost').value) || 0;
+        
+        if (weight > 0) {
+            totalWeight += weight;
+            totalCost += cost;
+            validRows++;
+        }
+    });
+    
+    // تحديث المجاميع في الجدول
+    document.getElementById('editTotalWeightGrams').textContent = `${totalWeight.toFixed(1)} غ`;
+    document.getElementById('editTotalComponentsCost').textContent = `${totalCost.toFixed(4)} <%= defaultCurrency ? defaultCurrency.symbol : '$' %>`;
+    
+    // حساب متوسط السعر
+    const avgPrice = totalWeight > 0 ? (totalCost / (totalWeight / 1000)) : 0;
+    document.getElementById('editAvgPricePerKg').textContent = `${avgPrice.toFixed(2)} <%= defaultCurrency ? defaultCurrency.symbol : '$' %>`;
+    
+    // تحديث الوزن والسعر الإجماليين
+    const totalWeightKg = totalWeight / 1000;
+    document.getElementById('editCalculatedTotalWeight').textContent = `${totalWeightKg.toFixed(3)} كجم`;
+    document.getElementById('editCalculatedTotalPrice').textContent = `${totalCost.toFixed(4)} <%= defaultCurrency ? defaultCurrency.symbol : '$' %>`;
+    
+    // تحديث الحقول المخفية للإرسال
+    updateEditHiddenComponentsFields(totalWeightKg, totalCost);
+    
+    // إعادة حساب التكاليف الإجمالية
+    calculateEditCosts();
+}
+
+// تحديث الحقول المخفية للإرسال في التعديل
+function updateEditHiddenComponentsFields(totalWeight, totalPrice) {
+    // تحديث أو إنشاء حقول مخفية للوزن والسعر المحسوبين
+    let weightField = document.querySelector('input[name="edit_calculated_gross_weight"]');
+    let priceField = document.querySelector('input[name="edit_calculated_price_before_waste"]');
+    
+    if (!weightField) {
+        weightField = document.createElement('input');
+        weightField.type = 'hidden';
+        weightField.name = 'edit_calculated_gross_weight';
+        document.getElementById('editMaterialForm').appendChild(weightField);
+    }
+    
+    if (!priceField) {
+        priceField = document.createElement('input');
+        priceField.type = 'hidden';
+        priceField.name = 'edit_calculated_price_before_waste';
+        document.getElementById('editMaterialForm').appendChild(priceField);
+    }
+    
+    weightField.value = totalWeight.toFixed(3);
+    priceField.value = totalPrice.toFixed(4);
+}
+
+// جمع بيانات العناصر للإرسال في التعديل
+function getEditComponentsData() {
+    const components = [];
+    const rows = document.querySelectorAll('#editComponentsTableBody tr');
+    
+    rows.forEach(row => {
+        const name = row.querySelector('.edit-component-name').value.trim();
+        const weight = parseFloat(row.querySelector('.edit-component-weight').value) || 0;
+        const price = parseFloat(row.querySelector('.edit-component-price').value) || 0;
+        
+        if (name && weight > 0 && price > 0) {
+            components.push({
+                component_name: name,
+                weight_grams: weight,
+                price_per_kg: price
+            });
+        }
+    });
+    
+    return components;
+}
+
+// تحميل العناصر الفرعية للمادة في التعديل
+function loadEditMaterialComponents(materialId) {
+    fetch(`/costs/cost-statement/${materialId}/components`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.components) {
+                // مسح الجدول أولاً
+                document.getElementById('editComponentsTableBody').innerHTML = '';
+                editComponentRowCounter = 0;
+                
+                // إضافة العناصر
+                data.components.forEach(component => {
+                    addEditComponentRow();
+                    const lastRow = document.querySelector('#editComponentsTableBody tr:last-child');
+                    if (lastRow) {
+                        lastRow.querySelector('.edit-component-name').value = component.component_name;
+                        lastRow.querySelector('.edit-component-weight').value = component.weight_grams;
+                        
+                        // تحديد السعر حسب العملة الحالية
+                        const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
+                        const price = currentCurrency === 'SYP' ? (component.price_per_kg_syp || component.price_per_kg) : component.price_per_kg;
+                        lastRow.querySelector('.edit-component-price').value = price;
+                        
+                        // حساب التكلفة
+                        const rowId = lastRow.getAttribute('data-edit-component-id');
+                        calculateEditComponentCost(parseInt(rowId));
+                    }
+                });
+                
+                // إعادة حساب المجاميع
+                calculateEditComponentsTotals();
+            }
+        })
+        .catch(error => {
+            console.error('خطأ في تحميل العناصر الفرعية:', error);
+        });
+}
+
 // حساب التكاليف تلقائياً
 function calculateCosts() {
     const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
     const exchangeRate = <%= exchangeRate %>;
-    const priceBeforeWaste = parseFloat(document.querySelector('input[name="price_before_waste"]').value) || 0; // سعر إجمالي
-    const grossWeight = parseFloat(document.querySelector('input[name="gross_weight"]').value) || 0;
+    
+    // تحديد طريقة الحساب
+    const isComponentsMethod = document.getElementById('componentsMethod').checked;
+    
+    let priceBeforeWaste, grossWeight;
+    
+    if (isComponentsMethod) {
+        // استخدام القيم المحسوبة من العناصر
+        priceBeforeWaste = parseFloat(document.querySelector('input[name="calculated_price_before_waste"]')?.value) || 0;
+        grossWeight = parseFloat(document.querySelector('input[name="calculated_gross_weight"]')?.value) || 0;
+    } else {
+        // استخدام القيم المدخلة يدوياً
+        priceBeforeWaste = parseFloat(document.querySelector('input[name="price_before_waste"]').value) || 0;
+        grossWeight = parseFloat(document.querySelector('input[name="gross_weight"]').value) || 0;
+    }
+    
     const wastePercentage = parseFloat(document.querySelector('input[name="waste_percentage"]').value) || 0;
     const emptyPackagePrice = parseFloat(document.querySelector('input[name="empty_package_price"]').value) || 0;
   const packagingUnitWeight = parseFloat(document.querySelector('input[name="packaging_unit_weight"]').value) || 0;
@@ -847,11 +1439,15 @@ document.getElementById('materialForm').addEventListener('submit', function(e) {
     const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
     const exchangeRate = <%= exchangeRate %>;
 
+    // تحديد طريقة الحساب
+    const calculationMethod = formData.get('calculation_method');
+    const isComponentsMethod = calculationMethod === 'components';
+
     // تجهيز الحقول الرقمية غير المرتبطة بالعملة كما هي
     const bodyPayload = {
             material_type: formData.get('material_type'),
             material_name: formData.get('material_name'),
-            gross_weight: formData.get('gross_weight'),
+            calculation_method: calculationMethod,
             waste_percentage: formData.get('waste_percentage'),
             packaging_unit: formData.get('packaging_unit'),
             packaging_weight: formData.get('packaging_weight'),
@@ -859,6 +1455,20 @@ document.getElementById('materialForm').addEventListener('submit', function(e) {
             pieces_per_package: formData.get('pieces_per_package'),
             packages_per_pallet: formData.get('packages_per_pallet')
     };
+    
+    // إضافة الوزن والسعر حسب طريقة الحساب
+    if (isComponentsMethod) {
+        bodyPayload.gross_weight = formData.get('calculated_gross_weight');
+        bodyPayload.components = getComponentsData();
+        
+        // التحقق من وجود عناصر
+        if (!bodyPayload.components || bodyPayload.components.length === 0) {
+            showAlert('يرجى إضافة عنصر واحد على الأقل للمادة', 'error');
+            return;
+        }
+    } else {
+        bodyPayload.gross_weight = formData.get('gross_weight');
+    }
 
     // جمع الأوزان الإضافية
     const extraWeights = [];
@@ -870,11 +1480,24 @@ document.getElementById('materialForm').addEventListener('submit', function(e) {
     if (extraWeights.length) bodyPayload.extra_weights = extraWeights;
 
     // تحويل الحقول المرتبطة بالعملة إلى الدولار عند كون العملة الحالية ل.س
-    const currencyFields = [
-        'price_before_waste', 'empty_package_price', 'sticker_price', 
+    let currencyFields = [
+        'empty_package_price', 'sticker_price', 
         'additional_expenses', 'labor_cost', 'preservatives_cost', 
         'carton_price', 'pallet_price'
     ];
+    
+    // إضافة price_before_waste فقط للطريقة التقليدية
+    if (!isComponentsMethod) {
+        currencyFields.push('price_before_waste');
+    } else {
+        // للطريقة الجديدة، استخدم السعر المحسوب
+        const calculatedPrice = parseFloat(formData.get('calculated_price_before_waste') || '0') || 0;
+        if (currentCurrency === 'SYP') {
+            bodyPayload.price_before_waste = (calculatedPrice / exchangeRate).toFixed(4);
+        } else {
+            bodyPayload.price_before_waste = calculatedPrice.toFixed(4);
+        }
+    }
 
     currencyFields.forEach((field) => {
         const raw = parseFloat(formData.get(field) || '0') || 0;
@@ -1123,8 +1746,22 @@ document.addEventListener('DOMContentLoaded', function() {
 function calculateEditCosts() {
     const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
     const exchangeRate = <%= exchangeRate %>;
-    const priceBeforeWaste = parseFloat(document.getElementById('editPriceBeforeWaste').value) || 0; // سعر إجمالي
-    const grossWeight = parseFloat(document.getElementById('editGrossWeight').value) || 0;
+    
+    // تحديد طريقة الحساب
+    const isComponentsMethod = document.getElementById('editComponentsMethod').checked;
+    
+    let priceBeforeWaste, grossWeight;
+    
+    if (isComponentsMethod) {
+        // استخدام القيم المحسوبة من العناصر
+        priceBeforeWaste = parseFloat(document.querySelector('input[name="edit_calculated_price_before_waste"]')?.value) || 0;
+        grossWeight = parseFloat(document.querySelector('input[name="edit_calculated_gross_weight"]')?.value) || 0;
+    } else {
+        // استخدام القيم المدخلة يدوياً
+        priceBeforeWaste = parseFloat(document.getElementById('editPriceBeforeWaste').value) || 0;
+        grossWeight = parseFloat(document.getElementById('editGrossWeight').value) || 0;
+    }
+    
     const wastePercentage = parseFloat(document.getElementById('editWastePercentage').value) || 0;
     const emptyPackagePrice = parseFloat(document.getElementById('editEmptyPackagePrice').value) || 0;
   const packagingUnitWeight = parseFloat(document.getElementById('editPackagingUnitWeight').value) || 0;
@@ -1185,11 +1822,15 @@ function saveMaterialEdit() {
     const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
     const exchangeRate = <%= exchangeRate %>;
     
+    // تحديد طريقة الحساب
+    const calculationMethod = document.querySelector('input[name="edit_calculation_method"]:checked').value;
+    const isComponentsMethod = calculationMethod === 'components';
+    
     // جمع القيم مع تحويل العملة
     const formData = {
         material_type: document.getElementById('editMaterialType').value,
         material_name: document.getElementById('editMaterialName').value,
-        gross_weight: document.getElementById('editGrossWeight').value,
+        calculation_method: calculationMethod,
         waste_percentage: document.getElementById('editWastePercentage').value,
         packaging_unit: document.getElementById('editPackagingUnit').value,
         packaging_weight: document.getElementById('editPackagingWeight').value,
@@ -1198,12 +1839,40 @@ function saveMaterialEdit() {
         packages_per_pallet: document.getElementById('editPackagesPerPallet').value
     };
     
+    // إضافة الوزن والسعر حسب طريقة الحساب
+    if (isComponentsMethod) {
+        formData.gross_weight = document.querySelector('input[name="edit_calculated_gross_weight"]')?.value;
+        formData.components = getEditComponentsData();
+        
+        // التحقق من وجود عناصر
+        if (!formData.components || formData.components.length === 0) {
+            showAlert('يرجى إضافة عنصر واحد على الأقل للمادة', 'error');
+            return;
+        }
+    } else {
+        formData.gross_weight = document.getElementById('editGrossWeight').value;
+    }
+    
     // إضافة حقول العملة مع التحويل
-    const currencyFields = [
-        'price_before_waste', 'empty_package_price', 'sticker_price', 
+    let currencyFields = [
+        'empty_package_price', 'sticker_price', 
         'additional_expenses', 'labor_cost', 'preservatives_cost', 
         'carton_price', 'pallet_price'
     ];
+    
+    // إضافة price_before_waste فقط للطريقة التقليدية
+    if (!isComponentsMethod) {
+        currencyFields.push('price_before_waste');
+    } else {
+        // للطريقة الجديدة، استخدم السعر المحسوب
+        const calculatedPrice = parseFloat(document.querySelector('input[name="edit_calculated_price_before_waste"]')?.value) || 0;
+        if (currentCurrency === 'SYP') {
+            formData.price_before_waste = (calculatedPrice / exchangeRate);
+            formData.price_before_waste_syp = calculatedPrice;
+        } else {
+            formData.price_before_waste = calculatedPrice;
+        }
+    }
     
     currencyFields.forEach(field => {
         // تحويل snake_case إلى PascalCase لبناء المعرّف الصحيح

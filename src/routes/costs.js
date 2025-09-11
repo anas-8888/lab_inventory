@@ -9,6 +9,7 @@ router.get('/', isAuthenticated, isAdmin, costsController.getCosts);
 // المرحلة الأولى: بيان الكلفة
 router.get('/cost-statement', isAuthenticated, isAdmin, costsController.getCostStatement);
 router.get('/cost-statement/:id', isAuthenticated, isAdmin, costsController.getMaterial);
+router.get('/cost-statement/:id/components', isAuthenticated, isAdmin, costsController.getMaterialComponents);
 router.get('/cost-statement/:id/logs', isAuthenticated, isAdmin, costsController.getMaterialCostLogs);
 router.get('/cost-statement/:id/preview', isAuthenticated, isAdmin, costsController.getMaterialPreview);
 router.get('/cost-statement/:id/print', isAuthenticated, isAdmin, costsController.getMaterialPrintPage);
