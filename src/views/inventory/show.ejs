@@ -123,7 +123,7 @@ function convertToArabicNumbers(num) {
                                     </div>
                                     <div class="mb-3">
                                         <label class="text-muted small">وزن العينة</label>
-                                        <p class="mb-2 fw-bold"><%= formatNumberDisplay(item.sample_weight) %></p>
+                                        <p class="mb-2 fw-bold"><%= parseFloat(item.sample_weight).toFixed(3) == NaN ? '-' : parseFloat(item.sample_weight).toFixed(3) %></p>
                                     </div>
                                     <div class="mb-3">
                                         <label class="text-muted small">الوزن الصافي الأساسي</label>
@@ -355,7 +355,7 @@ function convertToArabicNumbers(num) {
             </tr>
             <tr>
                 <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">وزن العينة</td>
-                <td style="padding: 8px; border: 1px solid #ddd;"><%= formatNumberDisplay(item.sample_weight) %></td>
+                <td style="padding: 8px; border: 1px solid #ddd;"><%= parseFloat(item.sample_weight).toFixed(3) == NaN ? '-' : parseFloat(item.sample_weight).toFixed(3) %></td>
                 <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">الوزن الصافي الأساسي</td>
                 <td style="padding: 8px; border: 1px solid #ddd;"><%= formatNumberDisplay(item.net_weight_total) %></td>
             </tr>
