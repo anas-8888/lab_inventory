@@ -1274,8 +1274,8 @@ const createOrder = async (req, res) => {
                 await req.db.query(`
                     INSERT INTO order_items (
                         order_id, material_id, material_name, unit, requested_quantity, weight, volume, 
-                        unit_price, unit_price_syp, total_price, total_price_syp, notes
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        unit_price, unit_price_syp, total_price, total_price_syp, notes, net_weight, gross_weight
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `, [
                     orderResult.insertId,
                     item.material_id || null,
@@ -1288,7 +1288,9 @@ const createOrder = async (req, res) => {
                     unitPriceSYP,
                     totalPriceUSD,
                     totalPriceSYP,
-                    item.notes || null
+                    item.notes || null,
+                    item.net_weight || null,
+                    item.gross_weight || null
                 ]);
             }
         }
@@ -1525,8 +1527,8 @@ const updateOrder = async (req, res) => {
                 await req.db.query(`
                     INSERT INTO order_items (
                         order_id, material_id, material_name, unit, requested_quantity, weight, volume, 
-                        unit_price, unit_price_syp, total_price, total_price_syp, notes
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        unit_price, unit_price_syp, total_price, total_price_syp, notes, net_weight, gross_weight
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `, [
                     id,
                     item.material_id || null,
@@ -1539,7 +1541,9 @@ const updateOrder = async (req, res) => {
                     unitPriceSYP,
                     totalPriceUSD,
                     totalPriceSYP,
-                    item.notes || null
+                    item.notes || null,
+                    item.net_weight || null,
+                    item.gross_weight || null
                 ]);
             }
         }
@@ -1567,25 +1571,44 @@ const getOrderDetailsPage = async (req, res) => {
         }
         const [items] = await req.db.query('SELECT * FROM order_items WHERE order_id = ?', [id]);
 
+        // جلب بيانات المواد لحساب الوزن الصافي بعد الهدر
+        const materialIds = items.map(i => i.material_id).filter(Boolean);
+        let materialsMap = new Map();
+        if (materialIds.length > 0) {
+            const [materials] = await req.db.query(
+                `SELECT id, gross_weight, waste_percentage FROM materials WHERE id IN (${materialIds.map(()=>'?').join(',')})`,
+                materialIds
+            );
+            materials.forEach(m => materialsMap.set(m.id, m));
+        }
+
         // اختيار القيم حسب العملة المحددة
         const isSyp = req.defaultCurrency && req.defaultCurrency.code === 'SYP';
         const displayItems = items.map(it => {
             const qty = parseFloat(it.requested_quantity) || 0;
             const unitPrice = isSyp ? (it.unit_price_syp || it.unit_price) : it.unit_price;
             const totalPrice = isSyp ? (it.total_price_syp || it.total_price) : it.total_price;
-            const weight = parseFloat(it.weight) || 0;
-            const weightTotal = qty * weight;
+            
+            // حساب الوزن الصافي بعد الهدر
+            let netWeight = parseFloat(it.net_weight) || 0;
+            if (it.material_id && materialsMap.has(it.material_id)) {
+                const material = materialsMap.get(it.material_id);
+                const grossWeight = parseFloat(material.gross_weight) || 0;
+                const wastePercentage = parseFloat(material.waste_percentage) || 0;
+                netWeight = grossWeight * (1 - wastePercentage / 100);
+            }
+            
             return { 
                 ...it, 
                 unit_price: unitPrice != null ? parseFloat(unitPrice) : null, 
-                total_price: totalPrice != null ? parseFloat(totalPrice) : null, 
-                weight_total: weightTotal 
+                total_price: totalPrice != null ? parseFloat(totalPrice) : null,
+                net_weight: netWeight
             };
         });
         const totals = {
             totalRequestedQuantity: displayItems.reduce((s, it) => s + (parseFloat(it.requested_quantity) || 0), 0),
-            totalWeight: displayItems.reduce((s, it) => s + (parseFloat(it.weight_total) || 0), 0),
-            totalVolume: displayItems.reduce((s, it) => s + (parseFloat(it.volume) || 0), 0),
+            totalNetWeight: displayItems.reduce((s, it) => s + (parseFloat(it.net_weight) || 0), 0),
+            totalGrossWeight: displayItems.reduce((s, it) => s + (parseFloat(it.gross_weight) || 0), 0),
             grandTotal: displayItems.reduce((s, it) => s + (it.total_price != null ? parseFloat(it.total_price) : 0), 0)
         };
 
@@ -1616,27 +1639,45 @@ const getOrderPrintPage = async (req, res) => {
         }
         const [items] = await req.db.query('SELECT * FROM order_items WHERE order_id = ?', [id]);
 
+        // جلب بيانات المواد لحساب الوزن الصافي بعد الهدر
+        const materialIds = items.map(i => i.material_id).filter(Boolean);
+        let materialsMap = new Map();
+        if (materialIds.length > 0) {
+            const [materials] = await req.db.query(
+                `SELECT id, gross_weight, waste_percentage FROM materials WHERE id IN (${materialIds.map(()=>'?').join(',')})`,
+                materialIds
+            );
+            materials.forEach(m => materialsMap.set(m.id, m));
+        }
+
         // اختيار القيم حسب العملة المحددة
         const isSyp = req.defaultCurrency && req.defaultCurrency.code === 'SYP';
         const pricedItems = items.map(it => {
             const qty = parseFloat(it.requested_quantity) || 0;
             const unitPrice = isSyp ? (it.unit_price_syp || it.unit_price) : it.unit_price;
             const totalPrice = isSyp ? (it.total_price_syp || it.total_price) : it.total_price;
+            
+            // حساب الوزن الصافي بعد الهدر
+            let netWeight = parseFloat(it.net_weight) || 0;
+            if (it.material_id && materialsMap.has(it.material_id)) {
+                const material = materialsMap.get(it.material_id);
+                const grossWeight = parseFloat(material.gross_weight) || 0;
+                const wastePercentage = parseFloat(material.waste_percentage) || 0;
+                netWeight = grossWeight * (1 - wastePercentage / 100);
+            }
+            
             return { 
                 ...it, 
                 unit_price: unitPrice != null ? parseFloat(unitPrice) : null, 
-                total_price: totalPrice != null ? parseFloat(totalPrice) : null 
+                total_price: totalPrice != null ? parseFloat(totalPrice) : null,
+                net_weight: netWeight
             };
         });
 
         const totals = {
             totalRequestedQuantity: pricedItems.reduce((s, it) => s + (parseFloat(it.requested_quantity) || 0), 0),
-            totalWeight: pricedItems.reduce((s, it) => {
-                const qty = parseFloat(it.requested_quantity) || 0;
-                const w = parseFloat(it.weight) || 0;
-                return s + (qty * w);
-            }, 0),
-            totalVolume: pricedItems.reduce((s, it) => s + (parseFloat(it.volume) || 0), 0),
+            totalNetWeight: pricedItems.reduce((s, it) => s + (parseFloat(it.net_weight) || 0), 0),
+            totalGrossWeight: pricedItems.reduce((s, it) => s + (parseFloat(it.gross_weight) || 0), 0),
             grandTotal: pricedItems.reduce((s, it) => s + (it.total_price != null ? parseFloat(it.total_price) : 0), 0)
         };
 

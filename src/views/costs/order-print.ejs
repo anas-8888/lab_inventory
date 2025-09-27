@@ -97,9 +97,8 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
           <th style="width: 24%; padding: 6pt 4pt;">اسم المادة</th>
           <th style="width: 8%; padding: 6pt 4pt;">الوحدة</th>
           <th style="width: 8%; padding: 6pt 4pt;">الكمية</th>
-          <th style="width: 10%; padding: 6pt 4pt;">الوزن</th>
-          <th style="width: 10%; padding: 6pt 4pt;">الوزن الإجمالي</th>
-          <th style="width: 10%; padding: 6pt 4pt;">الحجم</th>
+          <th style="width: 10%; padding: 6pt 4pt;">الوزن الصافي</th>
+          <th style="width: 10%; padding: 6pt 4pt;">وزن الطرد القائم</th>
           <th style="width: 12%; padding: 6pt 4pt;">سعر الطرد</th>
           <th style="width: 12%; padding: 6pt 4pt;">السعر الإجمالي</th>
           <th style="width: 12%; padding: 6pt 4pt;">ملاحظات</th>
@@ -112,9 +111,8 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
             <td style="padding: 6pt 4pt; text-align: right;"><%= item.material_name || '-' %></td>
             <td style="padding: 6pt 4pt;"><%= item.unit || '-' %></td>
             <td style="padding: 6pt 4pt;"><%= item.requested_quantity != null ? formatNumberDisplay(item.requested_quantity) : '-' %></td>
-            <td style="padding: 6pt 4pt;"><%= item.weight != null ? formatNumberDisplay(item.weight) : '-' %></td>
-            <td style="padding: 6pt 4pt;"><%= (item.requested_quantity != null && item.weight != null) ? formatNumberDisplay((parseFloat(item.requested_quantity)||0) * (parseFloat(item.weight)||0)) : '-' %></td>
-            <td style="padding: 6pt 4pt;"><%= item.volume != null ? formatNumberDisplay(item.volume) : '-' %></td>
+            <td style="padding: 6pt 4pt;"><%= item.net_weight != null ? formatNumberDisplay(item.net_weight) : '-' %></td>
+            <td style="padding: 6pt 4pt;"><%= item.gross_weight != null ? parseFloat(item.gross_weight).toFixed(3) : '-' %></td>
             <td style="padding: 6pt 4pt;"><%= item.unit_price != null ? `${formatNumberDisplay(item.unit_price)} ${currencySymbol}` : '-' %></td>
             <td style="padding: 6pt 4pt;"><%= item.total_price != null ? `${formatNumberDisplay(item.total_price)} ${currencySymbol}` : '-' %></td>
             <td style="padding: 6pt 4pt; text-align: right;"><%= item.notes || '-' %></td>
@@ -125,8 +123,8 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
         <tr>
           <td colspan="3" style="text-align:center; font-weight: 700;">الإجماليات</td>
           <td style="font-weight:700;"><%= formatNumberDisplay(totals.totalRequestedQuantity) %></td>
-          <td style="font-weight:700;"><%= formatNumberDisplay(totals.totalWeight) %></td>
-          <td style="font-weight:700;"><%= formatNumberDisplay(totals.totalVolume) %></td>
+          <td style="font-weight:700;"><%= formatNumberDisplay(totals.totalNetWeight) %></td>
+          <td style="font-weight:700;"><%= parseFloat(totals.totalGrossWeight || 0).toFixed(3) %></td>
           <td></td>
           <td style="font-weight:700;"><%= `${formatNumberDisplay(totals.grandTotal)} ${currencySymbol}` %></td>
           <td></td>
