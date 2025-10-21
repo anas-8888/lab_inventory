@@ -1576,7 +1576,7 @@ const getOrderDetailsPage = async (req, res) => {
         let materialsMap = new Map();
         if (materialIds.length > 0) {
             const [materials] = await req.db.query(
-                `SELECT id, gross_weight, waste_percentage FROM materials WHERE id IN (${materialIds.map(()=>'?').join(',')})`,
+                `SELECT id, gross_weight, waste_percentage, packaging_weight FROM materials WHERE id IN (${materialIds.map(()=>'?').join(',')})`,
                 materialIds
             );
             materials.forEach(m => materialsMap.set(m.id, m));
@@ -1588,6 +1588,7 @@ const getOrderDetailsPage = async (req, res) => {
             const qty = parseFloat(it.requested_quantity) || 0;
             const unitPrice = isSyp ? (it.unit_price_syp || it.unit_price) : it.unit_price;
             const totalPrice = isSyp ? (it.total_price_syp || it.total_price) : it.total_price;
+            const mat = it.material_id ? materialsMap.get(it.material_id) : null;
             
             // حساب الوزن الصافي بعد الهدر
             let netWeight = parseFloat(it.net_weight) || 0;
@@ -1602,12 +1603,14 @@ const getOrderDetailsPage = async (req, res) => {
                 ...it, 
                 unit_price: unitPrice != null ? parseFloat(unitPrice) : null, 
                 total_price: totalPrice != null ? parseFloat(totalPrice) : null,
-                net_weight: netWeight
+                net_weight: netWeight,
+                packaging_weight: it.packaging_weight != null ? it.packaging_weight : (mat ? mat.packaging_weight : null)
             };
         });
         const totals = {
             totalRequestedQuantity: displayItems.reduce((s, it) => s + (parseFloat(it.requested_quantity) || 0), 0),
             totalNetWeight: displayItems.reduce((s, it) => s + (parseFloat(it.net_weight) || 0), 0),
+            totalPackagingWeight: displayItems.reduce((s, it) => s + (parseFloat(it.packaging_weight) || 0), 0),
             totalGrossWeight: displayItems.reduce((s, it) => s + (parseFloat(it.gross_weight) || 0), 0),
             grandTotal: displayItems.reduce((s, it) => s + (it.total_price != null ? parseFloat(it.total_price) : 0), 0)
         };
