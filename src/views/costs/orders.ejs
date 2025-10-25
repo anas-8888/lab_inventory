@@ -1,15 +1,37 @@
 <div class="container mt-4">
     <div class="row">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2><i class="bi bi-cart-check"></i> الطلبيات</h2>
-                <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createOrderModal">
-                        <i class="bi bi-plus-circle me-1"></i> إنشاء طلبية جديدة
-                    </button>
-                <a href="/costs" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-right me-1"></i> العودة للتكاليف
-                </a>
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center mb-4">
+                <h2 class="mb-3 mb-lg-0"><i class="bi bi-cart-check"></i> الطلبيات</h2>
+                <div class="row g-2 align-items-center justify-content-end w-100 w-lg-auto">
+                    <div class="col-12 col-md-auto">
+                        <div class="input-group" style="min-width: 220px;">
+                            <span class="input-group-text"><i class="bi bi-hash"></i></span>
+                            <input type="text" id="orderNumberFilter" class="form-control" placeholder="رقم الطلبية">
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-auto">
+                        <div class="input-group" style="min-width: 240px;">
+                            <span class="input-group-text"><i class="bi bi-person"></i></span>
+                            <input type="text" id="orderClientFilter" class="form-control" placeholder="اسم الزبون">
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-auto">
+                        <input type="text" id="orderDateFilter" class="form-control" placeholder="تاريخ الطلبية: يوم/شهر/سنة" style="min-width: 220px;">
+                    </div>
+                    <div class="col-12 col-md-auto">
+                        <input type="text" id="deliveryDateFilter" class="form-control" placeholder="تاريخ التسليم: يوم/شهر/سنة" style="min-width: 220px;">
+                    </div>
+                    <div class="col-12 col-md-auto">
+                        <button type="button" class="btn btn-primary w-100 w-md-auto" data-bs-toggle="modal" data-bs-target="#createOrderModal">
+                            <i class="bi bi-plus-circle me-1"></i> إنشاء طلبية جديدة
+                        </button>
+                    </div>
+                    <div class="col-12 col-md-auto">
+                        <a href="/costs" class="btn btn-outline-secondary w-100 w-md-auto">
+                            <i class="bi bi-arrow-right me-1"></i> العودة للتكاليف
+                        </a>
+                    </div>
                 </div>
             </div>
 
@@ -23,7 +45,7 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table id="ordersTable" class="table table-hover">
                             <thead>
                                 <tr>
                                     <th>رقم الطلبية</th>
@@ -44,10 +66,10 @@
                             <tbody>
                                 <% orders.forEach(order => { %>
                                 <tr>
-                                    <td><%= order.order_number %></td>
-                                    <td><%= order.client_name || '-' %></td>
-                                    <td><%= formatDate(order.order_date) %></td>
-                                    <td><%= formatDate(order.delivery_date) %></td>
+                                    <td class="order-number"><%= order.order_number %></td>
+                                    <td class="order-client"><%= order.client_name || '-' %></td>
+                                    <td class="order-date"><%= formatDate(order.order_date) %></td>
+                                    <td class="delivery-date"><%= formatDate(order.delivery_date) %></td>
                                     <td><%= order.responsible_worker || '-' %></td>
                                     <td><%= order.quality_controller || '-' %></td>
                                     <td><%= order.pallets_count || '-' %></td>
@@ -386,10 +408,12 @@ const displayMoney = (v) => {
 const roundToDecimal = (value, decimals = 2) => {
   return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
 };
+let nextOrderRowId = 0;
 let currentDateInput = null;
 let selectedDate = null;
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
+let currentOrderPickerRowId = null;
 
 // أسماء الأشهر بالعربية
 const monthNames = [
@@ -802,6 +826,8 @@ function showAlert(message, type) {
 function addOrderItemRow(){
   const tbody = document.getElementById('orderItemsBody');
   const tr = document.createElement('tr');
+  const rowId = nextOrderRowId++;
+  tr.setAttribute('data-row-id', rowId);
   const materialOptions = (window.materials || []).map(m => {
     const packageCost = defaultCurrencyCode === 'SYP' 
       ? (m.package_cost_syp || m.package_cost || 0) 
@@ -810,10 +836,11 @@ function addOrderItemRow(){
   }).join('');
   tr.innerHTML = `
     <td>
-      <select class="form-select order-material" onchange="onOrderMaterialChange(this)">
-        <option value="">اختر المادة</option>
-        ${materialOptions}
-      </select>
+      <div class="d-flex align-items-center gap-2">
+        <input type="text" class="form-control order-material-name" placeholder="لم يتم اختيار مادة" readonly>
+        <input type="hidden" class="order-material-id">
+        <button type="button" class="btn btn-outline-primary btn-sm" onclick="openOrderMaterialPicker(${rowId})"><i class="bi bi-search"></i> اختر</button>
+      </div>
     </td>
     <td><input type="text" class="form-control order-unit" readonly></td>
     <td><input type="number" class="form-control order-qty" step="0.001" min="0" value="1" oninput="onOrderCalcRow(this)"></td>
@@ -838,55 +865,30 @@ function addOrderItemRow(){
   tbody.appendChild(tr);
 }
 
-function onOrderMaterialChange(selectEl){
-  const tr = selectEl.closest('tr');
-  const opt = selectEl.selectedOptions[0];
-  const unit = opt?.getAttribute('data-unit')||'';
-  tr.querySelector('.order-unit').value = unit;
-  
-  // جلب بيانات المادة من الخادم
-  if (opt && opt.value) {
-    fetch(`/costs/cost-statement/${opt.value}`)
-      .then(response => response.json())
-      .then(data => {
-        if (data.success && data.material) {
-          const material = data.material;
-          // حساب الوزن الصافي بعد الهدر
-          const grossWeight = parseFloat(material.gross_weight) || 0;
-          const wastePercentage = parseFloat(material.waste_percentage) || 0;
-          const netWeight = grossWeight * (1 - wastePercentage / 100);
-          
-          // تعبئة الوزن الصافي والوزن القائم من بيانات المادة
-          tr.querySelector('.order-net-weight').value = netWeight > 0 ? netWeight.toFixed(3) : '';
-          tr.querySelector('.order-gross-weight').value = material.gross_package_weight ? parseFloat(material.gross_package_weight).toFixed(3) : '';
-        }
-      })
-      .catch(error => {
-        console.error('خطأ في جلب بيانات المادة:', error);
-      });
-    
-    // تعيين الكمية الافتراضية إلى 1 عند اختيار مادة
-    tr.querySelector('.order-qty').value = '1';
-    onOrderCalcRow(tr.querySelector('.order-qty'));
-  }
-  
-  // تحديث عرض سعر الطرد
-  const packageCost = opt?.getAttribute('data-package-cost');
+function setOrderRowMaterial(tr, material){
+  if (!tr || !material) return;
+  tr.querySelector('.order-material-id').value = material.id;
+  tr.querySelector('.order-material-name').value = material.material_name || '';
+  tr.querySelector('.order-unit').value = material.packaging_unit || '';
+  // تعبئة الوزن القائم إن وُجد
+  const gross = material.gross_package_weight != null ? parseFloat(material.gross_package_weight) : null;
+  tr.querySelector('.order-gross-weight').value = (gross && !isNaN(gross)) ? gross.toFixed(3) : '';
+  // الكمية الافتراضية 1 وحساب إجمالي السعر إن كان هناك سعر
+  const qtyEl = tr.querySelector('.order-qty');
+  if (qtyEl && (!qtyEl.value || parseFloat(qtyEl.value) <= 0)) qtyEl.value = '1';
   const displayElement = tr.querySelector('.package-cost-display');
-  if (displayElement && packageCost && opt && opt.value) {
-    const cost = parseFloat(packageCost);
-    displayElement.textContent = `سعر الطرد: ${displayMoney(cost)} ${currencySymbol}`;
-  } else if (displayElement) {
-    displayElement.textContent = `اختر مادة لعرض سعر الطرد`;
+  if (displayElement) {
+    const pkg = parseFloat(material.package_cost) || 0;
+    displayElement.textContent = `سعر الطرد: ${displayMoney(pkg)} ${currencySymbol}`;
   }
+  onOrderCalcRow(qtyEl);
 }
 
 function collectOrderItems(){
   const items = [];
   document.querySelectorAll('#orderItemsBody tr').forEach(tr =>{
-    const sel = tr.querySelector('.order-material');
-    const materialId = sel && sel.value ? parseInt(sel.value) : null;
-    const materialName = sel && sel.selectedOptions[0] ? sel.selectedOptions[0].textContent.trim() : '';
+    const materialId = tr.querySelector('.order-material-id')?.value ? parseInt(tr.querySelector('.order-material-id').value) : null;
+    const materialName = tr.querySelector('.order-material-name')?.value || '';
     const unit = tr.querySelector('.order-unit')?.value || null;
     const qty = parseFloat(tr.querySelector('.order-qty')?.value||'');
     const netWeight = parseFloat(tr.querySelector('.order-net-weight')?.value||'');
@@ -897,10 +899,7 @@ function collectOrderItems(){
     
     // جمع بيانات العملات
     let packageCostSYP = 0, packageCostUSD = 0;
-    if (sel && sel.selectedOptions[0]) {
-      packageCostSYP = parseFloat(sel.selectedOptions[0].getAttribute('data-package-cost-syp') || 0);
-      packageCostUSD = parseFloat(sel.selectedOptions[0].getAttribute('data-package-cost-usd') || 0);
-    }
+    // التكاليف قد لا تكون متاحة بدون select؛ حاول تقديرها لاحقاً إن لزم
     
     if (materialId || materialName){
       items.push({
@@ -1103,6 +1102,108 @@ function onEditOrderCalcRow(el){
 }
 </script>
 
+<!-- Modal اختيار المواد للطلبات -->
+<div class="modal fade" id="selectOrderMaterialModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">اختيار مواد من المواد المسجلة</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="search-container mb-3">
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" class="form-control border-start-0 ps-0" id="orderMaterialSearchInput" placeholder="ابحث باسم المادة أو النوع..." autocomplete="off">
+            <button type="button" class="btn btn-outline-secondary border-start-0" id="clearOrderMaterialSearchBtn" style="display: none;"><i class="bi bi-x-lg"></i></button>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>الاسم</th>
+                <th>النوع</th>
+                <th>الوحدة</th>
+                <th>سعر الطرد</th>
+                <th>إضافة</th>
+              </tr>
+            </thead>
+            <tbody id="materialsPickerBodyOrders"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function openOrderMaterialPicker(rowId){
+  currentOrderPickerRowId = rowId;
+  buildOrderMaterialsPickerTable();
+  const modal = new bootstrap.Modal(document.getElementById('selectOrderMaterialModal'));
+  modal.show();
+}
+
+function buildOrderMaterialsPickerTable(){
+  const tbody = document.getElementById('materialsPickerBodyOrders');
+  if (!tbody) return;
+  const mats = Array.isArray(window.materials) ? window.materials : [];
+  const rowsHtml = mats.map(m => {
+    const pkg = displayMoney(m.package_cost || 0);
+    return `
+      <tr>
+        <td class="pick-name">${m.material_name}</td>
+        <td class="pick-type">${m.material_type || ''}</td>
+        <td>${m.packaging_unit || ''}</td>
+        <td>${pkg} ${currencySymbol}</td>
+        <td><button type="button" class="btn btn-sm btn-success" onclick="selectOrderMaterial(${m.id})"><i class="bi bi-plus-circle"></i></button></td>
+      </tr>`;
+  }).join('');
+  tbody.innerHTML = rowsHtml;
+  wireOrderMaterialSearch();
+}
+
+function wireOrderMaterialSearch(){
+  const input = document.getElementById('orderMaterialSearchInput');
+  const clearBtn = document.getElementById('clearOrderMaterialSearchBtn');
+  const tbody = document.getElementById('materialsPickerBodyOrders');
+  if (!input || !tbody) return;
+  const filter = () => {
+    const q = (input.value || '').toLowerCase().trim();
+    Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
+      const name = (tr.querySelector('.pick-name')?.textContent || '').toLowerCase();
+      const type = (tr.querySelector('.pick-type')?.textContent || '').toLowerCase();
+      const ok = !q || name.includes(q) || type.includes(q);
+      tr.style.display = ok ? '' : 'none';
+    });
+    if (clearBtn) clearBtn.style.display = q ? '' : 'none';
+  };
+  input.removeEventListener('input', input._orderMatFilter);
+  input._orderMatFilter = filter;
+  input.addEventListener('input', filter);
+  if (clearBtn){ clearBtn.onclick = () => { input.value = ''; filter(); input.focus(); }; }
+  filter();
+}
+
+function selectOrderMaterial(materialId){
+  if (currentOrderPickerRowId == null) return;
+  const tr = document.querySelector(`#orderItemsBody tr[data-row-id="${currentOrderPickerRowId}"]`);
+  const mats = Array.isArray(window.materials) ? window.materials : [];
+  const mat = mats.find(m => m.id == materialId);
+  if (tr && mat){
+    setOrderRowMaterial(tr, mat);
+  }
+  const modalEl = document.getElementById('selectOrderMaterialModal');
+  const modal = bootstrap.Modal.getInstance(modalEl);
+  if (modal) modal.hide();
+}
+
+// واجهة عامة
+window.openOrderMaterialPicker = openOrderMaterialPicker;
+window.selectOrderMaterial = selectOrderMaterial;
+</script>
+
 <style>
 .calendar-container {
     text-align: center;
@@ -1197,3 +1298,69 @@ function onEditOrderCalcRow(el){
     display: none !important;
 }
 </style> 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const table = document.getElementById('ordersTable');
+    const numberInput = document.getElementById('orderNumberFilter');
+    const clientInput = document.getElementById('orderClientFilter');
+    const orderDateInput = document.getElementById('orderDateFilter');
+    const deliveryDateInput = document.getElementById('deliveryDateFilter');
+    if (!table || !numberInput || !clientInput || !orderDateInput || !deliveryDateInput) return;
+
+    const fpOrder = flatpickr(orderDateInput, { locale: 'ar', dateFormat: 'Y-m-d', altFormat: 'd/m/Y', altInput: true, allowInput: true });
+    const fpDelivery = flatpickr(deliveryDateInput, { locale: 'ar', dateFormat: 'Y-m-d', altFormat: 'd/m/Y', altInput: true, allowInput: true });
+
+    const pad2 = (n) => (n < 10 ? '0' + n : '' + n);
+    const toISO = (date) => `${date.getFullYear()}-${pad2(date.getMonth()+1)}-${pad2(date.getDate())}`;
+    const parseAnyToISO = (raw, fpInstance) => {
+        if (fpInstance && fpInstance.selectedDates && fpInstance.selectedDates[0]) return toISO(fpInstance.selectedDates[0]);
+        raw = (raw || '').trim();
+        if (!raw) return '';
+        const m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if (m) return `${m[3]}-${pad2(parseInt(m[2],10))}-${pad2(parseInt(m[1],10))}`;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+        return '';
+    };
+
+    const normalize = (t) => (t || '').toString().toLowerCase().trim();
+    const filterRows = () => {
+        const n = normalize(numberInput.value);
+        const c = normalize(clientInput.value);
+        const dOrder = parseAnyToISO(orderDateInput.value, fpOrder);
+        const dDelivery = parseAnyToISO(deliveryDateInput.value, fpDelivery);
+        const rows = table.querySelectorAll('tbody tr');
+        rows.forEach((row) => {
+            const num = normalize(row.querySelector('.order-number')?.textContent);
+            const cli = normalize(row.querySelector('.order-client')?.textContent);
+            const orderText = (row.querySelector('.order-date')?.textContent || '').trim();
+            const deliveryText = (row.querySelector('.delivery-date')?.textContent || '').trim();
+            let orderISO = '', deliveryISO = '';
+            if (orderText) {
+                const p = orderText.split('/');
+                if (p.length === 3) orderISO = `${p[2]}-${pad2(parseInt(p[1],10))}-${pad2(parseInt(p[0],10))}`;
+            }
+            if (deliveryText) {
+                const p = deliveryText.split('/');
+                if (p.length === 3) deliveryISO = `${p[2]}-${pad2(parseInt(p[1],10))}-${pad2(parseInt(p[0],10))}`;
+            }
+            const numOk = !n || (num && num.includes(n));
+            const cliOk = !c || (cli && cli.includes(c));
+            const orderOk = !dOrder || orderISO === dOrder;
+            const deliveryOk = !dDelivery || deliveryISO === dDelivery;
+            row.style.display = (numOk && cliOk && orderOk && deliveryOk) ? '' : 'none';
+        });
+    };
+
+    let t; const debounced = () => { clearTimeout(t); t = setTimeout(filterRows, 150); };
+    numberInput.addEventListener('input', debounced);
+    clientInput.addEventListener('input', debounced);
+    orderDateInput.addEventListener('input', filterRows);
+    orderDateInput.addEventListener('change', filterRows);
+    deliveryDateInput.addEventListener('input', filterRows);
+    deliveryDateInput.addEventListener('change', filterRows);
+    if (fpOrder) { fpOrder.config.onChange.push(filterRows); fpOrder.config.onClose.push(filterRows); }
+    if (fpDelivery) { fpDelivery.config.onChange.push(filterRows); fpDelivery.config.onClose.push(filterRows); }
+
+    filterRows();
+});
+</script>

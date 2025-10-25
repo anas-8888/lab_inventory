@@ -1,15 +1,34 @@
 <div class="container mt-4">
     <div class="row">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2><i class="bi bi-file-earmark-text"></i> عروض الأسعار</h2>
-                <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createQuotationModal">
-                        <i class="bi bi-plus-circle me-1"></i> إضافة عرض سعر
-                    </button>
-                <a href="/costs" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-right me-1"></i> العودة للتكاليف
-                </a>
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center mb-4">
+                <h2 class="mb-3 mb-lg-0"><i class="bi bi-file-earmark-text"></i> عروض الأسعار</h2>
+                <div class="row g-2 align-items-center justify-content-end w-100 w-lg-auto">
+                    <div class="col-12 col-md-auto">
+                        <div class="input-group" style="min-width: 220px;">
+                            <span class="input-group-text"><i class="bi bi-hash"></i></span>
+                            <input type="text" id="quotationNumberFilter" class="form-control" placeholder="رقم العرض">
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-auto">
+                        <div class="input-group" style="min-width: 240px;">
+                            <span class="input-group-text"><i class="bi bi-person"></i></span>
+                            <input type="text" id="quotationClientFilter" class="form-control" placeholder="اسم العميل">
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-auto">
+                        <input type="text" id="quotationDateFilter" class="form-control" placeholder="يوم/شهر/سنة" style="min-width: 220px;">
+                    </div>
+                    <div class="col-12 col-md-auto">
+                        <button type="button" class="btn btn-primary w-100 w-md-auto" data-bs-toggle="modal" data-bs-target="#createQuotationModal">
+                            <i class="bi bi-plus-circle me-1"></i> إضافة عرض سعر
+                        </button>
+                    </div>
+                    <div class="col-12 col-md-auto">
+                        <a href="/costs" class="btn btn-outline-secondary w-100 w-md-auto">
+                            <i class="bi bi-arrow-right me-1"></i> العودة للتكاليف
+                        </a>
+                    </div>
                 </div>
             </div>
 
@@ -100,7 +119,7 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table id="quotationsTable" class="table table-hover">
                             <thead>
                                 <tr>
                                     <th>رقم العرض</th>
@@ -114,8 +133,8 @@
                             <tbody>
                                 <% quotations.forEach(quotation => { %>
                                 <tr>
-                                    <td><%= quotation.quotation_number %></td>
-                                    <td><%= quotation.client_name %></td>
+                                    <td class="quotation-number"><%= quotation.quotation_number %></td>
+                                    <td class="quotation-client"><%= quotation.client_name %></td>
                                     <td><%= quotation.items_count %></td>
                                     <td>
                                         <%= (defaultCurrency && defaultCurrency.code === 'SYP')
@@ -123,7 +142,7 @@
                                             : (parseFloat(quotation.total_amount) || 0).toFixed(2)
                                         %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                                     </td>
-                                    <td><%= formatDate(quotation.created_at) %></td>
+                                    <td class="quotation-date"><%= formatDate(quotation.created_at) %></td>
                                     <td>
                                         <div class="btn-group">
                                             <a href="/costs/quotations/<%= quotation.id %>" class="btn btn-sm btn-info" title="معاينة">
@@ -350,18 +369,12 @@ function addMaterialRow() {
     row.setAttribute('data-row-id', rowId);
     row.innerHTML = `
         <td style="width: 30%; min-width: 250px;">
-            <select class="form-select material-select" onchange="updateMaterialData(${rowId}, this.value)" style="width: 100%;">
-                <option value="">اختر المادة</option>
-                 ${materials.map(m => `<option value="${m.id}" 
-                    data-type="${m.material_type||''}"
-                    data-unit="${m.packaging_unit||''}"
-                    data-weight="${m.packaging_weight||0}"
-                    data-pieces="${m.pieces_per_package||1}"
-                    data-package-cost="${m.package_cost}"
-                    title="${m.material_name}">
-                    ${m.material_name}
-                 </option>`).join('')}
-            </select>
+            <div class="d-flex align-items-center gap-2">
+                <input type="text" class="form-control selected-material-name" placeholder="لم يتم اختيار مادة" readonly>
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="openMaterialPicker(${rowId})">
+                    <i class="bi bi-search"></i> اختر
+                </button>
+            </div>
         </td>
         <td>
             <input type="number" class="form-control unit-cost" readonly>
@@ -426,6 +439,8 @@ function updateMaterialData(rowId, materialId) {
     const tr = document.querySelector(`#materialsTableBody tr[data-row-id="${rowId}"]`);
     if (tr) {
         tr.querySelector('.unit-cost').value = displayMoney(material.package_cost);
+        const nameInput = tr.querySelector('.selected-material-name');
+        if (nameInput) nameInput.value = material.material_name;
     }
     
     calculateRowTotal(rowId);
@@ -1061,3 +1076,183 @@ body.modal-open {
     margin-bottom: 1rem;
 }
 </style> 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const table = document.getElementById('quotationsTable');
+    const numberInput = document.getElementById('quotationNumberFilter');
+    const clientInput = document.getElementById('quotationClientFilter');
+    const dateInput = document.getElementById('quotationDateFilter');
+    if (!table || !numberInput || !clientInput || !dateInput) return;
+
+    const fp = flatpickr(dateInput, {
+        locale: 'ar',
+        dateFormat: 'Y-m-d',
+        altFormat: 'd/m/Y',
+        altInput: true,
+        allowInput: true
+    });
+
+    const pad2 = (n) => (n < 10 ? '0' + n : '' + n);
+    const getSelectedDateISO = () => {
+        if (fp && fp.selectedDates && fp.selectedDates[0]) {
+            const d = fp.selectedDates[0];
+            return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+        }
+        const raw = dateInput.value && dateInput.value.trim();
+        if (!raw) return '';
+        const m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if (m) return `${m[3]}-${pad2(parseInt(m[2],10))}-${pad2(parseInt(m[1],10))}`;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+        return '';
+    };
+
+    const normalize = (t) => (t || '').toString().toLowerCase().trim();
+    const filterRows = () => {
+        const n = normalize(numberInput.value);
+        const c = normalize(clientInput.value);
+        const dISO = getSelectedDateISO();
+        const rows = table.querySelectorAll('tbody tr');
+        rows.forEach((row) => {
+            const num = normalize(row.querySelector('.quotation-number')?.textContent);
+            const cli = normalize(row.querySelector('.quotation-client')?.textContent);
+            const dateText = (row.querySelector('.quotation-date')?.textContent || '').trim();
+            let rowISO = '';
+            if (dateText) {
+                const parts = dateText.split('/');
+                if (parts.length === 3) {
+                    const dd = parseInt(parts[0],10), mm = parseInt(parts[1],10), yyyy = parts[2];
+                    if (!Number.isNaN(dd) && !Number.isNaN(mm)) rowISO = `${yyyy}-${pad2(mm)}-${pad2(dd)}`;
+                }
+            }
+            const numOk = !n || (num && num.includes(n));
+            const cliOk = !c || (cli && cli.includes(c));
+            const dateOk = !dISO || rowISO === dISO;
+            row.style.display = (numOk && cliOk && dateOk) ? '' : 'none';
+        });
+    };
+
+    let t;
+    const debounced = () => { clearTimeout(t); t = setTimeout(filterRows, 150); };
+
+    numberInput.addEventListener('input', debounced);
+    clientInput.addEventListener('input', debounced);
+    dateInput.addEventListener('input', filterRows);
+    dateInput.addEventListener('change', filterRows);
+    if (fp) { fp.config.onChange.push(filterRows); fp.config.onClose.push(filterRows); }
+
+    filterRows();
+});
+</script>
+
+<!-- Modal اختيار المواد -->
+<div class="modal fade" id="selectMaterialModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">اختيار مواد من المواد المسجلة</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="search-container mb-3">
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0">
+              <i class="bi bi-search text-muted"></i>
+            </span>
+            <input type="text" class="form-control border-start-0 ps-0" id="materialSearchInput" placeholder="ابحث باسم المادة أو النوع..." autocomplete="off">
+            <button type="button" class="btn btn-outline-secondary border-start-0" id="clearMaterialSearchBtn" style="display: none;">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>الاسم</th>
+                <th>النوع</th>
+                <th>الوحدة</th>
+                <th>سعر الطرد</th>
+                <th>إضافة</th>
+              </tr>
+            </thead>
+            <tbody id="materialsPickerBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentPickerRowId = null;
+function openMaterialPicker(rowId){
+  currentPickerRowId = rowId;
+  buildMaterialsPickerTable();
+  const modal = new bootstrap.Modal(document.getElementById('selectMaterialModal'));
+  modal.show();
+}
+
+function buildMaterialsPickerTable(){
+  const tbody = document.getElementById('materialsPickerBody');
+  if (!tbody) return;
+  const rowsHtml = (materials || []).map(m => {
+    const pkg = displayMoney(m.package_cost);
+    return `
+      <tr>
+        <td class="pick-name">${m.material_name}</td>
+        <td class="pick-type">${m.material_type || ''}</td>
+        <td>${m.packaging_unit || ''}</td>
+        <td>${pkg} <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
+        <td>
+          <button type="button" class="btn btn-sm btn-success" onclick="selectMaterial(${m.id})">
+            <i class="bi bi-plus-circle"></i>
+          </button>
+        </td>
+      </tr>`;
+  }).join('');
+  tbody.innerHTML = rowsHtml;
+  wireMaterialSearch();
+}
+
+function wireMaterialSearch(){
+  const input = document.getElementById('materialSearchInput');
+  const clearBtn = document.getElementById('clearMaterialSearchBtn');
+  const tbody = document.getElementById('materialsPickerBody');
+  if (!input || !tbody) return;
+  const filter = () => {
+    const q = (input.value || '').toLowerCase().trim();
+    Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
+      const name = (tr.querySelector('.pick-name')?.textContent || '').toLowerCase();
+      const type = (tr.querySelector('.pick-type')?.textContent || '').toLowerCase();
+      const ok = !q || name.includes(q) || type.includes(q);
+      tr.style.display = ok ? '' : 'none';
+    });
+    if (clearBtn) clearBtn.style.display = q ? '' : 'none';
+  };
+  input.removeEventListener('input', input._matFilter);
+  input._matFilter = filter;
+  input.addEventListener('input', filter);
+  if (clearBtn){
+    clearBtn.onclick = () => { input.value = ''; filter(); input.focus(); };
+  }
+  filter();
+}
+
+function selectMaterial(materialId){
+  if (currentPickerRowId == null) return;
+  updateMaterialData(currentPickerRowId, materialId);
+  const tr = document.querySelector(`#materialsTableBody tr[data-row-id="${currentPickerRowId}"]`);
+  const mat = materials.find(m => m.id == materialId);
+  if (tr && mat){
+    const nameInput = tr.querySelector('.selected-material-name');
+    if (nameInput) nameInput.value = mat.material_name;
+  }
+  const modalEl = document.getElementById('selectMaterialModal');
+  const modal = bootstrap.Modal.getInstance(modalEl);
+  if (modal) modal.hide();
+}
+
+// واجهة عامة
+window.openMaterialPicker = openMaterialPicker;
+window.selectMaterial = selectMaterial;
+</script>

@@ -1,15 +1,28 @@
 <div class="container mt-4">
     <div class="row">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2><i class="bi bi-calculator"></i> بيان الكلفة</h2>
-                <div>
-                    <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#addMaterialModal">
-                        <i class="bi bi-plus-circle me-1"></i> إضافة مادة جديدة
-                    </button>
-                    <a href="/costs" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-right me-1"></i> العودة للتكاليف
-                    </a>
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center mb-4">
+                <h2 class="mb-3 mb-lg-0"><i class="bi bi-calculator"></i> بيان الكلفة</h2>
+                <div class="row g-2 align-items-center justify-content-end w-100 w-lg-auto">
+                    <div class="col-12 col-md-auto">
+                        <div class="input-group" style="min-width: 260px;">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" id="materialKeywordSearch" class="form-control" placeholder="ابحث بالاسم أو النوع">
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-auto">
+                        <input type="text" id="materialDateSearch" class="form-control datepicker" placeholder="يوم/شهر/سنة" style="min-width: 220px;">
+                    </div>
+                    <div class="col-12 col-md-auto">
+                        <button type="button" class="btn btn-primary w-100 w-md-auto" data-bs-toggle="modal" data-bs-target="#addMaterialModal">
+                            <i class="bi bi-plus-circle me-1"></i> إضافة مادة جديدة
+                        </button>
+                    </div>
+                    <div class="col-12 col-md-auto">
+                        <a href="/costs" class="btn btn-outline-secondary w-100 w-md-auto">
+                            <i class="bi bi-arrow-right me-1"></i> العودة للتكاليف
+                        </a>
+                    </div>
                 </div>
             </div>
 
@@ -21,7 +34,7 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table id="materialsTable" class="table table-hover">
                             <thead>
                                 <tr>
                                     <th>اسم المادة</th>
@@ -36,8 +49,8 @@
                             <tbody>
                                 <% materials.forEach(material => { %>
                                 <tr>
-                                    <td><%= material.material_name %></td>
-                                    <td><%= material.material_type %></td>
+                                    <td class="material-name"><%= material.material_name %></td>
+                                    <td class="material-type"><%= material.material_type %></td>
                                     <td>
                                         <%= (defaultCurrency && defaultCurrency.code === 'SYP')
                                             ? String(Math.round(parseFloat(material.unit_cost) || 0))
@@ -53,7 +66,7 @@
                                     <td>
                                         <%= (material.gross_package_weight != null) ? Number(material.gross_package_weight).toFixed(3) : '-' %> كجم
                                     </td>
-                                    <td><%= formatDate(material.created_at) %></td>
+                                    <td class="material-date" data-date="<%= new Date(material.created_at).toISOString().slice(0,10) %>"><%= formatDate(material.created_at) %></td>
                                     <td>
                                         <div class="btn-group">
                                             <a href="/costs/cost-statement/<%= material.id %>/preview" class="btn btn-sm btn-success" title="معاينة">
@@ -2249,5 +2262,90 @@ document.addEventListener('DOMContentLoaded', function(){
   if (copyBtn && linkInput) {
     copyBtn.addEventListener('click', function(){ linkInput.select(); document.execCommand('copy'); });
   }
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const table = document.getElementById('materialsTable');
+    const keywordInput = document.getElementById('materialKeywordSearch');
+    const dateInputEl = document.getElementById('materialDateSearch');
+    if (!table || !keywordInput || !dateInputEl) return;
+
+    // Initialize Flatpickr for date input
+    const datepicker = flatpickr(dateInputEl, {
+        locale: 'ar',
+        dateFormat: 'Y-m-d',
+        altFormat: 'd/m/Y',
+        altInput: true,
+        allowInput: true
+    });
+
+    const pad2 = (n) => (n < 10 ? '0' + n : '' + n);
+    const getSelectedDateISO = () => {
+        if (datepicker && datepicker.selectedDates && datepicker.selectedDates[0]) {
+            const d = datepicker.selectedDates[0];
+            return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+        }
+        const raw = dateInputEl.value && dateInputEl.value.trim();
+        if (!raw) return '';
+        // Try parse from altInput (d/m/Y)
+        const m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if (m) {
+            return `${m[3]}-${pad2(parseInt(m[2],10))}-${pad2(parseInt(m[1],10))}`;
+        }
+        // Accept direct ISO input if typed manually
+        if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+        return '';
+    };
+
+    const normalize = (t) => (t || '').toString().toLowerCase().trim();
+
+    const filterRows = () => {
+        const keyword = normalize(keywordInput.value);
+        const selectedDate = getSelectedDateISO();
+        const rows = table.querySelectorAll('tbody tr');
+        rows.forEach((row) => {
+            const name = normalize(row.querySelector('.material-name')?.textContent);
+            const type = normalize(row.querySelector('.material-type')?.textContent);
+            const dateText = (row.querySelector('.material-date')?.textContent || '').trim();
+            let dateISO = '';
+            if (dateText) {
+                const parts = dateText.split('/'); // DD/MM/YYYY
+                if (parts.length === 3) {
+                    const dd = parseInt(parts[0], 10);
+                    const mm = parseInt(parts[1], 10);
+                    const yyyy = parts[2];
+                    if (!Number.isNaN(dd) && !Number.isNaN(mm)) {
+                        dateISO = `${yyyy}-${pad2(mm)}-${pad2(dd)}`;
+                    }
+                }
+            }
+
+            const keywordMatch = !keyword || name.includes(keyword) || type.includes(keyword);
+            const dateMatch = !selectedDate || dateISO === selectedDate;
+
+            row.style.display = (keywordMatch && dateMatch) ? '' : 'none';
+        });
+    };
+
+    // Debounce for keyword typing
+    let debounceTimer;
+    const debouncedFilter = () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(filterRows, 150);
+    };
+
+    keywordInput.addEventListener('input', debouncedFilter);
+    // Flatpickr triggers onChange reliably; input handles manual edits
+    dateInputEl.addEventListener('change', filterRows);
+    dateInputEl.addEventListener('input', filterRows);
+    if (datepicker) {
+        datepicker.config.onChange.push(filterRows);
+        datepicker.config.onClose.push(filterRows);
+    }
+
+    // Initial filter (in case of prefilled values)
+    filterRows();
 });
 </script>
