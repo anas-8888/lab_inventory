@@ -38,10 +38,13 @@
                             <thead>
                                 <tr>
                                     <th>اسم المادة</th>
-                                    <th>النوع</th>
+                                    <th>وحدة التعبئة</th>
                                     <th>كلفة القطعة</th>
                                     <th>كلفة الطرد</th>
                                     <th>وزن الطرد القائم</th>
+                                    <th>الوزن الصافي</th>
+                                    <th>شد الكرتون</th>
+                                    <th>كلفة الكيلو</th>
                                     <th>تاريخ الإضافة</th>
                                     <th>الإجراءات</th>
                                 </tr>
@@ -49,8 +52,8 @@
                             <tbody>
                                 <% materials.forEach(material => { %>
                                 <tr>
-                                    <td class="material-name"><%= material.material_name %></td>
-                                    <td class="material-type"><%= material.material_type %></td>
+                                    <td class="material-name"><%= material.material_name %><span class="material-type" style="display:none"><%= material.material_type %></span></td>
+                                    <td><%= material.packaging_unit || '-' %></td>
                                     <td>
                                         <%= (defaultCurrency && defaultCurrency.code === 'SYP')
                                             ? String(Math.round(parseFloat(material.unit_cost) || 0))
@@ -65,6 +68,26 @@
                                     </td>
                                     <td>
                                         <%= (material.gross_package_weight != null) ? Number(material.gross_package_weight).toFixed(3) : '-' %> كجم
+                                    </td>
+                                    <td>
+                                        <% const netW = parseFloat(material.packaging_weight); %>
+                                        <%= (!isNaN(netW)) ? netW.toFixed(3) : '-' %> كجم
+                                    </td>
+                                    <td>
+                                        <%= (material.pieces_per_package != null) ? Number(material.pieces_per_package) : '-' %>
+                                    </td>
+                                    <td>
+                                        <% 
+                                            const netWForCalc = parseFloat(material.packaging_weight);
+                                            const unitCostVal = parseFloat(material.unit_cost) || 0;
+                                            const costPerKg = (!isNaN(netWForCalc) && netWForCalc > 0) ? (unitCostVal / netWForCalc) : null;
+                                        %>
+                                        <%= (costPerKg != null)
+                                            ? ((defaultCurrency && defaultCurrency.code === 'SYP')
+                                                ? String(Math.round(costPerKg))
+                                                : costPerKg.toFixed(2))
+                                            : '-' 
+                                        %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                                     </td>
                                     <td class="material-date" data-date="<%= new Date(material.created_at).toISOString().slice(0,10) %>"><%= formatDate(material.created_at) %></td>
                                     <td>
