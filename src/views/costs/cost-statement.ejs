@@ -19,6 +19,11 @@
                         </button>
                     </div>
                     <div class="col-12 col-md-auto">
+                        <button type="button" id="exportMaterialsListBtn" class="btn btn-success w-100 w-md-auto me-md-2">
+                            <i class="bi bi-file-earmark-pdf"></i> تصدير
+                        </button>
+                    </div>
+                    <div class="col-12 col-md-auto">
                         <a href="/costs" class="btn btn-outline-secondary w-100 w-md-auto">
                             <i class="bi bi-arrow-right me-1"></i> العودة للتكاليف
                         </a>
@@ -2370,5 +2375,65 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initial filter (in case of prefilled values)
     filterRows();
+});
+</script>
+
+<!-- Export Modal -->
+<div id="materialsListPdfExportModal" class="modal fade" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-file-earmark-pdf me-2 text-success"></i> تم إنشاء ملف PDF</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+      </div>
+      <div class="modal-body text-center">
+        <div class="mb-3">
+          <input type="text" id="materialsListPdfLinkInput" class="form-control text-center" readonly style="direction:ltr; font-size:0.95em;" />
+        </div>
+        <div class="d-flex justify-content-center gap-2 mb-2">
+          <button id="copyMaterialsListPdfLinkBtn" class="btn btn-outline-primary btn-sm"><i class="bi bi-clipboard me-1"></i> نسخ الرابط</button>
+          <a id="openMaterialsListPdfLinkBtn" class="btn btn-outline-info btn-sm" target="_blank"><i class="bi bi-box-arrow-up-right me-1"></i> فتح الرابط</a>
+          <a id="whatsappMaterialsListShareBtn" class="btn btn-outline-success btn-sm" target="_blank"><i class="bi bi-whatsapp me-1"></i> ارسال عبر واتساب</a>
+        </div>
+        <div class="alert alert-success py-2 mb-0">يمكنك مشاركة الرابط مع أي شخص لتحميل الملف مباشرة</div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+<script>
+// زر تصدير قائمة المواد
+document.addEventListener('DOMContentLoaded', function(){
+  const exportBtn = document.getElementById('exportMaterialsListBtn');
+  if (!exportBtn) return;
+  exportBtn.addEventListener('click', async function(){
+    try {
+      exportBtn.disabled = true;
+      exportBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري التصدير...';
+      const res = await fetch('/costs/cost-statement/export/pdf');
+      const data = await res.json();
+      if (data.success && data.url){
+        const linkInput = document.getElementById('materialsListPdfLinkInput');
+        const openBtn = document.getElementById('openMaterialsListPdfLinkBtn');
+        const waBtn = document.getElementById('whatsappMaterialsListShareBtn');
+        if (linkInput) linkInput.value = data.url;
+        if (openBtn) openBtn.href = data.url;
+        if (waBtn) waBtn.href = `https://wa.me/?text=${encodeURIComponent(data.url)}`;
+        const modal = new bootstrap.Modal(document.getElementById('materialsListPdfExportModal'));
+        modal.show();
+      } else {
+        alert(data.message || 'حدث خطأ أثناء توليد ملف PDF');
+      }
+    } catch (e) {
+      alert('حدث خطأ في الاتصال بالخادم');
+    }
+    exportBtn.disabled = false;
+    exportBtn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> تصدير';
+  });
+  const copyBtn = document.getElementById('copyMaterialsListPdfLinkBtn');
+  const linkInput = document.getElementById('materialsListPdfLinkInput');
+  if (copyBtn && linkInput){
+    copyBtn.addEventListener('click', function(){ linkInput.select(); document.execCommand('copy'); });
+  }
 });
 </script>

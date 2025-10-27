@@ -1857,5 +1857,27 @@ module.exports = {
     deleteQuotation,
     deleteOrder,
     exportOrderPDF,
-    getOrderPrintRaw
+    getOrderPrintRaw,
+    async getMaterialsListPrintPage(req, res) {
+        try {
+            const [materials] = await req.db.query(`SELECT * FROM materials ORDER BY created_at DESC`);
+            // احترام العملة الافتراضية
+            const isSyp = req.defaultCurrency && req.defaultCurrency.code === 'SYP';
+            const displayMaterials = materials.map(m => ({
+                ...m,
+                unit_cost: isSyp ? (m.unit_cost_syp || m.unit_cost) : m.unit_cost,
+                package_cost: isSyp ? (m.package_cost_syp || m.package_cost) : m.package_cost
+            }));
+            res.render('costs/materials-print-list', {
+                title: 'طباعة قائمة المواد',
+                materials: displayMaterials,
+                defaultCurrency: req.defaultCurrency || null,
+                baseUrl: process.env.BASE_URL,
+                layout: false
+            });
+        } catch (e) {
+            console.error('خطأ في طباعة قائمة المواد:', e);
+            res.status(500).send('حدث خطأ في طباعة قائمة المواد');
+        }
+    }
 }; 

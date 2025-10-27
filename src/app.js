@@ -107,7 +107,11 @@ app.use(async (req, res, next) => {
 app.use((req, res, next) => {
     const publicPaths = [
         '/inventory/print-pdf-raw',
-        '/inventory/export/pdf'
+        '/inventory/export/pdf',
+        '/costs/cost-statement/print-list',
+        '/costs/cost-statement/print-list-pdf-raw',
+        '/costs/cost-statement/export/pdf',
+        '/costs/cost-statement/', // for single material print and print-pdf-raw
     ];
     if (publicPaths.some(path => req.path.startsWith(path))) {
         return next();
@@ -146,6 +150,12 @@ app.use(activityLogger);
 // تعطيل layout الافتراضي لمسار طباعة PDF المخزون فقط
 app.use((req, res, next) => {
   if (req.path.startsWith('/inventory/print-pdf-raw')) {
+    res.locals.layout = false;
+  }
+  if (
+    req.path.startsWith('/costs/cost-statement/print-list-pdf-raw') ||
+    /^\/costs\/cost-statement\/\d+\/print-pdf-raw$/.test(req.path)
+  ) {
     res.locals.layout = false;
   }
   next();

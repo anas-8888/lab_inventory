@@ -557,7 +557,16 @@ exports.exportInventoryPDF = async (req, res) => {
         const params = new URLSearchParams(req.query).toString();
         const inventoryUrl = `${process.env.BASE_URL}/inventory/print-pdf-raw${params ? '?' + params : ''}`;
 
-        const options = { format: 'A4' };
+        const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+        const options = {
+            format: 'A4',
+            printBackground: true,
+            timeout: 120000,
+            puppeteerArgs: {
+                args: ['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-zygote'],
+                executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROME_PATH || undefined
+            }
+        };
         const file = { url: inventoryUrl };
 
         const fileName = uuidv4() + '.pdf';
@@ -622,7 +631,8 @@ exports.exportPDF = async (req, res) => {
     try {
         // بناء URL مع معايير البحث
         const queryParams = new URLSearchParams(req.query).toString();
-        const printUrl = `${process.env.BASE_URL}/inventory/print-pdf-raw?${queryParams}`;
+        const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+        const printUrl = `${baseUrl}/inventory/print-pdf-raw?${queryParams}`;
 
         const options = {
             format: 'A4',
@@ -631,6 +641,12 @@ exports.exportPDF = async (req, res) => {
                 right: '20mm',
                 bottom: '20mm',
                 left: '20mm'
+            },
+            printBackground: true,
+            timeout: 120000,
+            puppeteerArgs: {
+                args: ['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-zygote'],
+                executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROME_PATH || undefined
             }
         };
 

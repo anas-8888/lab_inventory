@@ -10,6 +10,11 @@ const authMiddleware = async (req, res, next) => {
     (/^\/certificates\/\d+\/print-pdf-raw$/.test(req.path)) ||
     (/^\/inventory\/print-pdf-raw$/.test(req.path)) ||
     (/^\/costs\/cost-statement\/\d+\/print-pdf-raw$/.test(req.path)) ||
+    (/^\/costs\/cost-statement\/\d+\/print$/.test(req.path)) ||
+    (/^\/costs\/cost-statement\/\d+\/pdf$/.test(req.path)) ||
+    (/^\/costs\/cost-statement\/print-list$/.test(req.path)) ||
+    (/^\/costs\/cost-statement\/print-list-pdf-raw$/.test(req.path)) ||
+    (/^\/costs\/cost-statement\/export\/pdf$/.test(req.path)) ||
     (/^\/costs\/quotations\/\d+\/print-pdf-raw$/.test(req.path)) ||
     (/^\/costs\/orders\/\d+\/print-pdf-raw$/.test(req.path))
   ) {

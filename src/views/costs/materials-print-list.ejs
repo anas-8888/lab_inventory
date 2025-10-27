@@ -1,0 +1,107 @@
+<% function fmtDate(d){ if(!d) return '-'; const dt=new Date(d); const dd=String(dt.getDate()).padStart(2,'0'); const mm=String(dt.getMonth()+1).padStart(2,'0'); const yy=dt.getFullYear(); return `${dd}/${mm}/${yy}`; }
+function num(v, d=2){ const n=parseFloat(v); if(isNaN(n)) return '-'; return Number.isInteger(n)? String(n): n.toFixed(d); }
+const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '';
+%>
+<div class="container-fluid" style="direction: rtl; font-family: 'Cairo','Amiri',sans-serif;">
+
+  <% const pageSize = 12; const total = (materials||[]).length; const pages = Math.ceil(total / pageSize); %>
+  <% for (let p = 0; p < pages; p++) { const start = p * pageSize; const end = Math.min(start + pageSize, total); %>
+    <!-- Header (repeated on every page) -->
+    <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+      <tr>
+        <td style="text-align: right; font-weight: bold; line-height: 1.4; width: 37%; font-size: 9pt;">
+          <div>مؤسسة عجاج أخوان التجارية</div>
+          <div>لإنتاج وتعبئة المواد الغذائية</div>
+          <div>وتجارة زيت الزيتون البكر</div>
+          <div style="font-size: 11px;">س.ت 10369 – س.ص 10</div>
+        </td>
+        <td style="text-align: center; width: 26%;">
+          <img src="<%= (typeof baseUrl!== 'undefined' && baseUrl) ? (baseUrl + '/public/images/nexa.png') : '/public/images/nexa.png' %>" alt="شعار" style="width: 85px; height: 85px;">
+        </td>
+        <td style="text-align: left; font-weight: bold; line-height: 1.4; width: 37%; font-size: 9pt;">
+          <div>Ajaj Brothers Commercial Foundation</div>
+          <div>For Food Production and Packaging</div>
+          <div>And Virgin Olive Oil Trade</div>
+          <div style="font-size: 11px;">C.R. 10369 – I.R. 10</div>
+        </td>
+      </tr>
+    </table>
+    <hr>
+
+    <!-- Title -->
+    <div style="text-align:center; margin: 10px 0;">
+      <div style="font-size: 11pt; font-weight: 700;">قائمة المواد</div>
+    </div>
+    <div class="table-responsive" style="margin-top: 8px;">
+      <table class="table-custom table-bordered text-center align-middle" style="font-size: 9pt; width: 100%;">
+        <thead>
+          <tr>
+            <th style="padding: 5pt 4pt;">#</th>
+            <th style="padding: 5pt 4pt;">اسم المادة</th>
+            <th style="padding: 5pt 4pt;">وحدة التعبئة</th>
+            <th style="padding: 5pt 4pt;">كلفة القطعة</th>
+            <th style="padding: 5pt 4pt;">كلفة الطرد</th>
+            <th style="padding: 5pt 4pt;">وزن الطرد القائم</th>
+            <th style="padding: 5pt 4pt;">الوزن الصافي</th>
+            <th style="padding: 5pt 4pt;">شد الكرتون</th>
+            <th style="padding: 5pt 4pt;">كلفة الكيلو</th>
+            <th style="padding: 5pt 4pt;">تاريخ الإضافة</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% for (let i = start; i < end; i++) { const m = materials[i]; const netW = parseFloat(m.packaging_weight); const unitCost = parseFloat(m.unit_cost)||0; const costPerKg = (!isNaN(netW) && netW>0) ? (unitCost/netW) : null; %>
+            <tr>
+              <td style="padding: 6pt 4pt; text-align:center;"><%= num(i+1,0) %></td>
+              <td style="padding: 6pt 4pt; text-align:right;"><%= m.material_name %></td>
+              <td style="padding: 6pt 4pt;"><%= m.packaging_unit || '-' %></td>
+              <td style="padding: 6pt 4pt;"><%= num(m.unit_cost, (currencySymbol==='SYP'?0:2)) %> <%= currencySymbol %></td>
+              <td style="padding: 6pt 4pt;"><%= num(m.package_cost, (currencySymbol==='SYP'?0:2)) %> <%= currencySymbol %></td>
+              <td style="padding: 6pt 4pt;"><%= (m.gross_package_weight!=null)? Number(m.gross_package_weight).toFixed(3): '-' %> كجم</td>
+              <td style="padding: 6pt 4pt;"><%= (!isNaN(netW)) ? netW.toFixed(3) : '-' %> كجم</td>
+              <td style="padding: 6pt 4pt;"><%= (m.pieces_per_package!=null)? Number(m.pieces_per_package): '-' %></td>
+              <td style="padding: 6pt 4pt;">
+                <%= (costPerKg!=null) ? ((currencySymbol==='SYP')? String(Math.round(costPerKg)) : costPerKg.toFixed(2)) : '-' %>
+                <%= currencySymbol %>
+              </td>
+              <td style="padding: 6pt 4pt;"><%= fmtDate(m.created_at) %></td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+    <% if (p < pages - 1) { %>
+      <div class="page-break"></div>
+    <% } %>
+  <% } %>
+
+  <!-- Footer -->
+  <div class="print-footer" id="fixed-print-footer" style="text-align:center; font-size: 9pt; margin-top: 10px;">
+    <hr style="margin: 4px 0; border: 0.5px solid #bbb;">
+    سوريا، حماة، أوتستراد دمشق-حلب الدولي، س.ت 10369 – س.ص 10<br>
+    0940500511 – 0988111127 | ajajbrothers@gmail.com<br>
+    جميع الحقوق محفوظة © <%= new Date().getFullYear() %> نظام إدارة المختبر | تم التطوير بواسطة شركة NEXA GROUP
+  </div>
+</div>
+
+<script>
+  window.addEventListener('load', function(){ setTimeout(function(){ window.print(); }, 200); });
+</script>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Amiri:wght@400;500;600;700&display=swap');
+  @page { size: A4; margin: 1cm; }
+  html, body { background: #fff !important; margin:0; padding:0; direction: rtl; text-align: right; font-family: 'Cairo','Amiri','Noto Naskh Arabic',sans-serif !important; font-size: 9pt; }
+  .table-custom { width: 100%; border-collapse: separate; border-spacing: 0; }
+  .table-custom th, .table-custom td { border: 1px solid #444; padding: 5pt 4pt; }
+  .table-custom th { background: #f5f5f5; font-weight: 700; }
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
+  tr { page-break-inside: avoid; }
+  .table-responsive { overflow-x: visible; }
+  .container-fluid { padding-bottom: 80px; }
+  .print-footer { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; }
+  .table-custom th, .table-custom td { padding: 4pt 3pt; }
+  .page-break { page-break-after: always; }
+</style>
+
+
