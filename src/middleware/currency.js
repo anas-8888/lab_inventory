@@ -1,3 +1,5 @@
+const { pool } = require('../database/db');
+
 // دالة جلب العملة الافتراضية
 const getDefaultCurrency = async (db) => {
     try {
@@ -89,13 +91,15 @@ const formatConvertedAmount = async (db, amount, defaultCurrency) => {
 // middleware لإضافة العملة للـ request
 const addCurrencyToRequest = async (req, res, next) => {
     try {
-        const defaultCurrency = await getDefaultCurrency(req.db);
+        // استخدام اتصال الطلب إذا كان متاحاً، وإلا استخدم الـ pool مباشرةً للمسارات التي لا تفتح اتصالاً
+        const dbConn = req.db || pool;
+        const defaultCurrency = await getDefaultCurrency(dbConn);
         req.defaultCurrency = defaultCurrency;
         res.locals.defaultCurrency = defaultCurrency;
         
         // إضافة دوال التحويل للـ res.locals
-        res.locals.convertAmountForDisplay = (amount) => convertAmountForDisplay(req.db, amount, defaultCurrency);
-        res.locals.formatConvertedAmount = (amount) => formatConvertedAmount(req.db, amount, defaultCurrency);
+        res.locals.convertAmountForDisplay = (amount) => convertAmountForDisplay(dbConn, amount, defaultCurrency);
+        res.locals.formatConvertedAmount = (amount) => formatConvertedAmount(dbConn, amount, defaultCurrency);
         
         next();
     } catch (error) {

@@ -92,11 +92,32 @@ app.use(flash());
 // إضافة اتصال قاعدة البيانات إلى كل طلب
 app.use(async (req, res, next) => {
     try {
+        // تخطي فتح اتصال قاعدة البيانات للمسارات طويلة الأمد أو الملفات الثابتة
+        if (
+            req.path.startsWith('/socket.io') ||
+            req.path.startsWith('/public') ||
+            req.path.startsWith('/css') ||
+            req.path.startsWith('/js') ||
+            req.path.startsWith('/images') ||
+            req.path === '/favicon.ico'
+        ) {
+            return next();
+        }
+
         const connection = await pool.getConnection();
         req.db = connection;
-        res.on('finish', () => {
-            connection.release();
-        });
+
+        let released = false;
+        const release = () => {
+            if (!released) {
+                released = true;
+                connection.release();
+            }
+        };
+
+        res.on('finish', release);
+        res.on('close', release);
+
         next();
     } catch (error) {
         next(error);

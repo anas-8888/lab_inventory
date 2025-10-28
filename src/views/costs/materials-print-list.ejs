@@ -4,7 +4,7 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
 %>
 <div class="container-fluid" style="direction: rtl; font-family: 'Cairo','Amiri',sans-serif;">
 
-  <% const pageSize = 12; const total = (materials||[]).length; const pages = Math.ceil(total / pageSize); %>
+  <% const pageSize = 10; const total = (materials||[]).length; const pages = Math.ceil(total / pageSize); %>
   <% for (let p = 0; p < pages; p++) { const start = p * pageSize; const end = Math.min(start + pageSize, total); %>
     <!-- Header (repeated on every page) -->
     <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
