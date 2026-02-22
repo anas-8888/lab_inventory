@@ -306,7 +306,7 @@ function formatNumberDisplay(value) {
       <div class="modal-header">
         <h5 class="modal-title">
           <i class="fas fa-file-invoice me-2"></i>
-          إنشاء فاتورة جديدة
+          إنشاء طلبية شحن جديدة
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
@@ -316,7 +316,7 @@ function formatNumberDisplay(value) {
           <input type="hidden" name="date" id="invoice_date" required>
           <!-- Invoice Number Field -->
           <div class="mb-3">
-            <label class="form-label required">رقم الفاتورة</label>
+            <label class="form-label required">رقم طلب الشحن</label>
             <input type="number" class="form-control" name="invoice_number" id="invoice_number_field" required min="1">
           </div>
           
@@ -385,7 +385,7 @@ function formatNumberDisplay(value) {
             <i class="fas fa-times me-1"></i> إلغاء
           </button>
           <button type="submit" class="btn btn-primary">
-            <i class="fas fa-save me-1"></i> إنشاء الفاتورة
+            <i class="fas fa-save me-1"></i> إنشاء طلب الشحن
           </button>
         </div>
       </form>
@@ -1207,7 +1207,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Validate invoice number
             if (!invoice_number || parseInt(invoice_number) <= 0) {
-                alert('رقم الفاتورة يجب أن يكون عدداً موجباً');
+                alert('رقم طلب الشحن يجب أن يكون عدداً موجباً');
                 return;
             }
 
@@ -1235,7 +1235,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => {
                 if (!response.ok) {
                     return response.text().then(text => {
-                        throw new Error(`حدث خطأ أثناء إنشاء الفاتورة (${response.status}): ${text}`);
+                        throw new Error(`حدث خطأ أثناء إنشاء طلب الشحن (${response.status}): ${text}`);
                     });
                 }
                 return response.json();
@@ -1244,12 +1244,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (responseData.success) {
                     window.location.href = `/invoices/${responseData.invoiceId}`;
                 } else {
-                    throw new Error(responseData.message || 'حدث خطأ أثناء إنشاء الفاتورة');
+                    throw new Error(responseData.message || 'حدث خطأ أثناء إنشاء طلب الشحن');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert(error.message || 'حدث خطأ أثناء إنشاء الفاتورة');
+                alert(error.message || 'حدث خطأ أثناء إنشاء طلب الشحن');
             });
         });
     }

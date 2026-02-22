@@ -14,6 +14,17 @@ function formatNumberDisplay(value) {
   return result;
 }
 const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '';
+const __isSyp = (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.code === 'SYP');
+const __isExternalMaterial = material.material_origin === 'external';
+const __exchangeRate = (typeof exchangeRate !== 'undefined' && exchangeRate) ? parseFloat(exchangeRate) : 13000;
+let __additionalExpenseItems = [];
+try {
+  if (typeof material.additional_expense_items === 'string') __additionalExpenseItems = JSON.parse(material.additional_expense_items || '[]');
+  else __additionalExpenseItems = material.additional_expense_items || [];
+} catch (_) {
+  __additionalExpenseItems = [];
+}
+if (!Array.isArray(__additionalExpenseItems)) __additionalExpenseItems = [];
 %>
 
 <div class="container-fluid" style="direction: rtl; font-family: 'Cairo','Amiri',sans-serif;">
@@ -46,6 +57,20 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
 
   <!-- Material Basic Info -->
   <div class="info-stack">
+    <% if (__isExternalMaterial) { %>
+    <div class="box-compact">
+      <h6 class="section-title">بيانات المادة الخارجية</h6>
+      <div class="grid-kv">
+        <div class="kv"><span>الاسم:</span><span><%= material.material_name %></span></div>
+        <div class="kv"><span>وحدة التعبئة:</span><span><%= material.packaging_unit || '-' %></span></div>
+        <div class="kv"><span>كلفة القطعة:</span><span><%= `${formatNumberDisplay(material.unit_cost)} ${currencySymbol}` %></span></div>
+        <div class="kv"><span>كلفة الطرد:</span><span><%= `${formatNumberDisplay(material.package_cost)} ${currencySymbol}` %></span></div>
+        <div class="kv"><span>الوزن الصافي (كجم):</span><span><%= formatNumberDisplay(material.packaging_weight || material.gross_weight) %></span></div>
+        <div class="kv"><span>كلفة الكيلو:</span><span><%= `${formatNumberDisplay(material.price_before_waste)} ${currencySymbol}` %></span></div>
+        <div class="kv"><span>ملاحظات:</span><span><%= material.external_notes || '-' %></span></div>
+      </div>
+    </div>
+    <% } else { %>
     <div class="box-compact">
       <h6 class="section-title">المعلومات الأساسية</h6>
       <div class="grid-kv">
@@ -99,13 +124,97 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
         <div class="kv"><span>كرتونة:</span><span><%= `${formatNumberDisplay(material.carton_price)} ${currencySymbol}` %></span></div>
         <div class="kv"><span>الطبلية:</span><span><%= `${formatNumberDisplay(material.pallet_price)} ${currencySymbol}` %></span></div>
         <div class="kv"><span>مصاريف إضافية:</span><span><%= `${formatNumberDisplay(material.additional_expenses)} ${currencySymbol}` %></span></div>
+        <div class="kv">
+          <span>تفصيل المصاريف الإضافية:</span>
+          <span>
+            <% if (__additionalExpenseItems.length) { %>
+              <% __additionalExpenseItems.forEach(function(item, idx){ const usdVal = parseFloat(item.price) || 0; const shownVal = __isSyp ? (usdVal * __exchangeRate) : usdVal; %>
+                <%= `${item.name || 'بدون اسم'}: ${formatNumberDisplay(shownVal)} ${currencySymbol}` %><%= idx < __additionalExpenseItems.length - 1 ? ' | ' : '' %>
+              <% }); %>
+            <% } else { %>
+              -
+            <% } %>
+          </span>
+        </div>
         <div class="kv"><span>مصروف عمال:</span><span><%= `${formatNumberDisplay(material.labor_cost)} ${currencySymbol}` %></span></div>
         <div class="kv"><span>مواد حافظة:</span><span><%= `${formatNumberDisplay(material.preservatives_cost)} ${currencySymbol}` %></span></div>
       </div>
     </div>
 
     <!-- أزلنا تفصيل الأوزان الإضافية في قسم مستقل والاكتفاء بالمجموع في البيانات الأساسية -->
+    <% } %>
   </div>
+
+  <% if (!__isExternalMaterial && material.calculation_method === 'components' && components && components.length > 0) { %>
+  <div class="page-break-before"></div>
+
+  <!-- Header (Page 2) -->
+  <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+    <tr>
+      <td style="text-align: right; font-weight: bold; line-height: 1.4; width: 37%; font-size: 10pt;">
+        <div>مؤسسة عجاج أخوان التجارية</div>
+        <div>لإنتاج وتعبئة المواد الغذائية</div>
+        <div>وتجارة زيت الزيتون البكر</div>
+        <div style="font-size: 12px;">س.ت 10369 – س.ص 10</div>
+      </td>
+      <td style="text-align: center; width: 26%;">
+        <img src="/public/images/nexa.png" alt="شعار" style="width: 90px; height: 90px;">
+      </td>
+      <td style="text-align: left; font-weight: bold; line-height: 1.4; width: 37%; font-size: 10pt;">
+        <div>Ajaj Brothers Commercial Foundation</div>
+        <div>For Food Production and Packaging</div>
+        <div>And Virgin Olive Oil Trade</div>
+        <div style="font-size: 12px;">C.R. 10369 – I.R. 10</div>
+      </td>
+    </tr>
+  </table>
+  <hr>
+
+  <div style="text-align:center; margin: 12px 0;">
+    <div style="font-size: 13pt; font-weight: 700;">العناصر الفرعية للمادة: <%= material.material_name %></div>
+  </div>
+
+  <div class="box-compact">
+    <table style="width:100%; border-collapse: collapse; font-size: 9.5pt;">
+      <thead>
+        <tr>
+          <th style="border:1px solid #ccc; padding:4px;">العنصر</th>
+          <th style="border:1px solid #ccc; padding:4px;">الوزن (غرام)</th>
+          <th style="border:1px solid #ccc; padding:4px;">سعر الكيلو</th>
+          <th style="border:1px solid #ccc; padding:4px;">التكلفة</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% let totalWeight = 0, totalCost = 0; %>
+        <% components.forEach(component => { %>
+          <%
+            const weight = parseFloat(component.weight_grams) || 0;
+            const pricePerKg = (defaultCurrency && defaultCurrency.code === 'SYP')
+              ? (component.price_per_kg_syp || component.price_per_kg || 0)
+              : (component.price_per_kg || 0);
+            const cost = (weight / 1000) * pricePerKg;
+            totalWeight += weight;
+            totalCost += cost;
+          %>
+          <tr>
+            <td style="border:1px solid #ccc; padding:4px;"><%= component.component_name || '-' %></td>
+            <td style="border:1px solid #ccc; padding:4px;"><%= formatNumberDisplay(weight) %></td>
+            <td style="border:1px solid #ccc; padding:4px;"><%= `${formatNumberDisplay(pricePerKg)} ${currencySymbol}` %></td>
+            <td style="border:1px solid #ccc; padding:4px;"><%= `${formatNumberDisplay(cost)} ${currencySymbol}` %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+      <tfoot>
+        <tr>
+          <th style="border:1px solid #ccc; padding:4px;">المجموع</th>
+          <th style="border:1px solid #ccc; padding:4px;"><%= formatNumberDisplay(totalWeight) %></th>
+          <th style="border:1px solid #ccc; padding:4px;"></th>
+          <th style="border:1px solid #ccc; padding:4px;"><%= `${formatNumberDisplay(totalCost)} ${currencySymbol}` %></th>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  <% } %>
 
   <!-- Footer -->
   <div class="print-footer" id="fixed-print-footer" style="text-align:center; font-size: 9pt; margin-top: 10px;">
@@ -140,5 +249,6 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
   .notes { white-space: pre-wrap; line-height: 1.6; }
   .container-fluid { padding-bottom: 80px; }
   .print-footer { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; }
+  .page-break-before { page-break-before: always; break-before: page; }
 </style>
 

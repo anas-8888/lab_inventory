@@ -35,7 +35,7 @@ exports.getHome = async (req, res) => {
         `;
         const [recentCertificates] = await pool.query(certificatesQuery);
 
-        // جلب آخر 3 فواتير مع عدد العناصر لكل فاتورة
+        // جلب آخر 3 فواتير مع عدد العناصر لكل طلبية شحن
         const invoicesQuery = `
             SELECT 
                 i.id,
@@ -64,7 +64,6 @@ exports.getHome = async (req, res) => {
             recentSamples: recentSamples || [],
             recentCertificates: recentCertificates || [],
             recentInvoices: recentInvoices || [],
-            debug: true // تفعيل وضع التصحيح دائماً للفحص
         };
 
 
@@ -98,7 +97,6 @@ exports.getHome = async (req, res) => {
             recentSamples: [],
             recentCertificates: [],
             recentInvoices: [],
-            debug: true,
             error: errorMessage
         });
     }

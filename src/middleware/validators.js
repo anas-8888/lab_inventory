@@ -91,14 +91,14 @@ exports.validateCertificate = [
         .isFloat({ min: 0 }).withMessage('ستيغما ستاديين يجب أن يكون رقماً موجباً')
 ];
 
-// التحقق من صحة بيانات الفاتورة
+// التحقق من صحة بيانات طلب الشحن
 exports.validateInvoice = [
     body('date')
-        .notEmpty().withMessage('تاريخ الفاتورة مطلوب')
+        .notEmpty().withMessage('تاريخ طلب الشحن مطلوب')
         .custom((value) => {
             // التحقق من صحة التاريخ سواء كان بصيغة YYYY-MM-DD أو DD/MM/YYYY
             if (!value || typeof value !== 'string') {
-                throw new Error('تاريخ الفاتورة مطلوب');
+                throw new Error('تاريخ طلب الشحن مطلوب');
             }
             
             if (value.includes('/')) {
@@ -124,8 +124,8 @@ exports.validateInvoice = [
         }),
     
     body('invoice_number')
-        .notEmpty().withMessage('رقم الفاتورة مطلوب')
-        .isNumeric().withMessage('رقم الفاتورة يجب أن يكون رقماً'),
+        .notEmpty().withMessage('رقم طلب الشحن مطلوب')
+        .isNumeric().withMessage('رقم طلب الشحن يجب أن يكون رقماً'),
     
     body('customer_name')
         .trim()
@@ -229,9 +229,9 @@ exports.validateInventoryAvailability = async (req, res, next) => {
 
             let availableQuantity = parseFloat(rows[0].current_quantity);
 
-            // إذا كانت هذه عملية تعديل فاتورة (PUT على /invoices/:id)،
+            // إذا كانت هذه عملية تعديل طلبية شحن (PUT على /invoices/:id)،
             if (req.method === 'PUT' && req.params.id) {
-                // جلب الكمية القديمة لأجل هذه العينة في الفاتورة الحالية
+                // جلب الكمية القديمة لأجل هذه العينة في طلب الشحن الحالية
                 const [[old]] = await pool.query(
                     'SELECT quantity FROM invoice_items WHERE invoice_id = ? AND inventory_id = ?',
                     [req.params.id, inventoryId]

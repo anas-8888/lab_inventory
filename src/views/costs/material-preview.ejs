@@ -1,6 +1,20 @@
 <%- include('../layouts/header') %>
+<%
+const __isSyp = (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.code === 'SYP');
+const __exchangeRate = (typeof exchangeRate !== 'undefined' && exchangeRate) ? parseFloat(exchangeRate) : 13000;
+const __currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '$';
+let __additionalExpenseItems = [];
+try {
+  if (typeof material.additional_expense_items === 'string') __additionalExpenseItems = JSON.parse(material.additional_expense_items || '[]');
+  else __additionalExpenseItems = material.additional_expense_items || [];
+} catch (_) {
+  __additionalExpenseItems = [];
+}
+if (!Array.isArray(__additionalExpenseItems)) __additionalExpenseItems = [];
+const __isExternalMaterial = material.material_origin === 'external';
+%>
 
-<div class="container mt-4">
+<div class="container mt-4 no-auto-num-center">
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
@@ -101,6 +115,55 @@
                         </div>
                     </div>
 
+                    <% if (__isExternalMaterial) { %>
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h6 class="text-primary mb-3">بيانات المادة الخارجية</h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>وحدة التعبئة:</strong></td>
+                                    <td><%= material.packaging_unit || '-' %></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>كلفة القطعة:</strong></td>
+                                    <td>
+                                        <%= (defaultCurrency && defaultCurrency.code === 'SYP')
+                                            ? String(Math.round(parseFloat(material.unit_cost) || 0))
+                                            : (parseFloat(material.unit_cost) || 0).toFixed(2)
+                                        %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>كلفة الطرد:</strong></td>
+                                    <td>
+                                        <%= (defaultCurrency && defaultCurrency.code === 'SYP')
+                                            ? String(Math.round(parseFloat(material.package_cost) || 0))
+                                            : (parseFloat(material.package_cost) || 0).toFixed(2)
+                                        %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>الوزن الصافي:</strong></td>
+                                    <td><%= (parseFloat(material.packaging_weight) || 0).toFixed(3) %> كجم</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>كلفة الكيلو:</strong></td>
+                                    <td>
+                                        <%= (defaultCurrency && defaultCurrency.code === 'SYP')
+                                            ? String(Math.round(parseFloat(material.price_before_waste) || 0))
+                                            : (parseFloat(material.price_before_waste) || 0).toFixed(2)
+                                        %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>ملاحظات:</strong></td>
+                                    <td><%= material.external_notes || '-' %></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    <% } else { %>
                     <!-- العناصر الفرعية -->
                     <% if (material.calculation_method === 'components' && components && components.length > 0) { %>
                     <hr>
@@ -299,6 +362,21 @@
                             </td>
                                 </tr>
                                 <tr>
+                                    <td><strong>تفصيل المصاريف الإضافية:</strong></td>
+                                    <td>
+                                        <% if (__additionalExpenseItems.length) { %>
+                                            <% __additionalExpenseItems.forEach(function(item, idx){ 
+                                                const usdVal = parseFloat(item.price) || 0;
+                                                const shownVal = __isSyp ? (usdVal * __exchangeRate) : usdVal;
+                                            %>
+                                                <div><%= item.name || 'بدون اسم' %>: <%= shownVal.toFixed(2) %> <%= __currencySymbol %></div>
+                                            <% }); %>
+                                        <% } else { %>
+                                            -
+                                        <% } %>
+                                    </td>
+                                </tr>
+                                <tr>
                                     <td><strong>مصروف عمال:</strong></td>
                             <td>
                                 <%= (defaultCurrency && defaultCurrency.code === 'SYP')
@@ -363,10 +441,12 @@
                             <% } %>
                         </div>
                     </div>
+                    <% } %>
                 </div>
             </div>
 
             <!-- سجل التكاليف -->
+            <% if (!__isExternalMaterial) { %>
             <div class="card shadow">
                 <div class="card-header">
                     <h5 class="mb-0"><i class="bi bi-clock-history"></i> سجل التكاليف</h5>
@@ -388,6 +468,7 @@
                     </div>
                 </div>
             </div>
+            <% } %>
 
 
         </div>
@@ -510,6 +591,18 @@ function printMaterialDetails() {
                 <h3>تكاليف إضافية</h3>
                 <table>
                                     <tr><th>مصاريف إضافية</th><td><%= parseFloat(material.additional_expenses).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
+                <tr><th>تفصيل المصاريف الإضافية</th><td>
+                    <% if (__additionalExpenseItems.length) { %>
+                        <% __additionalExpenseItems.forEach(function(item){ 
+                            const usdVal = parseFloat(item.price) || 0;
+                            const shownVal = __isSyp ? (usdVal * __exchangeRate) : usdVal;
+                        %>
+                            <div><%= item.name || 'بدون اسم' %>: <%= shownVal.toFixed(2) %> <%= __currencySymbol %></div>
+                        <% }); %>
+                    <% } else { %>
+                        -
+                    <% } %>
+                </td></tr>
                 <tr><th>مصروف عمال</th><td><%= parseFloat(material.labor_cost).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
                 <tr><th>مواد حافظة</th><td><%= parseFloat(material.preservatives_cost).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
                 </table>

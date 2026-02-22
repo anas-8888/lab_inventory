@@ -48,6 +48,7 @@ function formatNumberDisplay(value) {
           </a>
         </div>
       </div>
+      <input type="hidden" id="orderGrandTotalValue" value="<%= (typeof totals !== 'undefined' && totals ? (parseFloat(totals.grandTotal) || 0) : 0) %>">
 
       <!-- PDF Export Modal -->
       <div id="orderPdfExportModal" class="modal fade" tabindex="-1" aria-hidden="true">
@@ -79,7 +80,7 @@ function formatNumberDisplay(value) {
         <div class="card-body">
           <div class="row">
             <div class="col-md-6">
-              <table class="table table-borderless">
+              <table class="table table-borderless no-auto-num-center">
                 <tr>
                   <td><strong>رقم الطلبية:</strong></td>
                   <td><%= order.order_number %></td>
@@ -115,7 +116,7 @@ function formatNumberDisplay(value) {
               </table>
             </div>
             <div class="col-md-6">
-              <table class="table table-borderless">
+              <table class="table table-borderless no-auto-num-center">
                 <tr>
                   <td><strong>المسؤول عن التجهيز:</strong></td>
                   <td><%= order.responsible_worker || '-' %></td>
@@ -161,10 +162,10 @@ function formatNumberDisplay(value) {
                 <tr>
                   <th>رقم المادة</th>
                   <th>اسم المادة</th>
-                  <th>الوحدة</th>
+                  <th>التعبئة</th>
                   <th>الكمية المطلوبة</th>
+                  <th>وزن التعبئة</th>
                   <th>شد الكرتون</th>
-                  <th>الوزن الصافي</th>
                   <th>وزن الطرد القائم</th>
                   <th>سعر الطرد</th>
                   <th>السعر الإجمالي</th>
@@ -172,27 +173,40 @@ function formatNumberDisplay(value) {
                 </tr>
               </thead>
               <tbody>
-                <% (items || []).forEach((item) => { %>
+                <%
+                  const groupedOrderItemsMap = new Map();
+                  (items || []).forEach((it) => {
+                    const key = (it.material_name || '').trim();
+                    if (!groupedOrderItemsMap.has(key)) groupedOrderItemsMap.set(key, []);
+                    groupedOrderItemsMap.get(key).push(it);
+                  });
+                  const groupedOrderItems = Array.from(groupedOrderItemsMap.values());
+                %>
+                <% groupedOrderItems.forEach((group) => { %>
+                <% group.forEach((item, indexInGroup) => { %>
                   <tr>
                     <td><%= item.material_id || '-' %></td>
-                    <td><%= item.material_name || '-' %></td>
+                    <% if (indexInGroup === 0) { %>
+                    <td rowspan="<%= group.length %>"><%= item.material_name || '-' %></td>
+                    <% } %>
                     <td><%= item.unit || '-' %></td>
                     <td><%= item.requested_quantity != null ? formatNumberDisplay(item.requested_quantity) : '-' %></td>
-                    <td><%= item.pieces_per_package != null ? formatNumberDisplay(item.pieces_per_package) : '-' %></td>
                     <td><%= item.packaging_weight != null ? formatNumberDisplay(item.packaging_weight) : '-' %></td>
+                    <td><%= item.pieces_per_package != null ? formatNumberDisplay(item.pieces_per_package) : '-' %></td>
                     <td><%= item.gross_weight != null ? parseFloat(item.gross_weight).toFixed(3) : '-' %></td>
                     <td><%= (typeof item.unit_price !== 'undefined') ? formatNumberDisplay(item.unit_price) : '-' %> <%= (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '' %></td>
                     <td><%= (typeof item.total_price !== 'undefined') ? formatNumberDisplay(item.total_price) : '-' %> <%= (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '' %></td>
                     <td><%= item.notes || '-' %></td>
                   </tr>
                 <% }) %>
+                <% }) %>
               </tbody>
               <tfoot>
                 <tr class="table-info">
                   <td colspan="3" class="text-center"><strong>الإجماليات</strong></td>
                   <td><strong><%= typeof totals !== 'undefined' && totals ? formatNumberDisplay(totals.totalRequestedQuantity) : '0' %></strong></td>
-                  <td><strong><%= typeof totals !== 'undefined' && totals ? formatNumberDisplay(totals.totalPiecesPerPackage) : '0' %></strong></td>
                   <td><strong><%= typeof totals !== 'undefined' && totals ? formatNumberDisplay(totals.totalPackagingWeight) : '0' %></strong></td>
+                  <td></td>
                   <td><strong><%= typeof totals !== 'undefined' && totals ? parseFloat(totals.totalGrossWeight || 0).toFixed(3) : '0.000' %></strong></td>
                   <td></td>
                   <td><strong><%= typeof totals !== 'undefined' && totals ? formatNumberDisplay(totals.grandTotal) : '0' %> <%= (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '' %></strong></td>
@@ -278,24 +292,71 @@ document.addEventListener('DOMContentLoaded', function(){
 
 // Print and Export Functions
 function printAsOrder() {
-  window.open('/costs/orders/<%= order.id %>/print', '_blank');
+  const discountedTotalValue = getValidatedOrderDiscountedTotal('printDiscountedTotalInput');
+  if (discountedTotalValue === null) return;
+  window.open(`/costs/orders/<%= order.id %>/print?discounted_total=${encodeURIComponent(discountedTotalValue)}`, '_blank');
   bootstrap.Modal.getInstance(document.getElementById('printTypeModal')).hide();
 }
 
 function printAsInvoice() {
-  window.open('/costs/orders/<%= order.id %>/print?type=invoice', '_blank');
+  const discountedTotalValue = getValidatedOrderDiscountedTotal('printDiscountedTotalInput');
+  if (discountedTotalValue === null) return;
+  window.open(`/costs/orders/<%= order.id %>/print?type=invoice&discounted_total=${encodeURIComponent(discountedTotalValue)}`, '_blank');
   bootstrap.Modal.getInstance(document.getElementById('printTypeModal')).hide();
 }
 
 async function exportAsOrder() {
+  const discountedTotalValue = getValidatedOrderDiscountedTotal('exportDiscountedTotalInput');
+  if (discountedTotalValue === null) return;
   bootstrap.Modal.getInstance(document.getElementById('exportTypeModal')).hide();
-  await exportPDF('/costs/orders/<%= order.id %>/pdf');
+  await exportPDF(`/costs/orders/<%= order.id %>/pdf?discounted_total=${encodeURIComponent(discountedTotalValue)}`);
 }
 
 async function exportAsInvoice() {
+  const discountedTotalValue = getValidatedOrderDiscountedTotal('exportDiscountedTotalInput');
+  if (discountedTotalValue === null) return;
   bootstrap.Modal.getInstance(document.getElementById('exportTypeModal')).hide();
-  await exportPDF('/costs/orders/<%= order.id %>/pdf?type=invoice');
+  await exportPDF(`/costs/orders/<%= order.id %>/pdf?type=invoice&discounted_total=${encodeURIComponent(discountedTotalValue)}`);
 }
+
+function getValidatedOrderDiscountedTotal(inputId) {
+  const total = Number(document.getElementById('orderGrandTotalValue')?.value || 0);
+  const input = document.getElementById(inputId);
+  if (!input) return total;
+  const rawValue = parseFloat(input.value);
+  if (!Number.isFinite(rawValue)) {
+    alert('يرجى إدخال قيمة رقمية صحيحة.');
+    input.focus();
+    return null;
+  }
+  if (rawValue < 0) {
+    alert('قيمة الإجمالي بعد الخصم يجب أن تكون صفر أو أكبر.');
+    input.focus();
+    return null;
+  }
+  if (rawValue > total) {
+    alert('لا يمكن أن يكون الإجمالي بعد الخصم أكبر من الإجمالي الحالي.');
+    input.focus();
+    return null;
+  }
+  return rawValue;
+}
+
+function initializeOrderDiscountInputs() {
+  const total = Number(document.getElementById('orderGrandTotalValue')?.value || 0);
+  const printInput = document.getElementById('printDiscountedTotalInput');
+  const exportInput = document.getElementById('exportDiscountedTotalInput');
+  if (printInput) printInput.value = total.toFixed(2);
+  if (exportInput) exportInput.value = total.toFixed(2);
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  initializeOrderDiscountInputs();
+  const printModalEl = document.getElementById('printTypeModal');
+  const exportModalEl = document.getElementById('exportTypeModal');
+  if (printModalEl) printModalEl.addEventListener('show.bs.modal', initializeOrderDiscountInputs);
+  if (exportModalEl) exportModalEl.addEventListener('show.bs.modal', initializeOrderDiscountInputs);
+});
 
 async function exportPDF(url) {
   const exportBtn = document.getElementById('exportOrderBtn');
@@ -338,6 +399,11 @@ async function exportPDF(url) {
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
+        <div class="mb-3">
+          <label for="printDiscountedTotalInput" class="form-label">الإجمالي بعد الخصم</label>
+          <input id="printDiscountedTotalInput" type="number" min="0" step="0.01" class="form-control" />
+          <small class="text-muted d-block mt-1">سيتم احتساب الخصم = الإجمالي الحالي - القيمة المدخلة.</small>
+        </div>
         <div class="row g-3">
           <div class="col-md-6">
             <div class="card h-100 border-primary" style="cursor: pointer;" onclick="printAsOrder()">
@@ -352,8 +418,8 @@ async function exportPDF(url) {
             <div class="card h-100 border-success" style="cursor: pointer;" onclick="printAsInvoice()">
               <div class="card-body text-center">
                 <i class="bi bi-receipt text-success" style="font-size: 2rem;"></i>
-                <h6 class="card-title mt-2">طباعة كفاتورة</h6>
-                <p class="card-text text-muted small">طباعة كفاتورة بدون بيانات الطلبية</p>
+                <h6 class="card-title mt-2">طباعة كطلبية شحن</h6>
+                <p class="card-text text-muted small">طباعة كطلبية شحن بدون بيانات الطلبية</p>
               </div>
             </div>
           </div>
@@ -374,6 +440,11 @@ async function exportPDF(url) {
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
+        <div class="mb-3">
+          <label for="exportDiscountedTotalInput" class="form-label">الإجمالي بعد الخصم</label>
+          <input id="exportDiscountedTotalInput" type="number" min="0" step="0.01" class="form-control" />
+          <small class="text-muted d-block mt-1">سيتم احتساب الخصم = الإجمالي الحالي - القيمة المدخلة.</small>
+        </div>
         <div class="row g-3">
           <div class="col-md-6">
             <div class="card h-100 border-primary" style="cursor: pointer;" onclick="exportAsOrder()">
@@ -388,8 +459,8 @@ async function exportPDF(url) {
             <div class="card h-100 border-success" style="cursor: pointer;" onclick="exportAsInvoice()">
               <div class="card-body text-center">
                 <i class="bi bi-receipt text-success" style="font-size: 2rem;"></i>
-                <h6 class="card-title mt-2">تصدير كفاتورة</h6>
-                <p class="card-text text-muted small">تصدير كفاتورة بدون بيانات الطلبية</p>
+                <h6 class="card-title mt-2">تصدير كطلبية شحن</h6>
+                <p class="card-text text-muted small">تصدير كطلبية شحن بدون بيانات الطلبية</p>
               </div>
             </div>
           </div>

@@ -1,4 +1,4 @@
-<% function fmtDate(d){ if(!d) return '-'; const dt=new Date(d); const dd=String(dt.getDate()).padStart(2,'0'); const mm=String(dt.getMonth()+1).padStart(2,'0'); const yy=dt.getFullYear(); return `${dd}/${mm}/${yy}`; }
+﻿<% function fmtDate(d){ if(!d) return '-'; const dt=new Date(d); const dd=String(dt.getDate()).padStart(2,'0'); const mm=String(dt.getMonth()+1).padStart(2,'0'); const yy=dt.getFullYear(); return `${dd}/${mm}/${yy}`; }
 function formatNumberDisplay(value) {
   if (value === null || value === undefined || value === '') return '-';
   // للأرقام، نعرضها كما هي محفوظة (كنص) إذا أمكن
@@ -25,7 +25,23 @@ function formatNumberDisplay(value) {
   if (num < 0) return '\u200E' + result;
   return result;
 }
+function formatDiscountDisplay(value) {
+  const num = parseFloat(value);
+  if (isNaN(num)) return '0.00';
+  return num.toFixed(2);
+}
 const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '';
+const isFullMode = !!showFullQuotationColumns;
+const quotationTableColumnCount = isFullMode ? 11 : 9;
+const quotationTotalLabelColspan = isFullMode ? 9 : 7;
+const totalBeforeDiscount = parseFloat(grandTotal) || 0;
+const totalAfterDiscount = (typeof discountedTotal !== 'undefined' && discountedTotal !== null)
+  ? (parseFloat(discountedTotal) || 0)
+  : totalBeforeDiscount;
+const discountValue = (typeof discountAmount !== 'undefined' && discountAmount !== null)
+  ? Math.max(0, parseFloat(discountAmount) || 0)
+  : Math.max(0, totalBeforeDiscount - totalAfterDiscount);
+const hasDiscount = discountValue > 0;
 %>
 
 <div class="container-fluid" style="direction: rtl; font-family: 'Cairo','Amiri',sans-serif;">
@@ -64,6 +80,8 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
         <div class="kv"><span>الاسم:</span><span><%= quotation.client_name ? ('السيد/ة ' + quotation.client_name + ' المحترم/ة') : '-' %></span></div>
         <% if (quotation.client_phone) { %><div class="kv"><span>الهاتف:</span><span><%= quotation.client_phone %></span></div><% } %>
         <% if (quotation.client_address) { %><div class="kv full"><span>العنوان:</span><span><%= quotation.client_address %></span></div><% } %>
+        <% if (quotation.sale_description) { %><div class="kv"><span>صفة البيع:</span><span><%= quotation.sale_description %></span></div><% } %>
+        <% if (quotation.payment_method) { %><div class="kv"><span>طريقة الدفع:</span><span><%= quotation.payment_method %></span></div><% } %>
       </div>
     </div>
     <div class="box-compact">
@@ -71,7 +89,11 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
       <div class="grid-kv">
         <div class="kv"><span>التاريخ:</span><span><%= fmtDate(quotation.created_at) %></span></div>
         <div class="kv"><span>عدد المواد:</span><span><%= (items||[]).length %></span></div>
-        <div class="kv"><span>إجمالي السعر:</span><span><%= `${formatNumberDisplay(grandTotal)} ${currencySymbol}` %></span></div>
+        <div class="kv"><span>إجمالي السعر:</span><span class="money-inline"><%= `${formatNumberDisplay(totalBeforeDiscount)} ${currencySymbol}` %></span></div>
+        <% if (hasDiscount) { %>
+          <div class="kv"><span>الخصم:</span><span class="money-inline"><%= `- ${formatDiscountDisplay(discountValue)} ${currencySymbol}` %></span></div>
+          <div class="kv"><span>الإجمالي بعد الخصم:</span><span class="money-inline"><%= `${formatDiscountDisplay(totalAfterDiscount)} ${currencySymbol}` %></span></div>
+        <% } %>
       </div>
     </div>
     <% if (quotation.notes) { %>
@@ -89,48 +111,106 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
         <tr>
           <th style="width: 4%; padding: 2pt 2pt;">#</th>
           <th style="width: 26%; padding: 2pt 2pt;">الصنف</th>
-          <th style="width: 10%; padding: 2pt 2pt;">نوع العبوة</th>
+          <th style="width: 10%; padding: 2pt 2pt;">التعبئة</th>
           <th style="width: 10%; padding: 2pt 2pt;">حجم العبوة</th>
           <th style="width: 10%; padding: 2pt 2pt;">شد الكرتون</th>
+          <% if (isFullMode) { %>
+          <th style="width: 12%; padding: 2pt 2pt;">كلفة الطرد</th>
+          <th style="width: 8%; padding: 2pt 2pt;">نسبة الربح</th>
+          <% } %>
           <th style="width: 12%; padding: 2pt 2pt;">السعر</th>
           <th style="width: 8%; padding: 2pt 2pt;">الكمية</th>
-          <th style="width: 20%; padding: 2pt 2pt;">المجموع</th>
+          <th style="width: 14%; padding: 2pt 2pt;">المجموع</th>
+          <th style="width: 6%; padding: 2pt 2pt;">ملاحظات</th>
         </tr>
       </thead>
       <tbody>
         <% const rowsPerPage = 36; const rowsOnFirstPage = 21; %>
-        <% (items || []).forEach((item, idx) => { %>
+        <%
+          const groupedQuotationPrintMap = new Map();
+          (items || []).forEach((it) => {
+            const key = (it.material_name || '').trim();
+            if (!groupedQuotationPrintMap.has(key)) groupedQuotationPrintMap.set(key, []);
+            groupedQuotationPrintMap.get(key).push(it);
+          });
+          const groupedQuotationPrintRows = [];
+          let rowNo = 1;
+          Array.from(groupedQuotationPrintMap.values()).forEach((group) => {
+            group.forEach((it, idxInGroup) => {
+              groupedQuotationPrintRows.push({
+                item: it,
+                rowNumber: rowNo++,
+                isFirstInGroup: idxInGroup === 0,
+                groupLength: group.length
+              });
+            });
+          });
+        %>
+        <% groupedQuotationPrintRows.forEach((row, idx) => { const item = row.item; %>
           <% if (idx === rowsOnFirstPage || (idx > rowsOnFirstPage && ((idx - rowsOnFirstPage) % rowsPerPage) === 0)) { %>
-            <tr class="page-break"><td colspan="8"></td></tr>
+            <tr class="page-break"><td colspan="<%= quotationTableColumnCount %>"></td></tr>
           <% } %>
           <tr>
-            <td style="padding: 2pt 2pt;"><%= formatNumberDisplay(idx + 1) %></td>
-            <td style="padding: 2pt 2pt; text-align: right; line-height: 1.15;">
+            <td style="padding: 2pt 2pt;"><%= row.rowNumber %></td>
+            <% if (row.isFirstInGroup) { %>
+            <td style="padding: 2pt 2pt; text-align: right; line-height: 1.15;" rowspan="<%= row.groupLength %>">
               <div><%= item.material_name || '-' %></div>
             </td>
+            <% } %>
             <td style="padding: 2pt 2pt;"><%= item.packaging_unit || '-' %></td>
             <td style="padding: 2pt 2pt;"><%= item.packaging_weight != null ? formatNumberDisplay(item.packaging_weight) : '-' %></td>
             <td style="padding: 2pt 2pt;"><%= item.pieces_per_package != null ? parseFloat(item.pieces_per_package).toFixed(1) : '-' %></td>
-            <td style="padding: 2pt 2pt;"><%= `${formatNumberDisplay(item.final_price)} ${currencySymbol}` %></td>
+            <% if (isFullMode) { %>
+            <td style="padding: 2pt 2pt;"><span class="money-inline"><%= `${formatNumberDisplay(item.unit_cost)} ${currencySymbol}` %></span></td>
+            <td style="padding: 2pt 2pt;"><%= `${parseFloat(item.profit_percentage || 0).toFixed(1)}%` %></td>
+            <% } %>
+            <td style="padding: 2pt 2pt;"><span class="money-inline"><%= `${formatNumberDisplay(item.final_price)} ${currencySymbol}` %></span></td>
             <td style="padding: 2pt 2pt;"><%= item.quantity != null ? parseFloat(item.quantity).toFixed(1) : '-' %></td>
-            <td style="padding: 2pt 2pt;"><%= `${formatNumberDisplay(item.total_price)} ${currencySymbol}` %></td>
+            <td style="padding: 2pt 2pt;"><span class="money-inline"><%= `${formatNumberDisplay(item.total_price)} ${currencySymbol}` %></span></td>
+            <td style="padding: 2pt 2pt;"><%= item.item_notes || '-' %></td>
           </tr>
         <% }) %>
-        <% if ((items||[]).length <= rowsOnFirstPage) { %>
+        <% if ((groupedQuotationPrintRows||[]).length <= rowsOnFirstPage) { %>
           <tr class="total-row">
-            <td colspan="7" style="text-align: center; font-weight: 700;">الإجمالي</td>
-            <td style="font-weight:700;"><%= `${formatNumberDisplay(grandTotal)} ${currencySymbol}` %></td>
+            <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;">الإجمالي</td>
+            <td style="font-weight:700;"><span class="money-inline"><%= `${formatNumberDisplay(totalBeforeDiscount)} ${currencySymbol}` %></span></td>
+            <td></td>
           </tr>
+          <% if (hasDiscount) { %>
+          <tr class="total-row">
+            <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;">الخصم</td>
+            <td style="font-weight:700;"><span class="money-inline"><%= `- ${formatDiscountDisplay(discountValue)} ${currencySymbol}` %></span></td>
+            <td></td>
+          </tr>
+          <tr class="total-row">
+            <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;">الإجمالي بعد الخصم</td>
+            <td style="font-weight:700;"><span class="money-inline"><%= `${formatDiscountDisplay(totalAfterDiscount)} ${currencySymbol}` %></span></td>
+            <td></td>
+          </tr>
+          <% } %>
         <% } else { %>
-          <% const remainder = ((items||[]).length - rowsOnFirstPage) % rowsPerPage; %>
+          <% const remainder = ((groupedQuotationPrintRows||[]).length - rowsOnFirstPage) % rowsPerPage; %>
           <% const isExactMultiple = remainder === 0; %>
           <% if (isExactMultiple) { %>
-            <tr class="page-break"><td colspan="8"></td></tr>
+            <tr class="page-break"><td colspan="<%= quotationTableColumnCount %>"></td></tr>
           <% } %>
           <tr class="total-row">
-            <td colspan="7" style="text-align: center; font-weight: 700;">الإجمالي</td>
-            <td style="font-weight:700;"><%= `${formatNumberDisplay(grandTotal)} ${currencySymbol}` %></td>
+            <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;">الإجمالي</td>
+            <td style="font-weight:700;"><span class="money-inline"><%= `${formatNumberDisplay(totalBeforeDiscount)} ${currencySymbol}` %></span></td>
+            <td></td>
           </tr>
+          <% if (hasDiscount) { %>
+          <tr class="total-row">
+            <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;">الخصم</td>
+            <td style="font-weight:700;"><span class="money-inline"><%= `- ${formatDiscountDisplay(discountValue)} ${currencySymbol}` %></span></td>
+            <td></td>
+          </tr>
+          <tr class="total-row">
+            <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;">الإجمالي بعد الخصم</td>
+            <td style="font-weight:700;"><span class="money-inline"><%= `${formatDiscountDisplay(totalAfterDiscount)} ${currencySymbol}` %></span></td>
+            <td></td>
+          </tr>
+          <% } %>
         <% } %>
       </tbody>
       
@@ -177,6 +257,7 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
   .kv span:first-child { color: #333; font-weight: 600; margin-left: 6px; }
   .kv span:last-child { white-space: normal; word-break: break-word; }
   .notes { white-space: pre-wrap; line-height: 1.3; font-size: 9pt; }
+  .money-inline { white-space: nowrap; display: inline-block; }
   .container-fluid { padding-bottom: 120px; }
   .print-footer { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; }
   .table-custom th, .table-custom td { padding: 3pt 2pt; line-height: 1.3; }
@@ -184,4 +265,3 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
   .table-custom tr.page-break td { border: 0; padding: 0; height: 0; }
   .total-row td { background: #f5f5f5; }
 </style>
-

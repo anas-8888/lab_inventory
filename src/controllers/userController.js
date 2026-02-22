@@ -153,35 +153,58 @@ exports.updateUser = async (req, res) => {
 
 // حذف مستخدم
 exports.deleteUser = async (req, res) => {
+    let connection;
     try {
-        const userId = req.params.id;
+        const userId = parseInt(req.params.id, 10);
+        const currentUserId = parseInt(req.session?.user?.id, 10);
+        if (!Number.isInteger(currentUserId)) {
+            req.flash('error_msg', 'الجلسة غير صالحة، يرجى تسجيل الدخول مرة أخرى');
+            return res.redirect('/auth/login');
+        }
 
-        // التحقق من وجود المستخدم
-        const [user] = await pool.query('SELECT * FROM users WHERE id = ?', [userId]);
+        connection = await pool.getConnection();
+        await connection.beginTransaction();
+
+        // Check target user exists
+        const [user] = await connection.query('SELECT * FROM users WHERE id = ?', [userId]);
         if (user.length === 0) {
+            await connection.rollback();
             req.flash('error_msg', 'المستخدم غير موجود');
             return res.redirect('/users');
         }
 
-        // منع حذف المستخدم الحالي
-        if (parseInt(userId) === parseInt(req.session.user.id)) {
+        // Prevent deleting current logged-in user
+        if (userId === currentUserId) {
+            await connection.rollback();
             req.flash('error_msg', 'لا يمكن حذف المستخدم الحالي');
             return res.redirect('/users');
         }
 
-        // حذف المستخدم
-        const [result] = await pool.query('DELETE FROM users WHERE id = ?', [userId]);
-        
+        // Reassign dependent rows to the current admin/editor to satisfy foreign keys
+        await connection.query('UPDATE invoices SET created_by = ? WHERE created_by = ?', [currentUserId, userId]);
+
+        const [result] = await connection.query('DELETE FROM users WHERE id = ?', [userId]);
         if (result.affectedRows === 0) {
+            await connection.rollback();
             req.flash('error_msg', 'فشل حذف المستخدم');
             return res.redirect('/users');
         }
 
+        await connection.commit();
         req.flash('success_msg', 'تم حذف المستخدم بنجاح');
-        res.redirect('/users');
+        return res.redirect('/users');
     } catch (error) {
+        if (connection) {
+            try { await connection.rollback(); } catch (_) {}
+        }
         console.error('Error deleting user:', error);
-        req.flash('error_msg', 'حدث خطأ أثناء حذف المستخدم');
-        res.redirect('/users');
+        if (error?.code === 'ER_ROW_IS_REFERENCED_2') {
+            req.flash('error_msg', 'لا يمكن حذف المستخدم لوجود بيانات مرتبطة به في النظام');
+        } else {
+            req.flash('error_msg', 'حدث خطأ أثناء حذف المستخدم');
+        }
+        return res.redirect('/users');
+    } finally {
+        if (connection) connection.release();
     }
-}; 
+};

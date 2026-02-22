@@ -3,7 +3,7 @@
     <div class="col-12">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="mb-0">
-          <i class="fas fa-file-invoice"></i> إنشاء فاتورة جديدة
+          <i class="fas fa-file-invoice"></i> إنشاء طلبية شحن جديدة
         </h2>
         <a href="/invoices" class="btn btn-outline-secondary">
           <i class="fas fa-arrow-right me-1"></i> العودة للفواتير
@@ -17,11 +17,11 @@
             <!-- Customer Details -->
             <div class="row mb-4">
               <div class="col-md-3">
-                <label class="form-label required">رقم الفاتورة</label>
+                <label class="form-label required">رقم طلب الشحن</label>
                 <input type="number" class="form-control" name="invoice_number" id="invoice_number" required min="1">
                 <small class="form-text text-muted">
                   <i class="bi bi-info-circle me-1"></i>
-                  آخر فاتورة: <span class="fw-bold text-primary"><%= lastInvoiceNumber %></span>
+                  آخر طلبية شحن: <span class="fw-bold text-primary"><%= lastInvoiceNumber %></span>
                 </small>
               </div>
               <div class="col-md-3">
@@ -96,7 +96,7 @@
             <!-- Submit Button -->
             <div class="text-end">
               <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save me-1"></i> حفظ الفاتورة
+                <i class="fas fa-save me-1"></i> حفظ طلب الشحن
               </button>
             </div>
           </form>
@@ -435,7 +435,7 @@ document.getElementById('invoiceForm').addEventListener('submit', function(e) {
                 if (data.success) {
                     window.location.href = `/invoices/${data.invoiceId}`;
                 } else {
-                    alert(data.message || 'حدث خطأ أثناء إنشاء الفاتورة');
+                    alert(data.message || 'حدث خطأ أثناء إنشاء طلب الشحن');
                 }
             });
         } else if (response.redirected) {
@@ -445,7 +445,7 @@ document.getElementById('invoiceForm').addEventListener('submit', function(e) {
             // Handle HTML response (likely an error page)
             return response.text().then(html => {
                 if (html.includes('حدث خطأ') || html.includes('Error')) {
-                    alert('حدث خطأ أثناء إنشاء الفاتورة');
+                    alert('حدث خطأ أثناء إنشاء طلب الشحن');
                 } else {
                     // Try to parse invoice ID from redirect
                     const match = response.url.match(/\/invoices\/(\d+)/);
@@ -465,7 +465,7 @@ document.getElementById('invoiceForm').addEventListener('submit', function(e) {
         if (error instanceof TypeError && error.message === 'Failed to fetch') {
             alert('خطأ في الاتصال بالخادم. يرجى التأكد من أن الخادم يعمل والمحاولة مرة أخرى.');
         } else {
-            alert('حدث خطأ أثناء إنشاء الفاتورة: ' + error.message);
+            alert('حدث خطأ أثناء إنشاء طلب الشحن: ' + error.message);
         }
     });
 });

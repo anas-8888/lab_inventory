@@ -10,6 +10,55 @@ const roundToDecimal = (value, decimals = 2) => {
     return result;
 };
 
+const normalizeAuxiliaryCostsByBasis = ({
+    basis,
+    usd,
+    syp,
+    grossWeight,
+    packagingWeight
+}) => {
+    const unitWeightKg = packagingWeight > 0 ? packagingWeight : 0;
+
+    const totalUnits = unitWeightKg > 0 ? (grossWeight / unitWeightKg) : 0;
+
+    const divOrZero = (value, denom) => (denom > 0 ? (value / denom) : 0);
+
+    const normalizedUsd = { ...usd };
+    const normalizedSyp = { ...syp };
+
+    const perUnitFields = ['sticker_price', 'additional_expenses', 'labor_cost', 'preservatives_cost'];
+    if (basis === 'per_kg') {
+        perUnitFields.forEach((field) => {
+            normalizedUsd[field] = (usd[field] || 0) * unitWeightKg;
+            normalizedSyp[field] = (syp[field] || 0) * unitWeightKg;
+        });
+    } else if (basis === 'total') {
+        perUnitFields.forEach((field) => {
+            normalizedUsd[field] = divOrZero((usd[field] || 0), totalUnits);
+            normalizedSyp[field] = divOrZero((syp[field] || 0), totalUnits);
+        });
+    }
+
+    return { usd: normalizedUsd, syp: normalizedSyp };
+};
+
+const parseAdditionalExpenseItems = (value) => {
+    let arr = [];
+    try {
+        if (Array.isArray(value)) arr = value;
+        else if (typeof value === 'string' && value.trim()) arr = JSON.parse(value);
+    } catch (_) {
+        arr = [];
+    }
+    if (!Array.isArray(arr)) return [];
+    return arr
+        .map((item) => ({
+            name: (item && typeof item.name === 'string') ? item.name.trim() : '',
+            price: parseFloat(item && item.price) || 0
+        }))
+        .filter((item) => item.name || item.price > 0);
+};
+
 // عرض صفحة التكاليف الرئيسية
 const getCosts = async (req, res) => {
     try {
@@ -115,10 +164,16 @@ const createMaterial = async (req, res) => {
     try {
         
         const {
+            material_origin,
             material_type,
             material_name,
             calculation_method,
             price_before_waste,
+            external_packaging_unit,
+            external_unit_cost,
+            external_package_cost,
+            external_net_weight,
+            external_cost_per_kg,
             gross_weight,
             waste_percentage,
             packaging_unit,
@@ -133,9 +188,71 @@ const createMaterial = async (req, res) => {
             pieces_per_package,
             pallet_price,
             packages_per_pallet,
+            cost_input_basis,
             extra_weights,
+            additional_expense_items,
+            external_notes,
             components
         } = req.body;
+        const materialOrigin = material_origin === 'external' ? 'external' : 'internal';
+
+        if (materialOrigin === 'external') {
+            const externalMaterialType = (material_type || '').trim();
+            const name = (material_name || '').trim();
+            const packagingUnit = (external_packaging_unit || '').trim();
+            const netWeight = parseFloat(external_net_weight ?? gross_weight) || 0;
+            const unitCost = parseFloat(external_unit_cost) || 0;
+            const packageCost = parseFloat(external_package_cost) || 0;
+            const costPerKg = parseFloat(external_cost_per_kg ?? price_before_waste) || 0;
+            const notes = (typeof external_notes === 'string' && external_notes.trim()) ? external_notes.trim() : null;
+            if (!externalMaterialType || !name || !packagingUnit || netWeight <= 0 || unitCost <= 0 || packageCost <= 0 || costPerKg <= 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'بيانات المادة الخارجية غير مكتملة'
+                });
+            }
+
+            const [exchangeRate] = await req.db.query(`
+                SELECT rate FROM exchange_rates 
+                WHERE from_currency_id = (SELECT id FROM currencies WHERE code = 'USD')
+                AND to_currency_id = (SELECT id FROM currencies WHERE code = 'SYP')
+            `);
+            const exchangeRateValue = exchangeRate.length > 0 ? parseFloat(exchangeRate[0].rate) : 13000;
+            const unitCostSyp = roundToDecimal(unitCost * exchangeRateValue, 0);
+            const packageCostSyp = roundToDecimal(packageCost * exchangeRateValue, 0);
+            const costPerKgSyp = roundToDecimal(costPerKg * exchangeRateValue, 0);
+
+            const [result] = await req.db.query(`
+                INSERT INTO materials (
+                    material_origin, material_type, material_name, external_notes, calculation_method,
+                    price_before_waste, price_before_waste_syp, gross_weight, waste_percentage,
+                    packaging_unit, packaging_weight, packaging_unit_weight,
+                    empty_package_price, empty_package_price_syp, sticker_price, sticker_price_syp,
+                    additional_expenses, additional_expenses_syp, labor_cost, labor_cost_syp,
+                    preservatives_cost, preservatives_cost_syp, carton_price, carton_price_syp,
+                    pieces_per_package, pallet_price, pallet_price_syp, packages_per_pallet,
+                    unit_cost, unit_cost_syp, package_cost, package_cost_syp,
+                    extra_weights, gross_package_weight, additional_expense_items
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, [
+                'external', externalMaterialType, name, notes, 'traditional',
+                costPerKg, costPerKgSyp, netWeight, 0,
+                packagingUnit, netWeight, 0,
+                0, 0, 0, 0,
+                0, 0, 0, 0,
+                0, 0, 0, 0,
+                1, 0, 0, 1,
+                unitCost, unitCostSyp, packageCost, packageCostSyp,
+                JSON.stringify([]), netWeight, JSON.stringify([])
+            ]);
+
+            await req.db.query(`
+                INSERT INTO cost_logs (material_id, material_name, unit_cost, unit_cost_syp, package_cost, package_cost_syp)
+                VALUES (?, ?, ?, ?, ?, ?)
+            `, [result.insertId, name, unitCost, unitCostSyp, packageCost, packageCostSyp]);
+
+            return res.json({ success: true, message: 'تم حفظ المادة الخارجية بنجاح' });
+        }
 
         // التحقق من البيانات المطلوبة
         if (!material_type || !material_name || !gross_weight) {
@@ -183,6 +300,7 @@ const createMaterial = async (req, res) => {
         const packaging_unit_weight_num = parseFloat(packaging_unit_weight) || 0;
         const pieces_per_package_num = parseInt(pieces_per_package) || 0;
         const packages_per_pallet_num = parseInt(packages_per_pallet) || 0;
+        const costInputBasis = (cost_input_basis === 'per_kg' || cost_input_basis === 'total') ? cost_input_basis : 'total';
 
 
         // تجهيز الحقول المرتبطة بالعملة
@@ -200,6 +318,21 @@ const createMaterial = async (req, res) => {
             usd[field] = usdVal;
             syp[field] = usdVal * exchangeRateValue;
         });
+
+        const additionalExpenseItemsArr = parseAdditionalExpenseItems(additional_expense_items);
+        const additionalExpenseItemsTotalUsd = additionalExpenseItemsArr.reduce((sum, item) => sum + (item.price || 0), 0);
+        usd.additional_expenses = (usd.additional_expenses || 0) + additionalExpenseItemsTotalUsd;
+        syp.additional_expenses = (syp.additional_expenses || 0) + (additionalExpenseItemsTotalUsd * exchangeRateValue);
+
+        const normalizedCosts = normalizeAuxiliaryCostsByBasis({
+            basis: costInputBasis,
+            usd,
+            syp,
+            grossWeight: gross_weight_num,
+            packagingWeight: packaging_weight_for_calc
+        });
+        Object.assign(usd, normalizedCosts.usd);
+        Object.assign(syp, normalizedCosts.syp);
 
         // معالجة الأوزان الإضافية
         let extraWeightsArr = [];
@@ -247,7 +380,7 @@ const createMaterial = async (req, res) => {
         // حفظ المادة
         const [result] = await req.db.query(`
             INSERT INTO materials (
-                material_type, material_name, calculation_method, price_before_waste, price_before_waste_syp,
+                material_origin, material_type, material_name, external_notes, calculation_method, price_before_waste, price_before_waste_syp,
                 gross_weight, waste_percentage, packaging_unit, packaging_weight,
                 packaging_unit_weight,
                 empty_package_price, empty_package_price_syp, sticker_price, sticker_price_syp,
@@ -255,10 +388,10 @@ const createMaterial = async (req, res) => {
                 preservatives_cost, preservatives_cost_syp, carton_price, carton_price_syp,
                 pieces_per_package, pallet_price, pallet_price_syp, packages_per_pallet,
                 unit_cost, unit_cost_syp, package_cost, package_cost_syp,
-                extra_weights, gross_package_weight
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                extra_weights, gross_package_weight, additional_expense_items
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
-            material_type, material_name, calculation_method || 'traditional', (usd.price_before_waste || 0), (syp.price_before_waste || 0),
+            'internal', material_type, material_name, null, calculation_method || 'traditional', (usd.price_before_waste || 0), (syp.price_before_waste || 0),
             gross_weight_num, waste_percentage_num, packaging_unit, packaging_weight,
             packaging_unit_weight_num,
             (usd.empty_package_price || 0), (syp.empty_package_price || 0), (usd.sticker_price || 0), (syp.sticker_price || 0),
@@ -266,7 +399,7 @@ const createMaterial = async (req, res) => {
             (usd.preservatives_cost || 0), (syp.preservatives_cost || 0), (usd.carton_price || 0), (syp.carton_price || 0),
             pieces_per_package_num, (usd.pallet_price || 0), (syp.pallet_price || 0), packages_per_pallet_num,
             unit_cost, unit_cost_syp, package_cost, package_cost_syp,
-            JSON.stringify(extraWeightsArr || []), gross_package_weight
+            JSON.stringify(extraWeightsArr || []), gross_package_weight, JSON.stringify(additionalExpenseItemsArr || [])
         ]);
 
         // حفظ العناصر الفرعية إذا كانت الطريقة هي العناصر
@@ -338,10 +471,16 @@ const updateMaterial = async (req, res) => {
     try {
         const { id } = req.params;
         const {
+            material_origin,
             material_type,
             material_name,
             calculation_method,
             price_before_waste,
+            external_packaging_unit,
+            external_unit_cost,
+            external_package_cost,
+            external_net_weight,
+            external_cost_per_kg,
             gross_weight,
             waste_percentage,
             packaging_unit,
@@ -356,9 +495,67 @@ const updateMaterial = async (req, res) => {
             pieces_per_package,
             pallet_price,
             packages_per_pallet,
+            cost_input_basis,
             extra_weights,
+            additional_expense_items,
+            external_notes,
             components
         } = req.body;
+
+        const [materialRows] = await req.db.query(`SELECT id, material_origin FROM materials WHERE id = ?`, [id]);
+        if (materialRows.length === 0) {
+            return res.status(404).json({ success: false, message: 'المادة غير موجودة' });
+        }
+        const existingOrigin = materialRows[0].material_origin === 'external' ? 'external' : 'internal';
+
+        if (existingOrigin === 'external') {
+            const externalMaterialType = (material_type || '').trim();
+            const name = (material_name || '').trim();
+            const packagingUnit = (external_packaging_unit || '').trim();
+            const netWeight = parseFloat(external_net_weight ?? gross_weight) || 0;
+            const unitCost = parseFloat(external_unit_cost) || 0;
+            const packageCost = parseFloat(external_package_cost) || 0;
+            const costPerKg = parseFloat(external_cost_per_kg ?? price_before_waste) || 0;
+            const notes = (typeof external_notes === 'string' && external_notes.trim()) ? external_notes.trim() : null;
+            if (!externalMaterialType || !name || !packagingUnit || netWeight <= 0 || unitCost <= 0 || packageCost <= 0 || costPerKg <= 0) {
+                return res.status(400).json({ success: false, message: 'بيانات المادة الخارجية غير مكتملة' });
+            }
+
+            const [exchangeRate] = await req.db.query(`
+                SELECT rate FROM exchange_rates 
+                WHERE from_currency_id = (SELECT id FROM currencies WHERE code = 'USD')
+                AND to_currency_id = (SELECT id FROM currencies WHERE code = 'SYP')
+            `);
+            const exchangeRateValue = exchangeRate.length > 0 ? parseFloat(exchangeRate[0].rate) : 13000;
+            const unitCostSyp = roundToDecimal(unitCost * exchangeRateValue, 0);
+            const packageCostSyp = roundToDecimal(packageCost * exchangeRateValue, 0);
+            const costPerKgSyp = roundToDecimal(costPerKg * exchangeRateValue, 0);
+
+            await req.db.query(`
+                UPDATE materials SET
+                    material_origin = 'external', material_type = ?, material_name = ?, external_notes = ?,
+                    calculation_method = 'traditional', price_before_waste = ?, price_before_waste_syp = ?,
+                    gross_weight = ?, waste_percentage = 0, packaging_unit = ?, packaging_weight = ?, packaging_unit_weight = 0,
+                    empty_package_price = 0, empty_package_price_syp = 0, sticker_price = 0, sticker_price_syp = 0,
+                    additional_expenses = 0, additional_expenses_syp = 0, labor_cost = 0, labor_cost_syp = 0,
+                    preservatives_cost = 0, preservatives_cost_syp = 0, carton_price = 0, carton_price_syp = 0,
+                    pieces_per_package = 1, pallet_price = 0, pallet_price_syp = 0, packages_per_pallet = 1,
+                    unit_cost = ?, unit_cost_syp = ?, package_cost = ?, package_cost_syp = ?,
+                    extra_weights = ?, gross_package_weight = ?, additional_expense_items = ?
+                WHERE id = ?
+            `, [
+                externalMaterialType, name, notes, costPerKg, costPerKgSyp,
+                netWeight, packagingUnit, netWeight, unitCost, unitCostSyp, packageCost, packageCostSyp,
+                JSON.stringify([]), netWeight, JSON.stringify([]), id
+            ]);
+            await req.db.query(`DELETE FROM material_components WHERE material_id = ?`, [id]);
+            await req.db.query(`
+                INSERT INTO cost_logs (material_id, material_name, unit_cost, unit_cost_syp, package_cost, package_cost_syp)
+                VALUES (?, ?, ?, ?, ?, ?)
+            `, [id, name, unitCost, unitCostSyp, packageCost, packageCostSyp]);
+
+            return res.json({ success: true, message: 'تم تحديث المادة الخارجية بنجاح' });
+        }
 
         // التحقق من صحة طريقة الحساب
         const isComponentsMethod = calculation_method === 'components';
@@ -408,14 +605,34 @@ const updateMaterial = async (req, res) => {
             }
         });
 
+        const additionalExpenseItemsArr = parseAdditionalExpenseItems(additional_expense_items);
+        const additionalExpenseItemsTotalUsd = additionalExpenseItemsArr.reduce((sum, item) => sum + (item.price || 0), 0);
+        usd.additional_expenses = (usd.additional_expenses || 0) + additionalExpenseItemsTotalUsd;
+        syp.additional_expenses = (syp.additional_expenses || 0) + (additionalExpenseItemsTotalUsd * exchangeRateValue);
+
         // تحويل القيم العامة إلى أرقام
         const gross_weight_num = parseFloat(gross_weight) || 0;
         const waste_percentage_num = parseFloat(waste_percentage) || 0;
         const pieces_per_package_num = parseInt(pieces_per_package) || 1;
         const packages_per_pallet_num = parseInt(packages_per_pallet) || 1;
+        const costInputBasis = (cost_input_basis === 'per_kg' || cost_input_basis === 'total' || cost_input_basis === 'normalized')
+            ? cost_input_basis
+            : 'normalized';
         // نحفظ packaging_weight كما هو (نص) للحفاظ على الدقة
         const packaging_weight_for_calc = parseFloat(packaging_weight) || 0;
         const packaging_unit_weight_num = parseFloat(packaging_unit_weight) || 0;
+
+        if (costInputBasis === 'per_kg' || costInputBasis === 'total') {
+            const normalizedCosts = normalizeAuxiliaryCostsByBasis({
+                basis: costInputBasis,
+                usd,
+                syp,
+                grossWeight: gross_weight_num,
+                packagingWeight: packaging_weight_for_calc
+            });
+            Object.assign(usd, normalizedCosts.usd);
+            Object.assign(syp, normalizedCosts.syp);
+        }
 
         // الأوزان الإضافية وحساب وزن الطرد القائم
         let extraWeightsArr = [];
@@ -451,14 +668,14 @@ const updateMaterial = async (req, res) => {
         // تحديث المادة
         await req.db.query(`
             UPDATE materials SET
-                material_type = ?, material_name = ?, calculation_method = ?, price_before_waste = ?, price_before_waste_syp = ?,
+                material_origin = 'internal', material_type = ?, material_name = ?, external_notes = NULL, calculation_method = ?, price_before_waste = ?, price_before_waste_syp = ?,
                 gross_weight = ?, waste_percentage = ?, packaging_unit = ?, packaging_weight = ?, packaging_unit_weight = ?,
                 empty_package_price = ?, empty_package_price_syp = ?, sticker_price = ?, sticker_price_syp = ?,
                 additional_expenses = ?, additional_expenses_syp = ?, labor_cost = ?, labor_cost_syp = ?,
                 preservatives_cost = ?, preservatives_cost_syp = ?, carton_price = ?, carton_price_syp = ?,
                 pieces_per_package = ?, pallet_price = ?, pallet_price_syp = ?, packages_per_pallet = ?,
                 unit_cost = ?, unit_cost_syp = ?, package_cost = ?, package_cost_syp = ?,
-                extra_weights = ?, gross_package_weight = ?
+                extra_weights = ?, gross_package_weight = ?, additional_expense_items = ?
             WHERE id = ?
         `, [
             material_type, material_name, calculation_method || 'traditional', (usd.price_before_waste || 0), (syp.price_before_waste || 0),
@@ -468,7 +685,7 @@ const updateMaterial = async (req, res) => {
             (usd.preservatives_cost || 0), (syp.preservatives_cost || 0), (usd.carton_price || 0), (syp.carton_price || 0),
             pieces_per_package_num, (usd.pallet_price || 0), (syp.pallet_price || 0), packages_per_pallet_num,
             unit_cost, unit_cost_syp, package_cost, package_cost_syp,
-            JSON.stringify(extraWeightsArr || []), gross_package_weight, id
+            JSON.stringify(extraWeightsArr || []), gross_package_weight, JSON.stringify(additionalExpenseItemsArr || []), id
         ]);
 
         // تحديث العناصر الفرعية
@@ -624,7 +841,7 @@ const getQuotationJson = async (req, res) => {
 const updateQuotation = async (req, res) => {
     try {
         const { id } = req.params;
-        const { client_name, client_phone, client_address, notes, items } = req.body;
+        const { client_name, client_phone, client_address, notes, sale_description, payment_method, items } = req.body;
 
         // التحقق من البيانات المطلوبة
         if (!client_name || !client_name.trim()) {
@@ -647,10 +864,17 @@ const updateQuotation = async (req, res) => {
             return res.status(400).json({ success: false, message: 'سعر الصرف غير صحيح' });
         }
 
+        const normalizedSaleDescription = (typeof sale_description === 'string' && sale_description.trim())
+            ? sale_description.trim()
+            : null;
+        const normalizedPaymentMethod = (typeof payment_method === 'string' && payment_method.trim())
+            ? payment_method.trim()
+            : null;
+
         // تحديث رأس العرض (بدون نسبة ربح عامة)
         await req.db.query(
-            `UPDATE quotations SET client_name = ?, client_phone = ?, client_address = ?, notes = ? WHERE id = ?`,
-            [client_name, client_phone, client_address, notes, id]
+            `UPDATE quotations SET client_name = ?, client_phone = ?, client_address = ?, notes = ?, sale_description = ?, payment_method = ? WHERE id = ?`,
+            [client_name, client_phone, client_address, notes, normalizedSaleDescription, normalizedPaymentMethod, id]
         );
 
         // حذف البنود القديمة
@@ -737,6 +961,8 @@ const createQuotation = async (req, res) => {
             client_phone,
             client_address,
             notes,
+            sale_description,
+            payment_method,
             general_profit_percentage,
             items
         } = req.body;
@@ -775,11 +1001,18 @@ const createQuotation = async (req, res) => {
             return res.status(400).json({ success: false, message: 'سعر الصرف غير صحيح' });
         }
 
+        const normalizedSaleDescription = (typeof sale_description === 'string' && sale_description.trim())
+            ? sale_description.trim()
+            : null;
+        const normalizedPaymentMethod = (typeof payment_method === 'string' && payment_method.trim())
+            ? payment_method.trim()
+            : null;
+
         // حفظ العرض
         const [quotationResult] = await req.db.query(`
-            INSERT INTO quotations (quotation_number, client_name, client_phone, client_address, notes, general_profit_percentage, total_amount, total_amount_syp)
-            VALUES (?, ?, ?, ?, ?, ?, 0, 0)
-        `, [quotationNumber, client_name, client_phone, client_address, notes, general_profit_percentage || 0]);
+            INSERT INTO quotations (quotation_number, client_name, client_phone, client_address, notes, sale_description, payment_method, general_profit_percentage, total_amount, total_amount_syp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0)
+        `, [quotationNumber, client_name, client_phone, client_address, notes, normalizedSaleDescription, normalizedPaymentMethod, general_profit_percentage || 0]);
 
         let totalAmount = 0;
         let totalAmountSyp = 0;
@@ -932,6 +1165,9 @@ const getQuotationDetails = async (req, res) => {
 const getQuotationPrintPage = async (req, res) => {
     try {
         const { id } = req.params;
+        const printMode = req.query.mode === 'full' ? 'full' : 'normal';
+        const showFullQuotationColumns = printMode === 'full';
+        const requestedDiscountedTotal = parseFloat(req.query.discounted_total);
         const [qRows] = await req.db.query(`SELECT * FROM quotations WHERE id = ?`, [id]);
         if (qRows.length === 0) {
             req.flash('error_msg', 'عرض السعر غير موجود');
@@ -972,12 +1208,20 @@ const getQuotationPrintPage = async (req, res) => {
             };
         });
         const grandTotal = displayItems.reduce((s, it) => s + (parseFloat(it.total_price) || 0), 0);
+        const discountedTotal = Number.isFinite(requestedDiscountedTotal)
+            ? Math.max(0, Math.min(grandTotal, requestedDiscountedTotal))
+            : grandTotal;
+        const discountAmount = Math.max(0, grandTotal - discountedTotal);
 
         res.render('costs/quotation-print', {
             title: `طباعة عرض السعر ${quotation.quotation_number}`,
             quotation,
             items: displayItems,
             grandTotal,
+            discountedTotal,
+            discountAmount,
+            printMode,
+            showFullQuotationColumns,
             defaultCurrency: req.defaultCurrency || null,
             layout: false
         });
@@ -996,7 +1240,12 @@ const exportQuotationPDF = async (req, res) => {
     const { v4: uuidv4 } = require('uuid');
     try {
         const { id } = req.params;
-        const url = `${process.env.BASE_URL}/costs/quotations/${id}/print-pdf-raw`;
+        const printMode = req.query.mode === 'full' ? 'full' : 'normal';
+        const requestedDiscountedTotal = parseFloat(req.query.discounted_total);
+        const discountedTotalQuery = Number.isFinite(requestedDiscountedTotal)
+            ? `&discounted_total=${encodeURIComponent(requestedDiscountedTotal)}`
+            : '';
+        const url = `${process.env.BASE_URL}/costs/quotations/${id}/print-pdf-raw?mode=${printMode}${discountedTotalQuery}`;
         const options = { format: 'A4' };
         const file = { url };
         const fileName = `${uuidv4()}.pdf`;
@@ -1016,6 +1265,9 @@ const exportQuotationPDF = async (req, res) => {
 const getQuotationPrintRaw = async (req, res) => {
     try {
         const { id } = req.params;
+        const printMode = req.query.mode === 'full' ? 'full' : 'normal';
+        const showFullQuotationColumns = printMode === 'full';
+        const requestedDiscountedTotal = parseFloat(req.query.discounted_total);
         const [qRows] = await req.db.query(`SELECT * FROM quotations WHERE id = ?`, [id]);
         if (qRows.length === 0) {
             return res.status(404).send('عرض السعر غير موجود');
@@ -1055,12 +1307,20 @@ const getQuotationPrintRaw = async (req, res) => {
             };
         });
         const grandTotal = displayItems.reduce((s, it) => s + (parseFloat(it.total_price) || 0), 0);
+        const discountedTotal = Number.isFinite(requestedDiscountedTotal)
+            ? Math.max(0, Math.min(grandTotal, requestedDiscountedTotal))
+            : grandTotal;
+        const discountAmount = Math.max(0, grandTotal - discountedTotal);
 
         res.render('costs/quotation-print', {
             title: `طباعة عرض السعر ${quotation.quotation_number}`,
             quotation,
             items: displayItems,
             grandTotal,
+            discountedTotal,
+            discountAmount,
+            printMode,
+            showFullQuotationColumns,
             defaultCurrency: req.defaultCurrency || null,
             layout: false
         });
@@ -1080,6 +1340,22 @@ const getMaterialPrintPage = async (req, res) => {
             return res.redirect('/costs/cost-statement');
         }
         const material = materials[0];
+        let components = [];
+        if (material.calculation_method === 'components') {
+            const [componentsResult] = await req.db.query(`
+                SELECT * FROM material_components
+                WHERE material_id = ?
+                ORDER BY component_name
+            `, [id]);
+            components = componentsResult;
+        }
+        const [exchangeRate] = await req.db.query(`
+            SELECT rate FROM exchange_rates
+            WHERE from_currency_id = (SELECT id FROM currencies WHERE code = 'USD')
+            AND to_currency_id = (SELECT id FROM currencies WHERE code = 'SYP')
+        `);
+        const exchangeRateValue = exchangeRate.length > 0 ? parseFloat(exchangeRate[0].rate) : 13000;
+
         // اختيار القيم حسب العملة المحددة
         const isSyp = req.defaultCurrency && req.defaultCurrency.code === 'SYP';
         const displayMaterial = {
@@ -1099,7 +1375,9 @@ const getMaterialPrintPage = async (req, res) => {
         res.render('costs/material-print', {
             title: `طباعة مادة ${displayMaterial.material_name}`,
             material: displayMaterial,
+            components,
             defaultCurrency: req.defaultCurrency || null,
+            exchangeRate: exchangeRateValue,
             layout: false
         });
     } catch (error) {
@@ -1611,9 +1889,17 @@ const getOrderDetailsPage = async (req, res) => {
         const totals = {
             totalRequestedQuantity: displayItems.reduce((s, it) => s + (parseFloat(it.requested_quantity) || 0), 0),
             totalNetWeight: displayItems.reduce((s, it) => s + (parseFloat(it.net_weight) || 0), 0),
-            totalPackagingWeight: displayItems.reduce((s, it) => s + (parseFloat(it.packaging_weight) || 0), 0),
+            totalPackagingWeight: displayItems.reduce((s, it) => {
+                const qty = parseFloat(it.requested_quantity) || 0;
+                const packagingWeight = parseFloat(it.packaging_weight) || 0;
+                return s + (packagingWeight * qty);
+            }, 0),
             totalPiecesPerPackage: displayItems.reduce((s, it) => s + (parseFloat(it.pieces_per_package) || 0), 0),
-            totalGrossWeight: displayItems.reduce((s, it) => s + (parseFloat(it.gross_weight) || 0), 0),
+            totalGrossWeight: displayItems.reduce((s, it) => {
+                const qty = parseFloat(it.requested_quantity) || 0;
+                const grossWeight = parseFloat(it.gross_weight) || 0;
+                return s + (grossWeight * qty);
+            }, 0),
             grandTotal: displayItems.reduce((s, it) => s + (it.total_price != null ? parseFloat(it.total_price) : 0), 0)
         };
 
@@ -1636,6 +1922,7 @@ const getOrderPrintPage = async (req, res) => {
     try {
         const { id } = req.params;
         const { type } = req.query; // invoice أو order (افتراضي)
+        const requestedDiscountedTotal = parseFloat(req.query.discounted_total);
         
         const [orders] = await req.db.query('SELECT * FROM orders WHERE id = ?', [id]);
         if (orders.length === 0) {
@@ -1685,17 +1972,31 @@ const getOrderPrintPage = async (req, res) => {
         const totals = {
             totalRequestedQuantity: pricedItems.reduce((s, it) => s + (parseFloat(it.requested_quantity) || 0), 0),
             totalNetWeight: pricedItems.reduce((s, it) => s + (parseFloat(it.net_weight) || 0), 0),
-            totalPackagingWeight: pricedItems.reduce((s, it) => s + (parseFloat(it.packaging_weight) || 0), 0),
+            totalPackagingWeight: pricedItems.reduce((s, it) => {
+                const qty = parseFloat(it.requested_quantity) || 0;
+                const packagingWeight = parseFloat(it.packaging_weight) || 0;
+                return s + (packagingWeight * qty);
+            }, 0),
             totalPiecesPerPackage: pricedItems.reduce((s, it) => s + (parseFloat(it.pieces_per_package) || 0), 0),
-            totalGrossWeight: pricedItems.reduce((s, it) => s + (parseFloat(it.gross_weight) || 0), 0),
+            totalGrossWeight: pricedItems.reduce((s, it) => {
+                const qty = parseFloat(it.requested_quantity) || 0;
+                const grossWeight = parseFloat(it.gross_weight) || 0;
+                return s + (grossWeight * qty);
+            }, 0),
             grandTotal: pricedItems.reduce((s, it) => s + (it.total_price != null ? parseFloat(it.total_price) : 0), 0)
         };
+        const discountedTotal = Number.isFinite(requestedDiscountedTotal)
+            ? Math.max(0, Math.min(totals.grandTotal, requestedDiscountedTotal))
+            : totals.grandTotal;
+        const discountAmount = Math.max(0, totals.grandTotal - discountedTotal);
 
         res.render('costs/order-print', {
-            title: type === 'invoice' ? `فاتورة ${orders[0].order_number}` : `طباعة طلبية ${orders[0].order_number}`,
+            title: type === 'invoice' ? `طلبية شحن ${orders[0].order_number}` : `طباعة طلبية ${orders[0].order_number}`,
             order: orders[0],
             items: pricedItems,
             totals,
+            discountedTotal,
+            discountAmount,
             defaultCurrency: req.defaultCurrency || null,
             printType: type || 'order', // order أو invoice
             layout: false
@@ -1716,8 +2017,12 @@ const exportOrderPDF = async (req, res) => {
     try {
         const { id } = req.params;
         const { type } = req.query; // invoice أو order (افتراضي)
-        
-        const url = `${process.env.BASE_URL}/costs/orders/${id}/print-pdf-raw${type ? `?type=${type}` : ''}`;
+        const requestedDiscountedTotal = parseFloat(req.query.discounted_total);
+        const queryParts = [];
+        if (type) queryParts.push(`type=${encodeURIComponent(type)}`);
+        if (Number.isFinite(requestedDiscountedTotal)) queryParts.push(`discounted_total=${encodeURIComponent(requestedDiscountedTotal)}`);
+        const queryString = queryParts.length ? `?${queryParts.join('&')}` : '';
+        const url = `${process.env.BASE_URL}/costs/orders/${id}/print-pdf-raw${queryString}`;
         const options = { format: 'A4' };
         const file = { url };
         const fileName = `${uuidv4()}.pdf`;
@@ -1778,6 +2083,12 @@ const getMaterialPreview = async (req, res) => {
             `, [id]);
             components = componentsResult;
         }
+        const [exchangeRate] = await req.db.query(`
+            SELECT rate FROM exchange_rates
+            WHERE from_currency_id = (SELECT id FROM currencies WHERE code = 'USD')
+            AND to_currency_id = (SELECT id FROM currencies WHERE code = 'SYP')
+        `);
+        const exchangeRateValue = exchangeRate.length > 0 ? parseFloat(exchangeRate[0].rate) : 13000;
         
         // اختيار القيم حسب العملة المحددة
         const displayMaterial = {
@@ -1819,7 +2130,8 @@ const getMaterialPreview = async (req, res) => {
             material: displayMaterial,
             components: components,
             user: req.session.user,
-            formatDate: formatDate
+            formatDate: formatDate,
+            exchangeRate: exchangeRateValue
         });
     } catch (error) {
         console.error('خطأ في معاينة المادة:', error);
@@ -1860,7 +2172,7 @@ module.exports = {
     getOrderPrintRaw,
     async getMaterialsListPrintPage(req, res) {
         try {
-            const [materials] = await req.db.query(`SELECT * FROM materials ORDER BY created_at DESC`);
+            const [materials] = await req.db.query(`SELECT * FROM materials ORDER BY material_name ASC, created_at DESC`);
             // احترام العملة الافتراضية
             const isSyp = req.defaultCurrency && req.defaultCurrency.code === 'SYP';
             const displayMaterials = materials.map(m => ({

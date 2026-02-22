@@ -15,6 +15,9 @@
     body { 
       font-family: 'Cairo', sans-serif; 
     }
+    .auto-num-center {
+      text-align: center !important;
+    }
     @media print {
       .no-print {
         display: none !important;
@@ -41,7 +44,7 @@
           <% if (typeof user !== 'undefined' && user) { %>
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
               <li class="nav-item"><a class="nav-link" href="/inventory"><i class="bi bi-box-seam"></i> المخزون</a></li>
-              <li class="nav-item"><a class="nav-link" href="/invoices"><i class="bi bi-receipt"></i> الفواتير</a></li>
+              <li class="nav-item"><a class="nav-link" href="/invoices"><i class="bi bi-receipt"></i> طلبات  الشحن</a></li>
               <li class="nav-item"><a class="nav-link" href="/certificates"><i class="bi bi-award"></i> الشهادات</a></li>
                 <% if (user.role === 'admin') { %>
                     <li class="nav-item"><a class="nav-link" href="/costs"><i class="bi bi-cash-stack"></i> التكاليف</a></li>
@@ -94,13 +97,77 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/ar.js"></script>
+    <script>
+    (function() {
+      function isNumericLikeText(text) {
+        if (!text) return false;
+        const normalized = String(text).replace(/\s+/g, ' ').trim();
+        if (!normalized) return false;
+        if (!/[0-9\u0660-\u0669]/.test(normalized)) return false;
+
+        const cleaned = normalized
+          .replace(/(?:\b(?:kg|KG|usd|USD|syp|SYP)\b|كجم|كغ|ل\.س|د\.أ|€|£|¥|%\u200E?|%|\$|٫|٬|,|\.|\/|\-|\+|\(|\)|\[|\]|:)/g, '')
+          .replace(/[0-9\u0660-\u0669]/g, '')
+          .trim();
+
+        return cleaned.length === 0;
+      }
+
+      function applyNumericCentering(root) {
+        const scope = root || document;
+        const cells = scope.querySelectorAll ? scope.querySelectorAll('table td, table th') : [];
+        cells.forEach(function(cell) {
+          if (!cell) return;
+          if (cell.closest('.no-auto-num-center')) return;
+          if (cell.children && cell.querySelector('input, select, textarea, button')) return;
+          const txt = cell.textContent;
+          if (isNumericLikeText(txt)) {
+            cell.classList.add('auto-num-center');
+          }
+        });
+      }
+
+      let scheduled = false;
+      function scheduleApply() {
+        if (scheduled) return;
+        scheduled = true;
+        requestAnimationFrame(function() {
+          scheduled = false;
+          applyNumericCentering(document);
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        applyNumericCentering(document);
+        if (!document.body || !window.MutationObserver) return;
+        const observer = new MutationObserver(function(mutations) {
+          for (let i = 0; i < mutations.length; i++) {
+            if (mutations[i].type === 'childList') {
+              scheduleApply();
+              return;
+            }
+          }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+      });
+    })();
+    </script>
     
     <% if (typeof user !== 'undefined' && user && user.role === 'admin') { %>
+    <div
+      id="presenceAuthData"
+      data-user-id="<%= user.id %>"
+      data-session-id="<%= session.id || ('session_' + user.id + '_' + Date.now()) %>"
+      style="display:none"
+    ></div>
     <script src="/socket.io/socket.io.js"></script>
     <script>
     // نظام Presence العام للمشرفين
     if (typeof window.presenceSystem === 'undefined') {
         window.presenceSystem = (function() {
+            const authDataEl = document.getElementById('presenceAuthData');
+            const authUserId = Number(authDataEl?.dataset?.userId || 0);
+            const authSessionId = authDataEl?.dataset?.sessionId || ('session_' + authUserId + '_' + Date.now());
             const socket = io({
                 timeout: 5000,
                 reconnection: true,
@@ -112,8 +179,8 @@
             
             // المصادقة
             socket.emit('authenticate', {
-                userId: <%= user.id %>,
-                sessionId: '<%= session.id || 'session_' + user.id + '_' + Date.now() %>'
+                userId: authUserId,
+                sessionId: authSessionId
             });
             
             socket.on('authenticated', function(data) {
@@ -197,8 +264,8 @@
             socket.on('connect', function() {
                 // إعادة المصادقة عند إعادة الاتصال
                 socket.emit('authenticate', {
-                    userId: <%= user.id %>,
-                    sessionId: '<%= session.id || 'session_' + user.id + '_' + Date.now() %>'
+                    userId: authUserId,
+                    sessionId: authSessionId
                 });
             });
             

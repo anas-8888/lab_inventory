@@ -1,4 +1,4 @@
-<div class="container mt-4">
+﻿<div class="container mt-4">
     <div class="row">
         <div class="col-12">
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center mb-4">
@@ -50,17 +50,17 @@
                                 <tr>
                                     <th>رقم الطلبية</th>
                                     <th>اسم الزبون</th>
-                                    <th>تاريخ الطلبية</th>
-                                    <th>تاريخ التسليم</th>
-                                    <th>المسؤول عن التجهيز</th>
-                                    <th>مراقب الجودة</th>
-                                    <th>عدد الطبالي</th>
-                                    <th>رقم الحاوية</th>
-                                    <th>عدد الطرود</th>
-                                    <th>رقم البوليصة</th>
-                                    <th>رقم الاعتماد</th>
-                                    <th>الحالة</th>
-                                    <th>الإجراءات</th>
+                                    <th class="text-center">تاريخ الطلبية</th>
+                                    <th class="text-center">تاريخ التسليم</th>
+                                    <th class="text-center">المسؤول عن التجهيز</th>
+                                    <th class="text-center">مراقب الجودة</th>
+                                    <th class="text-center">عدد الطبالي</th>
+                                    <th class="text-center">رقم الحاوية</th>
+                                    <th class="text-center">عدد الطرود</th>
+                                    <th class="text-center">رقم البوليصة</th>
+                                    <th class="text-center">رقم الاعتماد</th>
+                                    <th class="text-center">الحالة</th>
+                                    <th class="text-center">الإجراءات</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -93,19 +93,19 @@
                                     <td>
                                         <div class="btn-group">
                                             <a href="/costs/orders/<%= order.id %>/details" class="btn btn-sm btn-secondary" title="معاينة"><i class="bi bi-eye"></i></a>
-                                            <button type="button" class="btn btn-sm btn-info" onclick="editOrder(<%= order.id %>)" title="تعديل">
+                                            <button type="button" class="btn btn-sm btn-info" data-order-id="<%= order.id %>" onclick="editOrder(Number(this.dataset.orderId))" title="تعديل">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-warning" onclick="updateOrderStatus('<%= order.id %>', 'processing')" title="قيد المعالجة">
+                                            <button type="button" class="btn btn-sm btn-warning" data-order-id="<%= order.id %>" data-status="processing" onclick="updateOrderStatus(this.dataset.orderId, this.dataset.status)" title="قيد المعالجة">
                                                 <i class="bi bi-play"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-success" onclick="updateOrderStatus('<%= order.id %>', 'completed')" title="مكتمل">
+                                            <button type="button" class="btn btn-sm btn-success" data-order-id="<%= order.id %>" data-status="completed" onclick="updateOrderStatus(this.dataset.orderId, this.dataset.status)" title="مكتمل">
                                                 <i class="bi bi-check"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-danger" onclick="updateOrderStatus('<%= order.id %>', 'cancelled')" title="إلغاء">
+                                            <button type="button" class="btn btn-sm btn-danger" data-order-id="<%= order.id %>" data-status="cancelled" onclick="updateOrderStatus(this.dataset.orderId, this.dataset.status)" title="إلغاء">
                                                 <i class="bi bi-x"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-danger" onclick="deleteOrder(<%= order.id %>)" title="حذف">
+                                            <button type="button" class="btn btn-sm btn-danger" data-order-id="<%= order.id %>" onclick="deleteOrder(Number(this.dataset.orderId))" title="حذف">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </div>
@@ -388,12 +388,39 @@
     </div>
 </div>
 
+<div
+    id="ordersPageData"
+    data-currency-symbol="<%= (currency && currency.symbol) ? currency.symbol : '$' %>"
+    data-exchange-rate="<%= (currency && currency.code === 'SYP') ? (currency.exchangeRate || 1) : 1 %>"
+    data-currency-code="<%= (currency && currency.code) ? currency.code : 'USD' %>"
+    hidden
+></div>
+<script id="ordersMaterialsJson" type="application/json"><%- JSON.stringify(materials || []) %></script>
+
 <script>
 // تمرير قائمة المواد من الخادم إلى الواجهة
-window.materials = <%- JSON.stringify(typeof materials !== 'undefined' ? materials : []) %>;
-const currencySymbol = '<%= (typeof defaultCurrency !== "undefined" && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '' %>';
-const exchangeRate = <%= exchangeRate %>;
-const defaultCurrencyCode = '<%= (typeof defaultCurrency !== "undefined" && defaultCurrency && defaultCurrency.code) ? defaultCurrency.code : '' %>';
+(() => {
+  const materialsJsonEl = document.getElementById('ordersMaterialsJson');
+  try {
+    window.materials = JSON.parse(materialsJsonEl?.textContent || "[]");
+  } catch (_) {
+    window.materials = [];
+  }
+})();
+const groupedMaterials = (() => {
+  const source = Array.isArray(window.materials) ? window.materials : [];
+  const byName = new Map();
+  source.forEach((m) => {
+    const key = (m && m.material_name ? String(m.material_name) : '').trim();
+    if (!key) return;
+    if (!byName.has(key)) byName.set(key, m);
+  });
+  return Array.from(byName.values());
+})();
+const pageDataEl = document.getElementById('ordersPageData');
+const currencySymbol = pageDataEl?.dataset?.currencySymbol || '';
+const exchangeRate = parseFloat(pageDataEl?.dataset?.exchangeRate || '1') || 1;
+const defaultCurrencyCode = pageDataEl?.dataset?.currencyCode || '';
 const isSyp = defaultCurrencyCode === 'SYP';
 
 // دالة تنسيق الأرقام حسب العملة
@@ -939,8 +966,7 @@ function onOrderCalcRow(el){
 function addEditOrderItemRow(item){
   const tbody = document.getElementById('editOrderItemsBody');
   const tr = document.createElement('tr');
-  const materials = Array.isArray(window.materials) ? window.materials : [];
-  const materialOptions = materials.map(m => {
+  const materialOptions = groupedMaterials.map(m => {
     const packageCost = defaultCurrencyCode === 'SYP' 
       ? (m.package_cost_syp || m.package_cost || 0) 
       : (m.package_cost || 0);
@@ -1148,35 +1174,52 @@ function openOrderMaterialPicker(rowId){
 function buildOrderMaterialsPickerTable(){
   const tbody = document.getElementById('materialsPickerBodyOrders');
   if (!tbody) return;
-  const mats = Array.isArray(window.materials) ? window.materials : [];
-  const rowsHtml = mats.map(m => {
-    const pkg = displayMoney(m.package_cost || 0);
-    return `
-      <tr>
-        <td class="pick-name">${m.material_name}</td>
-        <td class="pick-type">${m.material_type || ''}</td>
-        <td>${m.packaging_unit || ''}</td>
-        <td>${pkg} ${currencySymbol}</td>
-        <td><button type="button" class="btn btn-sm btn-success" onclick="selectOrderMaterial(${m.id})"><i class="bi bi-plus-circle"></i></button></td>
-      </tr>`;
-  }).join('');
-  tbody.innerHTML = rowsHtml;
+  renderOrderMaterialsPickerRows(window.materials || []);
   wireOrderMaterialSearch();
+}
+
+function renderOrderMaterialsPickerRows(sourceRows){
+  const tbody = document.getElementById('materialsPickerBodyOrders');
+  if (!tbody) return;
+  const rows = Array.isArray(sourceRows) ? sourceRows : [];
+  const grouped = new Map();
+  rows.forEach((m) => {
+    const key = (m && m.material_name ? String(m.material_name) : '').trim() || '-';
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key).push(m);
+  });
+  let rowsHtml = '';
+  Array.from(grouped.values()).forEach((group) => {
+    group.forEach((m, indexInGroup) => {
+      const pkg = displayMoney(m.package_cost || 0);
+      rowsHtml += `
+        <tr>
+          ${indexInGroup === 0 ? `<td class="pick-name" rowspan="${group.length}">${m.material_name || '-'}</td>` : ''}
+          <td class="pick-type">${m.material_type || ''}</td>
+          <td>${m.packaging_unit || ''}</td>
+          <td>${pkg} ${currencySymbol}</td>
+          <td><button type="button" class="btn btn-sm btn-success" onclick="selectOrderMaterial(${m.id})"><i class="bi bi-plus-circle"></i></button></td>
+        </tr>`;
+    });
+  });
+  tbody.innerHTML = rowsHtml;
 }
 
 function wireOrderMaterialSearch(){
   const input = document.getElementById('orderMaterialSearchInput');
   const clearBtn = document.getElementById('clearOrderMaterialSearchBtn');
-  const tbody = document.getElementById('materialsPickerBodyOrders');
-  if (!input || !tbody) return;
+  if (!input) return;
   const filter = () => {
     const q = (input.value || '').toLowerCase().trim();
-    Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
-      const name = (tr.querySelector('.pick-name')?.textContent || '').toLowerCase();
-      const type = (tr.querySelector('.pick-type')?.textContent || '').toLowerCase();
-      const ok = !q || name.includes(q) || type.includes(q);
-      tr.style.display = ok ? '' : 'none';
-    });
+    const source = Array.isArray(window.materials) ? window.materials : [];
+    const filtered = !q
+      ? source
+      : source.filter((m) => {
+          const name = (m?.material_name || '').toLowerCase();
+          const type = (m?.material_type || '').toLowerCase();
+          return name.includes(q) || type.includes(q);
+        });
+    renderOrderMaterialsPickerRows(filtered);
     if (clearBtn) clearBtn.style.display = q ? '' : 'none';
   };
   input.removeEventListener('input', input._orderMatFilter);

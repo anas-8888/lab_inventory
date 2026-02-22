@@ -39,25 +39,39 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table id="materialsTable" class="table table-hover">
+                        <table id="materialsTable" class="table">
                             <thead>
                                 <tr>
                                     <th>اسم المادة</th>
                                     <th>وحدة التعبئة</th>
-                                    <th>كلفة القطعة</th>
-                                    <th>كلفة الطرد</th>
-                                    <th>وزن الطرد القائم</th>
-                                    <th>الوزن الصافي</th>
-                                    <th>شد الكرتون</th>
-                                    <th>كلفة الكيلو</th>
-                                    <th>تاريخ الإضافة</th>
-                                    <th>الإجراءات</th>
+                                    <th class="text-center">كلفة القطعة</th>
+                                    <th class="text-center">كلفة الطرد</th>
+                                    <th class="text-center">وزن الطرد القائم</th>
+                                    <th class="text-center">الوزن الصافي</th>
+                                    <th class="text-center">شد الكرتون</th>
+                                    <th class="text-center">كلفة الكيلو</th>
+                                    <th class="text-center">تاريخ الإضافة</th>
+                                    <th class="text-center">الإجراءات</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <% materials.forEach(material => { %>
-                                <tr>
-                                    <td class="material-name"><%= material.material_name %><span class="material-type" style="display:none"><%= material.material_type %></span></td>
+                                <%
+                                    const groupedMaterialsMap = new Map();
+                                    (materials || []).forEach((m) => {
+                                        const key = (m.material_name || '').trim();
+                                        if (!groupedMaterialsMap.has(key)) {
+                                            groupedMaterialsMap.set(key, []);
+                                        }
+                                        groupedMaterialsMap.get(key).push(m);
+                                    });
+                                    const groupedMaterials = Array.from(groupedMaterialsMap.values());
+                                %>
+                                <% groupedMaterials.forEach((group, groupIndex) => { %>
+                                <% group.forEach((material, indexInGroup) => { %>
+                                <tr data-group-key="g-<%= groupIndex %>" data-material-name="<%= material.material_name || '' %>" data-material-type="<%= material.material_type || '' %>">
+                                    <% if (indexInGroup === 0) { %>
+                                    <td class="material-name" data-group-key="g-<%= groupIndex %>" rowspan="<%= group.length %>"><%= material.material_name %><span class="material-type" style="display:none"><%= material.material_type %></span></td>
+                                    <% } %>
                                     <td><%= material.packaging_unit || '-' %></td>
                                     <td>
                                         <%= (defaultCurrency && defaultCurrency.code === 'SYP')
@@ -100,15 +114,16 @@
                                             <a href="/costs/cost-statement/<%= material.id %>/preview" class="btn btn-sm btn-success" title="معاينة">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <button type="button" class="btn btn-sm btn-info" onclick="editMaterial(<%= material.id %>)" title="تعديل">
+                                            <button type="button" class="btn btn-sm btn-info" data-material-id="<%= material.id %>" onclick="editMaterial(Number(this.dataset.materialId))" title="تعديل">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-danger" onclick="deleteMaterial(<%= material.id %>)" title="حذف">
+                                            <button type="button" class="btn btn-sm btn-danger" data-material-id="<%= material.id %>" onclick="deleteMaterial(Number(this.dataset.materialId))" title="حذف">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
+                                <% }); %>
                                 <% }); %>
                             </tbody>
                         </table>
@@ -139,6 +154,58 @@
             <div class="modal-body">
                 <form id="materialForm" method="POST" action="/costs/cost-statement">
                     <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">نوع المادة *</label>
+                            <div class="d-flex gap-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="material_origin" id="materialOriginInternal" value="internal" checked onchange="toggleAddMaterialOrigin()">
+                                    <label class="form-check-label" for="materialOriginInternal">مادة داخلية</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="material_origin" id="materialOriginExternal" value="external" onchange="toggleAddMaterialOrigin()">
+                                    <label class="form-check-label" for="materialOriginExternal">مادة خارجية</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="addExternalSimpleFields" class="col-12" style="display:none;">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">نوع المادة *</label>
+                                    <input type="text" class="form-control" id="externalMaterialType" placeholder="مثال: زيتون، مخلل، معلب">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">اسم المادة *</label>
+                                    <input type="text" class="form-control" id="externalMaterialName" placeholder="اسم المادة الخارجية">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">وحدة التعبئة *</label>
+                                    <input type="text" class="form-control" id="externalPackagingUnit" placeholder="مثال: كرتون، عبوة، كيس">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">كلفة القطعة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
+                                    <input type="number" class="form-control" id="externalUnitCost" step="0.01" min="0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">كلفة الطرد (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
+                                    <input type="number" class="form-control" id="externalPackageCost" step="0.01" min="0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">الوزن الصافي (كجم) *</label>
+                                    <input type="number" class="form-control" id="externalNetWeight" step="0.001" min="0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">كلفة الكيلو (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
+                                    <input type="number" class="form-control" id="externalCostPerKg" step="0.01" min="0">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">ملاحظات</label>
+                                    <textarea class="form-control" id="externalNotes" rows="2" placeholder="اختياري"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="addInternalComplexFields" class="row g-3">
                         <!-- نوع المادة -->
                         <div class="col-md-6">
                             <label class="form-label">نوع المادة *</label>
@@ -285,16 +352,29 @@
                             <small class="text-muted d-block mt-1">يمكنك إضافة عدة مواد إضافية مع أوزانها، تُحسب ضمن وزن الطرد القائم</small>
                         </div>
 
+                        <div class="col-12">
+                            <label class="form-label">أساس إدخال التكاليف للحقول التالية *</label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="cost_input_basis" id="costBasisPerKg" value="per_kg" onchange="calculateCosts()">
+                                        <label class="form-check-label" for="costBasisPerKg">لكل كيلو</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="cost_input_basis" id="costBasisTotal" value="total" onchange="calculateCosts()">
+                                        <label class="form-check-label" for="costBasisTotal">إجمالي</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <small class="text-muted">يُطبق على: اللصاقة، المصاريف الإضافية، العمال، المواد الحافظة فقط.</small>
+                        </div>
+
                         <!-- ثمن اللصاقة -->
                         <div class="col-md-4">
                             <label class="form-label">ثمن اللصاقة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
                             <input type="number" class="form-control" name="sticker_price" step="0.01" required>
-                        </div>
-
-                        <!-- مصاريف إضافية -->
-                        <div class="col-md-4">
-                            <label class="form-label">مصاريف إضافية (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                            <input type="number" class="form-control" name="additional_expenses" step="0.01" required>
                         </div>
 
                         <!-- مصروف عمال -->
@@ -332,6 +412,14 @@
                             <label class="form-label">عدد الطرود في الطبلية *</label>
                             <input type="number" class="form-control" name="packages_per_pallet" value="1" required>
                         </div>
+
+                        <div class="col-12">
+                            <label class="form-label">بنود مصاريف إضافية (اسم + سعر)</label>
+                            <div id="additionalExpensesContainer"></div>
+                            <button type="button" class="btn btn-outline-secondary mt-2" id="addAdditionalExpenseBtn">إضافة بند مصروف</button>
+                            <small class="text-muted d-block mt-1">يُطبّق عليها نفس أساس الإدخال المختار (لكل كيلو/إجمالي) ضمن الحساب التلقائي.</small>
+                        </div>
+                    </div>
                     </div>
 
                     <!-- نتائج الحساب -->
@@ -384,6 +472,22 @@
   </div>
   </template>
 
+<template id="additionalExpenseRowTemplate">
+  <div class="row g-2 additional-expense-row align-items-end mt-1">
+    <div class="col-md-6">
+      <label class="form-label">اسم المصروف</label>
+      <input type="text" class="form-control additional-expense-name" placeholder="مثال: نقل، تنظيف، تغليف ...">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">السعر (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>)</label>
+      <input type="number" step="0.01" class="form-control additional-expense-price" placeholder="0.00">
+    </div>
+    <div class="col-md-2">
+      <button type="button" class="btn btn-outline-danger w-100 remove-additional-expense">حذف</button>
+    </div>
+  </div>
+</template>
+
 <!-- Modal تعديل المادة -->
 <div class="modal fade" id="editMaterialModal" tabindex="-1">
     <div class="modal-dialog modal-xl">
@@ -395,7 +499,52 @@
             <div class="modal-body">
                 <form id="editMaterialForm">
                     <input type="hidden" id="editMaterialId" name="material_id">
+                    <input type="hidden" id="editMaterialOrigin" name="material_origin" value="internal">
                     <div class="row g-3">
+                        <div class="col-12">
+                            <div class="alert alert-secondary py-2 mb-0">
+                                <strong>نوع المادة:</strong> <span id="editMaterialOriginLabel">مادة داخلية</span>
+                            </div>
+                        </div>
+
+                        <div id="editExternalSimpleFields" class="col-12" style="display:none;">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">نوع المادة *</label>
+                                    <input type="text" class="form-control" id="editExternalMaterialType">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">اسم المادة *</label>
+                                    <input type="text" class="form-control" id="editExternalMaterialName">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">وحدة التعبئة *</label>
+                                    <input type="text" class="form-control" id="editExternalPackagingUnit">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">كلفة القطعة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
+                                    <input type="number" class="form-control" id="editExternalUnitCost" step="0.01" min="0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">كلفة الطرد (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
+                                    <input type="number" class="form-control" id="editExternalPackageCost" step="0.01" min="0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">الوزن الصافي (كجم) *</label>
+                                    <input type="number" class="form-control" id="editExternalNetWeight" step="0.001" min="0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">كلفة الكيلو (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
+                                    <input type="number" class="form-control" id="editExternalCostPerKg" step="0.01" min="0">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">ملاحظات</label>
+                                    <textarea class="form-control" id="editExternalNotes" rows="2" placeholder="اختياري"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="editInternalComplexFields" class="row g-3">
                         <!-- نوع المادة -->
                         <div class="col-md-6">
                             <label class="form-label">نوع المادة *</label>
@@ -532,16 +681,31 @@
                             <input type="number" class="form-control currency-input" id="editEmptyPackagePrice" name="empty_package_price" step="0.01" required data-field="empty_package_price">
                         </div>
 
+                        <div class="col-12">
+                            <div class="border rounded p-3 bg-light">
+                                <label class="form-label mb-2">أساس إدخال التكاليف للحقول التالية</label>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="edit_cost_input_basis" id="editCostBasisPerKg" value="per_kg" onchange="calculateEditCosts()">
+                                            <label class="form-check-label" for="editCostBasisPerKg">لكل كيلو</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="edit_cost_input_basis" id="editCostBasisTotal" value="total" onchange="calculateEditCosts()">
+                                            <label class="form-check-label" for="editCostBasisTotal">إجمالي</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <small class="text-muted d-block mt-2">في حال عدم الاختيار، سيتم اعتماد القيم الحالية كما هي دون إعادة تحويل.</small>
+                            </div>
+                        </div>
+
                         <!-- ثمن اللصاقة -->
                         <div class="col-md-4">
                             <label class="form-label">ثمن اللصاقة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
                             <input type="number" class="form-control currency-input" id="editStickerPrice" name="sticker_price" step="0.01" required data-field="sticker_price">
-                        </div>
-
-                        <!-- مصاريف إضافية -->
-                        <div class="col-md-4">
-                            <label class="form-label">مصاريف إضافية (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                            <input type="number" class="form-control currency-input" id="editAdditionalExpenses" name="additional_expenses" step="0.01" required data-field="additional_expenses">
                         </div>
 
                         <!-- مصروف عمال -->
@@ -585,6 +749,14 @@
                             <div id="editExtraWeightsContainer"></div>
                             <button type="button" class="btn btn-outline-secondary mt-2" id="editAddExtraWeightBtn">إضافة وزن إضافي</button>
                         </div>
+
+                        <div class="col-12">
+                            <label class="form-label">بنود مصاريف إضافية (اسم + سعر)</label>
+                            <div id="editAdditionalExpensesContainer"></div>
+                            <button type="button" class="btn btn-outline-secondary mt-2" id="editAddAdditionalExpenseBtn">إضافة بند مصروف</button>
+                            <small class="text-muted d-block mt-1">يُطبّق عليها نفس أساس الإدخال المختار (لكل كيلو/إجمالي) ضمن الحساب التلقائي.</small>
+                        </div>
+                    </div>
                     </div>
 
                     <!-- نتائج الحساب -->
@@ -744,6 +916,10 @@
                                 <td id="viewAdditionalExpenses">-</td>
                             </tr>
                             <tr>
+                                <td><strong>تفصيل المصاريف الإضافية:</strong></td>
+                                <td id="viewAdditionalExpenseItems">-</td>
+                            </tr>
+                            <tr>
                                 <td><strong>مصروف عمال:</strong></td>
                                 <td id="viewLaborCost">-</td>
                             </tr>
@@ -901,9 +1077,12 @@ function editMaterial(materialId) {
         .then(data => {
             if (data.success) {
                 const material = data.material;
+                const materialOrigin = material.material_origin || 'internal';
+                const isExternalMaterial = materialOrigin === 'external';
                 
                 // ملء النموذج بالبيانات
                 document.getElementById('editMaterialId').value = material.id;
+                document.getElementById('editMaterialOrigin').value = materialOrigin;
                 document.getElementById('editMaterialType').value = material.material_type;
                 document.getElementById('editMaterialName').value = material.material_name;
                 document.getElementById('editGrossWeight').value = material.gross_weight;
@@ -912,6 +1091,25 @@ function editMaterial(materialId) {
                 document.getElementById('editPackagingWeight').value = material.packaging_weight;
                 document.getElementById('editPiecesPerPackage').value = material.pieces_per_package;
                 document.getElementById('editPackagesPerPallet').value = material.packages_per_pallet;
+                document.getElementById('editExternalMaterialType').value = material.material_type || '';
+                document.getElementById('editExternalMaterialName').value = material.material_name || '';
+                document.getElementById('editExternalPackagingUnit').value = material.packaging_unit || '';
+                document.getElementById('editExternalNetWeight').value = material.packaging_weight || material.gross_weight || '';
+                document.getElementById('editExternalNotes').value = material.external_notes || '';
+                const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
+                const externalUnitCostShown = currentCurrency === 'SYP'
+                    ? (material.unit_cost_syp || material.unit_cost || 0)
+                    : (material.unit_cost || 0);
+                const externalPackageCostShown = currentCurrency === 'SYP'
+                    ? (material.package_cost_syp || material.package_cost || 0)
+                    : (material.package_cost || 0);
+                const externalCostPerKgShown = currentCurrency === 'SYP'
+                    ? (material.price_before_waste_syp || material.price_before_waste || 0)
+                    : (material.price_before_waste || 0);
+                document.getElementById('editExternalUnitCost').value = externalUnitCostShown;
+                document.getElementById('editExternalPackageCost').value = externalPackageCostShown;
+                document.getElementById('editExternalCostPerKg').value = externalCostPerKgShown;
+                toggleEditMaterialOrigin(materialOrigin);
                 
                 // تحديد طريقة الحساب
                 const calculationMethod = material.calculation_method || 'traditional';
@@ -922,17 +1120,40 @@ function editMaterial(materialId) {
                     document.getElementById('editTraditionalMethod').checked = true;
                     document.getElementById('editComponentsMethod').checked = false;
                 }
+                document.getElementById('editCostBasisPerKg').checked = false;
+                document.getElementById('editCostBasisTotal').checked = false;
                 
                 // تبديل العرض حسب طريقة الحساب
                 toggleEditCalculationMethod();
+
+                if (isExternalMaterial) {
+                    document.getElementById('editTraditionalMethod').checked = true;
+                    document.getElementById('editComponentsMethod').checked = false;
+                    calculateEditCosts();
+                    const modal = new bootstrap.Modal(document.getElementById('editMaterialModal'));
+                    modal.show();
+                    return;
+                }
                 
                 // ملء حقول العملة حسب العملة المحددة
-                const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
+                const exchangeRateValue = Number('<%= exchangeRate %>');
+                let parsedAdditionalExpenseItems = [];
+                try {
+                    parsedAdditionalExpenseItems = typeof material.additional_expense_items === 'string'
+                        ? JSON.parse(material.additional_expense_items || '[]')
+                        : (material.additional_expense_items || []);
+                } catch (_) {
+                    parsedAdditionalExpenseItems = [];
+                }
+                if (!Array.isArray(parsedAdditionalExpenseItems)) parsedAdditionalExpenseItems = [];
+                const additionalItemsTotalUsd = parsedAdditionalExpenseItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+                const additionalItemsTotalCurrent = currentCurrency === 'SYP'
+                    ? (additionalItemsTotalUsd * exchangeRateValue)
+                    : additionalItemsTotalUsd;
                 if (currentCurrency === 'SYP') {
                     document.getElementById('editPriceBeforeWaste').value = material.price_before_waste_syp || material.price_before_waste;
                     document.getElementById('editEmptyPackagePrice').value = material.empty_package_price_syp || material.empty_package_price;
                     document.getElementById('editStickerPrice').value = material.sticker_price_syp || material.sticker_price;
-                    document.getElementById('editAdditionalExpenses').value = material.additional_expenses_syp || material.additional_expenses;
                     document.getElementById('editLaborCost').value = material.labor_cost_syp || material.labor_cost;
                     document.getElementById('editPreservativesCost').value = material.preservatives_cost_syp || material.preservatives_cost;
                     document.getElementById('editCartonPrice').value = material.carton_price_syp || material.carton_price;
@@ -941,7 +1162,6 @@ function editMaterial(materialId) {
                     document.getElementById('editPriceBeforeWaste').value = material.price_before_waste;
                     document.getElementById('editEmptyPackagePrice').value = material.empty_package_price;
                     document.getElementById('editStickerPrice').value = material.sticker_price;
-                    document.getElementById('editAdditionalExpenses').value = material.additional_expenses;
                     document.getElementById('editLaborCost').value = material.labor_cost;
                     document.getElementById('editPreservativesCost').value = material.preservatives_cost;
                     document.getElementById('editCartonPrice').value = material.carton_price;
@@ -981,14 +1201,76 @@ function editMaterial(materialId) {
                         }
                     }
                 } catch(e) {}
+
+                // ملء بنود المصاريف الإضافية
+                try {
+                    const addExpContainer = document.getElementById('editAdditionalExpensesContainer');
+                    const addExpTemplate = document.getElementById('additionalExpenseRowTemplate');
+                    if (addExpContainer) {
+                        addExpContainer.innerHTML = '';
+                        let extraExpenseItems = Array.isArray(parsedAdditionalExpenseItems)
+                            ? [...parsedAdditionalExpenseItems]
+                            : [];
+                        const additionalTotalCurrent = currentCurrency === 'SYP'
+                            ? (parseFloat(material.additional_expenses_syp || material.additional_expenses) || 0)
+                            : (parseFloat(material.additional_expenses) || 0);
+                        const legacyBaseAmount = Math.max(0, additionalTotalCurrent - additionalItemsTotalCurrent);
+                        if (legacyBaseAmount > 0.0001) {
+                            const legacyBaseUsd = currentCurrency === 'SYP'
+                                ? (legacyBaseAmount / Number('<%= exchangeRate %>'))
+                                : legacyBaseAmount;
+                            extraExpenseItems.push({
+                                name: 'مصاريف إضافية سابقة',
+                                price: legacyBaseUsd
+                            });
+                        }
+                        if (Array.isArray(extraExpenseItems) && addExpTemplate) {
+                            extraExpenseItems.forEach((item) => {
+                                const clone = addExpTemplate.content.cloneNode(true);
+                                const row = clone.querySelector('.additional-expense-row');
+                                if (row) {
+                                    row.querySelector('.additional-expense-name').value = item.name || '';
+                                    const usdPrice = parseFloat(item.price) || 0;
+                                    const shownPrice = currentCurrency === 'SYP' ? (usdPrice * Number('<%= exchangeRate %>')) : usdPrice;
+                                    row.querySelector('.additional-expense-price').value = shownPrice.toFixed(2);
+                                    row.querySelector('.remove-additional-expense')?.addEventListener('click', function () {
+                                        row.remove();
+                                        calculateEditCosts();
+                                    });
+                                    row.querySelectorAll('input').forEach(inp => inp.addEventListener('input', calculateEditCosts));
+                                    addExpContainer.appendChild(clone);
+                                }
+                            });
+                        }
+                    }
+                } catch (e) {}
                 
                 // تحميل العناصر الفرعية إذا كانت الطريقة هي العناصر
                 if (calculationMethod === 'components') {
                     loadEditMaterialComponents(material.id);
                 }
                 
-                // حساب التكاليف
-                calculateEditCosts();
+                // عرض النتائج الحالية المخزنة بدون إعادة تحويل افتراضي
+                const currencySymbol = '<%= defaultCurrency ? defaultCurrency.symbol : "$" %>';
+                const exchangeRate = Number('<%= exchangeRate %>');
+                const shownUnitCost = currentCurrency === 'SYP'
+                    ? (parseFloat(material.unit_cost_syp) || parseFloat(material.unit_cost) || 0)
+                    : (parseFloat(material.unit_cost) || 0);
+                const shownPackageCost = currentCurrency === 'SYP'
+                    ? (parseFloat(material.package_cost_syp) || parseFloat(material.package_cost) || 0)
+                    : (parseFloat(material.package_cost) || 0);
+                const unitCostUSD = currentCurrency === 'SYP' ? (shownUnitCost / exchangeRate) : shownUnitCost;
+                const packageCostUSD = currentCurrency === 'SYP' ? (shownPackageCost / exchangeRate) : shownPackageCost;
+                const unitCostSYP = currentCurrency === 'SYP' ? shownUnitCost : (shownUnitCost * exchangeRate);
+                const packageCostSYP = currentCurrency === 'SYP' ? shownPackageCost : (shownPackageCost * exchangeRate);
+                const formatUSD = (v) => v.toFixed(2);
+                const formatSYP = (v) => String(Math.round(v));
+                const unitMain = currentCurrency === 'SYP' ? formatSYP(shownUnitCost) : formatUSD(shownUnitCost);
+                const packMain = currentCurrency === 'SYP' ? formatSYP(shownPackageCost) : formatUSD(shownPackageCost);
+                document.getElementById('editUnitCostResult').textContent = `${unitMain} ${currencySymbol} ( ${formatUSD(unitCostUSD)} $ / ${formatSYP(unitCostSYP)} ل.س )`;
+                document.getElementById('editPackageCostResult').textContent = `${packMain} ${currencySymbol} ( ${formatUSD(packageCostUSD)} $ / ${formatSYP(packageCostSYP)} ل.س )`;
+                const grossEl = document.getElementById('editGrossPackageWeightResult');
+                if (grossEl) grossEl.textContent = `${(parseFloat(material.gross_package_weight) || 0).toFixed(3)} كجم`;
                 
                 // فتح Modal
                 const modal = new bootstrap.Modal(document.getElementById('editMaterialModal'));
@@ -1004,6 +1286,76 @@ function editMaterial(materialId) {
 
 // إدارة العناصر الفرعية
 let componentRowCounter = 0;
+
+function setRequiredInContainer(container, isRequired) {
+    if (!container) return;
+    container.querySelectorAll('input, select, textarea').forEach((el) => {
+        if (isRequired) {
+            if (el.dataset.wasRequired === '1') el.setAttribute('required', 'required');
+            el.disabled = false;
+        } else {
+            if (el.hasAttribute('required')) {
+                el.dataset.wasRequired = '1';
+            }
+            el.removeAttribute('required');
+            el.disabled = true;
+        }
+    });
+}
+
+function toggleAddMaterialOrigin() {
+    const origin = document.querySelector('input[name="material_origin"]:checked')?.value || 'internal';
+    const internalWrap = document.getElementById('addInternalComplexFields');
+    const externalWrap = document.getElementById('addExternalSimpleFields');
+    const isExternal = origin === 'external';
+
+    if (internalWrap) internalWrap.style.display = isExternal ? 'none' : '';
+    if (externalWrap) externalWrap.style.display = isExternal ? '' : 'none';
+
+    setRequiredInContainer(internalWrap, !isExternal);
+    const extName = document.getElementById('externalMaterialName');
+    const extType = document.getElementById('externalMaterialType');
+    const extPackagingUnit = document.getElementById('externalPackagingUnit');
+    const extUnitCost = document.getElementById('externalUnitCost');
+    const extPackageCost = document.getElementById('externalPackageCost');
+    const extNetWeight = document.getElementById('externalNetWeight');
+    const extCostPerKg = document.getElementById('externalCostPerKg');
+    if (extType) extType.required = isExternal;
+    if (extName) extName.required = isExternal;
+    if (extPackagingUnit) extPackagingUnit.required = isExternal;
+    if (extUnitCost) extUnitCost.required = isExternal;
+    if (extPackageCost) extPackageCost.required = isExternal;
+    if (extNetWeight) extNetWeight.required = isExternal;
+    if (extCostPerKg) extCostPerKg.required = isExternal;
+}
+
+function toggleEditMaterialOrigin(origin) {
+    const isExternal = origin === 'external';
+    const internalWrap = document.getElementById('editInternalComplexFields');
+    const externalWrap = document.getElementById('editExternalSimpleFields');
+
+    if (internalWrap) internalWrap.style.display = isExternal ? 'none' : '';
+    if (externalWrap) externalWrap.style.display = isExternal ? '' : 'none';
+
+    setRequiredInContainer(internalWrap, !isExternal);
+    const extName = document.getElementById('editExternalMaterialName');
+    const extType = document.getElementById('editExternalMaterialType');
+    const extPackagingUnit = document.getElementById('editExternalPackagingUnit');
+    const extUnitCost = document.getElementById('editExternalUnitCost');
+    const extPackageCost = document.getElementById('editExternalPackageCost');
+    const extNetWeight = document.getElementById('editExternalNetWeight');
+    const extCostPerKg = document.getElementById('editExternalCostPerKg');
+    if (extType) extType.required = isExternal;
+    if (extName) extName.required = isExternal;
+    if (extPackagingUnit) extPackagingUnit.required = isExternal;
+    if (extUnitCost) extUnitCost.required = isExternal;
+    if (extPackageCost) extPackageCost.required = isExternal;
+    if (extNetWeight) extNetWeight.required = isExternal;
+    if (extCostPerKg) extCostPerKg.required = isExternal;
+
+    const label = document.getElementById('editMaterialOriginLabel');
+    if (label) label.textContent = isExternal ? 'مادة خارجية' : 'مادة داخلية';
+}
 
 // تبديل طريقة الحساب
 function toggleCalculationMethod() {
@@ -1398,10 +1750,94 @@ function loadEditMaterialComponents(materialId) {
         });
 }
 
+function getAdditionalExpenseItems(containerSelector) {
+    const rows = document.querySelectorAll(`${containerSelector} .additional-expense-row`);
+    const items = [];
+    rows.forEach((row) => {
+        const name = row.querySelector('.additional-expense-name')?.value?.trim() || '';
+        const price = parseFloat(row.querySelector('.additional-expense-price')?.value || '0') || 0;
+        if (name || price > 0) {
+            items.push({ name, price });
+        }
+    });
+    return items;
+}
+
+function getAdditionalExpenseItemsTotal(containerSelector) {
+    return getAdditionalExpenseItems(containerSelector).reduce((sum, item) => sum + (item.price || 0), 0);
+}
+
+function normalizeAuxiliaryCostsByBasis({
+    basis,
+    grossWeight,
+    packagingWeight,
+    stickerPrice,
+    additionalExpenses,
+    laborCost,
+    preservativesCost,
+    cartonPrice,
+    palletPrice
+}) {
+    const unitWeightKg = packagingWeight > 0 ? packagingWeight : 0;
+    const totalUnits = unitWeightKg > 0 ? (grossWeight / unitWeightKg) : 0;
+
+    const divOrZero = (value, denom) => (denom > 0 ? (value / denom) : 0);
+
+    if (basis === 'per_kg') {
+        return {
+            stickerPerUnit: stickerPrice * unitWeightKg,
+            additionalPerUnit: additionalExpenses * unitWeightKg,
+            laborPerUnit: laborCost * unitWeightKg,
+            preservativesPerUnit: preservativesCost * unitWeightKg,
+            cartonPerPackage: cartonPrice,
+            palletPerPallet: palletPrice
+        };
+    }
+
+    // basis === 'total'
+    return {
+        stickerPerUnit: divOrZero(stickerPrice, totalUnits),
+        additionalPerUnit: divOrZero(additionalExpenses, totalUnits),
+        laborPerUnit: divOrZero(laborCost, totalUnits),
+        preservativesPerUnit: divOrZero(preservativesCost, totalUnits),
+        cartonPerPackage: cartonPrice,
+        palletPerPallet: palletPrice
+    };
+}
+
 // حساب التكاليف تلقائياً
 function calculateCosts() {
+    const materialOrigin = document.querySelector('input[name="material_origin"]:checked')?.value || 'internal';
+    if (materialOrigin === 'external') {
+        const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
+        const exchangeRate = Number('<%= exchangeRate %>');
+        const currencySymbol = '<%= defaultCurrency ? defaultCurrency.symbol : "$" %>';
+        const unitRaw = parseFloat(document.getElementById('externalUnitCost')?.value || '0') || 0;
+        const packageRaw = parseFloat(document.getElementById('externalPackageCost')?.value || '0') || 0;
+        const netWeight = parseFloat(document.getElementById('externalNetWeight')?.value || '0') || 0;
+        let unitCostUSD = unitRaw;
+        let packageCostUSD = packageRaw;
+        let unitCostSYP = unitRaw;
+        let packageCostSYP = packageRaw;
+        if (currentCurrency === 'SYP') {
+            unitCostUSD = unitRaw / exchangeRate;
+            packageCostUSD = packageRaw / exchangeRate;
+        } else {
+            unitCostSYP = unitRaw * exchangeRate;
+            packageCostSYP = packageRaw * exchangeRate;
+        }
+        const formatUSD = (v) => v.toFixed(2);
+        const formatSYP = (v) => String(Math.round(v));
+        const unitMain = currentCurrency === 'SYP' ? formatSYP(unitRaw) : formatUSD(unitRaw);
+        const packMain = currentCurrency === 'SYP' ? formatSYP(packageRaw) : formatUSD(packageRaw);
+        document.getElementById('unitCostResult').textContent = `${unitMain} ${currencySymbol} ( ${formatUSD(unitCostUSD)} $ / ${formatSYP(unitCostSYP)} ل.س )`;
+        document.getElementById('packageCostResult').textContent = `${packMain} ${currencySymbol} ( ${formatUSD(packageCostUSD)} $ / ${formatSYP(packageCostSYP)} ل.س )`;
+        const grossEl = document.getElementById('grossPackageWeightResult');
+        if (grossEl) grossEl.textContent = `${netWeight.toFixed(3)} كجم`;
+        return;
+    }
     const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
-    const exchangeRate = <%= exchangeRate %>;
+    const exchangeRate = Number('<%= exchangeRate %>');
     
     // تحديد طريقة الحساب
     const isComponentsMethod = document.getElementById('componentsMethod').checked;
@@ -1422,13 +1858,18 @@ function calculateCosts() {
     const emptyPackagePrice = parseFloat(document.querySelector('input[name="empty_package_price"]').value) || 0;
   const packagingUnitWeight = parseFloat(document.querySelector('input[name="packaging_unit_weight"]').value) || 0;
     const stickerPrice = parseFloat(document.querySelector('input[name="sticker_price"]').value) || 0;
-    const additionalExpenses = parseFloat(document.querySelector('input[name="additional_expenses"]').value) || 0;
+    const additionalItemsTotal = getAdditionalExpenseItemsTotal('#additionalExpensesContainer');
+    const additionalExpenses = additionalItemsTotal;
     const laborCost = parseFloat(document.querySelector('input[name="labor_cost"]').value) || 0;
     const preservativesCost = parseFloat(document.querySelector('input[name="preservatives_cost"]').value) || 0;
     const cartonPrice = parseFloat(document.querySelector('input[name="carton_price"]').value) || 0;
     const piecesPerPackage = parseInt(document.querySelector('input[name="pieces_per_package"]').value) || 1;
     const palletPrice = parseFloat(document.querySelector('input[name="pallet_price"]').value) || 0;
     const packagesPerPallet = parseInt(document.querySelector('input[name="packages_per_pallet"]').value) || 1;
+    const costInputBasis = document.querySelector('input[name="cost_input_basis"]:checked')?.value;
+    if (!costInputBasis) {
+        return;
+    }
 
     // حساب كلفة القطعة الواحدة
     const netWeight = grossWeight * (1 - wastePercentage / 100);
@@ -1436,13 +1877,29 @@ function calculateCosts() {
     const pricePerKgAfterWaste = pricePerKgBeforeWaste / (1 - wastePercentage / 100 || 1);
   const packagingWeight = parseFloat(document.querySelector('input[name="packaging_weight"]').value) || 0; // وزن المادة
     const materialCostInUnit = pricePerKgAfterWaste * packagingWeight;
-    const totalPackagingCosts = emptyPackagePrice + stickerPrice + additionalExpenses + laborCost + preservativesCost;
+    const normalizedCosts = normalizeAuxiliaryCostsByBasis({
+        basis: costInputBasis,
+        grossWeight,
+        packagingWeight,
+        stickerPrice,
+        additionalExpenses,
+        laborCost,
+        preservativesCost,
+        cartonPrice,
+        palletPrice
+    });
+    const totalPackagingCosts =
+        emptyPackagePrice +
+        normalizedCosts.stickerPerUnit +
+        normalizedCosts.additionalPerUnit +
+        normalizedCosts.laborPerUnit +
+        normalizedCosts.preservativesPerUnit;
     const unitCost = materialCostInUnit + totalPackagingCosts;
 
     // حساب كلفة الطرد وفق الصيغة المطلوبة
     // (كلفة القطعة الواحدة * عدد الحبات بالطرد) + ثمن الكرتونة + (ثمن الطبلية ÷ عدد الطرود بالطبلية)
-  const palletShare = palletPrice / packagesPerPallet;
-  const packageCost = (unitCost * piecesPerPackage) + cartonPrice + palletShare;
+  const palletShare = normalizedCosts.palletPerPallet / (packagesPerPallet || 1);
+  const packageCost = (unitCost * piecesPerPackage) + normalizedCosts.cartonPerPackage + palletShare;
 
   // حساب وزن الطرد القائم: ((وزن وحدة التعبئة + وزن المادة) * عدد الحبات في الطرد + الأوزان الإضافية)
   const extraWeightsTotal = Array.from(document.querySelectorAll('.extra-weight-row input.extra-weight-value'))
@@ -1478,11 +1935,67 @@ document.getElementById('materialForm').addEventListener('submit', function(e) {
     
     const formData = new FormData(this);
     const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
-    const exchangeRate = <%= exchangeRate %>;
+    const exchangeRate = Number('<%= exchangeRate %>');
+    const materialOrigin = formData.get('material_origin') || 'internal';
+
+    if (materialOrigin === 'external') {
+        const extType = (document.getElementById('externalMaterialType')?.value || '').trim();
+        const extName = (document.getElementById('externalMaterialName')?.value || '').trim();
+        const extPackagingUnit = (document.getElementById('externalPackagingUnit')?.value || '').trim();
+        const extUnitCostRaw = parseFloat(document.getElementById('externalUnitCost')?.value || '0') || 0;
+        const extPackageCostRaw = parseFloat(document.getElementById('externalPackageCost')?.value || '0') || 0;
+        const extNetWeight = parseFloat(document.getElementById('externalNetWeight')?.value || '0') || 0;
+        const extCostPerKgRaw = parseFloat(document.getElementById('externalCostPerKg')?.value || '0') || 0;
+        const extNotes = (document.getElementById('externalNotes')?.value || '').trim();
+
+        if (!extType || !extName || !extPackagingUnit || extUnitCostRaw <= 0 || extPackageCostRaw <= 0 || extNetWeight <= 0 || extCostPerKgRaw <= 0) {
+            showAlert('يرجى إدخال كل حقول المادة الخارجية المطلوبة', 'error');
+            return;
+        }
+
+        const extUnitCostUsd = currentCurrency === 'SYP' ? (extUnitCostRaw / exchangeRate) : extUnitCostRaw;
+        const extPackageCostUsd = currentCurrency === 'SYP' ? (extPackageCostRaw / exchangeRate) : extPackageCostRaw;
+        const extCostPerKgUsd = currentCurrency === 'SYP' ? (extCostPerKgRaw / exchangeRate) : extCostPerKgRaw;
+        const payload = {
+            material_origin: 'external',
+            material_type: extType,
+            material_name: extName,
+            external_packaging_unit: extPackagingUnit,
+            external_unit_cost: extUnitCostUsd,
+            external_package_cost: extPackageCostUsd,
+            external_net_weight: extNetWeight,
+            external_cost_per_kg: extCostPerKgUsd,
+            external_notes: extNotes || null
+        };
+
+        fetch('/costs/cost-statement', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('تم حفظ المادة بنجاح', 'success');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addMaterialModal'));
+                if (modal) modal.hide();
+                setTimeout(() => window.location.reload(), 1200);
+            } else {
+                showAlert(data.message || 'حدث خطأ في حفظ المادة', 'error');
+            }
+        })
+        .catch(() => showAlert('حدث خطأ في حفظ المادة', 'error'));
+        return;
+    }
 
     // تحديد طريقة الحساب
     const calculationMethod = formData.get('calculation_method');
     const isComponentsMethod = calculationMethod === 'components';
+    const costInputBasis = formData.get('cost_input_basis');
+    if (!costInputBasis) {
+        showAlert('يرجى اختيار أساس إدخال التكاليف: لكل كيلو أو إجمالي', 'error');
+        return;
+    }
 
     // تجهيز الحقول الرقمية غير المرتبطة بالعملة كما هي
     const bodyPayload = {
@@ -1494,7 +2007,8 @@ document.getElementById('materialForm').addEventListener('submit', function(e) {
             packaging_weight: formData.get('packaging_weight'),
             packaging_unit_weight: formData.get('packaging_unit_weight'),
             pieces_per_package: formData.get('pieces_per_package'),
-            packages_per_pallet: formData.get('packages_per_pallet')
+            packages_per_pallet: formData.get('packages_per_pallet'),
+            cost_input_basis: costInputBasis
     };
     
     // إضافة الوزن والسعر حسب طريقة الحساب
@@ -1520,10 +2034,19 @@ document.getElementById('materialForm').addEventListener('submit', function(e) {
     });
     if (extraWeights.length) bodyPayload.extra_weights = extraWeights;
 
+    // جمع بنود المصاريف الإضافية
+    const additionalExpenseItems = getAdditionalExpenseItems('#additionalExpensesContainer');
+    if (additionalExpenseItems.length) {
+        bodyPayload.additional_expense_items = additionalExpenseItems.map((item) => ({
+            name: item.name,
+            price: currentCurrency === 'SYP' ? (item.price / exchangeRate) : item.price
+        }));
+    }
+
     // تحويل الحقول المرتبطة بالعملة إلى الدولار عند كون العملة الحالية ل.س
     let currencyFields = [
         'empty_package_price', 'sticker_price', 
-        'additional_expenses', 'labor_cost', 'preservatives_cost', 
+        'labor_cost', 'preservatives_cost', 
         'carton_price', 'pallet_price'
     ];
     
@@ -1541,13 +2064,17 @@ document.getElementById('materialForm').addEventListener('submit', function(e) {
     }
 
     currencyFields.forEach((field) => {
-        const raw = parseFloat(formData.get(field) || '0') || 0;
+        let raw = parseFloat(formData.get(field) || '0') || 0;
         if (currentCurrency === 'SYP') {
             bodyPayload[field] = (raw / exchangeRate).toFixed(2);
         } else {
             bodyPayload[field] = raw.toFixed(2);
         }
     });
+    const addAdditionalItemsTotal = getAdditionalExpenseItemsTotal('#additionalExpensesContainer');
+    bodyPayload.additional_expenses = currentCurrency === 'SYP'
+        ? (addAdditionalItemsTotal / exchangeRate).toFixed(2)
+        : addAdditionalItemsTotal.toFixed(2);
 
     fetch('/costs/cost-statement', {
         method: 'POST',
@@ -1589,10 +2116,11 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('DOMContentLoaded', function() {
     const editFields = [
         'editPriceBeforeWaste', 'editGrossWeight', 'editWastePercentage',
-        'editEmptyPackagePrice', 'editStickerPrice', 'editAdditionalExpenses',
+        'editEmptyPackagePrice', 'editStickerPrice',
         'editLaborCost', 'editPreservativesCost', 'editCartonPrice',
         'editPiecesPerPackage', 'editPalletPrice', 'editPackagesPerPallet',
-        'editPackagingWeight', 'editPackagingUnitWeight'
+        'editPackagingWeight', 'editPackagingUnitWeight',
+        'editExternalUnitCost', 'editExternalPackageCost', 'editExternalNetWeight', 'editExternalCostPerKg'
     ];
     
     editFields.forEach(fieldId => {
@@ -1660,10 +2188,50 @@ document.addEventListener('DOMContentLoaded', function() {
         calculateEditCosts();
       });
     }
+
+    // إدارة بنود المصاريف الإضافية (الإضافة)
+    const addExpenseBtn = document.getElementById('addAdditionalExpenseBtn');
+    const addExpenseContainer = document.getElementById('additionalExpensesContainer');
+    const addExpenseTpl = document.getElementById('additionalExpenseRowTemplate');
+    function bindAdditionalExpenseRow(row, onChangeFn) {
+      const removeBtn = row.querySelector('.remove-additional-expense');
+      if (removeBtn) {
+        removeBtn.addEventListener('click', function () {
+          row.remove();
+          onChangeFn();
+        });
+      }
+      row.querySelectorAll('input').forEach(inp => inp.addEventListener('input', onChangeFn));
+    }
+    if (addExpenseBtn && addExpenseContainer && addExpenseTpl) {
+      addExpenseBtn.addEventListener('click', function () {
+        const clone = addExpenseTpl.content.cloneNode(true);
+        const row = clone.querySelector('.additional-expense-row');
+        bindAdditionalExpenseRow(row, calculateCosts);
+        addExpenseContainer.appendChild(clone);
+        calculateCosts();
+      });
+    }
+
+    // إدارة بنود المصاريف الإضافية (التعديل)
+    const editAddExpenseBtn = document.getElementById('editAddAdditionalExpenseBtn');
+    const editAddExpenseContainer = document.getElementById('editAdditionalExpensesContainer');
+    if (editAddExpenseBtn && editAddExpenseContainer && addExpenseTpl) {
+      editAddExpenseBtn.addEventListener('click', function () {
+        const clone = addExpenseTpl.content.cloneNode(true);
+        const row = clone.querySelector('.additional-expense-row');
+        bindAdditionalExpenseRow(row, calculateEditCosts);
+        editAddExpenseContainer.appendChild(clone);
+        calculateEditCosts();
+      });
+    }
 });
 
 // دالة إعداد نموذج إضافة المادة
 function setupAddMaterialForm() {
+    const originInternal = document.getElementById('materialOriginInternal');
+    if (originInternal) originInternal.checked = true;
+
     const materialTypeInput = document.querySelector('#addMaterialModal input[name="material_type"]');
     if (materialTypeInput && !materialTypeInput.value) {
         materialTypeInput.value = 'زيتون';
@@ -1673,6 +2241,13 @@ function setupAddMaterialForm() {
     if (packagingUnitInput && !packagingUnitInput.value) {
         packagingUnitInput.value = 'سطل';
     }
+    const addBasisPerKg = document.getElementById('costBasisPerKg');
+    const addBasisTotal = document.getElementById('costBasisTotal');
+    if (addBasisPerKg && addBasisTotal) {
+        addBasisPerKg.checked = false;
+        addBasisTotal.checked = true;
+    }
+    toggleAddMaterialOrigin();
 }
 
 // دالة إعادة تعيين نموذج إضافة المادة
@@ -1688,6 +2263,25 @@ function resetAddMaterialForm() {
         if (grossEl) grossEl.textContent = '0.000 كجم';
         const cont = document.getElementById('extraWeightsContainer');
         if (cont) cont.innerHTML = '';
+        const addExpCont = document.getElementById('additionalExpensesContainer');
+        if (addExpCont) addExpCont.innerHTML = '';
+        const extName = document.getElementById('externalMaterialName');
+        const extType = document.getElementById('externalMaterialType');
+        const extPackagingUnit = document.getElementById('externalPackagingUnit');
+        const extUnitCost = document.getElementById('externalUnitCost');
+        const extPackageCost = document.getElementById('externalPackageCost');
+        const extNetWeight = document.getElementById('externalNetWeight');
+        const extCostPerKg = document.getElementById('externalCostPerKg');
+        const extNotes = document.getElementById('externalNotes');
+        if (extType) extType.value = '';
+        if (extName) extName.value = '';
+        if (extPackagingUnit) extPackagingUnit.value = '';
+        if (extUnitCost) extUnitCost.value = '';
+        if (extPackageCost) extPackageCost.value = '';
+        if (extNetWeight) extNetWeight.value = '';
+        if (extCostPerKg) extCostPerKg.value = '';
+        if (extNotes) extNotes.value = '';
+        toggleAddMaterialOrigin();
     }
 }
 
@@ -1750,7 +2344,7 @@ function showAlert(message, type) {
 // دالة تحويل العملة في نموذج التعديل
 function convertCurrencyInEditForm() {
     const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
-    const exchangeRate = <%= exchangeRate %>; // استخدام سعر الصرف من الخادم
+    const exchangeRate = Number('<%= exchangeRate %>'); // استخدام سعر الصرف من الخادم
     
     // تحديث جميع حقول العملة
     const currencyInputs = document.querySelectorAll('#editMaterialModal .currency-input');
@@ -1785,8 +2379,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // حساب التكاليف في نموذج التعديل
 function calculateEditCosts() {
+    const materialOrigin = document.getElementById('editMaterialOrigin')?.value || 'internal';
+    if (materialOrigin === 'external') {
+        const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
+        const exchangeRate = Number('<%= exchangeRate %>');
+        const currencySymbol = '<%= defaultCurrency ? defaultCurrency.symbol : "$" %>';
+        const unitRaw = parseFloat(document.getElementById('editExternalUnitCost')?.value || '0') || 0;
+        const packageRaw = parseFloat(document.getElementById('editExternalPackageCost')?.value || '0') || 0;
+        const netWeight = parseFloat(document.getElementById('editExternalNetWeight')?.value || '0') || 0;
+        let unitCostUSD = unitRaw;
+        let packageCostUSD = packageRaw;
+        let unitCostSYP = unitRaw;
+        let packageCostSYP = packageRaw;
+        if (currentCurrency === 'SYP') {
+            unitCostUSD = unitRaw / exchangeRate;
+            packageCostUSD = packageRaw / exchangeRate;
+        } else {
+            unitCostSYP = unitRaw * exchangeRate;
+            packageCostSYP = packageRaw * exchangeRate;
+        }
+        const formatUSD2 = (v) => v.toFixed(2);
+        const formatSYP2 = (v) => String(Math.round(v));
+        const unitMain2 = currentCurrency === 'SYP' ? formatSYP2(unitRaw) : formatUSD2(unitRaw);
+        const packMain2 = currentCurrency === 'SYP' ? formatSYP2(packageRaw) : formatUSD2(packageRaw);
+        document.getElementById('editUnitCostResult').textContent = `${unitMain2} ${currencySymbol} ( ${formatUSD2(unitCostUSD)} $ / ${formatSYP2(unitCostSYP)} ل.س )`;
+        document.getElementById('editPackageCostResult').textContent = `${packMain2} ${currencySymbol} ( ${formatUSD2(packageCostUSD)} $ / ${formatSYP2(packageCostSYP)} ل.س )`;
+        const grossEl2 = document.getElementById('editGrossPackageWeightResult');
+        if (grossEl2) grossEl2.textContent = `${netWeight.toFixed(3)} كجم`;
+        return;
+    }
     const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
-    const exchangeRate = <%= exchangeRate %>;
+    const exchangeRate = Number('<%= exchangeRate %>');
     
     // تحديد طريقة الحساب
     const isComponentsMethod = document.getElementById('editComponentsMethod').checked;
@@ -1807,13 +2430,15 @@ function calculateEditCosts() {
     const emptyPackagePrice = parseFloat(document.getElementById('editEmptyPackagePrice').value) || 0;
   const packagingUnitWeight = parseFloat(document.getElementById('editPackagingUnitWeight').value) || 0;
     const stickerPrice = parseFloat(document.getElementById('editStickerPrice').value) || 0;
-    const additionalExpenses = parseFloat(document.getElementById('editAdditionalExpenses').value) || 0;
+    const additionalItemsTotal = getAdditionalExpenseItemsTotal('#editAdditionalExpensesContainer');
+    const additionalExpenses = additionalItemsTotal;
     const laborCost = parseFloat(document.getElementById('editLaborCost').value) || 0;
     const preservativesCost = parseFloat(document.getElementById('editPreservativesCost').value) || 0;
     const cartonPrice = parseFloat(document.getElementById('editCartonPrice').value) || 0;
     const piecesPerPackage = parseInt(document.getElementById('editPiecesPerPackage').value) || 1;
     const palletPrice = parseFloat(document.getElementById('editPalletPrice').value) || 0;
     const packagesPerPallet = parseInt(document.getElementById('editPackagesPerPallet').value) || 1;
+    const costInputBasis = document.querySelector('input[name="edit_cost_input_basis"]:checked')?.value || 'normalized';
 
     // حساب كلفة القطعة الواحدة
     const netWeight = grossWeight * (1 - wastePercentage / 100);
@@ -1821,12 +2446,37 @@ function calculateEditCosts() {
     const pricePerKgAfterWaste = pricePerKgBeforeWaste / (1 - wastePercentage / 100 || 1);
   const packagingWeight = parseFloat(document.getElementById('editPackagingWeight').value) || 0; // وزن المادة
     const materialCostInUnit = pricePerKgAfterWaste * packagingWeight;
-    const totalPackagingCosts = emptyPackagePrice + stickerPrice + additionalExpenses + laborCost + preservativesCost;
+    const normalizedCosts = costInputBasis === 'normalized'
+        ? {
+            stickerPerUnit: stickerPrice,
+            additionalPerUnit: additionalExpenses,
+            laborPerUnit: laborCost,
+            preservativesPerUnit: preservativesCost,
+            cartonPerPackage: cartonPrice,
+            palletPerPallet: palletPrice
+        }
+        : normalizeAuxiliaryCostsByBasis({
+            basis: costInputBasis,
+            grossWeight,
+            packagingWeight,
+            stickerPrice,
+            additionalExpenses,
+            laborCost,
+            preservativesCost,
+            cartonPrice,
+            palletPrice
+        });
+    const totalPackagingCosts =
+        emptyPackagePrice +
+        normalizedCosts.stickerPerUnit +
+        normalizedCosts.additionalPerUnit +
+        normalizedCosts.laborPerUnit +
+        normalizedCosts.preservativesPerUnit;
     const unitCost = materialCostInUnit + totalPackagingCosts;
 
     // حساب كلفة الطرد وفق الصيغة المطلوبة
-  const palletShare = palletPrice / packagesPerPallet;
-  const packageCost = (unitCost * piecesPerPackage) + cartonPrice + palletShare;
+  const palletShare = normalizedCosts.palletPerPallet / (packagesPerPallet || 1);
+  const packageCost = (unitCost * piecesPerPackage) + normalizedCosts.cartonPerPackage + palletShare;
   const extraWeightsTotal = Array.from(document.querySelectorAll('#editMaterialModal .extra-weight-row input.extra-weight-value'))
     .reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
   const grossPackageWeight = ((packagingUnitWeight + packagingWeight) * piecesPerPackage) + extraWeightsTotal;
@@ -1861,11 +2511,64 @@ function calculateEditCosts() {
 function saveMaterialEdit() {
     const materialId = document.getElementById('editMaterialId').value;
     const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
-    const exchangeRate = <%= exchangeRate %>;
+    const exchangeRate = Number('<%= exchangeRate %>');
+    const materialOrigin = document.getElementById('editMaterialOrigin')?.value || 'internal';
+
+    if (materialOrigin === 'external') {
+        const extType = (document.getElementById('editExternalMaterialType')?.value || '').trim();
+        const extName = (document.getElementById('editExternalMaterialName')?.value || '').trim();
+        const extPackagingUnit = (document.getElementById('editExternalPackagingUnit')?.value || '').trim();
+        const extUnitCostRaw = parseFloat(document.getElementById('editExternalUnitCost')?.value || '0') || 0;
+        const extPackageCostRaw = parseFloat(document.getElementById('editExternalPackageCost')?.value || '0') || 0;
+        const extNetWeight = parseFloat(document.getElementById('editExternalNetWeight')?.value || '0') || 0;
+        const extCostPerKgRaw = parseFloat(document.getElementById('editExternalCostPerKg')?.value || '0') || 0;
+        const extNotes = (document.getElementById('editExternalNotes')?.value || '').trim();
+
+        if (!extType || !extName || !extPackagingUnit || extUnitCostRaw <= 0 || extPackageCostRaw <= 0 || extNetWeight <= 0 || extCostPerKgRaw <= 0) {
+            showAlert('يرجى إدخال كل حقول المادة الخارجية المطلوبة', 'error');
+            return;
+        }
+
+        const extUnitCostUsd = currentCurrency === 'SYP' ? (extUnitCostRaw / exchangeRate) : extUnitCostRaw;
+        const extPackageCostUsd = currentCurrency === 'SYP' ? (extPackageCostRaw / exchangeRate) : extPackageCostRaw;
+        const extCostPerKgUsd = currentCurrency === 'SYP' ? (extCostPerKgRaw / exchangeRate) : extCostPerKgRaw;
+        const payload = {
+            material_origin: 'external',
+            material_type: extType,
+            material_name: extName,
+            external_packaging_unit: extPackagingUnit,
+            external_unit_cost: extUnitCostUsd,
+            external_package_cost: extPackageCostUsd,
+            external_net_weight: extNetWeight,
+            external_cost_per_kg: extCostPerKgUsd,
+            external_notes: extNotes || null
+        };
+
+        fetch(`/costs/cost-statement/${materialId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('تم تحديث المادة بنجاح', 'success');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editMaterialModal'));
+                if (modal) modal.hide();
+                removeStuckBackdrop();
+                setTimeout(() => window.location.reload(), 1200);
+            } else {
+                showAlert(data.message || 'حدث خطأ في تحديث المادة', 'error');
+            }
+        })
+        .catch(() => showAlert('حدث خطأ في تحديث المادة', 'error'));
+        return;
+    }
     
     // تحديد طريقة الحساب
     const calculationMethod = document.querySelector('input[name="edit_calculation_method"]:checked').value;
     const isComponentsMethod = calculationMethod === 'components';
+    const costInputBasis = document.querySelector('input[name="edit_cost_input_basis"]:checked')?.value || 'normalized';
     
     // جمع القيم مع تحويل العملة
     const formData = {
@@ -1877,8 +2580,17 @@ function saveMaterialEdit() {
         packaging_weight: document.getElementById('editPackagingWeight').value,
         packaging_unit_weight: document.getElementById('editPackagingUnitWeight').value,
         pieces_per_package: document.getElementById('editPiecesPerPackage').value,
-        packages_per_pallet: document.getElementById('editPackagesPerPallet').value
+        packages_per_pallet: document.getElementById('editPackagesPerPallet').value,
+        cost_input_basis: costInputBasis
     };
+
+    const editAdditionalExpenseItemsRaw = getAdditionalExpenseItems('#editAdditionalExpensesContainer');
+    if (editAdditionalExpenseItemsRaw.length) {
+        formData.additional_expense_items = editAdditionalExpenseItemsRaw.map((item) => ({
+            name: item.name,
+            price: currentCurrency === 'SYP' ? (item.price / exchangeRate) : item.price
+        }));
+    }
     
     // إضافة الوزن والسعر حسب طريقة الحساب
     if (isComponentsMethod) {
@@ -1897,7 +2609,7 @@ function saveMaterialEdit() {
     // إضافة حقول العملة مع التحويل
     let currencyFields = [
         'empty_package_price', 'sticker_price', 
-        'additional_expenses', 'labor_cost', 'preservatives_cost', 
+        'labor_cost', 'preservatives_cost', 
         'carton_price', 'pallet_price'
     ];
     
@@ -1922,7 +2634,7 @@ function saveMaterialEdit() {
             .map(part => part.charAt(0).toUpperCase() + part.slice(1))
             .join('');
         const input = document.getElementById('edit' + idSuffix);
-        const numericValue = parseFloat((input && input.value) ? input.value : '0') || 0;
+        let numericValue = parseFloat((input && input.value) ? input.value : '0') || 0;
         
         if (currentCurrency === 'SYP') {
             // إذا كانت العملة الحالية هي الليرة السورية، نحول إلى الدولار ونرسل أيضًا القيمة بالليرة كما أدخلها المستخدم
@@ -1933,6 +2645,13 @@ function saveMaterialEdit() {
             formData[field] = numericValue;
         }
     });
+    const editAdditionalItemsTotal = getAdditionalExpenseItemsTotal('#editAdditionalExpensesContainer');
+    if (currentCurrency === 'SYP') {
+        formData.additional_expenses = (editAdditionalItemsTotal / exchangeRate);
+        formData.additional_expenses_syp = editAdditionalItemsTotal;
+    } else {
+        formData.additional_expenses = editAdditionalItemsTotal;
+    }
 
     // جمع الأوزان الإضافية (التعديل)
     const editExtras = [];
@@ -2027,6 +2746,25 @@ function viewMaterial(materialId) {
                 
                 // ملء التكاليف الإضافية
                 document.getElementById('viewAdditionalExpenses').textContent = (parseFloat(material.additional_expenses) || 0).toFixed(2) + ' ' + currencySymbol;
+                try {
+                    const items = typeof material.additional_expense_items === 'string'
+                        ? JSON.parse(material.additional_expense_items || '[]')
+                        : (material.additional_expense_items || []);
+                    if (Array.isArray(items) && items.length) {
+                        const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
+                        const exchangeRate = Number('<%= exchangeRate %>');
+                        const mapped = items.map((item) => {
+                            const usdVal = parseFloat(item.price) || 0;
+                            const val = currentCurrency === 'SYP' ? (usdVal * exchangeRate) : usdVal;
+                            return `${item.name || 'بدون اسم'}: ${val.toFixed(2)} ${currencySymbol}`;
+                        });
+                        document.getElementById('viewAdditionalExpenseItems').innerHTML = mapped.join('<br>');
+                    } else {
+                        document.getElementById('viewAdditionalExpenseItems').textContent = '-';
+                    }
+                } catch (_) {
+                    document.getElementById('viewAdditionalExpenseItems').textContent = '-';
+                }
                 document.getElementById('viewLaborCost').textContent = (parseFloat(material.labor_cost) || 0).toFixed(2) + ' ' + currencySymbol;
                 document.getElementById('viewPreservativesCost').textContent = (parseFloat(material.preservatives_cost) || 0).toFixed(2) + ' ' + currencySymbol;
                 
@@ -2154,6 +2892,7 @@ function printMaterialDetails() {
                 <h3>تكاليف إضافية</h3>
                 <table>
                     <tr><th>مصاريف إضافية</th><td>${document.getElementById('viewAdditionalExpenses').textContent}</td></tr>
+                    <tr><th>تفصيل المصاريف الإضافية</th><td>${document.getElementById('viewAdditionalExpenseItems').innerHTML}</td></tr>
                     <tr><th>مصروف عمال</th><td>${document.getElementById('viewLaborCost').textContent}</td></tr>
                     <tr><th>مواد حافظة</th><td>${document.getElementById('viewPreservativesCost').textContent}</td></tr>
                 </table>
@@ -2198,11 +2937,6 @@ function printMaterialDetails() {
     border-color: #86b7fe;
 }
 
-/* منع Bootstrap من إضافة aria-hidden */
-.modal[aria-hidden] {
-    aria-hidden: unset !important;
-}
-
 /* تحسين التركيز للمودالات */
 .modal:not(.show) {
     display: none !important;
@@ -2242,6 +2976,20 @@ body:not(.modal-open) .modal-backdrop {
 body.modal-open {
     overflow: hidden;
     padding-right: 0 !important;
+}
+
+#materialsTable tbody tr.material-group-hover > td {
+    --bs-table-bg-state: transparent !important;
+    --bs-table-accent-bg: transparent !important;
+    background-color: #eef6ff !important;
+    box-shadow: inset 0 0 0 9999px #eef6ff !important;
+}
+
+#materialsTable tbody td.material-name.material-group-hover {
+    --bs-table-bg-state: transparent !important;
+    --bs-table-accent-bg: transparent !important;
+    background-color: #eef6ff !important;
+    box-shadow: inset 0 0 0 9999px #eef6ff !important;
 }
 </style>
 
@@ -2329,13 +3077,39 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const normalize = (t) => (t || '').toString().toLowerCase().trim();
 
+    const setGroupHover = (groupKey, enabled) => {
+        if (!groupKey) return;
+        table.querySelectorAll(`tbody tr[data-group-key="${groupKey}"]`).forEach((row) => {
+            row.classList.toggle('material-group-hover', enabled);
+        });
+        table.querySelectorAll(`tbody td.material-name[data-group-key="${groupKey}"]`).forEach((cell) => {
+            cell.classList.toggle('material-group-hover', enabled);
+        });
+    };
+
+    table.querySelectorAll('tbody td.material-name').forEach((cell) => {
+        const groupKey = (cell.getAttribute('data-group-key') || '').trim();
+        if (!groupKey) return;
+        cell.addEventListener('mouseenter', () => setGroupHover(groupKey, true));
+        cell.addEventListener('mouseleave', () => setGroupHover(groupKey, false));
+    });
+
+    table.querySelectorAll('tbody tr').forEach((row) => {
+        const groupKey = (row.getAttribute('data-group-key') || '').trim();
+        if (!groupKey) return;
+        row.addEventListener('mouseenter', () => setGroupHover(groupKey, true));
+        row.addEventListener('mouseleave', () => setGroupHover(groupKey, false));
+    });
+
     const filterRows = () => {
         const keyword = normalize(keywordInput.value);
         const selectedDate = getSelectedDateISO();
         const rows = table.querySelectorAll('tbody tr');
         rows.forEach((row) => {
-            const name = normalize(row.querySelector('.material-name')?.textContent);
-            const type = normalize(row.querySelector('.material-type')?.textContent);
+            const rowNameAttr = row.getAttribute('data-material-name') || '';
+            const rowTypeAttr = row.getAttribute('data-material-type') || '';
+            const name = normalize(rowNameAttr || row.querySelector('.material-name')?.textContent);
+            const type = normalize(rowTypeAttr || row.querySelector('.material-type')?.textContent);
             const dateText = (row.querySelector('.material-date')?.textContent || '').trim();
             let dateISO = '';
             if (dateText) {

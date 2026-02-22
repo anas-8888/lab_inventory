@@ -1,7 +1,7 @@
 <div class="container mt-4">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="mb-0">
-      <i class="fas fa-trash text-danger"></i> سلة محذوفات الفواتير
+      <i class="fas fa-trash text-danger"></i> سلة محذوفات طلبات  الشحن
     </h2>
     <div class="d-flex gap-2">
       <a href="/invoices" class="btn btn-outline-primary">
@@ -23,7 +23,7 @@
             <tr>
               <th><input type="checkbox" id="selectAllDeleted"></th>
               <th>#</th>
-              <th>رقم الفاتورة</th>
+              <th>رقم طلب الشحن</th>
               <th>التاريخ</th>
               <th>اسم العميل</th>
               <th>اسم السائق</th>
@@ -49,7 +49,7 @@
                   <td><%= invoice.notes || '-' %></td>
                   <td><%= new Date(invoice.deleted_at).toLocaleDateString('en-GB') %></td>
                   <td>
-                    <button type="button" class="btn btn-sm btn-success restore-btn" data-id="<%= invoice.id %>" title="استعادة الفاتورة">
+                    <button type="button" class="btn btn-sm btn-success restore-btn" data-id="<%= invoice.id %>" title="استعادة طلب الشحن">
                       <i class="fas fa-undo"></i>
                     </button>
                     <a href="/invoices/<%= invoice.id %>" class="btn btn-sm btn-info" title="معاينة"></a>
@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.restore-btn').forEach(btn => {
     btn.addEventListener('click', function() {
       const invoiceId = this.dataset.id;
-      if (confirm('هل أنت متأكد من استعادة هذه الفاتورة؟')) {
+      if (confirm('هل أنت متأكد من استعادة هذه طلب الشحن؟')) {
         restoreInvoice(invoiceId);
       }
     });
@@ -118,10 +118,10 @@ document.addEventListener('DOMContentLoaded', function() {
   restoreSelectedBtn?.addEventListener('click', function() {
     const checkedBoxes = document.querySelectorAll('.deleted-invoice-checkbox:checked');
     if (checkedBoxes.length === 0) {
-      alert('يرجى اختيار فاتورة واحدة على الأقل');
+      alert('يرجى اختيار طلبية شحن واحدة على الأقل');
       return;
     }
-    if (confirm(`هل أنت متأكد من استعادة ${checkedBoxes.length} فاتورة؟`)) {
+    if (confirm(`هل أنت متأكد من استعادة ${checkedBoxes.length} طلبية شحن؟`)) {
       const ids = Array.from(checkedBoxes).map(cb => cb.dataset.id);
       restoreMultipleInvoices(ids);
     }
@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Empty trash
   emptyTrashBtn?.addEventListener('click', function() {
-    if (confirm('هل أنت متأكد من حذف جميع الفواتير المحذوفة نهائياً؟ لا يمكن التراجع!')) {
+    if (confirm('هل أنت متأكد من حذف جميع طلبات  الشحن المحذوفة نهائياً؟ لا يمكن التراجع!')) {
       fetch('/invoices/empty-trash', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }

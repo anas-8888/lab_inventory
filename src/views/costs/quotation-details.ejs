@@ -1,12 +1,12 @@
-<div class="container mt-4">
+﻿<div class="container mt-4">
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="bi bi-file-earmark-text"></i> عرض السعر <%= quotation.quotation_number %></h2>
                 <div>
-                    <a href="/costs/quotations/<%= quotation.id %>/print" target="_blank" class="btn btn-outline-primary me-2">
+                    <button id="printQuotationBtn" class="btn btn-outline-primary me-2" type="button">
                         <i class="bi bi-printer"></i> طباعة
-                    </a>
+                    </button>
                     <button id="exportQuotationPdfBtn" class="btn btn-success me-2">
                         <i class="bi bi-file-earmark-pdf"></i> تصدير PDF
                     </button>
@@ -29,11 +29,37 @@
                     const total = parseFloat(it.total_price) || 0;
                     grandTotal += total;
                 });
-            %>
+	            %>
+	            <input type="hidden" id="quotationGrandTotalValue" value="<%= (parseFloat(grandTotal) || 0) %>">
 
-            <!-- تفاصيل العرض -->
+	            <!-- تفاصيل العرض -->
             <div class="card shadow mb-4">
-                <!-- PDF Export Modal -->
+                                <div id="quotationOutputModeModal" class="modal fade" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title"><i class="bi bi-sliders2 me-2 text-primary"></i> اختر نوع الإخراج</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="mb-3">اختر النمط المطلوب:</p>
+                                <div class="mb-3">
+                                    <label for="quotationDiscountedTotalInput" class="form-label">الإجمالي بعد الخصم</label>
+                                    <input id="quotationDiscountedTotalInput" type="number" min="0" step="0.01" class="form-control" />
+                                    <small class="text-muted d-block mt-1">سيتم احتساب الخصم = الإجمالي الحالي - القيمة المدخلة.</small>
+                                </div>
+                                <div class="d-grid gap-2">
+                                    <button id="quotationModeNormalBtn" type="button" class="btn btn-outline-secondary">
+                                        عادي (النمط الحالي)
+                                    </button>
+                                    <button id="quotationModeFullBtn" type="button" class="btn btn-outline-primary">
+                                        كامل (يتضمن كلفة الطرد + نسبة الربح)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>                <!-- PDF Export Modal -->
                 <div id="quotationPdfExportModal" class="modal fade" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content">
@@ -61,7 +87,7 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
-                            <table class="table table-borderless">
+                            <table class="table table-borderless no-auto-num-center">
                                 <tr>
                                     <td><strong>رقم العرض:</strong></td>
                                     <td><%= quotation.quotation_number %></td>
@@ -82,10 +108,18 @@
                                     <td><strong>العنوان:</strong></td>
                                     <td><%= quotation.client_address || '-' %></td>
                                 </tr>
+                                <tr>
+                                    <td><strong>صفة البيع:</strong></td>
+                                    <td><%= quotation.sale_description || '-' %></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>طريقة الدفع:</strong></td>
+                                    <td><%= quotation.payment_method || '-' %></td>
+                                </tr>
                             </table>
                         </div>
                         <div class="col-md-6">
-                            <table class="table table-borderless">
+                            <table class="table table-borderless no-auto-num-center">
                                 
                                 <tr>
                                     <td><strong>المبلغ الإجمالي:</strong></td>
@@ -120,7 +154,7 @@
                                     <th>رقم المادة</th>
                                     <th>الصنف</th>
                                     <th>نوع الصنف</th>
-                                    <th>نوع العبوة</th>
+                                    <th>التعبئة</th>
                                     <th>حجم العبوة (كغ)</th>
                                     <th>شد الكرتون</th>
                                     <th>كلفة الطرد</th>
@@ -132,7 +166,17 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <% (items || []).forEach((item, index) => {
+                                <%
+                                    const groupedQuotationItemsMap = new Map();
+                                    (items || []).forEach((it) => {
+                                        const key = (it.material_name || '').trim();
+                                        if (!groupedQuotationItemsMap.has(key)) groupedQuotationItemsMap.set(key, []);
+                                        groupedQuotationItemsMap.get(key).push(it);
+                                    });
+                                    const groupedQuotationItems = Array.from(groupedQuotationItemsMap.values());
+                                %>
+                                <% groupedQuotationItems.forEach((group) => { %>
+                                <% group.forEach((item, indexInGroup) => {
                                      // استخدام القيم المحفوظة مباشرة بدلاً من إعادة حسابها
                                      const unit = parseFloat(item.unit_cost) || 0;
                                      const final = parseFloat(item.final_price) || 0;
@@ -140,7 +184,9 @@
                                 %>
                                 <tr>
                                     <td><%= item.material_id || '-' %></td>
-                                    <td><%= item.material_name %></td>
+                                    <% if (indexInGroup === 0) { %>
+                                    <td rowspan="<%= group.length %>"><%= item.material_name %></td>
+                                    <% } %>
                                     <td><%= item.material_type || '-' %></td>
                                     <td><%= item.packaging_unit || '-' %></td>
                                     <td>
@@ -183,13 +229,15 @@
                                     <td><%= item.item_notes || '-' %></td>
                                 </tr>
                                 <% }); %>
+                                <% }); %>
                             </tbody>
                             <tfoot>
                                 <tr class="table-info">
-                                    <td colspan="6" class="text-end"><strong>المجموع الإجمالي:</strong></td>
+                                    <td colspan="10" class="text-end"><strong>المجموع الإجمالي:</strong></td>
                                     <td><strong>
                                         <%= fmt(grandTotal) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                                     </strong></td>
+                                    <td></td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -214,19 +262,58 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const printBtn = document.getElementById('printQuotationBtn');
     const exportBtn = document.getElementById('exportQuotationPdfBtn');
+    const quotationGrandTotal = Number(document.getElementById('quotationGrandTotalValue')?.value || 0);
+    const outputModeModalElem = document.getElementById('quotationOutputModeModal');
+    const outputModeModal = outputModeModalElem ? new bootstrap.Modal(outputModeModalElem) : null;
+    const modeNormalBtn = document.getElementById('quotationModeNormalBtn');
+    const modeFullBtn = document.getElementById('quotationModeFullBtn');
+    const discountedTotalInput = document.getElementById('quotationDiscountedTotalInput');
     const modalElem = document.getElementById('quotationPdfExportModal');
     const modal = modalElem ? new bootstrap.Modal(modalElem) : null;
     const linkInput = document.getElementById('quotationPdfLinkInput');
     const copyBtn = document.getElementById('copyQuotationPdfLinkBtn');
     const openBtn = document.getElementById('openQuotationPdfLinkBtn');
     const waBtn = document.getElementById('whatsappQuotationShareBtn');
-    if (exportBtn) {
-        exportBtn.addEventListener('click', async function () {
+
+    let pendingOutputAction = null;
+
+    function openOutputModeChooser(action) {
+        pendingOutputAction = action;
+        if (discountedTotalInput) {
+            discountedTotalInput.value = quotationGrandTotal.toFixed(2);
+        }
+        if (outputModeModal) outputModeModal.show();
+    }
+
+    function getValidatedDiscountedTotal() {
+        if (!discountedTotalInput) return quotationGrandTotal;
+        const rawValue = parseFloat(discountedTotalInput.value);
+        if (!Number.isFinite(rawValue)) {
+            alert('يرجى إدخال قيمة رقمية صحيحة.');
+            discountedTotalInput.focus();
+            return null;
+        }
+        if (rawValue < 0) {
+            alert('قيمة الإجمالي بعد الخصم يجب أن تكون صفر أو أكبر.');
+            discountedTotalInput.focus();
+            return null;
+        }
+        if (rawValue > quotationGrandTotal) {
+            alert('لا يمكن أن يكون الإجمالي بعد الخصم أكبر من الإجمالي الحالي.');
+            discountedTotalInput.focus();
+            return null;
+        }
+        return rawValue;
+    }
+
+    async function exportPdfByMode(mode, discountedTotalValue) {
+        if (!exportBtn) return;
             exportBtn.disabled = true;
             exportBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري التصدير...';
             try {
-                const res = await fetch(`/costs/quotations/<%= quotation.id %>/pdf`);
+            const res = await fetch(`/costs/quotations/<%= quotation.id %>/pdf?mode=${encodeURIComponent(mode)}&discounted_total=${encodeURIComponent(discountedTotalValue)}`);
                 const data = await res.json();
                 if (data.success && data.url) {
                     if (linkInput) linkInput.value = data.url;
@@ -241,10 +328,50 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             exportBtn.disabled = false;
             exportBtn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> تصدير PDF';
+    }
+
+    function printByMode(mode, discountedTotalValue) {
+        window.open(`/costs/quotations/<%= quotation.id %>/print?mode=${encodeURIComponent(mode)}&discounted_total=${encodeURIComponent(discountedTotalValue)}`, '_blank');
+    }
+
+    async function handleModeSelection(mode) {
+        const discountedTotalValue = getValidatedDiscountedTotal();
+        if (discountedTotalValue === null) return;
+        if (outputModeModal) outputModeModal.hide();
+        if (pendingOutputAction === 'print') {
+            printByMode(mode, discountedTotalValue);
+            return;
+        }
+        if (pendingOutputAction === 'export') {
+            await exportPdfByMode(mode, discountedTotalValue);
+        }
+    }
+
+    if (printBtn) {
+        printBtn.addEventListener('click', function () {
+            openOutputModeChooser('print');
+        });
+    }
+    if (exportBtn) {
+        exportBtn.addEventListener('click', function () {
+            openOutputModeChooser('export');
+        });
+    }
+    if (modeNormalBtn) {
+        modeNormalBtn.addEventListener('click', function () {
+            handleModeSelection('normal');
+        });
+    }
+    if (modeFullBtn) {
+        modeFullBtn.addEventListener('click', function () {
+            handleModeSelection('full');
         });
     }
     if (copyBtn && linkInput) {
-        copyBtn.addEventListener('click', function(){ linkInput.select(); document.execCommand('copy'); });
+        copyBtn.addEventListener('click', function () {
+            linkInput.select();
+            document.execCommand('copy');
+        });
     }
 });
 </script>
@@ -277,3 +404,4 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 }
 </style> 
+

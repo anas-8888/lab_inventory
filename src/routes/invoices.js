@@ -4,13 +4,13 @@ const invoiceController = require('../controllers/invoiceController');
 const { isAuthenticated, isEditor } = require('../middleware/auth');
 const { validateInvoice, validate, validateInventoryAvailability } = require('../middleware/validators');
 
-// عرض قائمة الفواتير
+// عرض قائمة طلبات  الشحن
 router.get('/', isAuthenticated, invoiceController.getInvoices);
 
 // API لجلب المخزون
 router.get('/api/inventory', isAuthenticated, invoiceController.getInventoryAPI);
 
-// عرض نموذج إنشاء فاتورة جديدة
+// عرض نموذج إنشاء طلبية شحن جديدة
 router.get('/create', isAuthenticated, isEditor, invoiceController.getCreateForm);
 
 // Middleware لمعالجة البيانات قبل validation
@@ -46,7 +46,7 @@ const preprocessInvoiceData = (req, res, next) => {
     next();
 };
 
-// إنشاء فاتورة جديدة
+// إنشاء طلبية شحن جديدة
 router.post('/create', isAuthenticated, isEditor, preprocessInvoiceData, validateInvoice, validateInventoryAvailability, validate, invoiceController.createInvoice);
 
 // مسارات سلة المحذوفات والحذف الجماعي (يجب أن تكون قبل /:id)
@@ -56,31 +56,31 @@ router.post('/restore-multiple', isAuthenticated, isEditor, invoiceController.re
 router.post('/empty-trash', isAuthenticated, isEditor, invoiceController.emptyTrash);
 router.delete('/delete-multiple', isAuthenticated, isEditor, invoiceController.deleteMultiple);
 
-// طباعة فاتورة
+// طباعة طلبية شحن
 router.get('/:id/print', isAuthenticated, invoiceController.printInvoice);
 
-// طباعة فاتورة بدون حماية الجلسة (مخصص لتوليد PDF)
+// طباعة طلبية شحن بدون حماية الجلسة (مخصص لتوليد PDF)
 router.get('/:id/print-pdf-raw', invoiceController.printInvoice);
 
-// حذف فاتورة
+// حذف طلبية شحن
 router.delete('/:id', isAuthenticated, isEditor, invoiceController.deleteInvoice);
 
-// عرض نموذج تعديل الفاتورة
+// عرض نموذج تعديل طلب الشحن
 router.get('/:id/edit', isAuthenticated, isEditor, invoiceController.getEditForm);
 
-// تحديث الفاتورة
+// تحديث طلب الشحن
 router.put('/:id', isAuthenticated, isEditor, validateInvoice, validateInventoryAvailability, validate, invoiceController.updateInvoice);
 
-// استعادة فاتورة واحدة
+// استعادة طلبية شحن واحدة
 router.post('/:id/restore', isAuthenticated, isEditor, invoiceController.restoreInvoice);
 
-// تصدير الفاتورة كـ PDF
+// تصدير طلب الشحن كـ PDF
 router.get('/:id/pdf', isAuthenticated, invoiceController.exportInvoicePDF);
 
-// تحديث حالة الفاتورة
+// تحديث حالة طلب الشحن
 router.put('/:id/status', isAuthenticated, isEditor, invoiceController.updateInvoiceStatus);
 
-// عرض فاتورة - يجب أن يكون آخر مسار
+// عرض طلبية شحن - يجب أن يكون آخر مسار
 router.get('/:id', isAuthenticated, invoiceController.getInvoice);
 
 module.exports = router; 

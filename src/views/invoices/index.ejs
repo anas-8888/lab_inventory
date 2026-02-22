@@ -35,12 +35,12 @@ function formatNumberDisplay(value) {
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h2 class="mb-0">
-                    <i class="fas fa-file-invoice"></i> الفواتير
+                    <i class="fas fa-file-invoice"></i> طلبات  الشحن
                 </h2>
                 <div class="d-flex gap-2 mb-3">
                     <% if (user && (user.role === 'editor' || user.role === 'admin')) { %>
                         <a href="/invoices/create" class="btn btn-success">
-                            <i class="fas fa-plus me-1"></i> إضافة فاتورة جديدة
+                            <i class="fas fa-plus me-1"></i> إضافة طلبية شحن جديدة
                         </a>
                     <% } %>
                     <button id="deleteSelectedBtn" class="btn btn-danger" disabled>حذف نهائي</button>
@@ -87,7 +87,7 @@ function formatNumberDisplay(value) {
                                         <input type="checkbox" id="selectAllInvoices">
                                     </th>
                                     <th>#</th>
-                                    <th>رقم الفاتورة</th>
+                                    <th>رقم طلب الشحن</th>
                                     <th>التاريخ</th>
                                     <th>اسم العميل</th>
                                     <th>اسم السائق</th>
@@ -180,7 +180,7 @@ function formatNumberDisplay(value) {
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                هل أنت متأكد من حذف الفاتورة رقم <span id="invoiceNumber" class="fw-bold"></span>؟
+                هل أنت متأكد من حذف طلب الشحن رقم <span id="invoiceNumber" class="fw-bold"></span>؟
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -235,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (resetCounterForm) {
         resetCounterForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            if (confirm('هل أنت متأكد من إعادة تعيين عداد الفواتير؟')) {
+            if (confirm('هل أنت متأكد من إعادة تعيين عداد طلبات  الشحن؟')) {
                 this.submit();
             }
         });
@@ -274,12 +274,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 window.location.reload();
             } else {
-                alert(data.message || 'حدث خطأ أثناء حذف الفاتورة');
+                alert(data.message || 'حدث خطأ أثناء حذف طلب الشحن');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('حدث خطأ أثناء حذف الفاتورة');
+            alert('حدث خطأ أثناء حذف طلب الشحن');
             deleteModal.hide();
         });
     });
@@ -309,15 +309,15 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     updateBulkButtons();
 
-    // --- إضافة كود حذف الفواتير المحددة نهائياً ---
+    // --- إضافة كود حذف طلبات  الشحن المحددة نهائياً ---
     if (deleteSelectedBtn) {
         deleteSelectedBtn.addEventListener('click', function() {
             const checkedBoxes = document.querySelectorAll('.invoice-checkbox:checked');
             if (checkedBoxes.length === 0) {
-                alert('يرجى اختيار فاتورة واحدة على الأقل');
+                alert('يرجى اختيار طلبية شحن واحدة على الأقل');
                 return;
             }
-            if (!confirm(`هل أنت متأكد من حذف ${checkedBoxes.length} فاتورة نهائياً؟`)) {
+            if (!confirm(`هل أنت متأكد من حذف ${checkedBoxes.length} طلبية شحن نهائياً؟`)) {
                 return;
             }
             const ids = Array.from(checkedBoxes).map(cb => cb.dataset.id);
@@ -338,15 +338,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // --- إضافة كود نقل الفواتير إلى سلة المحذوفات ---
+    // --- إضافة كود نقل طلبات  الشحن إلى سلة المحذوفات ---
     if (trashSelectedBtn) {
         trashSelectedBtn.addEventListener('click', function() {
             const checkedBoxes = document.querySelectorAll('.invoice-checkbox:checked');
             if (checkedBoxes.length === 0) {
-                alert('يرجى اختيار فاتورة واحدة على الأقل');
+                alert('يرجى اختيار طلبية شحن واحدة على الأقل');
                 return;
             }
-            if (!confirm(`هل أنت متأكد من نقل ${checkedBoxes.length} فاتورة إلى سلة المحذوفات؟`)) {
+            if (!confirm(`هل أنت متأكد من نقل ${checkedBoxes.length} طلبية شحن إلى سلة المحذوفات؟`)) {
                 return;
             }
             const ids = Array.from(checkedBoxes).map(cb => cb.dataset.id);
@@ -407,7 +407,7 @@ function clearFilters() {
     document.getElementById('filterForm').dispatchEvent(new Event('submit'));
 }
 
-// تحديث حالة الفاتورة
+// تحديث حالة طلب الشحن
 function updateInvoiceStatus(invoiceId, status) {
     const statusText = {
         'pending': 'قيد الانتظار',
@@ -416,7 +416,7 @@ function updateInvoiceStatus(invoiceId, status) {
         'cancelled': 'ملغي'
     };
     
-    if (confirm(`هل تريد تغيير حالة الفاتورة إلى "${statusText[status]}"؟`)) {
+    if (confirm(`هل تريد تغيير حالة طلب الشحن إلى "${statusText[status]}"؟`)) {
         fetch(`/invoices/${invoiceId}/status`, {
             method: 'PUT',
             headers: {
@@ -427,14 +427,14 @@ function updateInvoiceStatus(invoiceId, status) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showAlert('تم تحديث حالة الفاتورة بنجاح', 'success');
+                showAlert('تم تحديث حالة طلب الشحن بنجاح', 'success');
                 setTimeout(() => window.location.reload(), 1500);
             } else {
-                showAlert(data.message || 'حدث خطأ في تحديث حالة الفاتورة', 'error');
+                showAlert(data.message || 'حدث خطأ في تحديث حالة طلب الشحن', 'error');
             }
         })
         .catch(error => {
-            showAlert('حدث خطأ في تحديث حالة الفاتورة', 'error');
+            showAlert('حدث خطأ في تحديث حالة طلب الشحن', 'error');
         });
     }
 }

@@ -3,26 +3,26 @@ const { isValidPhone } = require('../utils/helpers');
 
 exports.invoiceValidation = [
   body('invoice_number')
-    .notEmpty().withMessage('رقم الفاتورة مطلوب')
-    .isInt({ min: 1 }).withMessage('رقم الفاتورة يجب أن يكون عدداً موجباً'),
+    .notEmpty().withMessage('رقم طلب الشحن مطلوب')
+    .isInt({ min: 1 }).withMessage('رقم طلب الشحن يجب أن يكون عدداً موجباً'),
   body('customer_name')
     .notEmpty().withMessage('اسم العميل مطلوب')
     .isLength({ min: 3 }).withMessage('اسم العميل يجب أن يكون 3 أحرف على الأقل'),
   body('invoice_date')
-    .notEmpty().withMessage('تاريخ الفاتورة مطلوب')
-    .isISO8601().withMessage('تاريخ الفاتورة غير صالح'),
+    .notEmpty().withMessage('تاريخ طلب الشحن مطلوب')
+    .isISO8601().withMessage('تاريخ طلب الشحن غير صالح'),
   body('due_date')
     .notEmpty().withMessage('تاريخ الاستحقاق مطلوب')
     .isISO8601().withMessage('تاريخ الاستحقاق غير صالح')
     .custom((value, { req }) => {
       if (new Date(value) < new Date(req.body.invoice_date)) {
-        throw new Error('تاريخ الاستحقاق يجب أن يكون بعد تاريخ الفاتورة');
+        throw new Error('تاريخ الاستحقاق يجب أن يكون بعد تاريخ طلب الشحن');
       }
       return true;
     }),
   body('items')
-    .notEmpty().withMessage('عناصر الفاتورة مطلوبة')
-    .isArray().withMessage('عناصر الفاتورة يجب أن تكون مصفوفة')
+    .notEmpty().withMessage('عناصر طلب الشحن مطلوبة')
+    .isArray().withMessage('عناصر طلب الشحن يجب أن تكون مصفوفة')
     .custom((items) => {
       if (items.length === 0) {
         throw new Error('يجب إضافة عنصر واحد على الأقل');
@@ -87,8 +87,8 @@ exports.invoiceValidation = [
 
 exports.paymentValidation = [
   body('invoice_id')
-    .notEmpty().withMessage('معرف الفاتورة مطلوب')
-    .isInt().withMessage('معرف الفاتورة غير صالح'),
+    .notEmpty().withMessage('معرف طلب الشحن مطلوب')
+    .isInt().withMessage('معرف طلب الشحن غير صالح'),
   body('amount')
     .notEmpty().withMessage('المبلغ مطلوب')
     .isFloat({ min: 0.1 }).withMessage('المبلغ يجب أن يكون أكبر من صفر'),

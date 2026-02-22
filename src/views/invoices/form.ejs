@@ -1,6 +1,6 @@
 <div class="card shadow">
   <div class="card-header">
-    <h4 class="mb-0"><%= locals.invoice ? 'تعديل فاتورة' : 'إنشاء فاتورة جديدة' %></h4>
+    <h4 class="mb-0"><%= locals.invoice ? 'تعديل طلبية شحن' : 'إنشاء طلبية شحن جديدة' %></h4>
   </div>
   <div class="card-body">
     <form action="<%= locals.invoice ? `/invoices/${invoice.id}/edit` : '/invoices/create' %>" method="POST" id="invoiceForm">
@@ -99,7 +99,7 @@
           <div class="d-flex justify-content-end gap-2">
             <a href="/invoices" class="btn btn-secondary">إلغاء</a>
             <button type="submit" class="btn btn-primary">
-              <%= locals.invoice ? 'حفظ التغييرات' : 'إنشاء الفاتورة' %>
+              <%= locals.invoice ? 'حفظ التغييرات' : 'إنشاء طلب الشحن' %>
             </button>
           </div>
         </div>

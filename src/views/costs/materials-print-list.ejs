@@ -4,8 +4,32 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
 %>
 <div class="container-fluid" style="direction: rtl; font-family: 'Cairo','Amiri',sans-serif;">
 
-  <% const pageSize = 10; const total = (materials||[]).length; const pages = Math.ceil(total / pageSize); %>
-  <% for (let p = 0; p < pages; p++) { const start = p * pageSize; const end = Math.min(start + pageSize, total); %>
+  <%
+    const pageSize = 10;
+    const indexedMaterials = (materials || []).map((m, idx) => ({ material: m, rowNumber: idx + 1 }));
+    const groupedAllMap = new Map();
+    indexedMaterials.forEach((item) => {
+      const key = (item.material.material_name || '').trim();
+      if (!groupedAllMap.has(key)) groupedAllMap.set(key, []);
+      groupedAllMap.get(key).push(item);
+    });
+    const groupedAll = Array.from(groupedAllMap.values());
+    const pagesData = [];
+    let currentPage = [];
+    let currentRows = 0;
+    groupedAll.forEach((group) => {
+      const groupRows = group.length;
+      if (currentPage.length > 0 && (currentRows + groupRows) > pageSize) {
+        pagesData.push(currentPage);
+        currentPage = [];
+        currentRows = 0;
+      }
+      currentPage.push(group);
+      currentRows += groupRows;
+    });
+    if (currentPage.length > 0) pagesData.push(currentPage);
+  %>
+  <% for (let p = 0; p < pagesData.length; p++) { const groupedMaterials = pagesData[p]; %>
     <!-- Header (repeated on every page) -->
     <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
       <tr>
@@ -49,27 +73,32 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
           </tr>
         </thead>
         <tbody>
-          <% for (let i = start; i < end; i++) { const m = materials[i]; const netW = parseFloat(m.packaging_weight); const unitCost = parseFloat(m.unit_cost)||0; const costPerKg = (!isNaN(netW) && netW>0) ? (unitCost/netW) : null; %>
+          <% groupedMaterials.forEach((group) => { %>
+            <% group.forEach((item, idxInGroup) => { const m = item.material; const netW = parseFloat(m.packaging_weight); const unitCost = parseFloat(m.unit_cost)||0; const costPerKg = (!isNaN(netW) && netW>0) ? (unitCost/netW) : null; %>
             <tr>
-              <td style="padding: 6pt 4pt; text-align:center;"><%= num(i+1,0) %></td>
-              <td style="padding: 6pt 4pt; text-align:right;"><%= m.material_name %></td>
+              <td style="padding: 6pt 4pt; text-align:center;"><%= num(item.rowNumber,0) %></td>
+              <% if (idxInGroup === 0) { %>
+              <td style="padding: 6pt 4pt; text-align:right;" rowspan="<%= group.length %>"><%= m.material_name %></td>
+              <% } %>
               <td style="padding: 6pt 4pt;"><%= m.packaging_unit || '-' %></td>
-              <td style="padding: 6pt 4pt;"><%= num(m.unit_cost, (currencySymbol==='SYP'?0:2)) %> <%= currencySymbol %></td>
-              <td style="padding: 6pt 4pt;"><%= num(m.package_cost, (currencySymbol==='SYP'?0:2)) %> <%= currencySymbol %></td>
-              <td style="padding: 6pt 4pt;"><%= (m.gross_package_weight!=null)? Number(m.gross_package_weight).toFixed(3): '-' %> كجم</td>
-              <td style="padding: 6pt 4pt;"><%= (!isNaN(netW)) ? netW.toFixed(3) : '-' %> كجم</td>
+              <td class="nowrap-value" style="padding: 6pt 4pt;"><%= num(m.unit_cost, (currencySymbol==='SYP'?0:2)) %> <%= currencySymbol %></td>
+              <td class="nowrap-value" style="padding: 6pt 4pt;"><%= num(m.package_cost, (currencySymbol==='SYP'?0:2)) %> <%= currencySymbol %></td>
+              <td class="nowrap-value" style="padding: 6pt 4pt;"><%= (m.gross_package_weight!=null)? Number(m.gross_package_weight).toFixed(3): '-' %> كجم</td>
+              <td class="nowrap-value" style="padding: 6pt 4pt;"><%= (!isNaN(netW)) ? netW.toFixed(3) : '-' %> كجم</td>
               <td style="padding: 6pt 4pt;"><%= (m.pieces_per_package!=null)? Number(m.pieces_per_package): '-' %></td>
-              <td style="padding: 6pt 4pt;">
+              <td class="nowrap-value" style="padding: 6pt 4pt;">
                 <%= (costPerKg!=null) ? ((currencySymbol==='SYP')? String(Math.round(costPerKg)) : costPerKg.toFixed(2)) : '-' %>
                 <%= currencySymbol %>
               </td>
               <td style="padding: 6pt 4pt;"><%= fmtDate(m.created_at) %></td>
             </tr>
-          <% } %>
+            <% }); %>
+          <% }); %>
         </tbody>
+
       </table>
     </div>
-    <% if (p < pages - 1) { %>
+    <% if (p < pagesData.length - 1) { %>
       <div class="page-break"></div>
     <% } %>
   <% } %>
@@ -93,6 +122,26 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
   html, body { background: #fff !important; margin:0; padding:0; direction: rtl; text-align: right; font-family: 'Cairo','Amiri','Noto Naskh Arabic',sans-serif !important; font-size: 9pt; }
   .table-custom { width: 100%; border-collapse: separate; border-spacing: 0; }
   .table-custom th, .table-custom td { border: 1px solid #444; padding: 5pt 4pt; }
+  .nowrap-value { white-space: nowrap; word-break: keep-all; }
+  .table-custom th:nth-child(1),
+  .table-custom td:nth-child(1),
+  .table-custom th:nth-child(4),
+  .table-custom td:nth-child(4),
+  .table-custom th:nth-child(5),
+  .table-custom td:nth-child(5),
+  .table-custom th:nth-child(6),
+  .table-custom td:nth-child(6),
+  .table-custom th:nth-child(7),
+  .table-custom td:nth-child(7),
+  .table-custom th:nth-child(8),
+  .table-custom td:nth-child(8),
+  .table-custom th:nth-child(9),
+  .table-custom td:nth-child(9),
+  .table-custom th:nth-child(10),
+  .table-custom td:nth-child(10) {
+    text-align: center !important;
+    vertical-align: middle !important;
+  }
   .table-custom th { background: #f5f5f5; font-weight: 700; }
   thead { display: table-header-group; }
   tfoot { display: table-footer-group; }

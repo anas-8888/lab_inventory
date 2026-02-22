@@ -30,17 +30,17 @@ const actionDictionary = {
     'DELETE /inventory/:id': 'حذف عينة',
     'GET /inventory/search': 'البحث في المخزون',
 
-    // الفواتير
-    'GET /invoices': 'استعراض الفواتير',
-    'GET /invoices/create': 'عرض نموذج إنشاء فاتورة',
-    'POST /invoices/create': 'إنشاء فاتورة جديدة',
-    'GET /invoices/:id': 'عرض تفاصيل فاتورة',
-    'GET /invoices/:id/edit': 'عرض نموذج تعديل فاتورة',
-    'POST /invoices/:id/edit': 'تعديل فاتورة',
-    'DELETE /invoices/:id': 'حذف فاتورة',
-    'GET /invoices/:id/print': 'طباعة فاتورة',
+    // طلبات  الشحن
+    'GET /invoices': 'استعراض طلبات  الشحن',
+    'GET /invoices/create': 'عرض نموذج إنشاء طلبية شحن',
+    'POST /invoices/create': 'إنشاء طلبية شحن جديدة',
+    'GET /invoices/:id': 'عرض تفاصيل طلبية شحن',
+    'GET /invoices/:id/edit': 'عرض نموذج تعديل طلبية شحن',
+    'POST /invoices/:id/edit': 'تعديل طلبية شحن',
+    'DELETE /invoices/:id': 'حذف طلبية شحن',
+    'GET /invoices/:id/print': 'طباعة طلبية شحن',
     'GET /invoices/api/inventory': 'جلب بيانات المخزون للفواتير',
-    'PUT /invoices/:id/status': 'تحديث حالة فاتورة',
+    'PUT /invoices/:id/status': 'تحديث حالة طلبية شحن',
 
     // الشهادات
     'GET /certificates': 'استعراض الشهادات',

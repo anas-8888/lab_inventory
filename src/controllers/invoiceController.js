@@ -4,7 +4,7 @@ const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const moment = require('moment');
 
-// عرض قائمة الفواتير
+// عرض قائمة طلبات  الشحن
 exports.getInvoices = async (req, res) => {
     try {
         const { date, customer, invoice_number } = req.query;
@@ -37,9 +37,9 @@ exports.getInvoices = async (req, res) => {
 
         const [invoices] = await pool.query(query, params);
         
-        // إعادة حساب الوزن الإجمالي لكل فاتورة باستخدام الصيغة المطلوبة
+        // إعادة حساب الوزن الإجمالي لكل طلبية شحن باستخدام الصيغة المطلوبة
         for (let invoice of invoices) {
-            // جلب عناصر الفاتورة مع بيانات المخزون
+            // جلب عناصر طلب الشحن مع بيانات المخزون
             const [items] = await pool.query(`
                 SELECT ii.quantity, inv.net_weight_total, inv.base_quantity
                 FROM invoice_items ii
@@ -62,24 +62,24 @@ exports.getInvoices = async (req, res) => {
         }
         
         res.render('invoices/index', {
-            title: 'الفواتير',
+            title: 'طلبات  الشحن',
             invoices,
             filters: req.query,
             user: req.session.user
         });
     } catch (error) {
         console.error('Error fetching invoices:', error);
-        req.flash('error_msg', 'حدث خطأ أثناء جلب بيانات الفواتير');
+        req.flash('error_msg', 'حدث خطأ أثناء جلب بيانات طلبات  الشحن');
         res.redirect('/');
     }
 };
 
-// عرض نموذج إنشاء فاتورة جديدة
+// عرض نموذج إنشاء طلبية شحن جديدة
 exports.getCreateForm = async (req, res) => {
     try {
         const [inventory] = await pool.query('SELECT * FROM inventory WHERE current_quantity > 0 AND deleted_at IS NULL ORDER BY date DESC');
         
-        // جلب رقم آخر فاتورة مضافة
+        // جلب رقم آخر طلبية شحن مضافة
         const [lastInvoice] = await pool.query(`
             SELECT invoice_number 
             FROM invoices 
@@ -91,7 +91,7 @@ exports.getCreateForm = async (req, res) => {
         const lastInvoiceNumber = lastInvoice.length > 0 ? lastInvoice[0].invoice_number : 'لا توجد فواتير سابقة';
         
         res.render('invoices/create', {
-            title: 'إنشاء فاتورة جديدة',
+            title: 'إنشاء طلبية شحن جديدة',
             inventory,
             lastInvoiceNumber,
             user: req.session.user
@@ -103,7 +103,7 @@ exports.getCreateForm = async (req, res) => {
     }
 };
 
-// إنشاء فاتورة جديدة
+// إنشاء طلبية شحن جديدة
 exports.createInvoice = async (req, res) => {
     const connection = await pool.getConnection();
     try {
@@ -129,7 +129,7 @@ exports.createInvoice = async (req, res) => {
         }
         
         if (!invoice_number || invoice_number.trim() === '') {
-            throw new Error('رقم الفاتورة مطلوب');
+            throw new Error('رقم طلب الشحن مطلوب');
         }
         
         // driver_name اختياري - تنظيف القيمة فقط
@@ -174,10 +174,10 @@ exports.createInvoice = async (req, res) => {
             throw new Error('خطأ في معالجة التاريخ: ' + error.message);
         }
 
-        // التحقق فقط أن رقم الفاتورة عدد موجب
+        // التحقق فقط أن رقم طلب الشحن عدد موجب
         const submittedNumber = parseInt(invoice_number);
         if (isNaN(submittedNumber) || submittedNumber <= 0) {
-            throw new Error('رقم الفاتورة يجب أن يكون عدداً موجباً');
+            throw new Error('رقم طلب الشحن يجب أن يكون عدداً موجباً');
         }
 
         // التحقق من وجود كميات
@@ -261,7 +261,7 @@ exports.createInvoice = async (req, res) => {
         const avg270 = totalQuantity > 0 ? weightedSum270 / totalQuantity : 0;
         const avgDeltaK = totalQuantity > 0 ? weightedSumDeltaK / totalQuantity : 0;
 
-        // إنشاء الفاتورة
+        // إنشاء طلب الشحن
         const [result] = await connection.query(
             `INSERT INTO invoices (
                 invoice_number, customer_name, driver_name,
@@ -279,7 +279,7 @@ exports.createInvoice = async (req, res) => {
 
         const invoice_id = result.insertId;
 
-        // إضافة عناصر الفاتورة
+        // إضافة عناصر طلب الشحن
         for (const [inventory_id, quantity] of Object.entries(quantities)) {
             const [item] = await connection.query(
                 'SELECT * FROM inventory WHERE id = ?',
@@ -333,18 +333,18 @@ exports.createInvoice = async (req, res) => {
         if (req.xhr || req.headers.accept.indexOf('json') > -1) {
             return res.json({
                 success: true,
-                message: 'تم إنشاء الفاتورة بنجاح',
+                message: 'تم إنشاء طلب الشحن بنجاح',
                 invoiceId: invoice_id
             });
         }
 
-        req.flash('success_msg', 'تم إنشاء الفاتورة بنجاح');
+        req.flash('success_msg', 'تم إنشاء طلب الشحن بنجاح');
         // Check if it's an AJAX request
         if (req.xhr || req.headers.accept.indexOf('json') > -1) {
             return res.json({
                 success: true,
                 invoiceId: invoice_id,
-                message: 'تم إنشاء الفاتورة بنجاح'
+                message: 'تم إنشاء طلب الشحن بنجاح'
             });
         }
         
@@ -362,11 +362,11 @@ exports.createInvoice = async (req, res) => {
         if (req.xhr || req.headers.accept.indexOf('json') > -1) {
             return res.status(500).json({
                 success: false,
-                message: error.message || 'حدث خطأ أثناء إنشاء الفاتورة'
+                message: error.message || 'حدث خطأ أثناء إنشاء طلب الشحن'
             });
         }
         
-        req.flash('error_msg', error.message || 'حدث خطأ أثناء إنشاء الفاتورة');
+        req.flash('error_msg', error.message || 'حدث خطأ أثناء إنشاء طلب الشحن');
         res.redirect('/invoices/create');
     } finally {
         // ضمان إغلاق الاتصال
@@ -378,7 +378,7 @@ exports.createInvoice = async (req, res) => {
     }
 };
 
-// عرض فاتورة
+// عرض طلبية شحن
 exports.getInvoice = async (req, res) => {
     try {
         const [invoices] = await pool.query(
@@ -390,7 +390,7 @@ exports.getInvoice = async (req, res) => {
         );
 
         if (invoices.length === 0) {
-            req.flash('error_msg', 'الفاتورة غير موجودة');
+            req.flash('error_msg', 'طلب الشحن غير موجودة');
             return res.redirect('/invoices');
         }
 
@@ -405,19 +405,19 @@ exports.getInvoice = async (req, res) => {
         );
 
         res.render('invoices/view', {
-            title: 'عرض الفاتورة',
+            title: 'عرض طلب الشحن',
             invoice: invoices[0],
             items,
             user: req.session.user
         });
     } catch (error) {
         console.error('Error fetching invoice:', error);
-        req.flash('error_msg', 'حدث خطأ أثناء جلب بيانات الفاتورة');
+        req.flash('error_msg', 'حدث خطأ أثناء جلب بيانات طلب الشحن');
         res.redirect('/invoices');
     }
 };
 
-// طباعة فاتورة
+// طباعة طلبية شحن
 exports.printInvoice = async (req, res) => {
     try {
         const [invoices] = await pool.query(
@@ -429,7 +429,7 @@ exports.printInvoice = async (req, res) => {
         );
 
         if (invoices.length === 0) {
-            req.flash('error_msg', 'الفاتورة غير موجودة');
+            req.flash('error_msg', 'طلب الشحن غير موجودة');
             return res.redirect('/invoices');
         }
 
@@ -443,7 +443,7 @@ exports.printInvoice = async (req, res) => {
 
         // تمرير user: null إذا لم يوجد مستخدم في الجلسة
         res.render('invoices/print', {
-            title: 'طباعة الفاتورة',
+            title: 'طباعة طلب الشحن',
             invoice: invoices[0],
             items,
             user: req.session.user || null,
@@ -451,12 +451,12 @@ exports.printInvoice = async (req, res) => {
         });
     } catch (error) {
         console.error('Error printing invoice:', error);
-        req.flash('error_msg', 'حدث خطأ أثناء طباعة الفاتورة');
+        req.flash('error_msg', 'حدث خطأ أثناء طباعة طلب الشحن');
         res.redirect('/invoices');
     }
 };
 
-// حذف فاتورة
+// حذف طلبية شحن
 exports.deleteInvoice = async (req, res) => {
     const connection = await pool.getConnection();
     try {
@@ -467,13 +467,13 @@ exports.deleteInvoice = async (req, res) => {
         await connection.beginTransaction();
 
         const invoiceId = req.params.id;
-        // التحقق من وجود الفاتورة (غير محذوفة ناعماً)
+        // التحقق من وجود طلب الشحن (غير محذوفة ناعماً)
         const [invoice] = await connection.query('SELECT * FROM invoices WHERE id = ? AND deleted_at IS NULL', [invoiceId]);
         if (!invoice || invoice.length === 0) {
-            throw new Error('الفاتورة غير موجودة أو محذوفة مسبقاً');
+            throw new Error('طلب الشحن غير موجودة أو محذوفة مسبقاً');
         }
 
-        // جلب عناصر الفاتورة
+        // جلب عناصر طلب الشحن
         const [items] = await connection.query('SELECT inventory_id, quantity FROM invoice_items WHERE invoice_id = ?', [invoiceId]);
         for (const item of items) {
             // تحقق إذا كانت العينة موجودة
@@ -484,15 +484,15 @@ exports.deleteInvoice = async (req, res) => {
             }
         }
 
-        // حذف تفاصيل الفاتورة أولاً (العلاقة الفرعية)
+        // حذف تفاصيل طلب الشحن أولاً (العلاقة الفرعية)
         await connection.query('DELETE FROM invoice_items WHERE invoice_id = ?', [invoiceId]);
 
-        // ثم حذف الفاتورة نفسها
+        // ثم حذف طلب الشحن نفسها
         await connection.query('DELETE FROM invoices WHERE id = ?', [invoiceId]);
 
         await connection.commit();
 
-        res.json({ success: true, message: 'تم حذف الفاتورة بنجاح' });
+        res.json({ success: true, message: 'تم حذف طلب الشحن بنجاح' });
     } catch (error) {
         try {
             await connection.rollback();
@@ -503,7 +503,7 @@ exports.deleteInvoice = async (req, res) => {
         console.error('Error deleting invoice:', error);
         res.status(500).json({
             success: false,
-            message: 'حدث خطأ أثناء حذف الفاتورة',
+            message: 'حدث خطأ أثناء حذف طلب الشحن',
             error: error.message
         });
     } finally {
@@ -544,16 +544,16 @@ exports.exportInvoicePDF = async (req, res) => {
         });
     } catch (error) {
         console.error('Error exporting invoice PDF:', error);
-        res.status(500).json({ success: false, message: 'حدث خطأ أثناء تصدير الفاتورة كـ PDF' });
+        res.status(500).json({ success: false, message: 'حدث خطأ أثناء تصدير طلب الشحن كـ PDF' });
     }
 };
 
-// عرض نموذج تعديل الفاتورة
+// عرض نموذج تعديل طلب الشحن
 exports.getEditForm = async (req, res) => {
     try {
         const invoiceId = req.params.id;
 
-        // جلب بيانات الفاتورة
+        // جلب بيانات طلب الشحن
         const [invoices] = await pool.query(
             `SELECT i.*, u.username as created_by_name
              FROM invoices i
@@ -563,11 +563,11 @@ exports.getEditForm = async (req, res) => {
         );
 
         if (invoices.length === 0) {
-            req.flash('error_msg', 'الفاتورة غير موجودة');
+            req.flash('error_msg', 'طلب الشحن غير موجودة');
             return res.redirect('/invoices');
         }
 
-        // جلب عناصر الفاتورة
+        // جلب عناصر طلب الشحن
         const [items] = await pool.query(
             `SELECT ii.*, inv.sample_number, inv.supplier_or_sample_name, 
                     (inv.current_quantity + ii.quantity) AS available_quantity
@@ -577,7 +577,7 @@ exports.getEditForm = async (req, res) => {
             [invoiceId]
         );
 
-        // تحديد مصفوفة الـ inventory_id الموجودة في الفاتورة
+        // تحديد مصفوفة الـ inventory_id الموجودة في طلب الشحن
         const currentIds = items.map(i => i.inventory_id);
 
         // جلب المخزون المتاح مع استبعاد العينات المضافة بالفعل
@@ -588,12 +588,12 @@ exports.getEditForm = async (req, res) => {
                 [currentIds]
             );
         } else {
-            // إذا لم تكن هناك عينات في الفاتورة، جلب كل المخزون
+            // إذا لم تكن هناك عينات في طلب الشحن، جلب كل المخزون
             [inventory] = await pool.query('SELECT * FROM inventory WHERE deleted_at IS NULL');
         }
 
         res.render('invoices/edit', {
-            title: 'تعديل الفاتورة',
+            title: 'تعديل طلب الشحن',
             invoice: invoices[0],
             items,
             inventory,
@@ -606,7 +606,7 @@ exports.getEditForm = async (req, res) => {
     }
 };
 
-// تحديث الفاتورة
+// تحديث طلب الشحن
 exports.updateInvoice = async (req, res) => {
     const connection = await pool.getConnection();
     try {
@@ -635,10 +635,10 @@ exports.updateInvoice = async (req, res) => {
             }
         }
 
-        // التحقق من وجود الفاتورة
+        // التحقق من وجود طلب الشحن
         const [existingInvoice] = await connection.query('SELECT * FROM invoices WHERE id = ?', [invoiceId]);
         if (existingInvoice.length === 0) {
-            throw new Error('الفاتورة غير موجودة');
+            throw new Error('طلب الشحن غير موجودة');
         }
 
         // التحقق من صحة التاريخ
@@ -658,13 +658,13 @@ exports.updateInvoice = async (req, res) => {
             }
         }
 
-        // التحقق من رقم الفاتورة
+        // التحقق من رقم طلب الشحن
         const submittedNumber = parseInt(invoice_number);
         if (isNaN(submittedNumber) || submittedNumber <= 0) {
-            throw new Error('رقم الفاتورة يجب أن يكون عدداً موجباً');
+            throw new Error('رقم طلب الشحن يجب أن يكون عدداً موجباً');
         }
 
-        // جلب الكميات الحالية في الفاتورة
+        // جلب الكميات الحالية في طلب الشحن
         const [currentItems] = await connection.query(
             'SELECT inventory_id, quantity FROM invoice_items WHERE invoice_id = ?',
             [invoiceId]
@@ -749,7 +749,7 @@ exports.updateInvoice = async (req, res) => {
                     [requestedQuantity, inventory_id]
                 );
 
-                // إضافة العنصر إلى الفاتورة
+                // إضافة العنصر إلى طلب الشحن
                 const netWeight = requestedQuantity * 16;
                 await connection.query(
                     `INSERT INTO invoice_items (
@@ -775,7 +775,7 @@ exports.updateInvoice = async (req, res) => {
         const avg270 = totalQuantity > 0 ? weightedSum270 / totalQuantity : 0;
         const avgDeltaK = totalQuantity > 0 ? weightedSumDeltaK / totalQuantity : 0;
 
-        // تحديث بيانات الفاتورة
+        // تحديث بيانات طلب الشحن
         await connection.query(
             `UPDATE invoices SET 
                 invoice_number = ?, customer_name = ?, driver_name = ?, 
@@ -796,12 +796,12 @@ exports.updateInvoice = async (req, res) => {
         if (req.xhr || req.headers.accept.indexOf('json') > -1) {
             return res.json({
                 success: true,
-                message: 'تم تحديث الفاتورة بنجاح',
+                message: 'تم تحديث طلب الشحن بنجاح',
                 invoiceId: invoiceId
             });
         }
 
-        req.flash('success_msg', 'تم تحديث الفاتورة بنجاح');
+        req.flash('success_msg', 'تم تحديث طلب الشحن بنجاح');
         res.redirect('/invoices/' + invoiceId);
 
     } catch (error) {
@@ -816,11 +816,11 @@ exports.updateInvoice = async (req, res) => {
         if (req.xhr || req.headers.accept.indexOf('json') > -1) {
             return res.status(500).json({
                 success: false,
-                message: error.message || 'حدث خطأ أثناء تحديث الفاتورة'
+                message: error.message || 'حدث خطأ أثناء تحديث طلب الشحن'
             });
         }
 
-        req.flash('error_msg', error.message || 'حدث خطأ أثناء تحديث الفاتورة');
+        req.flash('error_msg', error.message || 'حدث خطأ أثناء تحديث طلب الشحن');
         res.redirect('/invoices/' + req.params.id);
     } finally {
         // ضمان إغلاق الاتصال
@@ -858,7 +858,7 @@ exports.getInventoryAPI = async (req, res) => {
     }
 };
 
-// تحديث حالة الفاتورة
+// تحديث حالة طلب الشحن
 exports.updateInvoiceStatus = async (req, res) => {
     try {
         const { id } = req.params;
@@ -875,10 +875,10 @@ exports.updateInvoiceStatus = async (req, res) => {
         
         await pool.query('UPDATE invoices SET status = ? WHERE id = ? AND deleted_at IS NULL', [status, id]);
         
-        res.json({ success: true, message: 'تم تحديث حالة الفاتورة بنجاح' });
+        res.json({ success: true, message: 'تم تحديث حالة طلب الشحن بنجاح' });
     } catch (error) {
-        console.error('خطأ في تحديث حالة الفاتورة:', error);
-        res.status(500).json({ success: false, message: 'حدث خطأ في تحديث حالة الفاتورة' });
+        console.error('خطأ في تحديث حالة طلب الشحن:', error);
+        res.status(500).json({ success: false, message: 'حدث خطأ في تحديث حالة طلب الشحن' });
     }
 };
 
@@ -890,12 +890,12 @@ exports.trashMultiple = async (req, res) => {
         
         const { ids } = req.body;
         if (!ids || !Array.isArray(ids) || ids.length === 0) {
-            return res.status(400).json({ success: false, message: 'يرجى اختيار فاتورة واحدة على الأقل' });
+            return res.status(400).json({ success: false, message: 'يرجى اختيار طلبية شحن واحدة على الأقل' });
         }
 
-        // إرجاع كميات العينات إلى المخزون قبل نقل الفواتير إلى سلة المحذوفات
+        // إرجاع كميات العينات إلى المخزون قبل نقل طلبات  الشحن إلى سلة المحذوفات
         for (const invoiceId of ids) {
-            // جلب عناصر الفاتورة
+            // جلب عناصر طلب الشحن
             const [items] = await connection.query(
                 'SELECT inventory_id, quantity FROM invoice_items WHERE invoice_id = ?', 
                 [invoiceId]
@@ -919,28 +919,28 @@ exports.trashMultiple = async (req, res) => {
             }
         }
 
-        // نقل الفواتير إلى سلة المحذوفات
+        // نقل طلبات  الشحن إلى سلة المحذوفات
         await connection.query('UPDATE invoices SET deleted_at = NOW() WHERE id IN (?)', [ids]);
         
         await connection.commit();
-        res.json({ success: true, message: 'تم نقل الفواتير المحددة إلى سلة المحذوفات' });
+        res.json({ success: true, message: 'تم نقل طلبات  الشحن المحددة إلى سلة المحذوفات' });
     } catch (error) {
         await connection.rollback();
         console.error('Error trashing invoices:', error);
-        res.status(500).json({ success: false, message: 'حدث خطأ أثناء نقل الفواتير إلى سلة المحذوفات' });
+        res.status(500).json({ success: false, message: 'حدث خطأ أثناء نقل طلبات  الشحن إلى سلة المحذوفات' });
     } finally {
         connection.release();
     }
 };
 
-// جلب الفواتير المحذوفة
+// جلب طلبات  الشحن المحذوفة
 exports.getDeletedInvoices = async (req, res) => {
     try {
         const [deletedInvoices] = await pool.query('SELECT * FROM invoices WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC');
         
-        // إعادة حساب الوزن الإجمالي لكل فاتورة محذوفة باستخدام الصيغة المطلوبة
+        // إعادة حساب الوزن الإجمالي لكل طلبية شحن محذوفة باستخدام الصيغة المطلوبة
         for (let invoice of deletedInvoices) {
-            // جلب عناصر الفاتورة مع بيانات المخزون
+            // جلب عناصر طلب الشحن مع بيانات المخزون
             const [items] = await pool.query(`
                 SELECT ii.quantity, inv.net_weight_total, inv.base_quantity
                 FROM invoice_items ii
@@ -965,11 +965,11 @@ exports.getDeletedInvoices = async (req, res) => {
         res.render('invoices/deleted', { deletedInvoices, user: req.session.user });
     } catch (error) {
         console.error('Error fetching deleted invoices:', error);
-        res.status(500).render('error', { message: 'حدث خطأ أثناء جلب الفواتير المحذوفة', error });
+        res.status(500).render('error', { message: 'حدث خطأ أثناء جلب طلبات  الشحن المحذوفة', error });
     }
 };
 
-// استعادة فاتورة واحدة
+// استعادة طلبية شحن واحدة
 exports.restoreInvoice = async (req, res) => {
     const connection = await pool.getConnection();
     try {
@@ -981,7 +981,7 @@ exports.restoreInvoice = async (req, res) => {
         
         const { id } = req.params;
         
-        // التحقق من وجود الفاتورة المحذوفة
+        // التحقق من وجود طلب الشحن المحذوفة
         const [invoice] = await connection.query(
             'SELECT * FROM invoices WHERE id = ? AND deleted_at IS NOT NULL', 
             [id]
@@ -990,11 +990,11 @@ exports.restoreInvoice = async (req, res) => {
         if (!invoice || invoice.length === 0) {
             return res.status(404).json({ 
                 success: false, 
-                message: 'الفاتورة غير موجودة أو غير محذوفة' 
+                message: 'طلب الشحن غير موجودة أو غير محذوفة' 
             });
         }
 
-        // جلب عناصر الفاتورة
+        // جلب عناصر طلب الشحن
         const [items] = await connection.query(
             'SELECT inventory_id, quantity FROM invoice_items WHERE invoice_id = ?', 
             [id]
@@ -1018,7 +1018,7 @@ exports.restoreInvoice = async (req, res) => {
                     // هنا فقط إذا الطلب أكبر من المتوفر
                     return res.status(400).json({
                       success: false,
-                      message: `لا يمكن استعادة الفاتورة رقم ${invoice[0].invoice_number}: 
+                      message: `لا يمكن استعادة طلب الشحن رقم ${invoice[0].invoice_number}: 
                         الكمية المتوفرة من العينة ${inventoryItem.sample_number} (${availableQuantity.toFixed(2)}) 
                         أقل من الكمية المطلوبة (${requestedQuantity.toFixed(2)})`
                     });
@@ -1034,11 +1034,11 @@ exports.restoreInvoice = async (req, res) => {
             // إذا لم توجد العينة (محذوفة ناعماً)، نتجاهل تحديث المخزون
         }
 
-        // إزالة deleted_at من الفاتورة
+        // إزالة deleted_at من طلب الشحن
         await connection.query('UPDATE invoices SET deleted_at = NULL WHERE id = ?', [id]);
         
         await connection.commit();
-        res.json({ success: true, message: 'تم استعادة الفاتورة بنجاح' });
+        res.json({ success: true, message: 'تم استعادة طلب الشحن بنجاح' });
     } catch (error) {
         try {
             await connection.rollback();
@@ -1047,7 +1047,7 @@ exports.restoreInvoice = async (req, res) => {
         }
         
         console.error('Error restoring invoice:', error);
-        res.status(500).json({ success: false, message: 'حدث خطأ أثناء استعادة الفاتورة' });
+        res.status(500).json({ success: false, message: 'حدث خطأ أثناء استعادة طلب الشحن' });
     } finally {
         // ضمان إغلاق الاتصال
         try {
@@ -1070,10 +1070,10 @@ exports.restoreMultiple = async (req, res) => {
         
         const { ids } = req.body;
         if (!ids || !Array.isArray(ids) || ids.length === 0) {
-            return res.status(400).json({ success: false, message: 'يرجى اختيار فاتورة واحدة على الأقل' });
+            return res.status(400).json({ success: false, message: 'يرجى اختيار طلبية شحن واحدة على الأقل' });
         }
 
-        // التحقق من وجود الفواتير المحذوفة
+        // التحقق من وجود طلبات  الشحن المحذوفة
         const [invoices] = await connection.query(
             'SELECT id, invoice_number FROM invoices WHERE id IN (?) AND deleted_at IS NOT NULL', 
             [ids]
@@ -1086,9 +1086,9 @@ exports.restoreMultiple = async (req, res) => {
             });
         }
 
-        // التحقق من توفر الكميات في المخزون لجميع الفواتير
+        // التحقق من توفر الكميات في المخزون لجميع طلبات  الشحن
         for (const invoice of invoices) {
-            // جلب عناصر الفاتورة
+            // جلب عناصر طلب الشحن
             const [items] = await connection.query(
                 'SELECT inventory_id, quantity FROM invoice_items WHERE invoice_id = ?', 
                 [invoice.id]
@@ -1109,7 +1109,7 @@ exports.restoreMultiple = async (req, res) => {
                         await connection.rollback();
                         return res.status(400).json({
                             success: false,
-                            message: `لا يمكن استعادة الفاتورة رقم ${invoice.invoice_number}: الكمية المتوفرة من العينة ${inventoryItem.sample_number} (${inventoryItem.current_quantity}) أقل من الكمية المطلوبة (${item.quantity})`
+                            message: `لا يمكن استعادة طلب الشحن رقم ${invoice.invoice_number}: الكمية المتوفرة من العينة ${inventoryItem.sample_number} (${inventoryItem.current_quantity}) أقل من الكمية المطلوبة (${item.quantity})`
                         });
                     }
                 }
@@ -1119,7 +1119,7 @@ exports.restoreMultiple = async (req, res) => {
 
         // إذا وصلنا هنا، جميع الكميات متوفرة - نقوم بالخصم والاستعادة
         for (const invoice of invoices) {
-            // جلب عناصر الفاتورة مرة أخرى للخصم
+            // جلب عناصر طلب الشحن مرة أخرى للخصم
             const [items] = await connection.query(
                 'SELECT inventory_id, quantity FROM invoice_items WHERE invoice_id = ?', 
                 [invoice.id]
@@ -1142,12 +1142,12 @@ exports.restoreMultiple = async (req, res) => {
                 // إذا لم توجد العينة (محذوفة ناعماً)، نتجاهل تحديث المخزون
             }
 
-            // إزالة deleted_at من الفاتورة
+            // إزالة deleted_at من طلب الشحن
             await connection.query('UPDATE invoices SET deleted_at = NULL WHERE id = ?', [invoice.id]);
         }
         
         await connection.commit();
-        res.json({ success: true, message: 'تم استعادة الفواتير بنجاح' });
+        res.json({ success: true, message: 'تم استعادة طلبات  الشحن بنجاح' });
     } catch (error) {
         try {
             await connection.rollback();
@@ -1156,7 +1156,7 @@ exports.restoreMultiple = async (req, res) => {
         }
         
         console.error('Error restoring invoices:', error);
-        res.status(500).json({ success: false, message: 'حدث خطأ أثناء استعادة الفواتير' });
+        res.status(500).json({ success: false, message: 'حدث خطأ أثناء استعادة طلبات  الشحن' });
     } finally {
         // ضمان إغلاق الاتصال
         try {
@@ -1177,23 +1177,23 @@ exports.emptyTrash = async (req, res) => {
         
         await connection.beginTransaction();
         
-        // جلب كل الفواتير المحذوفة
+        // جلب كل طلبات  الشحن المحذوفة
         const [invoices] = await connection.query('SELECT id FROM invoices WHERE deleted_at IS NOT NULL');
         let totalProcessed = 0;
         
-        // الكميات قد عادت بالفعل للمخزون عند نقل الفواتير إلى سلة المحذوفات
+        // الكميات قد عادت بالفعل للمخزون عند نقل طلبات  الشحن إلى سلة المحذوفات
         // لذلك لا نحتاج لإعادتها مرة ثانية هنا
         
         totalProcessed = invoices.length;
         
-        // حذف عناصر الفواتير المحذوفة أولاً (العلاقة الفرعية)
+        // حذف عناصر طلبات  الشحن المحذوفة أولاً (العلاقة الفرعية)
         await connection.query('DELETE FROM invoice_items WHERE invoice_id IN (SELECT id FROM invoices WHERE deleted_at IS NOT NULL)');
         
-        // ثم حذف الفواتير المحذوفة نهائياً
+        // ثم حذف طلبات  الشحن المحذوفة نهائياً
         await connection.query('DELETE FROM invoices WHERE deleted_at IS NOT NULL');
         
         await connection.commit();
-        res.json({ success: true, message: `تم تفريغ سلة المحذوفات (${totalProcessed} فاتورة)` });
+        res.json({ success: true, message: `تم تفريغ سلة المحذوفات (${totalProcessed} طلبية شحن)` });
     } catch (error) {
         try {
             await connection.rollback();
@@ -1225,12 +1225,12 @@ exports.deleteMultiple = async (req, res) => {
         
         const { ids } = req.body;
         if (!ids || !Array.isArray(ids) || ids.length === 0) {
-            return res.status(400).json({ success: false, message: 'يرجى اختيار فاتورة واحدة على الأقل' });
+            return res.status(400).json({ success: false, message: 'يرجى اختيار طلبية شحن واحدة على الأقل' });
         }
 
         // إرجاع كميات العينات إلى المخزون قبل الحذف النهائي
         for (const invoiceId of ids) {
-            // جلب عناصر الفاتورة
+            // جلب عناصر طلب الشحن
             const [items] = await connection.query(
                 'SELECT inventory_id, quantity FROM invoice_items WHERE invoice_id = ?', 
                 [invoiceId]
@@ -1254,14 +1254,14 @@ exports.deleteMultiple = async (req, res) => {
             }
         }
 
-        // حذف عناصر الفواتير أولاً (العلاقة الفرعية)
+        // حذف عناصر طلبات  الشحن أولاً (العلاقة الفرعية)
         await connection.query('DELETE FROM invoice_items WHERE invoice_id IN (?)', [ids]);
         
-        // ثم حذف الفواتير نهائياً
+        // ثم حذف طلبات  الشحن نهائياً
         await connection.query('DELETE FROM invoices WHERE id IN (?)', [ids]);
         
         await connection.commit();
-        res.json({ success: true, message: 'تم حذف الفواتير المحددة نهائياً' });
+        res.json({ success: true, message: 'تم حذف طلبات  الشحن المحددة نهائياً' });
     } catch (error) {
         try {
             await connection.rollback();

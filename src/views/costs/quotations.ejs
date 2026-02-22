@@ -56,6 +56,14 @@
                                 <label class="form-label">العنوان</label>
                                 <textarea class="form-control" name="client_address" rows="2"></textarea>
                             </div>
+                            <div class="col-md-6">
+                                <label class="form-label">صفة البيع</label>
+                                <input type="text" class="form-control" name="sale_description">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">طريقة الدفع</label>
+                                <input type="text" class="form-control" name="payment_method">
+                            </div>
                             <div class="col-md-12">
                                 <label class="form-label">ملاحظات</label>
                                 <textarea class="form-control" name="notes" rows="2"></textarea>
@@ -148,10 +156,10 @@
                                             <a href="/costs/quotations/<%= quotation.id %>" class="btn btn-sm btn-info" title="معاينة">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <button type="button" class="btn btn-sm btn-primary" onclick="openEditQuotationModal(<%= quotation.id %>)" title="تعديل">
+                                            <button type="button" class="btn btn-sm btn-primary" data-quotation-id="<%= quotation.id %>" onclick="openEditQuotationModal(Number(this.dataset.quotationId))" title="تعديل">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-danger" onclick="deleteQuotation(<%= quotation.id %>)">
+                                            <button type="button" class="btn btn-sm btn-danger" data-quotation-id="<%= quotation.id %>" onclick="deleteQuotation(Number(this.dataset.quotationId))">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </div>
@@ -203,6 +211,14 @@
               <label class="form-label">العنوان</label>
               <textarea class="form-control" id="editClientAddress" rows="2"></textarea>
             </div>
+            <div class="col-md-6">
+              <label class="form-label">صفة البيع</label>
+              <input type="text" class="form-control" id="editSaleDescription">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">طريقة الدفع</label>
+              <input type="text" class="form-control" id="editPaymentMethod">
+            </div>
             <div class="col-12">
               <label class="form-label">ملاحظات</label>
               <textarea class="form-control" id="editNotes" rows="2"></textarea>
@@ -225,13 +241,14 @@
                   <th style="width: 12%;">السعر النهائي</th>
                   <th style="width: 8%;">الكمية</th>
                   <th style="width: 12%;">المجموع</th>
-                  <th style="width: 14%;">الإجراءات</th>
+                  <th style="width: 10%;">ملاحظات</th>
+                  <th style="width: 10%;">الإجراءات</th>
                 </tr>
               </thead>
               <tbody id="editItemsBody"></tbody>
               <tfoot>
                 <tr class="table-info">
-                  <td colspan="5" class="text-end"><strong>المجموع الإجمالي:</strong></td>
+                  <td colspan="6" class="text-end"><strong>المجموع الإجمالي:</strong></td>
                   <td>
                     <strong id="editTotalAmount">0.00 <%= defaultCurrency ? defaultCurrency.symbol : '$' %></strong>
                   </td>
@@ -249,6 +266,13 @@
         </div>
     </div>
 </div>
+
+<script id="quotations-page-data" type="application/json"><%- JSON.stringify({
+    exchangeRate: exchangeRate,
+    defaultCurrencyCode: (defaultCurrency ? defaultCurrency.code : 'USD'),
+    currencySymbol: (defaultCurrency ? defaultCurrency.symbol : '$'),
+    materials: (materials || [])
+}) %></script>
 
 <script>
 // تحسين إمكانية الوصول للمودالات
@@ -342,8 +366,11 @@ function removeStuckBackdrop() {
     document.body.style.paddingRight = '';
 }
 
-const exchangeRate = <%= exchangeRate %>;
-const defaultCurrencyCode = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
+const pageDataElement = document.getElementById('quotations-page-data');
+const pageData = pageDataElement ? JSON.parse(pageDataElement.textContent || '{}') : {};
+const exchangeRate = parseFloat(pageData.exchangeRate) || 0;
+const defaultCurrencyCode = pageData.defaultCurrencyCode || 'USD';
+const currencySymbol = pageData.currencySymbol || '$';
 const formatUSD = (v) => (parseFloat(v) || 0).toFixed(2);
 const formatSYP = (v) => String(Math.round(parseFloat(v) || 0));
 const displayMoney = (v) => {
@@ -356,9 +383,19 @@ const roundToDecimal = (value, decimals = 2) => {
   return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
 };
 // المواد المتاحة
-const materials = <%- JSON.stringify(materials || []) %>;
+const materials = Array.isArray(pageData.materials) ? pageData.materials : [];
+const groupedMaterials = (() => {
+  const byName = new Map();
+  materials.forEach((m) => {
+    const key = (m && m.material_name ? String(m.material_name) : '').trim();
+    if (!key) return;
+    if (!byName.has(key)) byName.set(key, m);
+  });
+  return Array.from(byName.values());
+})();
 let materialRows = [];
 let nextRowId = 0;
+let nextEditRowId = 0;
 
 // إضافة صف مادة جديد
 function addMaterialRow() {
@@ -509,7 +546,7 @@ function calculateTotalAmount() {
     const total = roundToDecimal(Object.values(materialRows).reduce((sum, row) => {
         return row ? sum + (row.totalPrice || 0) : sum;
     }, 0), defaultCurrencyCode === 'SYP' ? 0 : 2);
-    document.getElementById('totalAmount').textContent = displayMoney(total) + ' <%= defaultCurrency ? defaultCurrency.symbol : "$" %>';
+    document.getElementById('totalAmount').textContent = displayMoney(total) + ` ${currencySymbol}`;
 }
 // فتح مودال تعديل
 function openEditQuotationModal(id) {
@@ -521,11 +558,19 @@ function openEditQuotationModal(id) {
     document.getElementById('editClientName').value = q.client_name||'';
     document.getElementById('editClientPhone').value = q.client_phone||'';
     document.getElementById('editClientAddress').value = q.client_address||'';
+    document.getElementById('editSaleDescription').value = q.sale_description||'';
+    document.getElementById('editPaymentMethod').value = q.payment_method||'';
     document.getElementById('editNotes').value = q.notes||'';
     const tbody = document.getElementById('editItemsBody');
     tbody.innerHTML = '';
     items.forEach((it, idx)=>{
       const tr = document.createElement('tr');
+      const itemNotesEscaped = (it.item_notes || '')
+        .toString()
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
       
       // استخدام القيم المحفوظة مباشرة بدلاً من إعادة حسابها
       let finalPrice, totalPrice;
@@ -554,6 +599,7 @@ function openEditQuotationModal(id) {
         <td>
           <input type="number" class="form-control edit-total" value="${totalPrice}" readonly>
         </td>
+        <td><input type="text" class="form-control edit-notes" value="${itemNotesEscaped}" placeholder="ملاحظات"></td>
         <td><button type="button" class="btn btn-sm btn-danger" onclick="removeEditMaterialRow(this)"><i class="bi bi-trash"></i></button></td>`;
       
       // إضافة data attributes للبيانات المحفوظة
@@ -625,20 +671,17 @@ function manualEditFinalPriceChange(inputEl){
 function addEditMaterialRow(){
   const tbody = document.getElementById('editItemsBody');
   const tr = document.createElement('tr');
-  const materialOptions = materials.map(m => `<option value="${m.id}"
-    data-pkg="${m.package_cost}"
-    data-type="${m.material_type||''}"
-    data-unit="${m.packaging_unit||''}"
-    data-weight="${m.packaging_weight||0}"
-    data-pieces="${m.pieces_per_package||1}">
-    ${m.material_name}
-  </option>`).join('');
+  const rowId = nextEditRowId++;
+  tr.setAttribute('data-row-id', rowId);
   tr.innerHTML = `
     <td style="width: 30%; min-width: 250px;">
-      <select class="form-select edit-material-select" onchange="onSelectEditMaterial(this)" style="width: 100%;">
-        <option value="">اختر المادة</option>
-        ${materialOptions}
-      </select>
+      <div class="d-flex align-items-center gap-2">
+        <input type="text" class="form-control edit-selected-material-name" placeholder="لم يتم اختيار مادة" readonly>
+        <input type="hidden" class="edit-material-id">
+        <button type="button" class="btn btn-outline-primary btn-sm" onclick="openMaterialPicker(${rowId}, 'edit')">
+          <i class="bi bi-search"></i> اختر
+        </button>
+      </div>
     </td>
     <td>
       <input type="number" class="form-control edit-unit-cost" readonly>
@@ -655,6 +698,28 @@ function addEditMaterialRow(){
     <td><button type="button" class="btn btn-sm btn-danger" onclick="removeEditMaterialRow(this)"><i class="bi bi-trash"></i></button></td>
   `;
   tbody.appendChild(tr);
+}
+
+function updateEditMaterialData(rowId, materialId){
+  const material = materials.find(m => m.id == materialId);
+  if (!material) return;
+  const tr = document.querySelector(`#editItemsBody tr[data-row-id="${rowId}"]`);
+  if (!tr) return;
+
+  const hiddenId = tr.querySelector('.edit-material-id');
+  const nameInput = tr.querySelector('.edit-selected-material-name');
+  const unitInput = tr.querySelector('.edit-unit-cost');
+
+  if (hiddenId) hiddenId.value = material.id;
+  if (nameInput) nameInput.value = material.material_name || '';
+  if (unitInput) unitInput.value = displayMoney(material.package_cost);
+
+  tr.setAttribute('data-material-type', material.material_type || '');
+  tr.setAttribute('data-packaging-unit', material.packaging_unit || '');
+  tr.setAttribute('data-packaging-weight', material.packaging_weight || '0');
+  tr.setAttribute('data-pieces-per-package', material.pieces_per_package || '1');
+
+  recalcEditRow(tr.querySelector('.edit-profit'));
 }
 
 function onSelectEditMaterial(selectEl){
@@ -696,7 +761,7 @@ function updateEditTotal(){
   });
   
   const total = roundToDecimal(sum, defaultCurrencyCode === 'SYP' ? 0 : 2);
-  document.getElementById('editTotalAmount').textContent = total + ' <%= defaultCurrency ? defaultCurrency.symbol : "$" %>';
+  document.getElementById('editTotalAmount').textContent = `${total} ${currencySymbol}`;
 }
 
 function saveEditQuotation(){
@@ -705,6 +770,8 @@ function saveEditQuotation(){
     client_name: document.getElementById('editClientName').value,
     client_phone: document.getElementById('editClientPhone').value,
     client_address: document.getElementById('editClientAddress').value,
+    sale_description: document.getElementById('editSaleDescription').value,
+    payment_method: document.getElementById('editPaymentMethod').value,
     notes: document.getElementById('editNotes').value,
     currency: defaultCurrencyCode, // إرسال العملة الحالية
     items: []
@@ -713,6 +780,7 @@ function saveEditQuotation(){
     // استخراج اسم المادة ومعرّفها من الصف
     const select = tr.querySelector('.edit-material-select');
     const hiddenId = tr.querySelector('.edit-material-id');
+    const selectedNameInput = tr.querySelector('.edit-selected-material-name');
     let materialId = null;
     let name = '';
     if (select) {
@@ -720,7 +788,7 @@ function saveEditQuotation(){
       name = (select.selectedOptions[0]?.textContent || '').trim();
     } else {
       materialId = hiddenId && hiddenId.value ? parseInt(hiddenId.value) : null;
-      name = (tr.children[0].childNodes[0]?.textContent || tr.children[0].textContent || '').trim();
+      name = (selectedNameInput?.value || tr.children[0].textContent || '').trim();
     }
     const unitCost = parseFloat(tr.querySelector('.edit-unit-cost').value)||0;
     const profit = parseFloat(tr.querySelector('.edit-profit').value)||0;
@@ -825,6 +893,8 @@ document.getElementById('quotationForm').addEventListener('submit', function(e) 
             client_name: formData.get('client_name'),
             client_phone: formData.get('client_phone'),
             client_address: formData.get('client_address'),
+            sale_description: formData.get('sale_description'),
+            payment_method: formData.get('payment_method'),
             notes: formData.get('notes'),
             general_profit_percentage: formData.get('general_profit_percentage'),
             currency: defaultCurrencyCode, // إرسال العملة المختارة
@@ -917,11 +987,6 @@ document.addEventListener('DOMContentLoaded', function() {
 .btn:focus {
     box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
     border-color: #86b7fe;
-}
-
-/* منع Bootstrap من إضافة aria-hidden */
-.modal[aria-hidden] {
-    aria-hidden: unset !important;
 }
 
 /* تحسين التركيز للمودالات */
@@ -1185,8 +1250,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
 let currentPickerRowId = null;
-function openMaterialPicker(rowId){
+let currentPickerMode = 'create';
+function openMaterialPicker(rowId, mode = 'create'){
   currentPickerRowId = rowId;
+  currentPickerMode = mode === 'edit' ? 'edit' : 'create';
   buildMaterialsPickerTable();
   const modal = new bootstrap.Modal(document.getElementById('selectMaterialModal'));
   modal.show();
@@ -1195,38 +1262,55 @@ function openMaterialPicker(rowId){
 function buildMaterialsPickerTable(){
   const tbody = document.getElementById('materialsPickerBody');
   if (!tbody) return;
-  const rowsHtml = (materials || []).map(m => {
-    const pkg = displayMoney(m.package_cost);
-    return `
-      <tr>
-        <td class="pick-name">${m.material_name}</td>
-        <td class="pick-type">${m.material_type || ''}</td>
-        <td>${m.packaging_unit || ''}</td>
-        <td>${pkg} <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td>
-        <td>
-          <button type="button" class="btn btn-sm btn-success" onclick="selectMaterial(${m.id})">
-            <i class="bi bi-plus-circle"></i>
-          </button>
-        </td>
-      </tr>`;
-  }).join('');
-  tbody.innerHTML = rowsHtml;
+  renderMaterialsPickerRows(materials || []);
   wireMaterialSearch();
+}
+
+function renderMaterialsPickerRows(sourceRows){
+  const tbody = document.getElementById('materialsPickerBody');
+  if (!tbody) return;
+  const rows = Array.isArray(sourceRows) ? sourceRows : [];
+  const grouped = new Map();
+  rows.forEach((m) => {
+    const key = (m && m.material_name ? String(m.material_name) : '').trim() || '-';
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key).push(m);
+  });
+  let rowsHtml = '';
+  Array.from(grouped.values()).forEach((group) => {
+    group.forEach((m, indexInGroup) => {
+      const pkg = displayMoney(m.package_cost);
+      rowsHtml += `
+        <tr>
+          ${indexInGroup === 0 ? `<td class="pick-name" rowspan="${group.length}">${m.material_name || '-'}</td>` : ''}
+          <td class="pick-type">${m.material_type || ''}</td>
+          <td>${m.packaging_unit || ''}</td>
+          <td>${pkg} ${currencySymbol}</td>
+          <td>
+            <button type="button" class="btn btn-sm btn-success" onclick="selectMaterial(${m.id})">
+              <i class="bi bi-plus-circle"></i>
+            </button>
+          </td>
+        </tr>`;
+    });
+  });
+  tbody.innerHTML = rowsHtml;
 }
 
 function wireMaterialSearch(){
   const input = document.getElementById('materialSearchInput');
   const clearBtn = document.getElementById('clearMaterialSearchBtn');
-  const tbody = document.getElementById('materialsPickerBody');
-  if (!input || !tbody) return;
+  if (!input) return;
   const filter = () => {
     const q = (input.value || '').toLowerCase().trim();
-    Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
-      const name = (tr.querySelector('.pick-name')?.textContent || '').toLowerCase();
-      const type = (tr.querySelector('.pick-type')?.textContent || '').toLowerCase();
-      const ok = !q || name.includes(q) || type.includes(q);
-      tr.style.display = ok ? '' : 'none';
-    });
+    const filtered = !q
+      ? (materials || [])
+      : (materials || []).filter((m) => {
+          const name = (m?.material_name || '').toLowerCase();
+          const type = (m?.material_type || '').toLowerCase();
+          return name.includes(q) || type.includes(q);
+        });
+    renderMaterialsPickerRows(filtered);
     if (clearBtn) clearBtn.style.display = q ? '' : 'none';
   };
   input.removeEventListener('input', input._matFilter);
@@ -1240,12 +1324,16 @@ function wireMaterialSearch(){
 
 function selectMaterial(materialId){
   if (currentPickerRowId == null) return;
-  updateMaterialData(currentPickerRowId, materialId);
-  const tr = document.querySelector(`#materialsTableBody tr[data-row-id="${currentPickerRowId}"]`);
-  const mat = materials.find(m => m.id == materialId);
-  if (tr && mat){
-    const nameInput = tr.querySelector('.selected-material-name');
-    if (nameInput) nameInput.value = mat.material_name;
+  if (currentPickerMode === 'edit') {
+    updateEditMaterialData(currentPickerRowId, materialId);
+  } else {
+    updateMaterialData(currentPickerRowId, materialId);
+    const tr = document.querySelector(`#materialsTableBody tr[data-row-id="${currentPickerRowId}"]`);
+    const mat = materials.find(m => m.id == materialId);
+    if (tr && mat){
+      const nameInput = tr.querySelector('.selected-material-name');
+      if (nameInput) nameInput.value = mat.material_name;
+    }
   }
   const modalEl = document.getElementById('selectMaterialModal');
   const modal = bootstrap.Modal.getInstance(modalEl);
