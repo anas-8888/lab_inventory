@@ -1,5 +1,10 @@
 <% function fmtDate(d){ if(!d) return '-'; const dt=new Date(d); const dd=String(dt.getDate()).padStart(2,'0'); const mm=String(dt.getMonth()+1).padStart(2,'0'); const yy=dt.getFullYear(); return `${dd}/${mm}/${yy}`; }
-function num(v, d=2){ const n=parseFloat(v); if(isNaN(n)) return '-'; return Number.isInteger(n)? String(n): n.toFixed(d); }
+function num(v, d=2){
+  if (typeof v === 'string' && /^-?\d+(\.\d+)?$/.test(v.trim())) return v.trim();
+  const n=parseFloat(v);
+  if(isNaN(n)) return '-';
+  return Number.isInteger(n)? String(n): n.toString();
+}
 const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '';
 %>
 <div class="container-fluid" style="direction: rtl; font-family: 'Cairo','Amiri',sans-serif;">
@@ -83,8 +88,8 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
               <td style="padding: 6pt 4pt;"><%= m.packaging_unit || '-' %></td>
               <td class="nowrap-value" style="padding: 6pt 4pt;"><%= num(m.unit_cost, (currencySymbol==='SYP'?0:2)) %> <%= currencySymbol %></td>
               <td class="nowrap-value" style="padding: 6pt 4pt;"><%= num(m.package_cost, (currencySymbol==='SYP'?0:2)) %> <%= currencySymbol %></td>
-              <td class="nowrap-value" style="padding: 6pt 4pt;"><%= (m.gross_package_weight!=null)? Number(m.gross_package_weight).toFixed(3): '-' %> كجم</td>
-              <td class="nowrap-value" style="padding: 6pt 4pt;"><%= (!isNaN(netW)) ? netW.toFixed(3) : '-' %> كجم</td>
+              <td class="nowrap-value" style="padding: 6pt 4pt;"><%= (m.gross_package_weight!=null)? num(m.gross_package_weight, 3): '-' %> كجم</td>
+              <td class="nowrap-value" style="padding: 6pt 4pt;"><%= (m.packaging_weight!=null) ? num(m.packaging_weight, 3) : '-' %> كجم</td>
               <td style="padding: 6pt 4pt;"><%= (m.pieces_per_package!=null)? Number(m.pieces_per_package): '-' %></td>
               <td class="nowrap-value" style="padding: 6pt 4pt;">
                 <%= (costPerKg!=null) ? ((currencySymbol==='SYP')? String(Math.round(costPerKg)) : costPerKg.toFixed(2)) : '-' %>

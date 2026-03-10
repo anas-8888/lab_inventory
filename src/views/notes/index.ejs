@@ -40,8 +40,8 @@
                 <td>
                   <div class="btn-group">
                     <a href="/notes/<%= n.id %>" class="btn btn-sm btn-secondary" title="عرض"><i class="bi bi-eye"></i></a>
-                    <button type="button" class="btn btn-sm btn-info" onclick="openEditModal(<%= n.id %>)" title="تعديل"><i class="bi bi-pencil"></i></button>
-                    <button type="button" class="btn btn-sm btn-danger" onclick="deleteNote(<%= n.id %>)" title="حذف"><i class="bi bi-trash"></i></button>
+                    <button type="button" class="btn btn-sm btn-info" data-note-id="<%= n.id %>" onclick="openEditModal(Number(this.dataset.noteId))" title="تعديل"><i class="bi bi-pencil"></i></button>
+                    <button type="button" class="btn btn-sm btn-danger" data-note-id="<%= n.id %>" onclick="deleteNote(Number(this.dataset.noteId))" title="حذف"><i class="bi bi-trash"></i></button>
                   </div>
                 </td>
               </tr>
@@ -112,11 +112,11 @@
               </div>
               <div class="col-md-3">
                 <label class="form-label">السعر</label>
-                <input type="number" step="0.01" class="form-control" name="price" id="editPrice">
+                <input type="text" inputmode="decimal" class="form-control" name="price" id="editPrice">
               </div>
               <div class="col-md-3">
                 <label class="form-label">الوزن (كغ)</label>
-                <input type="number" step="0.001" class="form-control" name="weight" id="editWeight">
+                <input type="text" inputmode="decimal" class="form-control" name="weight" id="editWeight">
               </div>
               
               <div class="col-12">

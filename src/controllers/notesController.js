@@ -1,3 +1,17 @@
+﻿const { buildRawNumericMap, parseRawNumericMap, rawOrValue } = require('../utils/rawNumbers');
+
+const NOTE_RAW_FIELDS = ['price', 'weight'];
+
+function applyNoteRaw(note) {
+  if (!note || typeof note !== 'object') return note;
+  const rawMap = parseRawNumericMap(note.numeric_raw);
+  return {
+    ...note,
+    price: rawOrValue(rawMap, 'price', note.price),
+    weight: rawOrValue(rawMap, 'weight', note.weight),
+  };
+}
+
 const listNotes = async (req, res) => {
   try {
     const [rows] = await req.db.query(`
@@ -8,7 +22,8 @@ const listNotes = async (req, res) => {
         n.price,
         n.weight,
         n.note_text,
-        DATE_FORMAT(n.note_date, '%Y-%m-%d') AS note_date
+        DATE_FORMAT(n.note_date, '%Y-%m-%d') AS note_date,
+        n.numeric_raw
       FROM notes n
       LEFT JOIN materials m ON m.id = n.material_id
       ORDER BY n.note_date DESC, n.id DESC
@@ -19,7 +34,7 @@ const listNotes = async (req, res) => {
 
     res.render('notes/index', {
       title: 'الملاحظات',
-      notes: rows,
+      notes: rows.map(applyNoteRaw),
       materials
     });
   } catch (err) {
@@ -40,7 +55,8 @@ const viewNote = async (req, res) => {
         n.price,
         n.weight,
         n.note_text,
-        DATE_FORMAT(n.note_date, '%d/%m/%Y') AS note_date_fmt
+        DATE_FORMAT(n.note_date, '%d/%m/%Y') AS note_date_fmt,
+        n.numeric_raw
       FROM notes n
       LEFT JOIN materials m ON m.id = n.material_id
       WHERE n.id = ?
@@ -49,10 +65,11 @@ const viewNote = async (req, res) => {
       req.flash('error_msg', 'الملاحظة غير موجودة');
       return res.redirect('/notes');
     }
+    const note = applyNoteRaw(rows[0]);
     if (req.headers.accept && req.headers.accept.includes('application/json')) {
-      return res.json({ success: true, note: rows[0] });
+      return res.json({ success: true, note });
     }
-    res.render('notes/show', { title: 'عرض ملاحظة', note: rows[0] });
+    res.render('notes/show', { title: 'عرض ملاحظة', note });
   } catch (err) {
     console.error('viewNote error:', err);
     req.flash('error_msg', 'حدث خطأ في عرض الملاحظة');
@@ -65,7 +82,8 @@ const createNote = async (req, res) => {
     const { material_id, material_name, price, weight, note_text } = req.body;
     const parsedPrice = (price !== undefined && price !== '') ? parseFloat(price) : null;
     const parsedWeight = (weight !== undefined && weight !== '') ? parseFloat(weight) : null;
-    // material_id اختياري، وإذا لم يُرسل أو غير صالح نتركه NULL
+    const noteRawMap = buildRawNumericMap(req.body, NOTE_RAW_FIELDS);
+
     let materialIdForInsert = null;
     if (material_id !== undefined && material_id !== '') {
       const maybeId = parseInt(material_id);
@@ -76,9 +94,16 @@ const createNote = async (req, res) => {
     }
 
     await req.db.query(`
-      INSERT INTO notes (material_id, material_name, price, weight, note_date, note_text)
-      VALUES (?, ?, ?, ?, NOW(), ?)
-    `, [materialIdForInsert, (material_name || null), parsedPrice, parsedWeight, note_text || null]);
+      INSERT INTO notes (material_id, material_name, price, weight, note_date, note_text, numeric_raw)
+      VALUES (?, ?, ?, ?, NOW(), ?, ?)
+    `, [
+      materialIdForInsert,
+      (material_name || null),
+      parsedPrice,
+      parsedWeight,
+      note_text || null,
+      JSON.stringify(noteRawMap)
+    ]);
 
     res.json({ success: true });
   } catch (err) {
@@ -93,6 +118,8 @@ const updateNote = async (req, res) => {
     const { material_id, material_name, price, weight, note_text } = req.body;
     const parsedPrice = (price !== undefined && price !== '') ? parseFloat(price) : null;
     const parsedWeight = (weight !== undefined && weight !== '') ? parseFloat(weight) : null;
+    const noteRawMap = buildRawNumericMap(req.body, NOTE_RAW_FIELDS);
+
     let materialIdForUpdate = null;
     if (material_id !== undefined && material_id !== '') {
       const maybeId = parseInt(material_id);
@@ -104,9 +131,17 @@ const updateNote = async (req, res) => {
 
     await req.db.query(`
       UPDATE notes 
-      SET material_id = ?, material_name = ?, price = ?, weight = ?, note_date = NOW(), note_text = ?
+      SET material_id = ?, material_name = ?, price = ?, weight = ?, note_date = NOW(), note_text = ?, numeric_raw = ?
       WHERE id = ?
-    `, [materialIdForUpdate, (material_name || null), parsedPrice, parsedWeight, note_text || null, id]);
+    `, [
+      materialIdForUpdate,
+      (material_name || null),
+      parsedPrice,
+      parsedWeight,
+      note_text || null,
+      JSON.stringify(noteRawMap),
+      id
+    ]);
 
     res.json({ success: true });
   } catch (err) {
@@ -133,4 +168,3 @@ module.exports = {
   updateNote,
   deleteNote,
 };
-

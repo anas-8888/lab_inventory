@@ -1,6 +1,7 @@
 <%
 function formatNumberDisplay(value) {
     if (value === null || value === undefined || value === '') return '-';
+    if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
 
     const num = parseFloat(value);
     if (isNaN(num)) return '-';
@@ -18,7 +19,7 @@ function formatNumberDisplay(value) {
         } else if (decimalStr.length <= 2) {
             result = num.toString();
         } else {
-            result = num.toFixed(3);
+            result = num.toString();
         }
     }
 
@@ -28,6 +29,12 @@ function formatNumberDisplay(value) {
     }
 
     return result;
+}
+
+function formatWeightedAverage(value) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return '0.000';
+    return num.toFixed(3);
 }
 %>
     <div class="container-fluid mt-4">
@@ -189,19 +196,19 @@ function formatNumberDisplay(value) {
                                                 <%= formatNumberDisplay(item.packaging_weight) %>
                                             </td>
                                             <td style="padding: 4pt;">
-                                                <%= parseFloat(item.abs_232).toFixed(3) == NaN ? '' : parseFloat(item.abs_232).toFixed(3) %>
+                                                <%= formatNumberDisplay(item.abs_232) %>
                                             </td>
                                             <td style="padding: 4pt;">
-                                                <%= parseFloat(item.abs_266).toFixed(3) == NaN ? '' : parseFloat(item.abs_266).toFixed(3) %>
+                                                <%= formatNumberDisplay(item.abs_266) %>
                                             </td>
                                             <td style="padding: 4pt;">
-                                                <%= parseFloat(item.abs_270).toFixed(3) == NaN ? '' : parseFloat(item.abs_270).toFixed(3) %>
+                                                <%= formatNumberDisplay(item.abs_270) %>
                                             </td>
                                             <td style="padding: 4pt;">
-                                                <%= parseFloat(item.abs_274).toFixed(3) == NaN ? '' : parseFloat(item.abs_274).toFixed(3) %>
+                                                <%= formatNumberDisplay(item.abs_274) %>
                                             </td>
                                             <td style="padding: 4pt;">
-                                                <%= parseFloat(item.delta_k) == NaN ? '' : parseFloat(item.delta_k).toFixed(3) %>
+                                                <%= formatNumberDisplay(item.delta_k) %>
                                             </td>
                                             <td style="padding: 4pt;">
                                                 <%= formatNumberDisplay(item.stigmastadiene) %>
@@ -226,15 +233,15 @@ function formatNumberDisplay(value) {
                                         <!-- المتوسط المرجح -->
                                     <tr style="background: #e9f7ef; font-weight: bold; border-top: 2px solid #198754;">
                                         <td colspan="4" style="text-align: center; padding: 6pt 4pt; vertical-align: middle;"><strong>المتوسط المرجح</strong></td>
-                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatNumberDisplay(certificate.total_quantity ? (weightedPH / certificate.total_quantity) : 0) %></strong></td>
-                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatNumberDisplay(certificate.total_quantity ? (weightedPeroxide / certificate.total_quantity) : 0) %></strong></td>
+                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatWeightedAverage(certificate.total_quantity ? (weightedPH / certificate.total_quantity) : 0) %></strong></td>
+                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatWeightedAverage(certificate.total_quantity ? (weightedPeroxide / certificate.total_quantity) : 0) %></strong></td>
                                         <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"></td>
-                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatNumberDisplay(certificate.total_quantity ? (weighted232 / certificate.total_quantity) : 0) %></strong></td>
-                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatNumberDisplay(certificate.total_quantity ? (weighted266 / certificate.total_quantity) : 0) %></strong></td>
-                                            <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatNumberDisplay(certificate.total_quantity ? (weighted270 / certificate.total_quantity) : 0) %></strong></td>
-                                            <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatNumberDisplay(certificate.total_quantity ? (weighted274 / certificate.total_quantity) : 0) %></strong></td>
-                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatNumberDisplay(certificate.total_quantity ? (weightedDeltaK / certificate.total_quantity) : 0) %></strong></td>
-                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatNumberDisplay(certificate.total_quantity ? (weightedStigmastadiene / certificate.total_quantity) : 0) %></strong></td>
+                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatWeightedAverage(certificate.total_quantity ? (weighted232 / certificate.total_quantity) : 0) %></strong></td>
+                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatWeightedAverage(certificate.total_quantity ? (weighted266 / certificate.total_quantity) : 0) %></strong></td>
+                                            <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatWeightedAverage(certificate.total_quantity ? (weighted270 / certificate.total_quantity) : 0) %></strong></td>
+                                            <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatWeightedAverage(certificate.total_quantity ? (weighted274 / certificate.total_quantity) : 0) %></strong></td>
+                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatWeightedAverage(certificate.total_quantity ? (weightedDeltaK / certificate.total_quantity) : 0) %></strong></td>
+                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatWeightedAverage(certificate.total_quantity ? (weightedStigmastadiene / certificate.total_quantity) : 0) %></strong></td>
                                       </tr>
                                 </tbody>
                             </table>
@@ -525,3 +532,4 @@ function formatNumberDisplay(value) {
             }
         });
     </script>
+

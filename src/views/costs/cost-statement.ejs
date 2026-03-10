@@ -1,3 +1,13 @@
+<%
+function formatNumberDisplay(value) {
+    if (value === null || value === undefined || value === '') return '-';
+    if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
+    const num = parseFloat(value);
+    if (isNaN(num)) return '-';
+    if (Number.isInteger(num)) return String(num);
+    return num.toString();
+}
+%>
 <div class="container mt-4">
     <div class="row">
         <div class="col-12">
@@ -76,21 +86,20 @@
                                     <td>
                                         <%= (defaultCurrency && defaultCurrency.code === 'SYP')
                                             ? String(Math.round(parseFloat(material.unit_cost) || 0))
-                                            : (parseFloat(material.unit_cost) || 0).toFixed(2)
+                                            : formatNumberDisplay(material.unit_cost)
                                         %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                                     </td>
                                     <td>
                                         <%= (defaultCurrency && defaultCurrency.code === 'SYP')
                                             ? String(Math.round(parseFloat(material.package_cost) || 0))
-                                            : (parseFloat(material.package_cost) || 0).toFixed(2)
+                                            : formatNumberDisplay(material.package_cost)
                                         %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                                     </td>
                                     <td>
-                                        <%= (material.gross_package_weight != null) ? Number(material.gross_package_weight).toFixed(3) : '-' %> كجم
+                                        <%= (material.gross_package_weight != null) ? formatNumberDisplay(material.gross_package_weight) : '-' %> كجم
                                     </td>
                                     <td>
-                                        <% const netW = parseFloat(material.packaging_weight); %>
-                                        <%= (!isNaN(netW)) ? netW.toFixed(3) : '-' %> كجم
+                                        <%= (material.packaging_weight != null) ? formatNumberDisplay(material.packaging_weight) : '-' %> كجم
                                     </td>
                                     <td>
                                         <%= (material.pieces_per_package != null) ? Number(material.pieces_per_package) : '-' %>
@@ -1189,7 +1198,7 @@ function editMaterial(materialId) {
                                     const clone = tpl.content.cloneNode(true);
                                     const row = clone.querySelector('.extra-weight-row');
                                     row.querySelector('.extra-weight-name').value = ew.name || '';
-                                    row.querySelector('.extra-weight-value').value = (parseFloat(ew.weight) || 0).toFixed(3);
+                                    row.querySelector('.extra-weight-value').value = rawNumDisplay(ew.weight);
                                     row.querySelector('.remove-extra').addEventListener('click', function(){
                                         row.remove();
                                         calculateEditCosts();
@@ -1232,7 +1241,12 @@ function editMaterial(materialId) {
                                     row.querySelector('.additional-expense-name').value = item.name || '';
                                     const usdPrice = parseFloat(item.price) || 0;
                                     const shownPrice = currentCurrency === 'SYP' ? (usdPrice * Number('<%= exchangeRate %>')) : usdPrice;
-                                    row.querySelector('.additional-expense-price').value = shownPrice.toFixed(2);
+                                    const rawUsdPrice = (typeof item.price === 'string' && /^-?\d+(\.\d+)?$/.test(item.price.trim()))
+                                        ? item.price.trim()
+                                        : '';
+                                    row.querySelector('.additional-expense-price').value = currentCurrency === 'SYP'
+                                        ? rawNumDisplay(shownPrice)
+                                        : (rawUsdPrice || rawNumDisplay(shownPrice));
                                     row.querySelector('.remove-additional-expense')?.addEventListener('click', function () {
                                         row.remove();
                                         calculateEditCosts();
@@ -1755,16 +1769,18 @@ function getAdditionalExpenseItems(containerSelector) {
     const items = [];
     rows.forEach((row) => {
         const name = row.querySelector('.additional-expense-name')?.value?.trim() || '';
-        const price = parseFloat(row.querySelector('.additional-expense-price')?.value || '0') || 0;
-        if (name || price > 0) {
-            items.push({ name, price });
+        const priceRaw = row.querySelector('.additional-expense-price')?.value?.trim() || '';
+        const priceNum = parseFloat(priceRaw);
+        if (name || (Number.isFinite(priceNum) && priceNum > 0)) {
+            const normalizedRaw = /^-?\d+(\.\d+)?$/.test(priceRaw) ? priceRaw : String(Number.isFinite(priceNum) ? priceNum : 0);
+            items.push({ name, price: normalizedRaw });
         }
     });
     return items;
 }
 
 function getAdditionalExpenseItemsTotal(containerSelector) {
-    return getAdditionalExpenseItems(containerSelector).reduce((sum, item) => sum + (item.price || 0), 0);
+    return getAdditionalExpenseItems(containerSelector).reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
 }
 
 function normalizeAuxiliaryCostsByBasis({
@@ -2029,8 +2045,12 @@ document.getElementById('materialForm').addEventListener('submit', function(e) {
     const extraWeights = [];
     document.querySelectorAll('#extraWeightsContainer .extra-weight-row').forEach(row => {
         const name = row.querySelector('.extra-weight-name')?.value?.trim() || '';
-        const val = parseFloat(row.querySelector('.extra-weight-value')?.value || '0') || 0;
-        if (name || val > 0) extraWeights.push({ name, weight: val });
+        const rawVal = row.querySelector('.extra-weight-value')?.value?.trim() || '';
+        const val = parseFloat(rawVal);
+        if (name || (Number.isFinite(val) && val > 0)) {
+            const normalizedRaw = /^-?\d+(\.\d+)?$/.test(rawVal) ? rawVal : String(Number.isFinite(val) ? val : 0);
+            extraWeights.push({ name, weight: normalizedRaw });
+        }
     });
     if (extraWeights.length) bodyPayload.extra_weights = extraWeights;
 
@@ -2657,8 +2677,12 @@ function saveMaterialEdit() {
     const editExtras = [];
     document.querySelectorAll('#editExtraWeightsContainer .extra-weight-row').forEach(row => {
         const name = row.querySelector('.extra-weight-name')?.value?.trim() || '';
-        const val = parseFloat(row.querySelector('.extra-weight-value')?.value || '0') || 0;
-        if (name || val > 0) editExtras.push({ name, weight: val });
+        const rawVal = row.querySelector('.extra-weight-value')?.value?.trim() || '';
+        const val = parseFloat(rawVal);
+        if (name || (Number.isFinite(val) && val > 0)) {
+            const normalizedRaw = /^-?\d+(\.\d+)?$/.test(rawVal) ? rawVal : String(Number.isFinite(val) ? val : 0);
+            editExtras.push({ name, weight: normalizedRaw });
+        }
     });
     if (editExtras.length) formData.extra_weights = editExtras;
     
@@ -2700,6 +2724,14 @@ function formatDate(dateString) {
     return `${day}/${month}/${year}`;
 }
 
+function rawNumDisplay(value) {
+    if (value === null || value === undefined || value === '') return '0';
+    if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
+    const n = parseFloat(value);
+    if (isNaN(n)) return '0';
+    return Number.isInteger(n) ? String(n) : n.toString();
+}
+
 // دالة استعراض المادة
 function viewMaterial(materialId) {
     // جلب بيانات المادة
@@ -2718,34 +2750,34 @@ function viewMaterial(materialId) {
                 
                 // ملء نتائج الحساب
                 const currencySymbol = '<%= defaultCurrency ? defaultCurrency.symbol : "$" %>';
-                document.getElementById('viewUnitCost').textContent = (parseFloat(material.unit_cost) || 0).toFixed(2) + ' ' + currencySymbol;
-                document.getElementById('viewPackageCost').textContent = (parseFloat(material.package_cost) || 0).toFixed(2) + ' ' + currencySymbol;
+                document.getElementById('viewUnitCost').textContent = rawNumDisplay(material.unit_cost) + ' ' + currencySymbol;
+                document.getElementById('viewPackageCost').textContent = rawNumDisplay(material.package_cost) + ' ' + currencySymbol;
                 
                 // ملء بيانات التكلفة الأساسية
-                document.getElementById('viewPriceBeforeWaste').textContent = (parseFloat(material.price_before_waste) || 0).toFixed(2) + ' ' + currencySymbol + '/كجم';
-                document.getElementById('viewGrossWeight').textContent = (parseFloat(material.gross_weight) || 0).toFixed(2) + ' كجم';
-                document.getElementById('viewWastePercentage').textContent = (parseFloat(material.waste_percentage) || 0).toFixed(1) + '%';
+                document.getElementById('viewPriceBeforeWaste').textContent = rawNumDisplay(material.price_before_waste) + ' ' + currencySymbol + '/كجم';
+                document.getElementById('viewGrossWeight').textContent = rawNumDisplay(material.gross_weight) + ' كجم';
+                document.getElementById('viewWastePercentage').textContent = rawNumDisplay(material.waste_percentage) + '%';
                 
                 // حساب الوزن الصافي
                 const grossWeight = parseFloat(material.gross_weight) || 0;
                 const wastePercentage = parseFloat(material.waste_percentage) || 0;
                 const netWeight = grossWeight * (1 - wastePercentage / 100);
-                document.getElementById('viewNetWeight').textContent = netWeight.toFixed(2) + ' كجم';
+                document.getElementById('viewNetWeight').textContent = rawNumDisplay(netWeight) + ' كجم';
                 
                 // ملء بيانات التعبئة
                 document.getElementById('viewPackagingUnit').textContent = material.packaging_unit || '-';
-                document.getElementById('viewPackagingWeight').textContent = (parseFloat(material.packaging_weight) || 0).toFixed(2) + ' كجم';
+                document.getElementById('viewPackagingWeight').textContent = rawNumDisplay(material.packaging_weight) + ' كجم';
                 document.getElementById('viewPiecesPerPackage').textContent = material.pieces_per_package || '-';
                 document.getElementById('viewPackagesPerPallet').textContent = material.packages_per_pallet || '-';
                 
                 // ملء تكاليف التعبئة
-                document.getElementById('viewEmptyPackagePrice').textContent = (parseFloat(material.empty_package_price) || 0).toFixed(2) + ' ' + currencySymbol;
-                document.getElementById('viewStickerPrice').textContent = (parseFloat(material.sticker_price) || 0).toFixed(2) + ' ' + currencySymbol;
-                document.getElementById('viewCartonPrice').textContent = (parseFloat(material.carton_price) || 0).toFixed(2) + ' ' + currencySymbol;
-                document.getElementById('viewPalletPrice').textContent = (parseFloat(material.pallet_price) || 0).toFixed(2) + ' ' + currencySymbol;
+                document.getElementById('viewEmptyPackagePrice').textContent = rawNumDisplay(material.empty_package_price) + ' ' + currencySymbol;
+                document.getElementById('viewStickerPrice').textContent = rawNumDisplay(material.sticker_price) + ' ' + currencySymbol;
+                document.getElementById('viewCartonPrice').textContent = rawNumDisplay(material.carton_price) + ' ' + currencySymbol;
+                document.getElementById('viewPalletPrice').textContent = rawNumDisplay(material.pallet_price) + ' ' + currencySymbol;
                 
                 // ملء التكاليف الإضافية
-                document.getElementById('viewAdditionalExpenses').textContent = (parseFloat(material.additional_expenses) || 0).toFixed(2) + ' ' + currencySymbol;
+                document.getElementById('viewAdditionalExpenses').textContent = rawNumDisplay(material.additional_expenses) + ' ' + currencySymbol;
                 try {
                     const items = typeof material.additional_expense_items === 'string'
                         ? JSON.parse(material.additional_expense_items || '[]')
@@ -2756,7 +2788,7 @@ function viewMaterial(materialId) {
                         const mapped = items.map((item) => {
                             const usdVal = parseFloat(item.price) || 0;
                             const val = currentCurrency === 'SYP' ? (usdVal * exchangeRate) : usdVal;
-                            return `${item.name || 'بدون اسم'}: ${val.toFixed(2)} ${currencySymbol}`;
+                            return `${item.name || 'بدون اسم'}: ${rawNumDisplay(val)} ${currencySymbol}`;
                         });
                         document.getElementById('viewAdditionalExpenseItems').innerHTML = mapped.join('<br>');
                     } else {
@@ -2765,8 +2797,8 @@ function viewMaterial(materialId) {
                 } catch (_) {
                     document.getElementById('viewAdditionalExpenseItems').textContent = '-';
                 }
-                document.getElementById('viewLaborCost').textContent = (parseFloat(material.labor_cost) || 0).toFixed(2) + ' ' + currencySymbol;
-                document.getElementById('viewPreservativesCost').textContent = (parseFloat(material.preservatives_cost) || 0).toFixed(2) + ' ' + currencySymbol;
+                document.getElementById('viewLaborCost').textContent = rawNumDisplay(material.labor_cost) + ' ' + currencySymbol;
+                document.getElementById('viewPreservativesCost').textContent = rawNumDisplay(material.preservatives_cost) + ' ' + currencySymbol;
                 
                 // جلب سجل التكاليف
                 loadCostLogs(materialId);
@@ -3149,6 +3181,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initial filter (in case of prefilled values)
     filterRows();
+});
+</script>
+
+<script>
+// الحفاظ على العرض الخام داخل مودال التعديل: input[type=number] يزيل مثل 1.500 إلى 1.5
+document.addEventListener('DOMContentLoaded', function () {
+  const editModal = document.getElementById('editMaterialModal');
+  if (!editModal) return;
+  editModal.querySelectorAll('input[type="number"]').forEach((input) => {
+    input.setAttribute('type', 'text');
+    input.setAttribute('inputmode', 'decimal');
+  });
 });
 </script>
 

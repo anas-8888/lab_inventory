@@ -1,8 +1,32 @@
-const { pool } = require('../database/db');
+﻿const { pool } = require('../database/db');
 const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const moment = require('moment');
+const { normalizeRawNumeric, parseRawNumericMap, rawOrValue } = require('../utils/rawNumbers');
+
+const INVENTORY_RAW_FIELDS = ['base_quantity', 'current_quantity', 'sample_weight', 'net_weight_total', 'ph', 'peroxide_value', 'sigma_absorbance'];
+const INVOICE_ITEM_RAW_FIELDS = ['quantity', 'price', 'net_weight', 'ph', 'peroxide_value', 'absorption_232', 'absorption_266', 'absorption_270', 'absorption_274', 'delta_k'];
+
+function applyInventoryRaw(item) {
+    if (!item || typeof item !== 'object') return item;
+    const rawMap = parseRawNumericMap(item.numeric_raw);
+    const mapped = { ...item };
+    INVENTORY_RAW_FIELDS.forEach((field) => {
+        mapped[field] = rawOrValue(rawMap, field, mapped[field]);
+    });
+    return mapped;
+}
+
+function applyInvoiceItemRaw(item) {
+    if (!item || typeof item !== 'object') return item;
+    const rawMap = parseRawNumericMap(item.numeric_raw);
+    const mapped = { ...item };
+    INVOICE_ITEM_RAW_FIELDS.forEach((field) => {
+        mapped[field] = rawOrValue(rawMap, field, mapped[field]);
+    });
+    return mapped;
+}
 
 // عرض قائمة طلبات  الشحن
 exports.getInvoices = async (req, res) => {
@@ -77,7 +101,8 @@ exports.getInvoices = async (req, res) => {
 // عرض نموذج إنشاء طلبية شحن جديدة
 exports.getCreateForm = async (req, res) => {
     try {
-        const [inventory] = await pool.query('SELECT * FROM inventory WHERE current_quantity > 0 AND deleted_at IS NULL ORDER BY date DESC');
+        const [inventoryRows] = await pool.query('SELECT * FROM inventory WHERE current_quantity > 0 AND deleted_at IS NULL ORDER BY date DESC');
+        const inventory = inventoryRows.map(applyInventoryRaw);
         
         // جلب رقم آخر طلبية شحن مضافة
         const [lastInvoice] = await pool.query(`
@@ -289,13 +314,16 @@ exports.createInvoice = async (req, res) => {
             if (item.length > 0) {
                 const inventoryItem = item[0];
                 let absorptionReadings = [0, 0, 0, 0, 0];
+                let absorptionRawReadings = [null, null, null, null, null];
 
                 try {
                     if (inventoryItem.absorption_readings) {
                         if (typeof inventoryItem.absorption_readings === 'string') {
-                            const readings = inventoryItem.absorption_readings.split(' ').map(Number);
+                            const readingsRaw = inventoryItem.absorption_readings.split(' ');
+                            const readings = readingsRaw.map((v) => parseFloat(v));
                             if (readings.length >= 5) {
                                 absorptionReadings = readings;
+                                absorptionRawReadings = readingsRaw.slice(0, 5).map((v) => normalizeRawNumeric(v));
                             }
                         } else if (Array.isArray(inventoryItem.absorption_readings)) {
                             absorptionReadings = inventoryItem.absorption_readings;
@@ -309,19 +337,32 @@ exports.createInvoice = async (req, res) => {
                 const ph = parseFloat(inventoryItem.ph) || 0;
                 const peroxide = parseFloat(inventoryItem.peroxide_value) || 0;
                 const netWeight = requestedQuantity * (inventoryItem.net_weight_total / inventoryItem.base_quantity);
+                const inventoryRawMap = parseRawNumericMap(inventoryItem.numeric_raw);
+                const invoiceItemRawMap = {};
+                const quantityRaw = normalizeRawNumeric(quantity);
+                if (quantityRaw !== null) invoiceItemRawMap.quantity = quantityRaw;
+                const phRaw = normalizeRawNumeric(rawOrValue(inventoryRawMap, 'ph', inventoryItem.ph));
+                if (phRaw !== null) invoiceItemRawMap.ph = phRaw;
+                const peroxideRaw = normalizeRawNumeric(rawOrValue(inventoryRawMap, 'peroxide_value', inventoryItem.peroxide_value));
+                if (peroxideRaw !== null) invoiceItemRawMap.peroxide_value = peroxideRaw;
+                if (absorptionRawReadings[0] !== null) invoiceItemRawMap.absorption_232 = absorptionRawReadings[0];
+                if (absorptionRawReadings[1] !== null) invoiceItemRawMap.absorption_266 = absorptionRawReadings[1];
+                if (absorptionRawReadings[2] !== null) invoiceItemRawMap.absorption_270 = absorptionRawReadings[2];
+                if (absorptionRawReadings[3] !== null) invoiceItemRawMap.absorption_274 = absorptionRawReadings[3];
+                if (absorptionRawReadings[4] !== null) invoiceItemRawMap.delta_k = absorptionRawReadings[4];
 
                 await connection.query(
                     `INSERT INTO invoice_items (
                         invoice_id, inventory_id, quantity,
                         ph, peroxide_value, absorption_232,
                         absorption_266, absorption_270, absorption_274,
-                        delta_k, net_weight, sample_number
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                        delta_k, net_weight, sample_number, numeric_raw
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     [
                         invoice_id, inventory_id, requestedQuantity,
                         ph, peroxide, absorptionReadings[0] || 0,
                         absorptionReadings[1] || 0, absorptionReadings[2] || 0, absorptionReadings[3] || 0,
-                        absorptionReadings[4] || 0, netWeight, inventoryItem.sample_number
+                        absorptionReadings[4] || 0, netWeight, inventoryItem.sample_number, JSON.stringify(invoiceItemRawMap)
                     ]
                 );
 
@@ -394,15 +435,24 @@ exports.getInvoice = async (req, res) => {
             return res.redirect('/invoices');
         }
 
-        const [items] = await pool.query(
+        const [itemRows] = await pool.query(
             `SELECT ii.*, inv.sample_number, inv.supplier_or_sample_name, 
-                    inv.net_weight_total, inv.base_quantity,
+                    inv.net_weight_total, inv.base_quantity, inv.numeric_raw AS inventory_numeric_raw,
                     (inv.current_quantity + ii.quantity) AS available_quantity
              FROM invoice_items ii
              JOIN inventory inv ON ii.inventory_id = inv.id
              WHERE ii.invoice_id = ?`,
             [req.params.id]
         );
+        const items = itemRows.map((item) => {
+            const withRaw = applyInvoiceItemRaw(item);
+            const invRawMap = parseRawNumericMap(item.inventory_numeric_raw);
+            return {
+                ...withRaw,
+                net_weight_total: rawOrValue(invRawMap, 'net_weight_total', withRaw.net_weight_total),
+                base_quantity: rawOrValue(invRawMap, 'base_quantity', withRaw.base_quantity)
+            };
+        });
 
         res.render('invoices/view', {
             title: 'عرض طلب الشحن',
@@ -433,13 +483,22 @@ exports.printInvoice = async (req, res) => {
             return res.redirect('/invoices');
         }
 
-        const [items] = await pool.query(
-            `SELECT ii.*, inv.sample_number, inv.net_weight_total, inv.base_quantity
+        const [itemRows] = await pool.query(
+            `SELECT ii.*, inv.sample_number, inv.net_weight_total, inv.base_quantity, inv.numeric_raw AS inventory_numeric_raw
              FROM invoice_items ii
              JOIN inventory inv ON ii.inventory_id = inv.id
              WHERE ii.invoice_id = ?`,
             [req.params.id]
         );
+        const items = itemRows.map((item) => {
+            const withRaw = applyInvoiceItemRaw(item);
+            const invRawMap = parseRawNumericMap(item.inventory_numeric_raw);
+            return {
+                ...withRaw,
+                net_weight_total: rawOrValue(invRawMap, 'net_weight_total', withRaw.net_weight_total),
+                base_quantity: rawOrValue(invRawMap, 'base_quantity', withRaw.base_quantity)
+            };
+        });
 
         // تمرير user: null إذا لم يوجد مستخدم في الجلسة
         res.render('invoices/print', {
@@ -568,14 +627,23 @@ exports.getEditForm = async (req, res) => {
         }
 
         // جلب عناصر طلب الشحن
-        const [items] = await pool.query(
+        const [itemRows] = await pool.query(
             `SELECT ii.*, inv.sample_number, inv.supplier_or_sample_name, 
-                    (inv.current_quantity + ii.quantity) AS available_quantity
+                    (inv.current_quantity + ii.quantity) AS available_quantity,
+                    inv.numeric_raw AS inventory_numeric_raw
              FROM invoice_items ii
              JOIN inventory inv ON ii.inventory_id = inv.id
              WHERE ii.invoice_id = ?`,
             [invoiceId]
         );
+        const items = itemRows.map((item) => {
+            const withRaw = applyInvoiceItemRaw(item);
+            const invRawMap = parseRawNumericMap(item.inventory_numeric_raw);
+            return {
+                ...withRaw,
+                available_quantity: rawOrValue(invRawMap, 'current_quantity', withRaw.available_quantity)
+            };
+        });
 
         // تحديد مصفوفة الـ inventory_id الموجودة في طلب الشحن
         const currentIds = items.map(i => i.inventory_id);
@@ -583,13 +651,14 @@ exports.getEditForm = async (req, res) => {
         // جلب المخزون المتاح مع استبعاد العينات المضافة بالفعل
         let inventory;
         if (currentIds.length > 0) {
-            [inventory] = await pool.query(
+            const [inventoryRows] = await pool.query(
                 'SELECT * FROM inventory WHERE deleted_at IS NULL AND id NOT IN (?)',
                 [currentIds]
             );
+            inventory = inventoryRows.map(applyInventoryRaw);
         } else {
-            // إذا لم تكن هناك عينات في طلب الشحن، جلب كل المخزون
-            [inventory] = await pool.query('SELECT * FROM inventory WHERE deleted_at IS NULL');
+            const [inventoryRows] = await pool.query('SELECT * FROM inventory WHERE deleted_at IS NULL');
+            inventory = inventoryRows.map(applyInventoryRaw);
         }
 
         res.render('invoices/edit', {
@@ -695,7 +764,8 @@ exports.updateInvoice = async (req, res) => {
                 const [rows] = await connection.query(
                     `SELECT current_quantity, ph, peroxide_value, 
                             absorption_readings, sigma_absorbance,
-                            supplier_or_sample_name, sample_number
+                            supplier_or_sample_name, sample_number,
+                            net_weight_total, base_quantity, numeric_raw
                      FROM inventory WHERE id = ?`,
                     [inventory_id]
                 );
@@ -713,7 +783,8 @@ exports.updateInvoice = async (req, res) => {
                 }
 
                 totalQuantity += requestedQuantity;
-                totalQuantityLiters += requestedQuantity * 16;
+                const netWeightPerUnit = (parseFloat(inventoryItem.net_weight_total) || 0) / (parseFloat(inventoryItem.base_quantity) || 1);
+                totalQuantityLiters += requestedQuantity * netWeightPerUnit;
 
                 // استخراج قيم الامتصاص
                 let absorptionReadings = [0, 0, 0, 0, 0];
@@ -750,19 +821,38 @@ exports.updateInvoice = async (req, res) => {
                 );
 
                 // إضافة العنصر إلى طلب الشحن
-                const netWeight = requestedQuantity * 16;
+                const netWeight = requestedQuantity * netWeightPerUnit;
+                const inventoryRawMap = parseRawNumericMap(inventoryItem.numeric_raw);
+                const invoiceItemRawMap = {};
+                const quantityRaw = normalizeRawNumeric(quantity);
+                if (quantityRaw !== null) invoiceItemRawMap.quantity = quantityRaw;
+                const phRaw = normalizeRawNumeric(rawOrValue(inventoryRawMap, 'ph', inventoryItem.ph));
+                if (phRaw !== null) invoiceItemRawMap.ph = phRaw;
+                const peroxideRaw = normalizeRawNumeric(rawOrValue(inventoryRawMap, 'peroxide_value', inventoryItem.peroxide_value));
+                if (peroxideRaw !== null) invoiceItemRawMap.peroxide_value = peroxideRaw;
+                const a232Raw = normalizeRawNumeric(absorptionReadings[0]);
+                if (a232Raw !== null) invoiceItemRawMap.absorption_232 = a232Raw;
+                const a266Raw = normalizeRawNumeric(absorptionReadings[1]);
+                if (a266Raw !== null) invoiceItemRawMap.absorption_266 = a266Raw;
+                const a270Raw = normalizeRawNumeric(absorptionReadings[2]);
+                if (a270Raw !== null) invoiceItemRawMap.absorption_270 = a270Raw;
+                const a274Raw = normalizeRawNumeric(absorptionReadings[3]);
+                if (a274Raw !== null) invoiceItemRawMap.absorption_274 = a274Raw;
+                const deltaKRaw = normalizeRawNumeric(absorptionReadings[4]);
+                if (deltaKRaw !== null) invoiceItemRawMap.delta_k = deltaKRaw;
+
                 await connection.query(
                     `INSERT INTO invoice_items (
                         invoice_id, inventory_id, quantity,
                         ph, peroxide_value, absorption_232,
                         absorption_266, absorption_270, absorption_274,
-                        delta_k, net_weight, sample_number
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                        delta_k, net_weight, sample_number, numeric_raw
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     [
                         invoiceId, inventory_id, requestedQuantity,
                         ph, peroxide, absorptionReadings[0] || 0,
                         absorptionReadings[1] || 0, absorptionReadings[2] || 0, absorptionReadings[3] || 0,
-                        absorptionReadings[4] || 0, netWeight, inventoryItem.sample_number
+                        absorptionReadings[4] || 0, netWeight, inventoryItem.sample_number, JSON.stringify(invoiceItemRawMap)
                     ]
                 );
             }
@@ -850,7 +940,8 @@ exports.getInventoryAPI = async (req, res) => {
 
         query += ' ORDER BY date DESC';
 
-        const [inventory] = await pool.query(query, params);
+        const [inventoryRows] = await pool.query(query, params);
+        const inventory = inventoryRows.map(applyInventoryRaw);
         res.json(inventory);
     } catch (error) {
         console.error('Error fetching inventory:', error);

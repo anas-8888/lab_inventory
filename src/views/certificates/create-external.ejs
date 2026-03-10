@@ -91,6 +91,13 @@ document.addEventListener('DOMContentLoaded', function() {
   const samplesTable = document.getElementById('externalSamplesBody');
   const form = document.querySelector('form');
   
+  // Keep numeric text as entered by the user
+  function normalizeNumericRaw(value) {
+    if (value === undefined || value === null) return null;
+    const str = String(value).trim();
+    return /^-?\d+(\.\d+)?$/.test(str) ? str : null;
+  }
+
   // Function to parse absorption readings
   function parseAbsorptionReadings(readingsStr) {
     if (!readingsStr || !readingsStr.trim()) {
@@ -101,10 +108,9 @@ document.addEventListener('DOMContentLoaded', function() {
       // Split by tab, space, or comma and filter out empty strings
       const readings = readingsStr.trim().split(/[\t\s,]+/).filter(Boolean);
       
-      // Parse each reading as float, allowing negative numbers and decimals
+      // Keep each reading as raw numeric text
       const parsedReadings = readings.map(r => {
-        const parsed = parseFloat(r);
-        return isNaN(parsed) ? null : parsed;
+        return normalizeNumericRaw(r);
       });
       
       // Ensure we have exactly 5 values
@@ -120,7 +126,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Function to format absorption readings for display
   function formatAbsorptionReadings(readings) {
     if (!readings || !Array.isArray(readings)) return '';
-    return readings.map(r => r !== null ? r.toString() : '').join('\t');
+    return readings.map(r => r !== null ? String(r) : '').join('\t');
   }
 
   // Add event listeners for absorption readings inputs
@@ -198,18 +204,18 @@ document.addEventListener('DOMContentLoaded', function() {
           const absorptionReadings = parseAbsorptionReadings(absorptionReadingsStr);
           
           const item = {
-            quantity: row.querySelector('input[name="quantity"]')?.value || null,
+            quantity: normalizeNumericRaw(row.querySelector('input[name="quantity"]')?.value),
             packaging_unit: row.querySelector('input[name="packaging_unit"]')?.value || 'لتر',
-            packaging_weight: row.querySelector('input[name="packaging_weight"]')?.value || null,
-            total_weight: row.querySelector('input[name="total_weight"]')?.value || null,
-            ph: row.querySelector('input[name="ph"]')?.value || null,
-            peroxide: row.querySelector('input[name="peroxide"]')?.value || null,
+            packaging_weight: normalizeNumericRaw(row.querySelector('input[name="packaging_weight"]')?.value),
+            total_weight: normalizeNumericRaw(row.querySelector('input[name="total_weight"]')?.value),
+            ph: normalizeNumericRaw(row.querySelector('input[name="ph"]')?.value),
+            peroxide: normalizeNumericRaw(row.querySelector('input[name="peroxide"]')?.value),
             abs_232: absorptionReadings[0],
             abs_266: absorptionReadings[1],
             abs_270: absorptionReadings[2],
             abs_274: absorptionReadings[3],
             delta_k: absorptionReadings[4],
-            stigmastadiene: row.querySelector('input[name="stigmastadiene"]')?.value || null
+            stigmastadiene: normalizeNumericRaw(row.querySelector('input[name="stigmastadiene"]')?.value)
           };
           items.push(item);
         });

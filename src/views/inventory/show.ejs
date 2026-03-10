@@ -1,6 +1,7 @@
 <%
 function formatNumberDisplay(value) {
     if (value === null || value === undefined || value === '') return '-';
+    if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
 
     const num = parseFloat(value);
     if (isNaN(num)) return '-';
@@ -18,7 +19,7 @@ function formatNumberDisplay(value) {
         } else if (decimalStr.length <= 2) {
             result = num.toString();
         } else {
-            result = num.toFixed(3);
+            result = num.toString();
         }
     }
 
@@ -123,7 +124,7 @@ function convertToArabicNumbers(num) {
                                     </div>
                                     <div class="mb-3">
                                         <label class="text-muted small">وزن العينة</label>
-                                        <p class="mb-2 fw-bold"><%= parseFloat(item.sample_weight).toFixed(3) == NaN ? '-' : parseFloat(item.sample_weight).toFixed(3) %></p>
+                                        <p class="mb-2 fw-bold"><%= formatNumberDisplay(item.sample_weight) %></p>
                                     </div>
                                     <div class="mb-3">
                                         <label class="text-muted small">الوزن الصافي الأساسي</label>
@@ -266,8 +267,8 @@ function convertToArabicNumbers(num) {
                                 <tfoot>
                                     <tr>
                                         <td colspan="3" class="text-start"><strong>المجموع:</strong></td>
-                                        <td><strong><%= sales.reduce((sum, sale) => sum + parseFloat(sale.quantity), 0).toFixed(2) %></strong></td>
-                                        <td><strong><%= sales.reduce((sum, sale) => sum + parseFloat((item.net_weight_total/(item.base_quantity ? item.base_quantity : 1))*sale.quantity), 0).toFixed(2) %></strong></td>
+                                        <td><strong><%= formatNumberDisplay(sales.reduce((sum, sale) => sum + parseFloat(sale.quantity), 0)) %></strong></td>
+                                        <td><strong><%= formatNumberDisplay(sales.reduce((sum, sale) => sum + parseFloat((item.net_weight_total/(item.base_quantity ? item.base_quantity : 1))*sale.quantity), 0)) %></strong></td>
                                         <td colspan="2"></td>
                                     </tr>
                                 </tfoot>
@@ -355,7 +356,7 @@ function convertToArabicNumbers(num) {
             </tr>
             <tr>
                 <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">وزن العينة</td>
-                <td style="padding: 8px; border: 1px solid #ddd;"><%= parseFloat(item.sample_weight).toFixed(3) == NaN ? '-' : parseFloat(item.sample_weight).toFixed(3) %></td>
+                <td style="padding: 8px; border: 1px solid #ddd;"><%= formatNumberDisplay(item.sample_weight) %></td>
                 <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">الوزن الصافي الأساسي</td>
                 <td style="padding: 8px; border: 1px solid #ddd;"><%= formatNumberDisplay(item.net_weight_total) %></td>
             </tr>
@@ -399,11 +400,11 @@ function convertToArabicNumbers(num) {
                 <th style="padding: 8px; border: 1px solid #ddd;">Delta K</th>
             </tr>
             <tr>
-                <td style="padding: 8px; border: 1px solid #ddd;"><%= parseFloat((item.absorption_readings).split(' ')[0]).toFixed(3) == NaN ? '' : parseFloat((item.absorption_readings).split(' ')[0]).toFixed(3) %></td>
-                <td style="padding: 8px; border: 1px solid #ddd;"><%= parseFloat((item.absorption_readings).split(' ')[1]).toFixed(3) == NaN ? '' : parseFloat((item.absorption_readings).split(' ')[1]).toFixed(3) %></td>
-                <td style="padding: 8px; border: 1px solid #ddd;"><%= parseFloat((item.absorption_readings).split(' ')[2]).toFixed(3) == NaN ? '' : parseFloat((item.absorption_readings).split(' ')[2]).toFixed(3) %></td>
-                <td style="padding: 8px; border: 1px solid #ddd;"><%= parseFloat((item.absorption_readings).split(' ')[3]).toFixed(3) == NaN ? '' : parseFloat((item.absorption_readings).split(' ')[3]).toFixed(3) %></td>
-                <td style="padding: 8px; border: 1px solid #ddd;"><%= parseFloat((item.absorption_readings).split(' ')[4]).toFixed(3) == NaN ? '' : parseFloat((item.absorption_readings).split(' ')[4]).toFixed(3) %></td>
+                <td style="padding: 8px; border: 1px solid #ddd;"><%= formatNumberDisplay((item.absorption_readings || '').split(' ')[0]) %></td>
+                <td style="padding: 8px; border: 1px solid #ddd;"><%= formatNumberDisplay((item.absorption_readings || '').split(' ')[1]) %></td>
+                <td style="padding: 8px; border: 1px solid #ddd;"><%= formatNumberDisplay((item.absorption_readings || '').split(' ')[2]) %></td>
+                <td style="padding: 8px; border: 1px solid #ddd;"><%= formatNumberDisplay((item.absorption_readings || '').split(' ')[3]) %></td>
+                <td style="padding: 8px; border: 1px solid #ddd;"><%= formatNumberDisplay((item.absorption_readings || '').split(' ')[4]) %></td>
             </tr>
         </table>
         
@@ -797,3 +798,4 @@ document.getElementById('restoreBtn').addEventListener('click', function() {
     }
 });
 </script> 
+

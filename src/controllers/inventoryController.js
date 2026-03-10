@@ -2,6 +2,27 @@ const { pool } = require('../database/db');
 const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
+const { buildRawNumericMap, parseRawNumericMap, rawOrValue } = require('../utils/rawNumbers');
+
+const INVENTORY_RAW_FIELDS = [
+    'base_quantity',
+    'current_quantity',
+    'sample_weight',
+    'net_weight_total',
+    'ph',
+    'peroxide_value',
+    'sigma_absorbance'
+];
+
+function applyInventoryRaw(item) {
+    if (!item || typeof item !== 'object') return item;
+    const rawMap = parseRawNumericMap(item.numeric_raw);
+    const mapped = { ...item };
+    INVENTORY_RAW_FIELDS.forEach((field) => {
+        mapped[field] = rawOrValue(rawMap, field, mapped[field]);
+    });
+    return mapped;
+}
 
 // دالة لتحويل التاريخ من تنسيق DD/MM/YYYY إلى ISO
 function convertDateToISO(dateString) {
@@ -54,7 +75,7 @@ exports.fetchInventoryData = async (query) => {
     }
     sql += ` ORDER BY CAST(sample_number AS UNSIGNED) DESC`;
     const [inventory] = await pool.query(sql, params);
-    return inventory;
+    return inventory.map(applyInventoryRaw);
 };
 
 // عرض صفحة المخزون
@@ -89,7 +110,7 @@ exports.getInventoryItem = async (req, res) => {
         if (rows.length === 0) {
             return res.status(404).render('error', { message: 'العينة غير موجودة' });
         }
-        const item = rows[0];
+        const item = applyInventoryRaw(rows[0]);
         // جلب بيانات المبيعات (حتى للعينة المحذوفة)
         const [sales] = await pool.query(`
             SELECT 
@@ -99,17 +120,26 @@ exports.getInventoryItem = async (req, res) => {
                 i.customer_name,
                 i.driver_name,
                 ii.quantity,
-                ii.net_weight
+                ii.net_weight,
+                ii.numeric_raw
             FROM invoice_items ii
             JOIN invoices i ON ii.invoice_id = i.id
             WHERE ii.inventory_id = ?
             AND i.deleted_at IS NULL
             ORDER BY i.date DESC, i.id DESC
         `, [req.params.id]);
+        const normalizedSales = sales.map((sale) => {
+            const rawMap = parseRawNumericMap(sale.numeric_raw);
+            return {
+                ...sale,
+                quantity: rawOrValue(rawMap, 'quantity', sale.quantity),
+                net_weight: rawOrValue(rawMap, 'net_weight', sale.net_weight)
+            };
+        });
 
         res.render('inventory/show', {
             item,
-            sales: sales,
+            sales: normalizedSales,
             user: req.session.user
         });
     } catch (error) {
@@ -239,18 +269,20 @@ exports.createInventory = async (req, res) => {
         processedAbsorptionReadings = readingsArr.join(' ');
 
         // Insert new inventory item
+        const inventoryRawMap = buildRawNumericMap(req.body, INVENTORY_RAW_FIELDS);
+
         await pool.query(
             `INSERT INTO inventory (
                 date, sample_number, supplier_or_sample_name,
                 base_quantity, current_quantity, net_weight_total,
                 ph, peroxide_value, absorption_readings,
-                sigma_absorbance, analyst, notes, sample_weight
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                sigma_absorbance, analyst, notes, sample_weight, numeric_raw
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 isoDate, sample_number, supplier_or_sample_name,
                 base_quantity, finalCurrentQuantity, net_weight_total,
                 ph || null, peroxide_value || null, processedAbsorptionReadings,
-                sigma_absorbance || null, analyst, notes, sample_weight != null && sample_weight !== '' ? parseFloat(sample_weight).toFixed(3) : null
+                sigma_absorbance || null, analyst, notes, sample_weight != null && sample_weight !== '' ? parseFloat(sample_weight).toFixed(3) : null, JSON.stringify(inventoryRawMap)
             ]
         );
 
@@ -280,7 +312,7 @@ exports.getEditForm = async (req, res) => {
         if (rows.length === 0) {
             return res.status(404).render('error', { message: 'العينة غير موجودة' });
         }
-        res.render('inventory/edit', { item: rows[0], user: req.session.user });
+        res.render('inventory/edit', { item: applyInventoryRaw(rows[0]), user: req.session.user });
     } catch (error) {
         console.error('Error fetching inventory item:', error);
         res.status(500).render('error', {
@@ -394,6 +426,8 @@ exports.updateInventory = async (req, res) => {
         processedAbsorptionReadings = readingsArr.join(' ');
 
         // Update inventory item
+        const inventoryRawMap = buildRawNumericMap(req.body, INVENTORY_RAW_FIELDS);
+
         await pool.query(
             `UPDATE inventory SET
                 date = ?,
@@ -408,7 +442,8 @@ exports.updateInventory = async (req, res) => {
                 sigma_absorbance = ?,
                 analyst = ?,
                 notes = ?,
-                sample_weight = ?
+                sample_weight = ?,
+                numeric_raw = ?
             WHERE id = ?`,
             [
                 isoDate,
@@ -424,6 +459,7 @@ exports.updateInventory = async (req, res) => {
                 analyst,
                 notes,
                 sample_weight != null && sample_weight !== '' ? parseFloat(sample_weight).toFixed(3) : null,
+                JSON.stringify(inventoryRawMap),
                 req.params.id
             ]
         );

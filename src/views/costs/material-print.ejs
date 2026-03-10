@@ -1,6 +1,7 @@
 <% function fmtDate(d){ if(!d) return '-'; const dt=new Date(d); const dd=String(dt.getDate()).padStart(2,'0'); const mm=String(dt.getMonth()+1).padStart(2,'0'); const yy=dt.getFullYear(); return `${dd}/${mm}/${yy}`; }
 function formatNumberDisplay(value) {
   if (value === null || value === undefined || value === '') return '-';
+  if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
   const num = parseFloat(value);
   if (isNaN(num)) return '-';
   if (num === 0) return '0';
@@ -25,6 +26,14 @@ try {
   __additionalExpenseItems = [];
 }
 if (!Array.isArray(__additionalExpenseItems)) __additionalExpenseItems = [];
+let __extraWeights = [];
+try {
+  if (typeof material.extra_weights === 'string') __extraWeights = JSON.parse(material.extra_weights || '[]');
+  else __extraWeights = material.extra_weights || [];
+} catch (_) {
+  __extraWeights = [];
+}
+if (!Array.isArray(__extraWeights)) __extraWeights = [];
 %>
 
 <div class="container-fluid" style="direction: rtl; font-family: 'Cairo','Amiri',sans-serif;">
@@ -62,6 +71,9 @@ if (!Array.isArray(__additionalExpenseItems)) __additionalExpenseItems = [];
       <h6 class="section-title">بيانات المادة الخارجية</h6>
       <div class="grid-kv">
         <div class="kv"><span>الاسم:</span><span><%= material.material_name %></span></div>
+        <div class="kv"><span>نوع المادة:</span><span><%= material.material_type || '-' %></span></div>
+        <div class="kv"><span>تاريخ الإضافة:</span><span><%= fmtDate(material.created_at) %></span></div>
+        <div class="kv"><span>آخر تحديث:</span><span><%= fmtDate(material.updated_at) %></span></div>
         <div class="kv"><span>وحدة التعبئة:</span><span><%= material.packaging_unit || '-' %></span></div>
         <div class="kv"><span>كلفة القطعة:</span><span><%= `${formatNumberDisplay(material.unit_cost)} ${currencySymbol}` %></span></div>
         <div class="kv"><span>كلفة الطرد:</span><span><%= `${formatNumberDisplay(material.package_cost)} ${currencySymbol}` %></span></div>
@@ -76,6 +88,7 @@ if (!Array.isArray(__additionalExpenseItems)) __additionalExpenseItems = [];
       <div class="grid-kv">
         <div class="kv"><span>الاسم:</span><span><%= material.material_name %></span></div>
         <div class="kv"><span>النوع:</span><span><%= material.material_type || '-' %></span></div>
+        <div class="kv"><span>طريقة الحساب:</span><span><%= material.calculation_method === 'components' ? 'العناصر الفرعية' : 'التقليدية' %></span></div>
         <div class="kv"><span>تاريخ الإضافة:</span><span><%= fmtDate(material.created_at) %></span></div>
         <div class="kv"><span>آخر تحديث:</span><span><%= fmtDate(material.updated_at) %></span></div>
       </div>
@@ -99,11 +112,21 @@ if (!Array.isArray(__additionalExpenseItems)) __additionalExpenseItems = [];
         <div class="kv"><span>وزن العبوة الفارغة (كجم):</span><span><%= formatNumberDisplay(material.packaging_unit_weight) %></span></div>
         <div class="kv"><span>وزن الطرد القائم (كجم):</span><span><%= formatNumberDisplay(material.gross_package_weight) %></span></div>
         <% 
-          let _extras = []; 
-          try { if (typeof material.extra_weights === 'string') { _extras = JSON.parse(material.extra_weights || '[]'); } else { _extras = material.extra_weights || []; } } catch(e){ _extras = []; }
-          const _extrasTotal = (_extras || []).reduce((s, ew) => s + (parseFloat(ew.weight) || 0), 0);
+          const _extrasTotal = (__extraWeights || []).reduce((s, ew) => s + (parseFloat(ew.weight) || 0), 0);
         %>
         <div class="kv"><span>أوزان إضافية (المجموع كجم):</span><span><%= formatNumberDisplay(_extrasTotal) %></span></div>
+        <div class="kv">
+          <span>تفصيل الأوزان الإضافية:</span>
+          <span>
+            <% if (__extraWeights.length) { %>
+              <% __extraWeights.forEach(function(ew, idx){ %>
+                <%= `${ew.name || 'بدون اسم'}: ${formatNumberDisplay(ew.weight)} كجم` %><%= idx < __extraWeights.length - 1 ? ' | ' : '' %>
+              <% }); %>
+            <% } else { %>
+              -
+            <% } %>
+          </span>
+        </div>
       </div>
     </div>
 
@@ -251,4 +274,5 @@ if (!Array.isArray(__additionalExpenseItems)) __additionalExpenseItems = [];
   .print-footer { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; }
   .page-break-before { page-break-before: always; break-before: page; }
 </style>
+
 

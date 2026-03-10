@@ -177,6 +177,12 @@
 let items = [];
 let editingIndex = -1;
 
+function normalizeNumericRaw(value) {
+    if (value === undefined || value === null) return '';
+    const str = String(value).trim();
+    return /^-?\d+(\.\d+)?$/.test(str) ? str : '';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const addSampleModal = new bootstrap.Modal(document.getElementById('addSampleModal'));
     const sampleForm = document.getElementById('sampleForm');
@@ -203,17 +209,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const sampleData = {
             sample_number: formData.get('sample_number'),
-            quantity: parseFloat(formData.get('quantity')),
+            quantity: normalizeNumericRaw(formData.get('quantity')),
             packaging_unit: formData.get('packaging_unit'),
-            packaging_weight: parseFloat(formData.get('packaging_weight')),
-            total_weight: parseFloat(formData.get('total_weight')),
-            ph: parseFloat(formData.get('ph')),
-            peroxide: parseFloat(formData.get('peroxide')),
-            abs_232: parseFloat(absorptionReadings[0]),
-            abs_266: parseFloat(absorptionReadings[1]),
-            abs_270: parseFloat(absorptionReadings[2]),
-            abs_277: parseFloat(absorptionReadings[3]),
-            delta_k: parseFloat(absorptionReadings[4])
+            packaging_weight: normalizeNumericRaw(formData.get('packaging_weight')),
+            total_weight: normalizeNumericRaw(formData.get('total_weight')),
+            ph: normalizeNumericRaw(formData.get('ph')),
+            peroxide: normalizeNumericRaw(formData.get('peroxide')),
+            abs_232: normalizeNumericRaw(absorptionReadings[0]),
+            abs_266: normalizeNumericRaw(absorptionReadings[1]),
+            abs_270: normalizeNumericRaw(absorptionReadings[2]),
+            abs_277: normalizeNumericRaw(absorptionReadings[3]),
+            delta_k: normalizeNumericRaw(absorptionReadings[4])
         };
 
         if (editingIndex === -1) {
@@ -227,6 +233,14 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Update table
+    function rawDisplay(value) {
+        if (value === null || value === undefined || value === '') return '';
+        if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
+        const n = parseFloat(value);
+        if (isNaN(n)) return '';
+        return Number.isInteger(n) ? String(n) : n.toString();
+    }
+
     function updateTable() {
         const tbody = document.getElementById('samplesTableBody');
         tbody.innerHTML = '';
@@ -242,11 +256,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td>${item.total_weight}</td>
                 <td>${item.ph}</td>
                 <td>${item.peroxide}</td>
-                <td>${parseFloat(item.abs_232).toFixed(3) == NaN ? '' : parseFloat(item.abs_232).toFixed(3)}</td>
-                <td>${parseFloat(item.abs_266).toFixed(3) == NaN ? '' : parseFloat(item.abs_266).toFixed(3)}</td>
-                <td>${parseFloat(item.abs_270).toFixed(3) == NaN ? '' : parseFloat(item.abs_270).toFixed(3)}</td>
-                <td>${parseFloat(item.abs_277).toFixed(3) == NaN ? '' : parseFloat(item.abs_277).toFixed(3)}</td>
-                <td>${parseFloat(item.delta_k).toFixed(3) == NaN ? '' : parseFloat(item.delta_k).toFixed(3)}</td>
+                <td>${rawDisplay(item.abs_232)}</td>
+                <td>${rawDisplay(item.abs_266)}</td>
+                <td>${rawDisplay(item.abs_270)}</td>
+                <td>${rawDisplay(item.abs_277)}</td>
+                <td>${rawDisplay(item.delta_k)}</td>
                 <td>
                     <button type="button" class="btn btn-sm btn-primary edit-btn" data-index="${index}">
                         <i class="bi bi-pencil"></i>
@@ -269,7 +283,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const item = items[index];
                 
                 // تجميع قراءات الامتصاص في سلسلة نصية واحدة
-                const absorptionReadings = `${parseFloat(item.abs_232).toFixed(3) == NaN ? '' : parseFloat(item.abs_232).toFixed(3)} ${parseFloat(item.abs_266).toFixed(3) == NaN ? '' : parseFloat(item.abs_266).toFixed(3)} ${parseFloat(item.abs_270).toFixed(3) == NaN ? '' : parseFloat(item.abs_270).toFixed(3)} ${parseFloat(item.abs_277).toFixed(3) == NaN ? '' : parseFloat(item.abs_277).toFixed(3)} ${parseFloat(item.delta_k).toFixed(3) == NaN ? '' : parseFloat(item.delta_k).toFixed(3)}`;
+                const absorptionReadings = `${rawDisplay(item.abs_232)} ${rawDisplay(item.abs_266)} ${rawDisplay(item.abs_270)} ${rawDisplay(item.abs_277)} ${rawDisplay(item.delta_k)}`;
                 
                 // تعبئة النموذج بالبيانات
                 sampleForm.querySelector('[name="sample_number"]').value = item.sample_number;

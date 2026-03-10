@@ -1,5 +1,6 @@
 const Excel = require('exceljs');
 const { pool } = require('../database/db');
+const { parseRawNumericMap, rawOrValue } = require('../utils/rawNumbers');
 
 exports.exportInventoryToExcel = async (req, res) => {
     try {
@@ -57,6 +58,7 @@ exports.exportInventoryToExcel = async (req, res) => {
                 SUBSTRING_INDEX(SUBSTRING_INDEX(i.absorption_readings, ' ', 4), ' ', -1) as abs_274,
                 SUBSTRING_INDEX(i.absorption_readings, ' ', -1) as delta_k,
                 i.sigma_absorbance,
+                i.numeric_raw,
                 i.analyst,
                 i.notes
             FROM inventory i
@@ -65,8 +67,18 @@ exports.exportInventoryToExcel = async (req, res) => {
         `);
 
         // Add rows to worksheet
-        rows.forEach(row => {
-            worksheet.addRow(row);
+        rows.forEach((row) => {
+            const rawMap = parseRawNumericMap(row.numeric_raw);
+            worksheet.addRow({
+                ...row,
+                base_quantity: rawOrValue(rawMap, 'base_quantity', row.base_quantity),
+                current_quantity: rawOrValue(rawMap, 'current_quantity', row.current_quantity),
+                net_weight_total: rawOrValue(rawMap, 'net_weight_total', row.net_weight_total),
+                sample_weight: rawOrValue(rawMap, 'sample_weight', row.sample_weight),
+                ph: rawOrValue(rawMap, 'ph', row.ph),
+                peroxide_value: rawOrValue(rawMap, 'peroxide_value', row.peroxide_value),
+                sigma_absorbance: rawOrValue(rawMap, 'sigma_absorbance', row.sigma_absorbance)
+            });
         });
 
         // Set borders for all cells

@@ -19,7 +19,13 @@
             <!-- تحضير التنسيق والحسابات -->
             <% 
                 const isSYP = (defaultCurrency && defaultCurrency.code === 'SYP');
-                const fmt = (v) => isSYP ? String(Math.round(parseFloat(v) || 0)) : (parseFloat(v) || 0).toFixed(2);
+                const fmt = (v) => {
+                    if (v === null || v === undefined || v === '') return '0';
+                    if (typeof v === 'string' && /^-?\d+(\.\d+)?$/.test(v.trim())) return v.trim();
+                    const num = parseFloat(v);
+                    if (isNaN(num)) return '0';
+                    return isSYP ? String(Math.round(num)) : num.toFixed(2);
+                };
                 let grandTotal = 0;
                 
                 (items || []).forEach(it => {
@@ -177,10 +183,9 @@
                                 %>
                                 <% groupedQuotationItems.forEach((group) => { %>
                                 <% group.forEach((item, indexInGroup) => {
-                                     // استخدام القيم المحفوظة مباشرة بدلاً من إعادة حسابها
-                                     const unit = parseFloat(item.unit_cost) || 0;
-                                     const final = parseFloat(item.final_price) || 0;
-                                     const total = parseFloat(item.total_price) || 0;
+                                     const unit = item.unit_cost;
+                                     const final = item.final_price;
+                                     const total = item.total_price;
                                 %>
                                 <tr>
                                     <td><%= item.material_id || '-' %></td>
@@ -191,25 +196,7 @@
                                     <td><%= item.packaging_unit || '-' %></td>
                                     <td>
                                         <% if (item.packaging_weight != null) { %>
-                                            <% 
-                                                // عرض وزن التعبئة بدقة مناسبة
-                                                const weight = parseFloat(item.packaging_weight);
-                                                if (isNaN(weight)) {
-                                                    // إذا لم يكن رقماً، اعرضه كما هو
-                                                    %><%= item.packaging_weight %><%
-                                                } else {
-                                                    // إذا كان رقماً صحيحاً، أضف 3 منازل عشرية
-                                                    if (Number.isInteger(weight)) {
-                                                        %><%= weight.toFixed(3) %><%
-                                                    } else {
-                                                        // إذا كان عشرياً، احتفظ بالمنازل الموجودة مع حد أدنى 3
-                                                        const str = weight.toString();
-                                                        const decimalPlaces = str.includes('.') ? str.split('.')[1].length : 0;
-                                                        const minDecimals = Math.max(3, decimalPlaces);
-                                                        %><%= weight.toFixed(minDecimals) %><%
-                                                    }
-                                                }
-                                            %>
+                                            <%= fmt(item.packaging_weight) %>
                                         <% } else { %>
                                             -
                                         <% } %>
@@ -218,7 +205,7 @@
                                     <td>
                                         <%= fmt(unit) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                                     </td>
-                                    <td><%= parseFloat(item.profit_percentage).toFixed(1) %>%</td>
+                                    <td><%= fmt(item.profit_percentage) %>%</td>
                                     <td>
                                         <%= fmt(final) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                                     </td>

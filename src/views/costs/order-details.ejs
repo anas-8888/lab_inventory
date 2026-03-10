@@ -9,6 +9,7 @@
 
 function formatNumberDisplay(value) {
   if (value === null || value === undefined || value === '') return '-';
+  if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
   const num = parseFloat(value);
   if (isNaN(num)) return '-';
   if (num === 0) return '0';
@@ -22,7 +23,7 @@ function formatNumberDisplay(value) {
     } else if (decimalStr.length <= 2) {
       result = num.toString();
     } else {
-      result = num.toFixed(3);
+      result = num.toString();
     }
   }
   if (num < 0) {
@@ -193,7 +194,7 @@ function formatNumberDisplay(value) {
                     <td><%= item.requested_quantity != null ? formatNumberDisplay(item.requested_quantity) : '-' %></td>
                     <td><%= item.packaging_weight != null ? formatNumberDisplay(item.packaging_weight) : '-' %></td>
                     <td><%= item.pieces_per_package != null ? formatNumberDisplay(item.pieces_per_package) : '-' %></td>
-                    <td><%= item.gross_weight != null ? parseFloat(item.gross_weight).toFixed(3) : '-' %></td>
+                    <td><%= item.gross_weight != null ? formatNumberDisplay(item.gross_weight) : '-' %></td>
                     <td><%= (typeof item.unit_price !== 'undefined') ? formatNumberDisplay(item.unit_price) : '-' %> <%= (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '' %></td>
                     <td><%= (typeof item.total_price !== 'undefined') ? formatNumberDisplay(item.total_price) : '-' %> <%= (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '' %></td>
                     <td><%= item.notes || '-' %></td>
@@ -207,7 +208,7 @@ function formatNumberDisplay(value) {
                   <td><strong><%= typeof totals !== 'undefined' && totals ? formatNumberDisplay(totals.totalRequestedQuantity) : '0' %></strong></td>
                   <td><strong><%= typeof totals !== 'undefined' && totals ? formatNumberDisplay(totals.totalPackagingWeight) : '0' %></strong></td>
                   <td></td>
-                  <td><strong><%= typeof totals !== 'undefined' && totals ? parseFloat(totals.totalGrossWeight || 0).toFixed(3) : '0.000' %></strong></td>
+                  <td><strong><%= typeof totals !== 'undefined' && totals ? formatNumberDisplay(totals.totalGrossWeight || 0) : '0' %></strong></td>
                   <td></td>
                   <td><strong><%= typeof totals !== 'undefined' && totals ? formatNumberDisplay(totals.grandTotal) : '0' %> <%= (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '' %></strong></td>
                   <td></td>
@@ -469,4 +470,5 @@ async function exportPDF(url) {
     </div>
   </div>
 </div>
+
 

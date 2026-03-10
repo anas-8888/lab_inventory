@@ -277,21 +277,28 @@ document.addEventListener('DOMContentLoaded', function() {
     return isNaN(parsed) ? 0 : parsed;
   }
 
+  function normalizeNumericRaw(value, fallback = '0') {
+    if (value === undefined || value === null) return fallback;
+    const str = String(value).trim();
+    if (/^-?\d+(\.\d+)?$/.test(str)) return str;
+    return fallback;
+  }
+
   // Parse absorption readings
   function parseAbsorptionReadings(readingsStr) {
     try {
-      if (!readingsStr) return [0, 0, 0, 0, 0];
+      if (!readingsStr) return ['0', '0', '0', '0', '0'];
       
       // Split by any whitespace and filter out empty strings
-      const readings = readingsStr.trim().split(/\s+/).filter(Boolean).map(r => parseNumericValue(r));
+      const readings = readingsStr.trim().split(/\s+/).filter(Boolean).map(r => normalizeNumericRaw(r, '0'));
       debugLog('Parsed Absorption Readings', { raw: readingsStr, parsed: readings });
       
       // Ensure we have exactly 5 values
-      const result = readings.length >= 5 ? readings.slice(0, 5) : [...readings, ...Array(5 - readings.length).fill(0)];
+      const result = readings.length >= 5 ? readings.slice(0, 5) : [...readings, ...Array(5 - readings.length).fill('0')];
       return result;
     } catch (error) {
       console.error('Error parsing absorption readings:', error);
-      return [0, 0, 0, 0, 0];
+      return ['0', '0', '0', '0', '0'];
     }
   }
 
@@ -329,7 +336,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Format numeric value for display
   function formatNumericValue(value) {
-    return parseNumericValue(value).toFixed(3);
+    if (value === null || value === undefined || value === '') return '';
+    if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
+    const n = parseNumericValue(value);
+    if (isNaN(n)) return '';
+    return Number.isInteger(n) ? String(n) : n.toString();
   }
 
   // Update selected samples table
@@ -352,11 +363,11 @@ document.addEventListener('DOMContentLoaded', function() {
         </td>
         <td>${formatNumericValue(sample.ph)}</td>
         <td>${formatNumericValue(sample.peroxide)}</td>
-        <td>${parseFloat(sample.abs_232).toFixed(3) == NaN ? '' : parseFloat(sample.abs_232).toFixed(3)}</td>
-        <td>${parseFloat(sample.abs_266).toFixed(3) == NaN ? '' : parseFloat(sample.abs_266).toFixed(3)}</td>
-        <td>${parseFloat(sample.abs_270).toFixed(3) == NaN ? '' : parseFloat(sample.abs_270).toFixed(3)}</td>
-        <td>${parseFloat(sample.abs_274).toFixed(3) == NaN ? '' : parseFloat(sample.abs_274).toFixed(3)}</td>
-        <td>${parseFloat(sample.delta_k).toFixed(3) == NaN ? '' : parseFloat(sample.delta_k).toFixed(3)}</td>
+        <td>${formatNumericValue(sample.abs_232)}</td>
+        <td>${formatNumericValue(sample.abs_266)}</td>
+        <td>${formatNumericValue(sample.abs_270)}</td>
+        <td>${formatNumericValue(sample.abs_274)}</td>
+        <td>${formatNumericValue(sample.delta_k)}</td>
         <td>${formatNumericValue(sample.stigmastadiene)}</td>
         <td>
           <button type="button" class="btn btn-sm btn-danger remove-sample-btn" data-id="${sample.id}">
@@ -432,18 +443,18 @@ document.addEventListener('DOMContentLoaded', function() {
         id: item.id,
         sample_number: item.sample_number,
         supplier_name: item.supplier_name,
-        quantity: parseFloat(item.quantity),
+        quantity: normalizeNumericRaw(item.quantity),
         packaging_unit: item.packaging_unit || 'لتر',
-        packaging_weight: parseFloat(item.packaging_weight || item.sample_weight || 0),
-        total_weight: parseFloat(item.total_weight || item.net_weight_total || 0),
-        ph: parseFloat(item.ph),
-        peroxide: parseFloat(item.peroxide),
-        abs_232: parseFloat(item.abs_232),
-        abs_266: parseFloat(item.abs_266),
-        abs_270: parseFloat(item.abs_270),
-        abs_274: parseFloat(item.abs_274),
-        delta_k: parseFloat(item.delta_k),
-        stigmastadiene: parseFloat(item.stigmastadiene)
+        packaging_weight: normalizeNumericRaw(item.packaging_weight || item.sample_weight || 0),
+        total_weight: normalizeNumericRaw(item.total_weight || item.net_weight_total || 0),
+        ph: normalizeNumericRaw(item.ph),
+        peroxide: normalizeNumericRaw(item.peroxide),
+        abs_232: normalizeNumericRaw(item.abs_232),
+        abs_266: normalizeNumericRaw(item.abs_266),
+        abs_270: normalizeNumericRaw(item.abs_270),
+        abs_274: normalizeNumericRaw(item.abs_274),
+        delta_k: normalizeNumericRaw(item.delta_k),
+        stigmastadiene: normalizeNumericRaw(item.stigmastadiene)
       }));
 
       const total_quantity = items.reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
@@ -520,18 +531,18 @@ document.addEventListener('DOMContentLoaded', function() {
         id: id,
         sample_number: this.dataset.sampleNumber,
         supplier_name: this.dataset.supplier,
-        quantity: parseNumericValue(this.dataset.quantity),
-        packaging_weight: parseNumericValue(this.dataset.sampleWeight),
-        total_weight: parseNumericValue(this.dataset.netWeightTotal),
+        quantity: normalizeNumericRaw(this.dataset.quantity),
+        packaging_weight: normalizeNumericRaw(this.dataset.sampleWeight),
+        total_weight: normalizeNumericRaw(this.dataset.netWeightTotal),
         packaging_unit: 'لتر',
-        ph: parseNumericValue(this.dataset.ph),
-        peroxide: parseNumericValue(this.dataset.peroxide),
+        ph: normalizeNumericRaw(this.dataset.ph),
+        peroxide: normalizeNumericRaw(this.dataset.peroxide),
         abs_232: absorptionReadings[0],
         abs_266: absorptionReadings[1],
         abs_270: absorptionReadings[2],
         abs_274: absorptionReadings[3],
         delta_k: absorptionReadings[4],
-        stigmastadiene: this.dataset.stigmastadiene ? parseNumericValue(this.dataset.stigmastadiene) : 0
+        stigmastadiene: normalizeNumericRaw(this.dataset.stigmastadiene, '0')
       };
       
       debugLog('Adding Sample - Parsed Data', sample);

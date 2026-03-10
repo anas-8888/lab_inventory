@@ -266,8 +266,8 @@ function calculateWeightedAverages() {
   document.getElementById('totalQuantityLiters').textContent = totalQuantityLiters.toFixed(2);
   
   if (totalQuantity > 0) {
-    document.getElementById('avgPH').textContent = (weightedSumPH / totalQuantity).toFixed(2);
-    document.getElementById('avgPeroxide').textContent = (weightedSumPeroxide / totalQuantity).toFixed(2);
+    document.getElementById('avgPH').textContent = (weightedSumPH / totalQuantity).toFixed(3);
+    document.getElementById('avgPeroxide').textContent = (weightedSumPeroxide / totalQuantity).toFixed(3);
     document.getElementById('avg232').textContent = (weightedSum232 / totalQuantity).toFixed(3);
     document.getElementById('avg270').textContent = (weightedSum270 / totalQuantity).toFixed(3);
     document.getElementById('avgDeltaK').textContent = (weightedSumDeltaK / totalQuantity).toFixed(3);
@@ -379,7 +379,8 @@ document.getElementById('invoiceForm').addEventListener('submit', function(e) {
     const quantityInputs = document.querySelectorAll('input[name^="quantities"]');
     
     quantityInputs.forEach(input => {
-        const quantity = parseFloat(input.value);
+        const quantityRaw = (input.value || '').trim();
+        const quantity = parseFloat(quantityRaw);
         const max = parseFloat(input.max);
         const itemIdMatch = input.name.match(/quantities\[(\d+)\]/);
         if (quantity <= 0 || quantity > max) {
@@ -388,7 +389,7 @@ document.getElementById('invoiceForm').addEventListener('submit', function(e) {
         } else {
             input.classList.remove('is-invalid');
             if (itemIdMatch) {
-                quantities[itemIdMatch[1]] = quantity;
+                quantities[itemIdMatch[1]] = quantityRaw;
             }
         }
     });

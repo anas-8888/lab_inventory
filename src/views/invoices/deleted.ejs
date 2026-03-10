@@ -1,3 +1,23 @@
+<%
+function formatNumberDisplay(value) {
+  if (value === null || value === undefined || value === '') return '-';
+  if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
+  const num = parseFloat(value);
+  if (isNaN(num)) return '-';
+  if (num === 0) return '0';
+
+  let precision = 3;
+  const absNum = Math.abs(num);
+  if (absNum > 0 && absNum < 1) precision = 6;
+
+  let rounded = Number(num.toFixed(precision));
+  if (rounded === 0 && num !== 0) rounded = Number(num.toFixed(8));
+
+  const result = rounded.toString();
+  return num < 0 ? ('\u200E' + result) : result;
+}
+%>
+
 <div class="container mt-4">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="mb-0">
@@ -44,8 +64,8 @@
                   <td><%= new Date(invoice.date).toLocaleDateString('en-GB') %></td>
                   <td><%= invoice.customer_name %></td>
                   <td><%= invoice.driver_name || '-' %></td>
-                  <td><%= invoice.total_quantity_tanks ? Number(invoice.total_quantity_tanks).toFixed(2) : '0.00' %></td>
-                  <td><%= invoice.total_quantity_liters ? Number(invoice.total_quantity_liters).toFixed(2) : '0.00' %></td>
+                  <td><%= formatNumberDisplay(invoice.total_quantity_tanks) %></td>
+                  <td><%= formatNumberDisplay(invoice.total_quantity_liters) %></td>
                   <td><%= invoice.notes || '-' %></td>
                   <td><%= new Date(invoice.deleted_at).toLocaleDateString('en-GB') %></td>
                   <td>

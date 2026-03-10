@@ -1,33 +1,35 @@
 <%
 function formatNumberDisplay(value) {
     if (value === null || value === undefined || value === '') return '-';
+    if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
 
     const num = parseFloat(value);
     if (isNaN(num)) return '-';
 
     if (num === 0) return '0';
 
-    let result = '';
-    
-    if (Number.isInteger(num)) {
-        result = num.toString();
-    } else {
-        const decimalStr = num.toString().split('.')[1];
-        if (!decimalStr) {
-            result = num.toString();
-        } else if (decimalStr.length <= 2) {
-            result = num.toString();
-        } else {
-            result = num.toFixed(3);
-        }
+    let precision = 3;
+    const absNum = Math.abs(num);
+    if (absNum > 0 && absNum < 1) precision = 6;
+
+    let rounded = Number(num.toFixed(precision));
+    if (rounded === 0 && num !== 0) {
+        rounded = Number(num.toFixed(8));
     }
 
-    // إذا كان الرقم سالب، أضف رمز اتجاه LTR قبل السالب لعرضه بشكل صحيح في RTL
+    const result = rounded.toString();
+
     if (num < 0) {
         return '\u200E' + result;
     }
 
     return result;
+}
+
+function formatWeightedAverage(value) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return '0.000';
+    return num.toFixed(3);
 }
 %>
 
@@ -165,15 +167,15 @@ function formatNumberDisplay(value) {
                   <tr>
                     <td style="padding: 6pt 4pt; text-align: center;"><%= index + 1 %></td>
                     <td style="padding: 6pt 4pt; text-align: center;"><%= item.sample_number %></td>
-                    <td style="padding: 6pt 4pt; text-align: center;"><%= formatNumberDisplay(quantity) %></td>
+                    <td style="padding: 6pt 4pt; text-align: center;"><%= formatNumberDisplay(item.quantity) %></td>
                     <td style="padding: 6pt 4pt; text-align: center;"><%= formatNumberDisplay(weight) %></td>
                     <td style="padding: 6pt 4pt; text-align: center;"><%= formatNumberDisplay(item.ph) %></td>
                     <td style="padding: 6pt 4pt; text-align: center;"><%= formatNumberDisplay(item.peroxide_value) %></td>
-                    <td style="padding: 6pt 4pt; text-align: center;"><%= parseFloat(item.absorption_232).toFixed(3) == NaN ? '' : parseFloat(item.absorption_232).toFixed(3) %></td>
-                    <td style="padding: 6pt 4pt; text-align: center;"><%= parseFloat(item.absorption_266).toFixed(3) == NaN ? '' : parseFloat(item.absorption_266).toFixed(3) %></td>
-                    <td style="padding: 6pt 4pt; text-align: center;"><%= parseFloat(item.absorption_270).toFixed(3) == NaN ? '' : parseFloat(item.absorption_270).toFixed(3) %></td>
-                    <td style="padding: 6pt 4pt; text-align: center;"><%= parseFloat(item.absorption_274).toFixed(3) == NaN ? '' : parseFloat(item.absorption_274).toFixed(3) %></td>
-                    <td style="padding: 6pt 4pt; text-align: center;"><%= parseFloat(item.delta_k).toFixed(3) == NaN ? '' : parseFloat(item.delta_k).toFixed(3) %></td>
+                    <td style="padding: 6pt 4pt; text-align: center;"><%= formatNumberDisplay(item.absorption_232) %></td>
+                    <td style="padding: 6pt 4pt; text-align: center;"><%= formatNumberDisplay(item.absorption_266) %></td>
+                    <td style="padding: 6pt 4pt; text-align: center;"><%= formatNumberDisplay(item.absorption_270) %></td>
+                    <td style="padding: 6pt 4pt; text-align: center;"><%= formatNumberDisplay(item.absorption_274) %></td>
+                    <td style="padding: 6pt 4pt; text-align: center;"><%= formatNumberDisplay(item.delta_k) %></td>
                   </tr>
                 <% }); %>
               </tbody>
@@ -186,13 +188,13 @@ function formatNumberDisplay(value) {
                 </tr>
                 <tr>
                   <td colspan="4" style="text-align: center; padding: 6pt 4pt; vertical-align: middle;"><strong>المتوسط المرجح</strong></td>
-                  <td style="padding: 6pt 4pt;"><strong><%= formatNumberDisplay(totalQuantity ? (weightedPH / totalQuantity) : 0) %></strong></td>
-                  <td style="padding: 6pt 4pt;"><strong><%= formatNumberDisplay(totalQuantity ? (weightedPeroxide / totalQuantity) : 0) %></strong></td>
-                  <td style="padding: 6pt 4pt;"><strong><%= parseFloat(totalQuantity ? (weighted232 / totalQuantity) : 0).toFixed(3) %></strong></td>
-                  <td style="padding: 6pt 4pt;"><strong><%= parseFloat(totalQuantity ? (weighted266 / totalQuantity) : 0).toFixed(3) %></strong></td>
-                  <td style="padding: 6pt 4pt;"><strong><%= parseFloat(totalQuantity ? (weighted270 / totalQuantity) : 0).toFixed(3) %></strong></td>
-                  <td style="padding: 6pt 4pt;"><strong><%= parseFloat(totalQuantity ? (weighted274 / totalQuantity) : 0).toFixed(3) %></strong></td>
-                  <td style="padding: 6pt 4pt;"><strong><%= parseFloat(totalQuantity ? (weightedDeltaK / totalQuantity) : 0).toFixed(3) %></strong></td>
+                  <td style="padding: 6pt 4pt;"><strong><%= formatWeightedAverage(totalQuantity ? (weightedPH / totalQuantity) : 0) %></strong></td>
+                  <td style="padding: 6pt 4pt;"><strong><%= formatWeightedAverage(totalQuantity ? (weightedPeroxide / totalQuantity) : 0) %></strong></td>
+                  <td style="padding: 6pt 4pt;"><strong><%= formatWeightedAverage(totalQuantity ? (weighted232 / totalQuantity) : 0) %></strong></td>
+                  <td style="padding: 6pt 4pt;"><strong><%= formatWeightedAverage(totalQuantity ? (weighted266 / totalQuantity) : 0) %></strong></td>
+                  <td style="padding: 6pt 4pt;"><strong><%= formatWeightedAverage(totalQuantity ? (weighted270 / totalQuantity) : 0) %></strong></td>
+                  <td style="padding: 6pt 4pt;"><strong><%= formatWeightedAverage(totalQuantity ? (weighted274 / totalQuantity) : 0) %></strong></td>
+                  <td style="padding: 6pt 4pt;"><strong><%= formatWeightedAverage(totalQuantity ? (weightedDeltaK / totalQuantity) : 0) %></strong></td>
                 </tr>
               </tfoot>
             </table>
@@ -379,3 +381,4 @@ function formatNumberDisplay(value) {
   }
 }
 </style>
+

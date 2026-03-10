@@ -388,11 +388,17 @@
     </div>
 </div>
 
+<%
+  const pageCurrency =
+    (typeof currency !== 'undefined' && currency) ||
+    (typeof defaultCurrency !== 'undefined' && defaultCurrency) ||
+    null;
+%>
 <div
     id="ordersPageData"
-    data-currency-symbol="<%= (currency && currency.symbol) ? currency.symbol : '$' %>"
-    data-exchange-rate="<%= (currency && currency.code === 'SYP') ? (currency.exchangeRate || 1) : 1 %>"
-    data-currency-code="<%= (currency && currency.code) ? currency.code : 'USD' %>"
+    data-currency-symbol="<%= (pageCurrency && pageCurrency.symbol) ? pageCurrency.symbol : '$' %>"
+    data-exchange-rate="<%= (pageCurrency && pageCurrency.code === 'SYP') ? (pageCurrency.exchangeRate || 1) : 1 %>"
+    data-currency-code="<%= (pageCurrency && pageCurrency.code) ? pageCurrency.code : 'USD' %>"
     hidden
 ></div>
 <script id="ordersMaterialsJson" type="application/json"><%- JSON.stringify(materials || []) %></script>
@@ -422,6 +428,16 @@ const currencySymbol = pageDataEl?.dataset?.currencySymbol || '';
 const exchangeRate = parseFloat(pageDataEl?.dataset?.exchangeRate || '1') || 1;
 const defaultCurrencyCode = pageDataEl?.dataset?.currencyCode || '';
 const isSyp = defaultCurrencyCode === 'SYP';
+
+// الحفاظ على العرض الخام داخل مودال التعديل
+(() => {
+  const editModal = document.getElementById('editOrderModal');
+  if (!editModal) return;
+  editModal.querySelectorAll('input[type="number"]').forEach((input) => {
+    input.setAttribute('type', 'text');
+    input.setAttribute('inputmode', 'decimal');
+  });
+})();
 
 // دالة تنسيق الأرقام حسب العملة
 const formatUSD = (v) => (parseFloat(v) || 0).toFixed(2);
@@ -699,9 +715,9 @@ function saveOrderEdit() {
             delivery_date: formData.get('delivery_date'),
             responsible_worker: formData.get('responsible_worker'),
             quality_controller: formData.get('quality_controller'),
-            pallets_count: parseInt(formData.get('pallets_count')||'')||null,
+            pallets_count: (formData.get('pallets_count') || '').trim() || null,
             container_number: formData.get('container_number'),
-            packages_count: parseInt(formData.get('packages_count')||'')||null,
+            packages_count: (formData.get('packages_count') || '').trim() || null,
             waybill_number: formData.get('waybill_number'),
             accreditation_number: formData.get('accreditation_number'),
             notes: formData.get('notes'),
@@ -805,9 +821,9 @@ document.getElementById('orderForm').addEventListener('submit', function(e) {
             delivery_date: formData.get('delivery_date'),
             responsible_worker: formData.get('responsible_worker'),
             quality_controller: formData.get('quality_controller'),
-            pallets_count: parseInt(formData.get('pallets_count')||'')||null,
+            pallets_count: (formData.get('pallets_count') || '').trim() || null,
             container_number: formData.get('container_number'),
-            packages_count: parseInt(formData.get('packages_count')||'')||null,
+            packages_count: (formData.get('packages_count') || '').trim() || null,
             waybill_number: formData.get('waybill_number'),
             accreditation_number: formData.get('accreditation_number'),
             notes: formData.get('notes'),
@@ -898,8 +914,7 @@ function setOrderRowMaterial(tr, material){
   tr.querySelector('.order-material-name').value = material.material_name || '';
   tr.querySelector('.order-unit').value = material.packaging_unit || '';
   // تعبئة الوزن القائم إن وُجد
-  const gross = material.gross_package_weight != null ? parseFloat(material.gross_package_weight) : null;
-  tr.querySelector('.order-gross-weight').value = (gross && !isNaN(gross)) ? gross.toFixed(3) : '';
+  tr.querySelector('.order-gross-weight').value = material.gross_package_weight != null ? String(material.gross_package_weight) : '';
   // الكمية الافتراضية 1 وحساب إجمالي السعر إن كان هناك سعر
   const qtyEl = tr.querySelector('.order-qty');
   if (qtyEl && (!qtyEl.value || parseFloat(qtyEl.value) <= 0)) qtyEl.value = '1';
@@ -913,14 +928,22 @@ function setOrderRowMaterial(tr, material){
 
 function collectOrderItems(){
   const items = [];
+  const asRawNumeric = (value) => {
+    const str = value === undefined || value === null ? '' : String(value).trim();
+    return /^-?\d+(\.\d+)?$/.test(str) ? str : null;
+  };
   document.querySelectorAll('#orderItemsBody tr').forEach(tr =>{
     const materialId = tr.querySelector('.order-material-id')?.value ? parseInt(tr.querySelector('.order-material-id').value) : null;
     const materialName = tr.querySelector('.order-material-name')?.value || '';
     const unit = tr.querySelector('.order-unit')?.value || null;
-    const qty = parseFloat(tr.querySelector('.order-qty')?.value||'');
-    const netWeight = parseFloat(tr.querySelector('.order-net-weight')?.value||'');
-    const grossWeight = parseFloat(tr.querySelector('.order-gross-weight')?.value||'');
-    const unitPrice = parseFloat(tr.querySelector('.order-unit-price')?.value||'');
+    const qtyRaw = tr.querySelector('.order-qty')?.value || '';
+    const netWeightRaw = tr.querySelector('.order-net-weight')?.value || '';
+    const grossWeightRaw = tr.querySelector('.order-gross-weight')?.value || '';
+    const unitPriceRaw = tr.querySelector('.order-unit-price')?.value || '';
+    const qty = parseFloat(qtyRaw);
+    const netWeight = parseFloat(netWeightRaw);
+    const grossWeight = parseFloat(grossWeightRaw);
+    const unitPrice = parseFloat(unitPriceRaw);
     const totalPrice = (!isNaN(unitPrice) && !isNaN(qty)) ? roundToDecimal(unitPrice * qty, defaultCurrencyCode === 'SYP' ? 0 : 2) : null;
     const notes = tr.querySelector('.order-notes')?.value || null;
     
@@ -933,11 +956,11 @@ function collectOrderItems(){
         material_id: materialId,
         material_name: materialName,
         unit,
-        requested_quantity: isNaN(qty)? null : qty,
-        net_weight: isNaN(netWeight)? null : netWeight,
-        gross_weight: isNaN(grossWeight)? null : grossWeight,
-        unit_price: isNaN(unitPrice)? null : unitPrice,
-        total_price: totalPrice,
+        requested_quantity: asRawNumeric(qtyRaw),
+        net_weight: asRawNumeric(netWeightRaw),
+        gross_weight: asRawNumeric(grossWeightRaw),
+        unit_price: asRawNumeric(unitPriceRaw),
+        total_price: totalPrice === null ? null : String(totalPrice),
         package_cost_syp: packageCostSYP,
         package_cost_usd: packageCostUSD,
         notes
@@ -984,19 +1007,19 @@ function addEditOrderItemRow(item){
       </select>
     </td>
     <td><input type="text" class="form-control edit-order-unit" value="${selectedUnit}" readonly></td>
-    <td><input type="number" class="form-control edit-order-qty" step="0.001" min="0" value="${item && item.requested_quantity != null ? item.requested_quantity : ''}"></td>
-    <td><input type="number" class="form-control edit-order-net-weight" step="0.001" min="0" value="${item && item.net_weight != null ? item.net_weight : ''}" placeholder="بعد الهدر (محسوب تلقائياً)"></td>
-    <td><input type="number" class="form-control edit-order-gross-weight" step="0.001" min="0" value="${item && item.gross_weight != null ? parseFloat(item.gross_weight).toFixed(3) : ''}" placeholder="من بيانات المادة (3 أرقام بعد الفاصلة)"></td>
+    <td><input type="text" inputmode="decimal" class="form-control edit-order-qty" value="${item && item.requested_quantity != null ? item.requested_quantity : ''}"></td>
+    <td><input type="text" inputmode="decimal" class="form-control edit-order-net-weight" value="${item && item.net_weight != null ? item.net_weight : ''}" placeholder="بعد الهدر (محسوب تلقائياً)"></td>
+    <td><input type="text" inputmode="decimal" class="form-control edit-order-gross-weight" value="${item && item.gross_weight != null ? item.gross_weight : ''}" placeholder="من بيانات المادة"></td>
     <td>
       <div class="input-group">
-        <input type="number" class="form-control edit-order-unit-price" step="0.01" min="0" value="${item && item.unit_price != null ? item.unit_price : ''}" oninput="onEditOrderCalcRow(this)">
+        <input type="text" inputmode="decimal" class="form-control edit-order-unit-price" value="${item && item.unit_price != null ? item.unit_price : ''}" oninput="onEditOrderCalcRow(this)">
         <span class="input-group-text">${currencySymbol}</span>
       </div>
       <small class="text-muted edit-package-cost-display">اختر مادة لعرض سعر الطرد</small>
     </td>
     <td>
       <div class="input-group">
-        <input type="number" class="form-control edit-order-total-price" step="0.01" min="0" value="${item && item.total_price != null ? item.total_price : ''}" readonly>
+        <input type="text" inputmode="decimal" class="form-control edit-order-total-price" value="${item && item.total_price != null ? item.total_price : ''}" readonly>
         <span class="input-group-text">${currencySymbol}</span>
       </div>
     </td>
@@ -1050,7 +1073,7 @@ function onEditOrderMaterialChange(selectEl){
           
           // تعبئة الوزن الصافي والوزن القائم من بيانات المادة
           tr.querySelector('.edit-order-net-weight').value = netWeight > 0 ? netWeight.toFixed(3) : '';
-          tr.querySelector('.edit-order-gross-weight').value = material.gross_package_weight ? parseFloat(material.gross_package_weight).toFixed(3) : '';
+          tr.querySelector('.edit-order-gross-weight').value = material.gross_package_weight ? String(material.gross_package_weight) : '';
         }
       })
       .catch(error => {
@@ -1073,15 +1096,23 @@ function onEditOrderMaterialChange(selectEl){
 
 function collectEditOrderItems(){
   const items = [];
+  const asRawNumeric = (value) => {
+    const str = value === undefined || value === null ? '' : String(value).trim();
+    return /^-?\d+(\.\d+)?$/.test(str) ? str : null;
+  };
   document.querySelectorAll('#editOrderItemsBody tr').forEach(tr =>{
     const sel = tr.querySelector('.edit-order-material');
     const materialId = sel && sel.value ? parseInt(sel.value) : null;
     const materialName = sel && sel.selectedOptions[0] ? sel.selectedOptions[0].textContent.trim() : '';
     const unit = tr.querySelector('.edit-order-unit')?.value || null;
-    const qtyVal = parseFloat(tr.querySelector('.edit-order-qty')?.value||'');
-    const netWeight = parseFloat(tr.querySelector('.edit-order-net-weight')?.value||'');
-    const grossWeight = parseFloat(tr.querySelector('.edit-order-gross-weight')?.value||'');
-    const unitPrice = parseFloat(tr.querySelector('.edit-order-unit-price')?.value||'');
+    const qtyRaw = tr.querySelector('.edit-order-qty')?.value || '';
+    const netWeightRaw = tr.querySelector('.edit-order-net-weight')?.value || '';
+    const grossWeightRaw = tr.querySelector('.edit-order-gross-weight')?.value || '';
+    const unitPriceRaw = tr.querySelector('.edit-order-unit-price')?.value || '';
+    const qtyVal = parseFloat(qtyRaw);
+    const netWeight = parseFloat(netWeightRaw);
+    const grossWeight = parseFloat(grossWeightRaw);
+    const unitPrice = parseFloat(unitPriceRaw);
     const qty = qtyVal;
     const totalPrice = (!isNaN(unitPrice) && !isNaN(qty)) ? roundToDecimal(unitPrice * qty, defaultCurrencyCode === 'SYP' ? 0 : 2) : null;
     const notes = tr.querySelector('.edit-order-notes')?.value || null;
@@ -1098,11 +1129,11 @@ function collectEditOrderItems(){
         material_id: materialId,
         material_name: materialName,
         unit,
-        requested_quantity: isNaN(qty)? null : qty,
-        net_weight: isNaN(netWeight)? null : netWeight,
-        gross_weight: isNaN(grossWeight)? null : grossWeight,
-        unit_price: isNaN(unitPrice)? null : unitPrice,
-        total_price: totalPrice,
+        requested_quantity: asRawNumeric(qtyRaw),
+        net_weight: asRawNumeric(netWeightRaw),
+        gross_weight: asRawNumeric(grossWeightRaw),
+        unit_price: asRawNumeric(unitPriceRaw),
+        total_price: totalPrice === null ? null : String(totalPrice),
         package_cost_syp: packageCostSYP,
         package_cost_usd: packageCostUSD,
         notes

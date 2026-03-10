@@ -3,6 +3,14 @@
 const __isSyp = (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.code === 'SYP');
 const __exchangeRate = (typeof exchangeRate !== 'undefined' && exchangeRate) ? parseFloat(exchangeRate) : 13000;
 const __currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '$';
+function formatNumberDisplay(value) {
+  if (value === null || value === undefined || value === '') return '-';
+  if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
+  const num = parseFloat(value);
+  if (isNaN(num)) return '-';
+  if (Number.isInteger(num)) return String(num);
+  return num.toString();
+}
 let __additionalExpenseItems = [];
 try {
   if (typeof material.additional_expense_items === 'string') __additionalExpenseItems = JSON.parse(material.additional_expense_items || '[]');
@@ -98,7 +106,7 @@ const __isExternalMaterial = material.material_origin === 'external';
                             <td class="text-primary fw-bold">
                                 <%= (defaultCurrency && defaultCurrency.code === 'SYP')
                                     ? String(Math.round(parseFloat(material.unit_cost) || 0))
-                                    : (parseFloat(material.unit_cost) || 0).toFixed(2)
+                                    : formatNumberDisplay(material.unit_cost)
                                 %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                             </td>
                                 </tr>
@@ -107,7 +115,7 @@ const __isExternalMaterial = material.material_origin === 'external';
                             <td class="text-success fw-bold">
                                 <%= (defaultCurrency && defaultCurrency.code === 'SYP')
                                     ? String(Math.round(parseFloat(material.package_cost) || 0))
-                                    : (parseFloat(material.package_cost) || 0).toFixed(2)
+                                    : formatNumberDisplay(material.package_cost)
                                 %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                             </td>
                                 </tr>
@@ -130,7 +138,7 @@ const __isExternalMaterial = material.material_origin === 'external';
                                     <td>
                                         <%= (defaultCurrency && defaultCurrency.code === 'SYP')
                                             ? String(Math.round(parseFloat(material.unit_cost) || 0))
-                                            : (parseFloat(material.unit_cost) || 0).toFixed(2)
+                                            : formatNumberDisplay(material.unit_cost)
                                         %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                                     </td>
                                 </tr>
@@ -139,20 +147,20 @@ const __isExternalMaterial = material.material_origin === 'external';
                                     <td>
                                         <%= (defaultCurrency && defaultCurrency.code === 'SYP')
                                             ? String(Math.round(parseFloat(material.package_cost) || 0))
-                                            : (parseFloat(material.package_cost) || 0).toFixed(2)
+                                            : formatNumberDisplay(material.package_cost)
                                         %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td><strong>الوزن الصافي:</strong></td>
-                                    <td><%= (parseFloat(material.packaging_weight) || 0).toFixed(3) %> كجم</td>
+                                    <td><%= formatNumberDisplay(material.packaging_weight) %> كجم</td>
                                 </tr>
                                 <tr>
                                     <td><strong>كلفة الكيلو:</strong></td>
                                     <td>
                                         <%= (defaultCurrency && defaultCurrency.code === 'SYP')
                                             ? String(Math.round(parseFloat(material.price_before_waste) || 0))
-                                            : (parseFloat(material.price_before_waste) || 0).toFixed(2)
+                                            : formatNumberDisplay(material.price_before_waste)
                                         %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                                     </td>
                                 </tr>
@@ -256,17 +264,17 @@ const __isExternalMaterial = material.material_origin === 'external';
                             <td>
                                 <%= (defaultCurrency && defaultCurrency.code === 'SYP')
                                     ? String(Math.round(parseFloat(material.price_before_waste) || 0))
-                                    : (parseFloat(material.price_before_waste) || 0).toFixed(2)
+                                    : formatNumberDisplay(material.price_before_waste)
                                 %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                             </td>
                                 </tr>
                                 <tr>
                                     <td><strong>الوزن الجمالي:</strong></td>
-                                    <td><%= parseFloat(material.gross_weight).toFixed(2) %> كجم</td>
+                                    <td><%= formatNumberDisplay(material.gross_weight) %> كجم</td>
                                 </tr>
                                 <tr>
                                     <td><strong>نسبة الهدر:</strong></td>
-                                    <td><%= parseFloat(material.waste_percentage).toFixed(1) %>%</td>
+                                    <td><%= formatNumberDisplay(material.waste_percentage) %>%</td>
                                 </tr>
                                 <tr>
                                     <td><strong>الوزن الصافي:</strong></td>
@@ -283,15 +291,15 @@ const __isExternalMaterial = material.material_origin === 'external';
                                 </tr>
                                 <tr>
                                     <td><strong>وزن المادة (داخل العبوة):</strong></td>
-                                    <td><%= (material.packaging_weight != null) ? parseFloat(material.packaging_weight).toFixed(3) : '-' %> كجم</td>
+                                    <td><%= (material.packaging_weight != null) ? formatNumberDisplay(material.packaging_weight) : '-' %> كجم</td>
                                 </tr>
                                 <tr>
                                     <td><strong>وزن العبوة الفارغة:</strong></td>
-                                    <td><%= (material.packaging_unit_weight != null) ? parseFloat(material.packaging_unit_weight).toFixed(3) : '-' %> كجم</td>
+                                    <td><%= (material.packaging_unit_weight != null) ? formatNumberDisplay(material.packaging_unit_weight) : '-' %> كجم</td>
                                 </tr>
                                 <tr>
                                     <td><strong>وزن الطرد القائم:</strong></td>
-                                    <td><%= (material.gross_package_weight != null) ? parseFloat(material.gross_package_weight).toFixed(3) : '-' %> كجم</td>
+                                    <td><%= (material.gross_package_weight != null) ? formatNumberDisplay(material.gross_package_weight) : '-' %> كجم</td>
                                 </tr>
                                 <tr>
                                     <td><strong>عدد الحبات في الطرد:</strong></td>
@@ -316,7 +324,7 @@ const __isExternalMaterial = material.material_origin === 'external';
                             <td>
                                 <%= (defaultCurrency && defaultCurrency.code === 'SYP')
                                     ? String(Math.round(parseFloat(material.empty_package_price) || 0))
-                                    : (parseFloat(material.empty_package_price) || 0).toFixed(2)
+                                    : formatNumberDisplay(material.empty_package_price)
                                 %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                             </td>
                                 </tr>
@@ -325,7 +333,7 @@ const __isExternalMaterial = material.material_origin === 'external';
                             <td>
                                 <%= (defaultCurrency && defaultCurrency.code === 'SYP')
                                     ? String(Math.round(parseFloat(material.sticker_price) || 0))
-                                    : (parseFloat(material.sticker_price) || 0).toFixed(2)
+                                    : formatNumberDisplay(material.sticker_price)
                                 %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                             </td>
                                 </tr>
@@ -334,7 +342,7 @@ const __isExternalMaterial = material.material_origin === 'external';
                             <td>
                                 <%= (defaultCurrency && defaultCurrency.code === 'SYP')
                                     ? String(Math.round(parseFloat(material.carton_price) || 0))
-                                    : (parseFloat(material.carton_price) || 0).toFixed(2)
+                                    : formatNumberDisplay(material.carton_price)
                                 %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                             </td>
                                 </tr>
@@ -343,7 +351,7 @@ const __isExternalMaterial = material.material_origin === 'external';
                             <td>
                                 <%= (defaultCurrency && defaultCurrency.code === 'SYP')
                                     ? String(Math.round(parseFloat(material.pallet_price) || 0))
-                                    : (parseFloat(material.pallet_price) || 0).toFixed(2)
+                                    : formatNumberDisplay(material.pallet_price)
                                 %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                             </td>
                                 </tr>
@@ -357,7 +365,7 @@ const __isExternalMaterial = material.material_origin === 'external';
                             <td>
                                 <%= (defaultCurrency && defaultCurrency.code === 'SYP')
                                     ? String(Math.round(parseFloat(material.additional_expenses) || 0))
-                                    : (parseFloat(material.additional_expenses) || 0).toFixed(2)
+                                    : formatNumberDisplay(material.additional_expenses)
                                 %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                             </td>
                                 </tr>
@@ -368,8 +376,9 @@ const __isExternalMaterial = material.material_origin === 'external';
                                             <% __additionalExpenseItems.forEach(function(item, idx){ 
                                                 const usdVal = parseFloat(item.price) || 0;
                                                 const shownVal = __isSyp ? (usdVal * __exchangeRate) : usdVal;
+                                                const shownText = __isSyp ? formatNumberDisplay(shownVal) : formatNumberDisplay(item.price);
                                             %>
-                                                <div><%= item.name || 'بدون اسم' %>: <%= shownVal.toFixed(2) %> <%= __currencySymbol %></div>
+                                                <div><%= item.name || 'بدون اسم' %>: <%= shownText %> <%= __currencySymbol %></div>
                                             <% }); %>
                                         <% } else { %>
                                             -
@@ -381,7 +390,7 @@ const __isExternalMaterial = material.material_origin === 'external';
                             <td>
                                 <%= (defaultCurrency && defaultCurrency.code === 'SYP')
                                     ? String(Math.round(parseFloat(material.labor_cost) || 0))
-                                    : (parseFloat(material.labor_cost) || 0).toFixed(2)
+                                    : formatNumberDisplay(material.labor_cost)
                                 %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                             </td>
                                 </tr>
@@ -390,7 +399,7 @@ const __isExternalMaterial = material.material_origin === 'external';
                             <td>
                                 <%= (defaultCurrency && defaultCurrency.code === 'SYP')
                                     ? String(Math.round(parseFloat(material.preservatives_cost) || 0))
-                                    : (parseFloat(material.preservatives_cost) || 0).toFixed(2)
+                                    : formatNumberDisplay(material.preservatives_cost)
                                 %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                             </td>
                                 </tr>
@@ -424,7 +433,7 @@ const __isExternalMaterial = material.material_origin === 'external';
                                     <% extras.forEach(function(ew){ %>
                                       <tr>
                                         <td><%= ew.name || '-' %></td>
-                                        <td><%= (parseFloat(ew.weight) || 0).toFixed(3) %></td>
+                                        <td><%= formatNumberDisplay(ew.weight) %></td>
                                       </tr>
                                     <% }) %>
                                   </tbody>
@@ -552,17 +561,17 @@ function printMaterialDetails() {
             <div class="section">
                 <h3>نتائج الحساب</h3>
                 <table>
-                                    <tr class="highlight"><th>كلفة القطعة الواحدة</th><td><%= parseFloat(material.unit_cost).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
-                <tr class="highlight"><th>كلفة الطرد</th><td><%= parseFloat(material.package_cost).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
+                                    <tr class="highlight"><th>كلفة القطعة الواحدة</th><td><%= formatNumberDisplay(material.unit_cost) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
+                <tr class="highlight"><th>كلفة الطرد</th><td><%= formatNumberDisplay(material.package_cost) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
                 </table>
             </div>
             
             <div class="section">
                 <h3>بيانات التكلفة الأساسية</h3>
                 <table>
-                    <tr><th>السعر قبل الهدر</th><td><%= parseFloat(material.price_before_waste).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>/كجم</td></tr>
-                    <tr><th>الوزن الجمالي</th><td><%= parseFloat(material.gross_weight).toFixed(2) %> كجم</td></tr>
-                    <tr><th>نسبة الهدر</th><td><%= parseFloat(material.waste_percentage).toFixed(1) %>%</td></tr>
+                    <tr><th>السعر قبل الهدر</th><td><%= formatNumberDisplay(material.price_before_waste) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>/كجم</td></tr>
+                    <tr><th>الوزن الجمالي</th><td><%= formatNumberDisplay(material.gross_weight) %> كجم</td></tr>
+                    <tr><th>نسبة الهدر</th><td><%= formatNumberDisplay(material.waste_percentage) %>%</td></tr>
                     <tr><th>الوزن الصافي</th><td><%= (parseFloat(material.gross_weight) * (1 - parseFloat(material.waste_percentage) / 100)).toFixed(2) %> كجم</td></tr>
                 </table>
             </div>
@@ -571,7 +580,7 @@ function printMaterialDetails() {
                 <h3>بيانات التعبئة</h3>
                 <table>
                     <tr><th>وحدة التعبئة</th><td><%= material.packaging_unit %></td></tr>
-                    <tr><th>وزن وحدة التعبئة</th><td><%= parseFloat(material.packaging_weight).toFixed(2) %> كجم</td></tr>
+                    <tr><th>وزن وحدة التعبئة</th><td><%= formatNumberDisplay(material.packaging_weight) %> كجم</td></tr>
                     <tr><th>عدد الحبات في الطرد</th><td><%= material.pieces_per_package %></td></tr>
                     <tr><th>عدد الطرود في الطبلية</th><td><%= material.packages_per_pallet %></td></tr>
                 </table>
@@ -580,31 +589,32 @@ function printMaterialDetails() {
             <div class="section">
                 <h3>تكاليف التعبئة</h3>
                 <table>
-                                    <tr><th>ثمن العبوة الفارغة</th><td><%= parseFloat(material.empty_package_price).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
-                <tr><th>ثمن اللصاقة</th><td><%= parseFloat(material.sticker_price).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
-                <tr><th>ثمن كرتونة</th><td><%= parseFloat(material.carton_price).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
-                <tr><th>ثمن الطبلية</th><td><%= parseFloat(material.pallet_price).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
+                                    <tr><th>ثمن العبوة الفارغة</th><td><%= formatNumberDisplay(material.empty_package_price) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
+                <tr><th>ثمن اللصاقة</th><td><%= formatNumberDisplay(material.sticker_price) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
+                <tr><th>ثمن كرتونة</th><td><%= formatNumberDisplay(material.carton_price) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
+                <tr><th>ثمن الطبلية</th><td><%= formatNumberDisplay(material.pallet_price) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
                 </table>
             </div>
             
             <div class="section">
                 <h3>تكاليف إضافية</h3>
                 <table>
-                                    <tr><th>مصاريف إضافية</th><td><%= parseFloat(material.additional_expenses).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
+                                    <tr><th>مصاريف إضافية</th><td><%= formatNumberDisplay(material.additional_expenses) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
                 <tr><th>تفصيل المصاريف الإضافية</th><td>
                     <% if (__additionalExpenseItems.length) { %>
                         <% __additionalExpenseItems.forEach(function(item){ 
                             const usdVal = parseFloat(item.price) || 0;
                             const shownVal = __isSyp ? (usdVal * __exchangeRate) : usdVal;
+                            const shownText = __isSyp ? formatNumberDisplay(shownVal) : formatNumberDisplay(item.price);
                         %>
-                            <div><%= item.name || 'بدون اسم' %>: <%= shownVal.toFixed(2) %> <%= __currencySymbol %></div>
+                            <div><%= item.name || 'بدون اسم' %>: <%= shownText %> <%= __currencySymbol %></div>
                         <% }); %>
                     <% } else { %>
                         -
                     <% } %>
                 </td></tr>
-                <tr><th>مصروف عمال</th><td><%= parseFloat(material.labor_cost).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
-                <tr><th>مواد حافظة</th><td><%= parseFloat(material.preservatives_cost).toFixed(2) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
+                <tr><th>مصروف عمال</th><td><%= formatNumberDisplay(material.labor_cost) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
+                <tr><th>مواد حافظة</th><td><%= formatNumberDisplay(material.preservatives_cost) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %></td></tr>
                 </table>
             </div>
         </body>

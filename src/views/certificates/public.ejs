@@ -1,6 +1,7 @@
-<%
+﻿<%
 function formatNumberDisplay(value) {
     if (value === null || value === undefined || value === '') return '-';
+    if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
 
     const num = parseFloat(value);
     if (isNaN(num)) return '-';
@@ -18,7 +19,7 @@ function formatNumberDisplay(value) {
         } else if (decimalStr.length <= 2) {
             result = num.toString();
         } else {
-            result = num.toFixed(3);
+            result = num.toString();
         }
     }
 
@@ -28,6 +29,12 @@ function formatNumberDisplay(value) {
     }
 
     return result;
+}
+
+function formatWeightedAverage(value) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return '0.000';
+    return num.toFixed(3);
 }
 %>
 
@@ -204,14 +211,14 @@ function formatNumberDisplay(value) {
                                     <!-- المتوسط المرجح -->
                                     <tr style="background: #e9f7ef; font-weight: bold; border-top: 2px solid #198754;">
                                         <td colspan="5" style="text-align: center; padding: 6pt 4pt; vertical-align: middle;"><strong>المتوسط المرجح</strong></td>
-                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatNumberDisplay(totalWeight ? (weightedPH / totalWeight) : 0) %></strong></td>
-                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatNumberDisplay(totalWeight ? (weightedPeroxide / totalWeight) : 0) %></strong></td>
-                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatNumberDisplay(totalWeight ? (weighted232 / totalWeight) : 0) %></strong></td>
-                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatNumberDisplay(totalWeight ? (weighted266 / totalWeight) : 0) %></strong></td>
-                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatNumberDisplay(totalWeight ? (weighted270 / totalWeight) : 0) %></strong></td>
-                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatNumberDisplay(totalWeight ? (weighted274 / totalWeight) : 0) %></strong></td>
-                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatNumberDisplay(totalWeight ? (weightedDeltaK / totalWeight) : 0) %></strong></td>
-                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatNumberDisplay(totalWeight ? (weightedStigmastadiene / totalWeight) : 0) %></strong></td>
+                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatWeightedAverage(totalWeight ? (weightedPH / totalWeight) : 0) %></strong></td>
+                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatWeightedAverage(totalWeight ? (weightedPeroxide / totalWeight) : 0) %></strong></td>
+                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatWeightedAverage(totalWeight ? (weighted232 / totalWeight) : 0) %></strong></td>
+                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatWeightedAverage(totalWeight ? (weighted266 / totalWeight) : 0) %></strong></td>
+                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatWeightedAverage(totalWeight ? (weighted270 / totalWeight) : 0) %></strong></td>
+                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatWeightedAverage(totalWeight ? (weighted274 / totalWeight) : 0) %></strong></td>
+                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatWeightedAverage(totalWeight ? (weightedDeltaK / totalWeight) : 0) %></strong></td>
+                                        <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatWeightedAverage(totalWeight ? (weightedStigmastadiene / totalWeight) : 0) %></strong></td>
                                       </tr>
                             </tbody>
                         </table>
@@ -713,6 +720,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     .info-value {
         color: #000 !important;
+    }
     }
 }
 

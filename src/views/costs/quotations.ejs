@@ -1,3 +1,12 @@
+<%
+function formatNumberDisplay(value) {
+  if (value === null || value === undefined || value === '') return '0';
+  if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
+  const n = parseFloat(value);
+  if (isNaN(n)) return '0';
+  return Number.isInteger(n) ? String(n) : n.toString();
+}
+%>
 <div class="container mt-4">
     <div class="row">
         <div class="col-12">
@@ -147,7 +156,7 @@
                                     <td>
                                         <%= (defaultCurrency && defaultCurrency.code === 'SYP')
                                             ? String(Math.round(parseFloat(quotation.total_amount) || 0))
-                                            : (parseFloat(quotation.total_amount) || 0).toFixed(2)
+                                            : formatNumberDisplay(quotation.total_amount)
                                         %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                                     </td>
                                     <td class="quotation-date"><%= formatDate(quotation.created_at) %></td>
@@ -371,11 +380,25 @@ const pageData = pageDataElement ? JSON.parse(pageDataElement.textContent || '{}
 const exchangeRate = parseFloat(pageData.exchangeRate) || 0;
 const defaultCurrencyCode = pageData.defaultCurrencyCode || 'USD';
 const currencySymbol = pageData.currencySymbol || '$';
-const formatUSD = (v) => (parseFloat(v) || 0).toFixed(2);
+(() => {
+  const editModal = document.getElementById('editQuotationModal');
+  if (!editModal) return;
+  editModal.querySelectorAll('input[type="number"]').forEach((input) => {
+    input.setAttribute('type', 'text');
+    input.setAttribute('inputmode', 'decimal');
+  });
+})();
+const rawLikeDisplay = (v) => {
+  if (v === null || v === undefined || v === '') return '0';
+  if (typeof v === 'string' && /^-?\d+(\.\d+)?$/.test(v.trim())) return v.trim();
+  const parsed = parseFloat(v);
+  return Number.isFinite(parsed) ? parsed.toString() : '0';
+};
+const formatUSD = (v) => rawLikeDisplay(v);
 const formatSYP = (v) => String(Math.round(parseFloat(v) || 0));
 const displayMoney = (v) => {
   const value = parseFloat(v) || 0;
-  return defaultCurrencyCode === 'SYP' ? formatSYP(value) : formatUSD(value);
+  return defaultCurrencyCode === 'SYP' ? formatSYP(value) : formatUSD(v);
 };
 
 // دالة لتقريب الأرقام العشرية بشكل صحيح
@@ -572,32 +595,18 @@ function openEditQuotationModal(id) {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
       
-      // استخدام القيم المحفوظة مباشرة بدلاً من إعادة حسابها
-      let finalPrice, totalPrice;
-      if (defaultCurrencyCode === 'SYP') {
-        // لليرة السورية، استخدم القيم المحفوظة مباشرة
-        finalPrice = parseFloat(it.final_price_syp) || parseFloat(it.final_price) || 0;
-        totalPrice = parseFloat(it.total_price_syp) || parseFloat(it.total_price) || 0;
-        
-      } else {
-        // للدولار، استخدم القيم المحفوظة مباشرة
-        finalPrice = parseFloat(it.final_price) || 0;
-        totalPrice = parseFloat(it.total_price) || 0;
-      }
-      
-      
       tr.innerHTML = `
         <td style="width: 30%; min-width: 250px; word-wrap: break-word; white-space: normal;">${it.material_name}<input type="hidden" class="edit-material-id" value="${it.material_id||''}"></td>
         <td>
-          <input type="number" class="form-control edit-unit-cost" value="${it.unit_cost}" readonly>
+          <input type="text" inputmode="decimal" class="form-control edit-unit-cost" value="${it.unit_cost}" readonly>
         </td>
-        <td><input type="number" class="form-control edit-profit" step="0.01" value="${it.profit_percentage||0}" onchange="recalcEditRow(this)"></td>
+        <td><input type="text" inputmode="decimal" class="form-control edit-profit" value="${it.profit_percentage||0}" onchange="recalcEditRow(this)"></td>
         <td>
-          <input type="number" class="form-control edit-final" value="${finalPrice}" onchange="manualEditFinalPriceChange(this)">
+          <input type="text" inputmode="decimal" class="form-control edit-final" value="${defaultCurrencyCode === 'SYP' ? (it.final_price_syp ?? it.final_price ?? '') : (it.final_price ?? '')}" onchange="manualEditFinalPriceChange(this)">
         </td>
-        <td><input type="number" class="form-control edit-qty" value="${it.quantity}" min="1" onchange="recalcEditRow(this)"></td>
+        <td><input type="text" inputmode="decimal" class="form-control edit-qty" value="${it.quantity}" onchange="recalcEditRow(this)"></td>
         <td>
-          <input type="number" class="form-control edit-total" value="${totalPrice}" readonly>
+          <input type="text" inputmode="decimal" class="form-control edit-total" value="${defaultCurrencyCode === 'SYP' ? (it.total_price_syp ?? it.total_price ?? '') : (it.total_price ?? '')}" readonly>
         </td>
         <td><input type="text" class="form-control edit-notes" value="${itemNotesEscaped}" placeholder="ملاحظات"></td>
         <td><button type="button" class="btn btn-sm btn-danger" onclick="removeEditMaterialRow(this)"><i class="bi bi-trash"></i></button></td>`;
@@ -684,15 +693,15 @@ function addEditMaterialRow(){
       </div>
     </td>
     <td>
-      <input type="number" class="form-control edit-unit-cost" readonly>
+      <input type="text" inputmode="decimal" class="form-control edit-unit-cost" readonly>
     </td>
-    <td><input type="number" class="form-control edit-profit" step="0.01" value="0" onchange="recalcEditRow(this)"></td>
+    <td><input type="text" inputmode="decimal" class="form-control edit-profit" value="0" onchange="recalcEditRow(this)"></td>
     <td>
-      <input type="number" class="form-control edit-final" value="0" onchange="manualEditFinalPriceChange(this)">
+      <input type="text" inputmode="decimal" class="form-control edit-final" value="0" onchange="manualEditFinalPriceChange(this)">
     </td>
-    <td><input type="number" class="form-control edit-qty" value="1" min="1" onchange="recalcEditRow(this)"></td>
+    <td><input type="text" inputmode="decimal" class="form-control edit-qty" value="1" onchange="recalcEditRow(this)"></td>
     <td>
-      <input type="number" class="form-control edit-total" value="0" readonly>
+      <input type="text" inputmode="decimal" class="form-control edit-total" value="0" readonly>
     </td>
     <td><input type="text" class="form-control edit-notes" placeholder="ملاحظات"></td>
     <td><button type="button" class="btn btn-sm btn-danger" onclick="removeEditMaterialRow(this)"><i class="bi bi-trash"></i></button></td>
@@ -790,10 +799,18 @@ function saveEditQuotation(){
       materialId = hiddenId && hiddenId.value ? parseInt(hiddenId.value) : null;
       name = (selectedNameInput?.value || tr.children[0].textContent || '').trim();
     }
-    const unitCost = parseFloat(tr.querySelector('.edit-unit-cost').value)||0;
-    const profit = parseFloat(tr.querySelector('.edit-profit').value)||0;
-    const finalPrice = parseFloat(tr.querySelector('.edit-final').value)||0;
-    const qty = parseFloat(tr.querySelector('.edit-qty').value)||1;
+    const unitCostInput = tr.querySelector('.edit-unit-cost');
+    const profitInput = tr.querySelector('.edit-profit');
+    const finalInput = tr.querySelector('.edit-final');
+    const qtyInput = tr.querySelector('.edit-qty');
+    const unitCostRaw = (unitCostInput?.value || '').trim();
+    const profitRaw = (profitInput?.value || '').trim();
+    const finalPriceRaw = (finalInput?.value || '').trim();
+    const qtyRaw = (qtyInput?.value || '').trim();
+    const unitCost = parseFloat(unitCostRaw)||0;
+    const profit = parseFloat(profitRaw)||0;
+    const finalPrice = parseFloat(finalPriceRaw)||0;
+    const qty = parseFloat(qtyRaw)||1;
     const notes = tr.querySelector('.edit-notes')?.value || '';
     
     // إضافة بيانات إضافية للمادة إذا كانت متوفرة
@@ -805,9 +822,9 @@ function saveEditQuotation(){
     payload.items.push({ 
       material_id: materialId, 
       material_name: name, 
-      unit_cost: unitCost, 
-      profit_percentage: profit, 
-      quantity: qty,
+      unit_cost: unitCostRaw || String(unitCost), 
+      profit_percentage: profitRaw || String(profit), 
+      quantity: qtyRaw || String(qty),
       item_notes: notes,
       material_type: materialType,
       packaging_unit: packagingUnit,
@@ -868,6 +885,9 @@ document.getElementById('quotationForm').addEventListener('submit', function(e) 
             // التقط الملاحظات من الحقل
             const tr = document.querySelector(`#materialsTableBody tr[data-row-id="${row.rowId}"]`);
             row.notes = tr?.querySelector('.item-notes')?.value || '';
+            const unitCostRaw = (tr?.querySelector('.unit-cost')?.value || '').trim();
+            const profitRaw = (tr?.querySelector('.profit-percentage')?.value || '').trim();
+            const quantityRaw = (tr?.querySelector('.quantity')?.value || '').trim();
             items.push({
                 material_id: row.materialId,
                 material_name: row.materialName,
@@ -875,11 +895,11 @@ document.getElementById('quotationForm').addEventListener('submit', function(e) 
                 packaging_unit: row.packagingUnit,
                 packaging_weight: row.packagingWeight,
                 pieces_per_package: row.piecesPerPackage,
-                package_cost: row.unitCost,
+                package_cost: unitCostRaw || String(row.unitCost),
                 item_notes: row.notes,
-                unit_cost: row.unitCost,
-                profit_percentage: row.profitPercentage,
-                quantity: row.quantity
+                unit_cost: unitCostRaw || String(row.unitCost),
+                profit_percentage: profitRaw || String(row.profitPercentage),
+                quantity: quantityRaw || String(row.quantity)
             });
         }
     });
@@ -1344,3 +1364,4 @@ function selectMaterial(materialId){
 window.openMaterialPicker = openMaterialPicker;
 window.selectMaterial = selectMaterial;
 </script>
+

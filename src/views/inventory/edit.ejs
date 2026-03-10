@@ -2,6 +2,7 @@
 <% 
 function formatNumberDisplay(value) {
     if (value === null || value === undefined || value === '') return '-';
+    if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
 
     const num = parseFloat(value);
     if (isNaN(num)) return '-';
@@ -19,7 +20,7 @@ function formatNumberDisplay(value) {
         } else if (decimalStr.length <= 2) {
             result = num.toString();
         } else {
-            result = num.toFixed(3);
+            result = num.toString();
         }
     }
 

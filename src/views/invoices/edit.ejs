@@ -1,35 +1,23 @@
-<%
+﻿<%
 function formatNumberDisplay(value) {
     if (value === null || value === undefined || value === '') return '-';
-
+    if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
     const num = parseFloat(value);
     if (isNaN(num)) return '-';
-
     if (num === 0) return '0';
-
-    let result = '';
-    
-    if (Number.isInteger(num)) {
-        result = num.toString();
-    } else {
-        const decimalStr = num.toString().split('.')[1];
-        if (!decimalStr) {
-            result = num.toString();
-        } else if (decimalStr.length <= 2) {
-            result = num.toString();
-        } else {
-            result = num.toFixed(3);
-        }
+    let precision = 3;
+    const absNum = Math.abs(num);
+    if (absNum > 0 && absNum < 1) precision = 6;
+    let rounded = Number(num.toFixed(precision));
+    if (rounded === 0 && num !== 0) {
+        rounded = Number(num.toFixed(8));
     }
-
-    // إذا كان الرقم سالب، أضف رمز اتجاه LTR قبل السالب لعرضه بشكل صحيح في RTL
+    const result = rounded.toString();
     if (num < 0) {
         return '\u200E' + result;
     }
-
     return result;
-}
-%>
+}%>
 
 <div class="container mt-4">
   <div class="card shadow">
@@ -117,11 +105,11 @@ function formatNumberDisplay(value) {
                     <td><%= formatNumberDisplay(item.available_quantity) %></td>
                     <td><%= formatNumberDisplay(item.ph) %></td>
                     <td><%= formatNumberDisplay(item.peroxide_value) %></td>
-                    <td><%= parseFloat(item.absorption_232).toFixed(3) == NaN ? '' : parseFloat(item.absorption_232).toFixed(3) %></td>
-                    <td><%= parseFloat(item.absorption_266).toFixed(3) == NaN ? '' : parseFloat(item.absorption_266).toFixed(3) %></td>
-                    <td><%= parseFloat(item.absorption_270).toFixed(3) == NaN ? '' : parseFloat(item.absorption_270).toFixed(3) %></td>
-                    <td><%= parseFloat(item.absorption_274).toFixed(3) == NaN ? '' : parseFloat(item.absorption_274).toFixed(3) %></td>
-                    <td><%= parseFloat(item.delta_k).toFixed(3) == NaN ? '' : parseFloat(item.delta_k).toFixed(3) %></td>
+                    <td><%= formatNumberDisplay(item.absorption_232) %></td>
+                    <td><%= formatNumberDisplay(item.absorption_266) %></td>
+                    <td><%= formatNumberDisplay(item.absorption_270) %></td>
+                    <td><%= formatNumberDisplay(item.absorption_274) %></td>
+                    <td><%= formatNumberDisplay(item.delta_k) %></td>
                     <td>
                       <button type="button" class="btn btn-sm btn-danger remove-sample-btn" 
                               data-inventory-id="<%= item.inventory_id %>">
@@ -406,8 +394,16 @@ function formatNumberDisplay(value) {
 }
 </style>
 
+<script id="invoiceEditItemsJson" type="application/json"><%- JSON.stringify(items || []) %></script>
 <script>
-const items = <%- JSON.stringify(items) %>;
+const items = (() => {
+  const el = document.getElementById('invoiceEditItemsJson');
+  try {
+    return JSON.parse(el?.textContent || '[]');
+  } catch (_) {
+    return [];
+  }
+})();
 
 document.addEventListener('DOMContentLoaded', function() {
   const form = document.getElementById('invoiceForm');
@@ -540,9 +536,9 @@ document.addEventListener('DOMContentLoaded', function() {
         sample_number: this.dataset.sampleNumber,
         supplier_name: this.dataset.supplier,
         quantity: 1, // Default quantity
-        available_quantity: parseFloat(this.dataset.quantity),
-        ph: parseFloat(this.dataset.ph) || 0,
-        peroxide_value: parseFloat(this.dataset.peroxide) || 0,
+        available_quantity: this.dataset.quantity || 0,
+        ph: this.dataset.ph || 0,
+        peroxide_value: this.dataset.peroxide || 0,
         absorption_232: 0,
         absorption_266: 0,
         absorption_270: 0,
@@ -552,7 +548,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
       // Parse absorption readings
       if (this.dataset.absorptionReadings) {
-        const readings = this.dataset.absorptionReadings.split(' ').map(Number);
+        const readings = this.dataset.absorptionReadings.split(' ');
         if (readings.length >= 5) {
           sample.absorption_232 = readings[0] || 0;
           sample.absorption_266 = readings[1] || 0;
@@ -586,11 +582,11 @@ document.addEventListener('DOMContentLoaded', function() {
       <td>${sample.available_quantity}</td>
       <td>${sample.ph}</td>
       <td>${sample.peroxide_value}</td>
-      <td>${parseFloat(sample.absorption_232).toFixed(3) == NaN ? '' : parseFloat(sample.absorption_232).toFixed(3)}</td>
-      <td>${parseFloat(sample.absorption_266).toFixed(3) == NaN ? '' : parseFloat(sample.absorption_266).toFixed(3)}</td>
-      <td>${parseFloat(sample.absorption_270).toFixed(3) == NaN ? '' : parseFloat(sample.absorption_270).toFixed(3)}</td>
-      <td>${parseFloat(sample.absorption_274).toFixed(3) == NaN ? '' : parseFloat(sample.absorption_274).toFixed(3)}</td>
-      <td>${parseFloat(sample.delta_k).toFixed(3) == NaN ? '' : parseFloat(sample.delta_k).toFixed(3)}</td>
+      <td>${sample.absorption_232 ?? ''}</td>
+      <td>${sample.absorption_266 ?? ''}</td>
+      <td>${sample.absorption_270 ?? ''}</td>
+      <td>${sample.absorption_274 ?? ''}</td>
+      <td>${sample.delta_k ?? ''}</td>
       <td>
         <button type="button" class="btn btn-sm btn-danger remove-sample-btn" 
                 data-inventory-id="${sample.id}">
@@ -652,8 +648,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const quantities = {};
     document.querySelectorAll('.quantity-input').forEach(input => {
       const id = input.dataset.inventoryId;
-      const qty = parseFloat(input.value) || 0;
-      quantities[id] = qty;
+      const qtyRaw = (input.value || '').trim();
+      quantities[id] = qtyRaw;
     });
 
     try {
@@ -698,3 +694,4 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
+

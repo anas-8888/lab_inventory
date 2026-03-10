@@ -1,6 +1,7 @@
 <% function fmtDate(d){ if(!d) return '-'; const dt=new Date(d); const dd=String(dt.getDate()).padStart(2,'0'); const mm=String(dt.getMonth()+1).padStart(2,'0'); const yy=dt.getFullYear(); return `${dd}/${mm}/${yy}`; }
 function formatNumberDisplay(value) {
   if (value === null || value === undefined || value === '') return '-';
+  if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
   const num = parseFloat(value);
   if (isNaN(num)) return '-';
   if (num === 0) return '0';
@@ -10,7 +11,7 @@ function formatNumberDisplay(value) {
     const decimalStr = num.toString().split('.')[1];
     if (!decimalStr) result = num.toString();
     else if (decimalStr.length <= 2) result = num.toString();
-    else result = num.toFixed(3);
+    else result = num.toString();
   }
   if (num < 0) { return '\u200E' + result; }
   return result;
@@ -150,7 +151,7 @@ const hasDiscount = discountValue > 0;
             <td class="num-cell" style="padding: 6pt 4pt;"><%= item.requested_quantity != null ? formatNumberDisplay(item.requested_quantity) : '-' %></td>
             <td class="num-cell" style="padding: 6pt 4pt;"><%= item.packaging_weight != null ? formatNumberDisplay(item.packaging_weight) : '-' %></td>
             <td class="num-cell" style="padding: 6pt 4pt;"><%= item.pieces_per_package != null ? formatNumberDisplay(item.pieces_per_package) : '-' %></td>
-            <td class="num-cell" style="padding: 6pt 4pt;"><%= item.gross_weight != null ? parseFloat(item.gross_weight).toFixed(3) : '-' %></td>
+            <td class="num-cell" style="padding: 6pt 4pt;"><%= item.gross_weight != null ? formatNumberDisplay(item.gross_weight) : '-' %></td>
             <td class="num-cell" style="padding: 6pt 4pt;"><%= item.unit_price != null ? `${formatNumberDisplay(item.unit_price)} ${currencySymbol}` : '-' %></td>
             <td class="num-cell" style="padding: 6pt 4pt;"><%= item.total_price != null ? `${formatNumberDisplay(item.total_price)} ${currencySymbol}` : '-' %></td>
             <td style="padding: 6pt 4pt; text-align: right;"><%= item.notes || '-' %></td>
@@ -163,7 +164,7 @@ const hasDiscount = discountValue > 0;
           <td class="num-cell" style="font-weight:700;"><%= formatNumberDisplay(totals.totalRequestedQuantity) %></td>
           <td class="num-cell" style="font-weight:700;"><%= formatNumberDisplay(totals.totalPackagingWeight) %></td>
           <td></td>
-          <td class="num-cell" style="font-weight:700;"><%= parseFloat(totals.totalGrossWeight || 0).toFixed(3) %></td>
+          <td class="num-cell" style="font-weight:700;"><%= formatNumberDisplay(totals.totalGrossWeight || 0) %></td>
           <td></td>
           <td class="num-cell" style="font-weight:700;"><%= `${formatNumberDisplay(totalBeforeDiscount)} ${currencySymbol}` %></td>
           <td></td>
@@ -248,4 +249,5 @@ const hasDiscount = discountValue > 0;
   /* تقليل ارتفاع الصفوف لعدد مواد كبير */
   .table-custom th, .table-custom td { padding: 4pt 3pt; }
 </style>
+
 

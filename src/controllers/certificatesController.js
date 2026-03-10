@@ -4,6 +4,27 @@ const pool = require('../database/db');
 const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
+const { normalizeRawNumeric, buildRawNumericMap, parseRawNumericMap, rawOrValue } = require('../utils/rawNumbers');
+
+const INVENTORY_RAW_FIELDS = [
+  'base_quantity',
+  'current_quantity',
+  'sample_weight',
+  'net_weight_total',
+  'ph',
+  'peroxide_value',
+  'sigma_absorbance'
+];
+
+function applyInventoryRaw(item) {
+  if (!item || typeof item !== 'object') return item;
+  const rawMap = parseRawNumericMap(item.numeric_raw);
+  const mapped = { ...item };
+  INVENTORY_RAW_FIELDS.forEach((field) => {
+    mapped[field] = rawOrValue(rawMap, field, mapped[field]);
+  });
+  return mapped;
+}
 
 exports.index = async (req, res) => {
   try {
@@ -31,7 +52,15 @@ exports.index = async (req, res) => {
 
     query += ` ORDER BY c.year DESC, CAST(c.certificate_number AS UNSIGNED) DESC`;
 
-    const [certificates] = await req.db.execute(query, params);
+    const [certificatesRows] = await req.db.execute(query, params);
+    const certificates = certificatesRows.map((certificate) => {
+      const rawMap = parseRawNumericMap(certificate.numeric_raw);
+      return {
+        ...certificate,
+        total_quantity: rawOrValue(rawMap, 'total_quantity', certificate.total_quantity),
+        total_weight: rawOrValue(rawMap, 'total_weight', certificate.total_weight)
+      };
+    });
     
     res.render('certificates/index', { 
       title: 'الشهادات',
@@ -91,23 +120,24 @@ exports.store = async (req, res) => {
     // Format items data
     const formattedItems = itemsArray.map(item => ({
       sample_number: item.sample_number || null,
-      quantity: item.quantity != null ? parseFloat(item.quantity) : null,
+      quantity: normalizeRawNumeric(item.quantity) ?? (item.quantity != null ? parseFloat(item.quantity) : null),
       packaging_unit: item.packaging_unit || null,
-      packaging_weight: item.packaging_weight != null ? parseFloat(item.packaging_weight) : null,
-      total_weight: item.total_weight != null ? parseFloat(item.total_weight) : null,
-      ph: item.ph != null ? parseFloat(item.ph) : null,
-      peroxide: item.peroxide != null ? parseFloat(item.peroxide) : null,
-      abs_232: item.abs_232 != null ? parseFloat(item.abs_232) : null,
-      abs_270: item.abs_270 != null ? parseFloat(item.abs_270) : null,
-      abs_268: item.abs_268 != null ? parseFloat(item.abs_268) : null,
-      abs_262: item.abs_262 != null ? parseFloat(item.abs_262) : null,
-      abs_274: item.abs_274 != null ? parseFloat(item.abs_274) : null,
-      abs_266: item.abs_266 != null ? parseFloat(item.abs_266) : null,
-      k_232: item.k_232 != null ? parseFloat(item.k_232) : null,
-      k_270: item.k_270 != null ? parseFloat(item.k_270) : null,
-      delta_k: item.delta_k != null ? parseFloat(item.delta_k) : null,
-      stigmastadiene: item.stigmastadiene != null ? parseFloat(item.stigmastadiene) : null
+      packaging_weight: normalizeRawNumeric(item.packaging_weight) ?? (item.packaging_weight != null ? parseFloat(item.packaging_weight) : null),
+      total_weight: normalizeRawNumeric(item.total_weight) ?? (item.total_weight != null ? parseFloat(item.total_weight) : null),
+      ph: normalizeRawNumeric(item.ph) ?? (item.ph != null ? parseFloat(item.ph) : null),
+      peroxide: normalizeRawNumeric(item.peroxide) ?? (item.peroxide != null ? parseFloat(item.peroxide) : null),
+      abs_232: normalizeRawNumeric(item.abs_232) ?? (item.abs_232 != null ? parseFloat(item.abs_232) : null),
+      abs_270: normalizeRawNumeric(item.abs_270) ?? (item.abs_270 != null ? parseFloat(item.abs_270) : null),
+      abs_268: normalizeRawNumeric(item.abs_268) ?? (item.abs_268 != null ? parseFloat(item.abs_268) : null),
+      abs_262: normalizeRawNumeric(item.abs_262) ?? (item.abs_262 != null ? parseFloat(item.abs_262) : null),
+      abs_274: normalizeRawNumeric(item.abs_274) ?? (item.abs_274 != null ? parseFloat(item.abs_274) : null),
+      abs_266: normalizeRawNumeric(item.abs_266) ?? (item.abs_266 != null ? parseFloat(item.abs_266) : null),
+      k_232: normalizeRawNumeric(item.k_232) ?? (item.k_232 != null ? parseFloat(item.k_232) : null),
+      k_270: normalizeRawNumeric(item.k_270) ?? (item.k_270 != null ? parseFloat(item.k_270) : null),
+      delta_k: normalizeRawNumeric(item.delta_k) ?? (item.delta_k != null ? parseFloat(item.delta_k) : null),
+      stigmastadiene: normalizeRawNumeric(item.stigmastadiene) ?? (item.stigmastadiene != null ? parseFloat(item.stigmastadiene) : null)
     }));
+    const certificateRawMap = buildRawNumericMap(req.body, ['total_quantity', 'total_weight']);
 
     // Generate public ID
     const public_id = crypto.randomBytes(4).toString('hex');
@@ -145,9 +175,9 @@ exports.store = async (req, res) => {
     const [result] = await req.db.query(
       `INSERT INTO certificates (
         certificate_number, year, type, date, customer_name, customer_phone, 
-        customer_address, analyst, notes, items, total_quantity, total_weight, 
+        customer_address, analyst, notes, items, total_quantity, total_weight, numeric_raw,
         public_id, created_by
-      ) VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         certNumber,
         currentYear,
@@ -160,6 +190,7 @@ exports.store = async (req, res) => {
         JSON.stringify(formattedItems),
         total_quantity ? parseFloat(total_quantity) : 0,
         total_weight ? parseFloat(total_weight) : 0,
+        JSON.stringify(certificateRawMap),
         public_id,
         req.session.user.id
       ]
@@ -251,24 +282,9 @@ exports.show = async (req, res) => {
 
     const certificate = certificates[0];
     certificate.items = JSON.parse(certificate.items);
-    
-    // Convert numeric fields to numbers
-    certificate.total_quantity = parseFloat(certificate.total_quantity);
-    certificate.total_weight = parseFloat(certificate.total_weight);
-    
-    // Convert numeric fields in items
-    certificate.items = certificate.items.map(item => ({
-      ...item,
-      quantity: parseFloat(item.quantity),
-      net_weight_total: parseFloat(item.net_weight_total),
-      ph: parseFloat(item.ph),
-      peroxide_value: parseFloat(item.peroxide_value),
-      absorption_232: parseFloat(item.absorption_232),
-      absorption_266: parseFloat(item.absorption_266),
-      absorption_270: parseFloat(item.absorption_270),
-      absorption_274: parseFloat(item.absorption_274),
-      delta_k: parseFloat(item.delta_k)
-    }));
+    const certificateRawMap = parseRawNumericMap(certificate.numeric_raw);
+    certificate.total_quantity = rawOrValue(certificateRawMap, 'total_quantity', certificate.total_quantity);
+    certificate.total_weight = rawOrValue(certificateRawMap, 'total_weight', certificate.total_weight);
 
     // Calculate weighted averages
     const totalWeight = certificate.total_quantity || 0;
@@ -338,24 +354,9 @@ exports.showPublic = async (req, res) => {
 
     const certificate = certificates[0];
     certificate.items = JSON.parse(certificate.items);
-    
-    // Convert numeric fields to numbers
-    certificate.total_quantity = parseFloat(certificate.total_quantity);
-    certificate.total_weight = parseFloat(certificate.total_weight);
-    
-    // Convert numeric fields in items
-    certificate.items = certificate.items.map(item => ({
-      ...item,
-      quantity: parseFloat(item.quantity),
-      net_weight_total: parseFloat(item.net_weight_total),
-      ph: parseFloat(item.ph),
-      peroxide_value: parseFloat(item.peroxide_value),
-      absorption_232: parseFloat(item.absorption_232),
-      absorption_266: parseFloat(item.absorption_266),
-      absorption_270: parseFloat(item.absorption_270),
-      absorption_274: parseFloat(item.absorption_274),
-      delta_k: parseFloat(item.delta_k)
-    }));
+    const certificateRawMap = parseRawNumericMap(certificate.numeric_raw);
+    certificate.total_quantity = rawOrValue(certificateRawMap, 'total_quantity', certificate.total_quantity);
+    certificate.total_weight = rawOrValue(certificateRawMap, 'total_weight', certificate.total_weight);
 
     // Calculate weighted averages
     const totalWeight = certificate.total_quantity || 0;
@@ -457,9 +458,10 @@ exports.createInternal = async (req, res) => {
     nextNumber = (Math.max(lastTypeNumber, lastOverallNumber) + 1).toString();
 
     // Get available inventory items
-    const [inventory] = await req.db.execute(
+    const [inventoryRows] = await req.db.execute(
       'SELECT * FROM inventory WHERE deleted_at IS NULL ORDER BY date DESC, id DESC'
     );
+    const inventory = inventoryRows.map(applyInventoryRaw);
 
     res.render('certificates/create-internal', {
       title: 'إنشاء شهادة داخلية',
@@ -554,22 +556,9 @@ exports.printCertificate = async (req, res) => {
 
     const certificate = certificates[0];
     certificate.items = JSON.parse(certificate.items);
-    certificate.total_quantity = parseFloat(certificate.total_quantity);
-    certificate.total_weight = parseFloat(certificate.total_weight);
-    certificate.items = certificate.items.map(item => ({
-      ...item,
-      quantity: parseFloat(item.quantity),
-      packaging_weight: parseFloat(item.packaging_weight),
-      total_weight: parseFloat(item.total_weight),
-      ph: parseFloat(item.ph),
-      peroxide: parseFloat(item.peroxide),
-      abs_232: parseFloat(item.abs_232),
-      abs_266: parseFloat(item.abs_266),
-      abs_270: parseFloat(item.abs_270),
-      abs_274: parseFloat(item.abs_274),
-      delta_k: parseFloat(item.delta_k),
-      stigmastadiene: parseFloat(item.stigmastadiene)
-    }));
+    const certificateRawMap = parseRawNumericMap(certificate.numeric_raw);
+    certificate.total_quantity = rawOrValue(certificateRawMap, 'total_quantity', certificate.total_quantity);
+    certificate.total_weight = rawOrValue(certificateRawMap, 'total_weight', certificate.total_weight);
 
     // Calculate weighted averages
     const totalWeight = certificate.total_quantity || 0;
@@ -656,9 +645,17 @@ exports.trashMultiple = async (req, res) => {
 // عرض سلة المحذوفات
 exports.getDeletedCertificates = async (req, res) => {
   try {
-    const [deleted] = await req.db.execute(
+    const [deletedRows] = await req.db.execute(
       'SELECT * FROM certificates WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC'
     );
+    const deleted = deletedRows.map((certificate) => {
+      const rawMap = parseRawNumericMap(certificate.numeric_raw);
+      return {
+        ...certificate,
+        total_quantity: rawOrValue(rawMap, 'total_quantity', certificate.total_quantity),
+        total_weight: rawOrValue(rawMap, 'total_weight', certificate.total_weight)
+      };
+    });
 
     res.render('certificates/deleted', {
       title: 'سلة المحذوفات - الشهادات',
