@@ -308,3 +308,10 @@ SET numeric_raw = JSON_OBJECT(
 WHERE numeric_raw IS NULL
    OR TRIM(numeric_raw) = ''
    OR IFNULL(JSON_VALID(numeric_raw), 0) = 0;
+
+-- ------------------------------------------------------------
+-- Add shipping orders manager role (CRUD for /invoices only)
+-- ------------------------------------------------------------
+INSERT INTO roles (id, name)
+VALUES (5, 'shipping_manager')
+ON DUPLICATE KEY UPDATE name = VALUES(name);

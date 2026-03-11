@@ -57,6 +57,8 @@ exports.postLogin = async (req, res) => {
             roleName = 'viewer';
         } else if (user.role_id === 4) {
             roleName = 'admin';
+        } else if (user.role_id === 5) {
+            roleName = 'shipping_manager';
         } else {
             roleName = 'unknown'; // Default or handle other roles
         }

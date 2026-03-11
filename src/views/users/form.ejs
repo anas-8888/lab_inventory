@@ -17,6 +17,7 @@
             <option value="">اختر الدور</option>
             <option value="viewer" <%= locals.userItem && userItem.role === 'viewer' ? 'selected' : '' %>>مستعرض</option>
             <option value="editor" <%= locals.userItem && userItem.role === 'editor' ? 'selected' : '' %>>محرر</option>
+            <option value="shipping_manager" <%= locals.userItem && userItem.role === 'shipping_manager' ? 'selected' : '' %>>مسؤول طلبات الشحن</option>
             <option value="admin" <%= locals.userItem && userItem.role === 'admin' ? 'selected' : '' %>>مسؤول</option>
           </select>
         </div>

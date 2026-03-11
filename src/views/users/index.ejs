@@ -24,8 +24,8 @@
                             <tr data-user-id="<%= user.id %>">
                                 <td><%= user.username %></td>
                                 <td>
-                                    <span class="badge bg-<%= user.role === 'editor' ? 'primary' : user.role === 'admin' ? 'danger' : user.role === 'viewer' ? 'secondary' : 'secondary' %>">
-                                        <%= user.role === 'editor' ? 'محرر' : user.role === 'admin' ? 'أدمن' : user.role === 'viewer' ? 'مستعرض' : 'غير معروف' %>
+                                    <span class="badge bg-<%= user.role === 'editor' ? 'primary' : user.role === 'admin' ? 'danger' : user.role === 'shipping_manager' ? 'warning text-dark' : user.role === 'viewer' ? 'secondary' : 'secondary' %>">
+                                        <%= user.role === 'editor' ? 'محرر' : user.role === 'admin' ? 'أدمن' : user.role === 'shipping_manager' ? 'مسؤول طلبات الشحن' : user.role === 'viewer' ? 'مستعرض' : 'غير معروف' %>
                                     </span>
                                 </td>
                                 <td class="activity-status">

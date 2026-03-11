@@ -129,7 +129,7 @@ function formatWeightedAverage(value) {
               </span>
             </div>
             <div class="col-md-6">
-              <% if (user && (user.role === 'editor' || user.role === 'admin')) { %>
+              <% if (user && (user.role === 'editor' || user.role === 'admin' || user.role === 'shipping_manager')) { %>
                 <div class="btn-group">
                   <button type="button" class="btn btn-sm btn-warning js-update-invoice-status" data-invoice-id="<%= invoice.id %>" data-status="processing" title="قيد المعالجة">
                     <i class="bi bi-play me-1"></i> قيد المعالجة
@@ -145,7 +145,7 @@ function formatWeightedAverage(value) {
                   </button>
                 </div>
               <% } else { %>
-                <p class="text-muted mb-0">يحتاج صلاحية محرر أو مشرف لتغيير الحالة</p>
+                <p class="text-muted mb-0">يحتاج صلاحية مدير طلبات الشحن أو محرر أو مشرف لتغيير الحالة</p>
               <% } %>
             </div>
           </div>

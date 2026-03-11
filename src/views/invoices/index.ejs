@@ -34,7 +34,7 @@ function formatNumberDisplay(value) {
                     <i class="fas fa-file-invoice"></i> طلبات  الشحن
                 </h2>
                 <div class="d-flex gap-2 mb-3">
-                    <% if (user && (user.role === 'editor' || user.role === 'admin')) { %>
+                    <% if (user && (user.role === 'editor' || user.role === 'admin' || user.role === 'shipping_manager')) { %>
                         <a href="/invoices/create" class="btn btn-success">
                             <i class="fas fa-plus me-1"></i> إضافة طلبية شحن جديدة
                         </a>
@@ -51,11 +51,11 @@ function formatNumberDisplay(value) {
                     <form id="filterForm" class="row g-3">
                         <div class="col-md-4">
                             <label class="form-label">التاريخ</label>
-                            <input type="text" class="form-control datepicker" name="date" value="<%= locals.filters?.date || '' %>" placeholder="يوم/شهر/سنة">
+                            <input type="text" class="form-control datepicker" name="date" value="<%= (locals && locals.filters && locals.filters.date) ? locals.filters.date : '' %>" placeholder="يوم/شهر/سنة">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">العميل</label>
-                            <input type="text" class="form-control" name="customer" value="<%= locals.filters?.customer || '' %>" placeholder="اسم العميل">
+                            <input type="text" class="form-control" name="customer" value="<%= (locals && locals.filters && locals.filters.customer) ? locals.filters.customer : '' %>" placeholder="اسم العميل">
                         </div>
                         <div class="col-md-4 d-flex align-items-end gap-2">
                             <button type="submit" class="btn btn-primary">
@@ -127,7 +127,7 @@ function formatNumberDisplay(value) {
                                                     <a href="/invoices/<%= invoice.id %>" class="btn btn-sm btn-secondary" title="معاينة">
                                                         <i class="bi bi-eye"></i>
                                                     </a>
-                                                    <% if (user && (user.role === 'editor' || user.role === 'admin')) { %>
+                                                    <% if (user && (user.role === 'editor' || user.role === 'admin' || user.role === 'shipping_manager')) { %>
                                                         <a href="/invoices/<%= invoice.id %>/edit" class="btn btn-sm btn-info" title="تعديل">
                                                             <i class="bi bi-pencil"></i>
                                                         </a>
@@ -204,7 +204,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Set the initial date value in Flatpickr if a filter date exists
-    <% if (locals.filters?.date) { %>
+    <% if (locals && locals.filters && locals.filters.date) { %>
         try {
             const [year, month, day] = '<%= locals.filters.date %>'.split('-').map(Number);
             const initialDate = new Date(year, month - 1, day);
@@ -292,14 +292,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (trashSelectedBtn) trashSelectedBtn.disabled = checked === 0;
     }
 
-    selectAllInvoices?.addEventListener('change', function() {
-        invoiceCheckboxes.forEach(cb => { cb.checked = this.checked; });
-        updateBulkButtons();
-    });
+    if (selectAllInvoices) {
+        selectAllInvoices.addEventListener('change', function() {
+            invoiceCheckboxes.forEach(cb => { cb.checked = this.checked; });
+            updateBulkButtons();
+        });
+    }
     invoiceCheckboxes.forEach(cb => {
         cb.addEventListener('change', function() {
             const allChecked = Array.from(invoiceCheckboxes).every(cb => cb.checked);
-            selectAllInvoices.checked = allChecked;
+            if (selectAllInvoices) selectAllInvoices.checked = allChecked;
             updateBulkButtons();
         });
     });

@@ -1,17 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const invoiceController = require('../controllers/invoiceController');
-const { isAuthenticated, isEditor } = require('../middleware/auth');
+const { isAuthenticated, isShippingCrud } = require('../middleware/auth');
 const { validateInvoice, validate, validateInventoryAvailability } = require('../middleware/validators');
 
 // عرض قائمة طلبات  الشحن
-router.get('/', isAuthenticated, invoiceController.getInvoices);
+router.get('/', isAuthenticated, isShippingCrud, invoiceController.getInvoices);
 
 // API لجلب المخزون
-router.get('/api/inventory', isAuthenticated, invoiceController.getInventoryAPI);
+router.get('/api/inventory', isAuthenticated, isShippingCrud, invoiceController.getInventoryAPI);
 
 // عرض نموذج إنشاء طلبية شحن جديدة
-router.get('/create', isAuthenticated, isEditor, invoiceController.getCreateForm);
+router.get('/create', isAuthenticated, isShippingCrud, invoiceController.getCreateForm);
 
 // Middleware لمعالجة البيانات قبل validation
 const preprocessInvoiceData = (req, res, next) => {
@@ -47,40 +47,40 @@ const preprocessInvoiceData = (req, res, next) => {
 };
 
 // إنشاء طلبية شحن جديدة
-router.post('/create', isAuthenticated, isEditor, preprocessInvoiceData, validateInvoice, validateInventoryAvailability, validate, invoiceController.createInvoice);
+router.post('/create', isAuthenticated, isShippingCrud, preprocessInvoiceData, validateInvoice, validateInventoryAvailability, validate, invoiceController.createInvoice);
 
 // مسارات سلة المحذوفات والحذف الجماعي (يجب أن تكون قبل /:id)
-router.post('/trash-multiple', isAuthenticated, isEditor, invoiceController.trashMultiple);
-router.get('/deleted', isAuthenticated, isEditor, invoiceController.getDeletedInvoices);
-router.post('/restore-multiple', isAuthenticated, isEditor, invoiceController.restoreMultiple);
-router.post('/empty-trash', isAuthenticated, isEditor, invoiceController.emptyTrash);
-router.delete('/delete-multiple', isAuthenticated, isEditor, invoiceController.deleteMultiple);
+router.post('/trash-multiple', isAuthenticated, isShippingCrud, invoiceController.trashMultiple);
+router.get('/deleted', isAuthenticated, isShippingCrud, invoiceController.getDeletedInvoices);
+router.post('/restore-multiple', isAuthenticated, isShippingCrud, invoiceController.restoreMultiple);
+router.post('/empty-trash', isAuthenticated, isShippingCrud, invoiceController.emptyTrash);
+router.delete('/delete-multiple', isAuthenticated, isShippingCrud, invoiceController.deleteMultiple);
 
 // طباعة طلبية شحن
-router.get('/:id/print', isAuthenticated, invoiceController.printInvoice);
+router.get('/:id/print', isAuthenticated, isShippingCrud, invoiceController.printInvoice);
 
 // طباعة طلبية شحن بدون حماية الجلسة (مخصص لتوليد PDF)
 router.get('/:id/print-pdf-raw', invoiceController.printInvoice);
 
 // حذف طلبية شحن
-router.delete('/:id', isAuthenticated, isEditor, invoiceController.deleteInvoice);
+router.delete('/:id', isAuthenticated, isShippingCrud, invoiceController.deleteInvoice);
 
 // عرض نموذج تعديل طلب الشحن
-router.get('/:id/edit', isAuthenticated, isEditor, invoiceController.getEditForm);
+router.get('/:id/edit', isAuthenticated, isShippingCrud, invoiceController.getEditForm);
 
 // تحديث طلب الشحن
-router.put('/:id', isAuthenticated, isEditor, validateInvoice, validateInventoryAvailability, validate, invoiceController.updateInvoice);
+router.put('/:id', isAuthenticated, isShippingCrud, validateInvoice, validateInventoryAvailability, validate, invoiceController.updateInvoice);
 
 // استعادة طلبية شحن واحدة
-router.post('/:id/restore', isAuthenticated, isEditor, invoiceController.restoreInvoice);
+router.post('/:id/restore', isAuthenticated, isShippingCrud, invoiceController.restoreInvoice);
 
 // تصدير طلب الشحن كـ PDF
-router.get('/:id/pdf', isAuthenticated, invoiceController.exportInvoicePDF);
+router.get('/:id/pdf', isAuthenticated, isShippingCrud, invoiceController.exportInvoicePDF);
 
 // تحديث حالة طلب الشحن
-router.put('/:id/status', isAuthenticated, isEditor, invoiceController.updateInvoiceStatus);
+router.put('/:id/status', isAuthenticated, isShippingCrud, invoiceController.updateInvoiceStatus);
 
 // عرض طلبية شحن - يجب أن يكون آخر مسار
-router.get('/:id', isAuthenticated, invoiceController.getInvoice);
+router.get('/:id', isAuthenticated, isShippingCrud, invoiceController.getInvoice);
 
 module.exports = router; 

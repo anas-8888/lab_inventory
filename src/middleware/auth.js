@@ -1,4 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
+const SHIPPING_MANAGER_ROLE = 'shipping_manager';
+const SHIPPING_CRUD_ROLES = ['admin', 'editor', SHIPPING_MANAGER_ROLE];
 
 // Authentication middleware
 const authMiddleware = async (req, res, next) => {
@@ -28,6 +30,21 @@ const authMiddleware = async (req, res, next) => {
 
   // Make user data available to all views
   res.locals.user = req.session.user;
+
+  // مستخدم طلبات الشحن: يسمح فقط بصفحات طلبات الشحن + الصفحة الرئيسية + المصادقة
+  if (req.session.user.role === SHIPPING_MANAGER_ROLE) {
+    const allowedExact = ['/', '/home'];
+    const allowedPrefixes = ['/invoices', '/auth'];
+    const isAllowed =
+      allowedExact.includes(req.path) ||
+      allowedPrefixes.some(prefix => req.path.startsWith(prefix));
+
+    if (!isAllowed) {
+      req.flash('error_msg', 'هذه الصلاحية مخصصة لإدارة طلبات الشحن فقط');
+      return res.redirect('/invoices');
+    }
+  }
+
   next();
 };
 
@@ -111,6 +128,22 @@ const isEditor = (req, res, next) => {
     res.redirect('/');
 };
 
+// صلاحية إدارة طلبات الشحن (CRUD): مدير طلبات الشحن + المحرر + المسؤول
+const isShippingCrud = (req, res, next) => {
+    if (req.session.user && SHIPPING_CRUD_ROLES.includes(req.session.user.role)) {
+        return next();
+    }
+
+    if (req.xhr || req.headers.accept.includes('application/json')) {
+        return res.status(403).json({
+            error: 'ليس لديك صلاحية للوصول إلى هذه الصفحة'
+        });
+    }
+
+    req.flash('error_msg', 'ليس لديك صلاحية للوصول إلى هذه الصفحة');
+    res.redirect('/');
+};
+
 // التحقق من صلاحية المسؤول فقط
 const isAdmin = (req, res, next) => {
 
@@ -138,5 +171,6 @@ module.exports = {
     destroySession,
     isAuthenticated,
     isEditor,
+    isShippingCrud,
     isAdmin,
 }; 

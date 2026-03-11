@@ -7,6 +7,13 @@ const heartbeatTimers = new Map(); // socketId -> timer
 
 const HEARTBEAT_INTERVAL = 10000; // 10 ثواني
 const OFFLINE_TIMEOUT = 20000; // 20 ثانية
+const mapRoleIdToName = (roleId) => {
+    if (roleId === 2) return 'editor';
+    if (roleId === 3) return 'viewer';
+    if (roleId === 4) return 'admin';
+    if (roleId === 5) return 'shipping_manager';
+    return 'unknown';
+};
 
 module.exports = (io, pool) => {
     
@@ -76,9 +83,7 @@ module.exports = (io, pool) => {
             const user = users[0];
             
             // تحويل role_id إلى role name
-            const role = user.role_id === 2 ? 'editor' : 
-                        user.role_id === 3 ? 'viewer' : 
-                        user.role_id === 4 ? 'admin' : 'unknown';
+            const role = mapRoleIdToName(user.role_id);
             
             const updateData = {
                 userId: user.id,
@@ -213,16 +218,7 @@ module.exports = (io, pool) => {
                 const user = users[0];
                 
                 // تحويل role_id إلى role name
-                let roleName;
-                if (user.role_id === 2) {
-                    roleName = 'editor';
-                } else if (user.role_id === 3) {
-                    roleName = 'viewer';
-                } else if (user.role_id === 4) {
-                    roleName = 'admin';
-                } else {
-                    roleName = 'unknown';
-                }
+                const roleName = mapRoleIdToName(user.role_id);
                 
                 socket.userId = user.id;
                 socket.username = user.username;
@@ -259,9 +255,7 @@ module.exports = (io, pool) => {
                     // تحويل role_id إلى role name لكل مستخدم
                     const formattedUsers = allUsers.map(user => ({
                         ...user,
-                        role: user.role_id === 2 ? 'editor' : 
-                              user.role_id === 3 ? 'viewer' : 
-                              user.role_id === 4 ? 'admin' : 'unknown'
+                        role: mapRoleIdToName(user.role_id)
                     }));
                     
                     socket.emit('presence:users_list', formattedUsers);

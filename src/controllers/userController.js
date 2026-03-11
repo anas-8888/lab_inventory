@@ -21,6 +21,8 @@ exports.getUsers = async (req, res) => {
                 ? 'viewer'
                 : user.role_id === 4
                 ? 'admin'
+                : user.role_id === 5
+                ? 'shipping_manager'
                 : 'unknown'
         }));
 
@@ -48,6 +50,7 @@ exports.getCreateForm = (req, res) => {
 exports.createUser = async (req, res) => {
     try {
         const { username, password, password2, role_id } = req.body;
+        const parsedRoleId = Number(role_id);
 
         // التحقق من تطابق كلمات المرور
         if (password !== password2) {
@@ -62,6 +65,12 @@ exports.createUser = async (req, res) => {
             return res.redirect('/users/create');
         }
 
+        const [roles] = await pool.query('SELECT id FROM roles WHERE id = ?', [parsedRoleId]);
+        if (!roles.length) {
+            req.flash('error_msg', 'الصلاحية المختارة غير صالحة');
+            return res.redirect('/users/create');
+        }
+
         // تشفير كلمة المرور
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
@@ -69,7 +78,7 @@ exports.createUser = async (req, res) => {
         // إضافة المستخدم
         await pool.query(
             'INSERT INTO users (username, password_hash, role_id) VALUES (?, ?, ?)',
-            [username, hashedPassword, role_id]
+            [username, hashedPassword, parsedRoleId]
         );
 
         req.flash('success_msg', 'تم إضافة المستخدم بنجاح');
@@ -105,6 +114,8 @@ exports.getEditForm = async (req, res) => {
                     ? 'viewer'
                     : users[0].role_id === 4
                     ? 'admin'
+                    : users[0].role_id === 5
+                    ? 'shipping_manager'
                     : 'unknown'
         };
 
@@ -125,6 +136,7 @@ exports.updateUser = async (req, res) => {
     try {
         const { username, role_id } = req.body;
         const userId = req.params.id;
+        const parsedRoleId = Number(role_id);
 
         // التحقق من عدم وجود اسم مستخدم مكرر
         const [existingUsers] = await pool.query(
@@ -136,10 +148,16 @@ exports.updateUser = async (req, res) => {
             return res.redirect(`/users/${userId}/edit`);
         }
 
+        const [roles] = await pool.query('SELECT id FROM roles WHERE id = ?', [parsedRoleId]);
+        if (!roles.length) {
+            req.flash('error_msg', 'الصلاحية المختارة غير صالحة');
+            return res.redirect(`/users/${userId}/edit`);
+        }
+
         // تحديث بيانات المستخدم
         await pool.query(
             'UPDATE users SET username = ?, role_id = ? WHERE id = ?',
-            [username, role_id, userId]
+            [username, parsedRoleId, userId]
         );
 
         req.flash('success_msg', 'تم تحديث بيانات المستخدم بنجاح');
