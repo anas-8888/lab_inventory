@@ -14,6 +14,19 @@ function formatNumberDisplay(value) {
   if (num < 0) return '\u200E' + result;
   return result;
 }
+function formatTotalDisplay(value) {
+  const num = parseFloat(value);
+  if (!Number.isFinite(num)) return '0';
+  const normalized = Number.isInteger(num)
+    ? String(num)
+    : num.toFixed(6).replace(/0+$/,'').replace(/\.$/,'');
+  const neg = normalized.startsWith('-');
+  const clean = neg ? normalized.slice(1) : normalized;
+  const [intPart, fracPart] = clean.split('.');
+  const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const out = grouped + (fracPart ? `.${fracPart}` : '');
+  return neg ? ('\u200E-' + out) : out;
+}
 const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '';
 const __isSyp = (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.code === 'SYP');
 const __isExternalMaterial = material.material_origin === 'external';
@@ -114,7 +127,7 @@ if (!Array.isArray(__extraWeights)) __extraWeights = [];
         <% 
           const _extrasTotal = (__extraWeights || []).reduce((s, ew) => s + (parseFloat(ew.weight) || 0), 0);
         %>
-        <div class="kv"><span>أوزان إضافية (المجموع كجم):</span><span><%= formatNumberDisplay(_extrasTotal) %></span></div>
+        <div class="kv"><span>أوزان إضافية (المجموع كجم):</span><span><%= formatTotalDisplay(_extrasTotal) %></span></div>
         <div class="kv">
           <span>تفصيل الأوزان الإضافية:</span>
           <span>
@@ -151,7 +164,7 @@ if (!Array.isArray(__extraWeights)) __extraWeights = [];
           <span>تفصيل المصاريف الإضافية:</span>
           <span>
             <% if (__additionalExpenseItems.length) { %>
-              <% __additionalExpenseItems.forEach(function(item, idx){ const usdVal = parseFloat(item.price) || 0; const shownVal = __isSyp ? (usdVal * __exchangeRate) : usdVal; %>
+              <% __additionalExpenseItems.forEach(function(item, idx){ const usdVal = parseFloat(item.price) || 0; const shownVal = __isSyp ? (usdVal * __exchangeRate) : item.price; %>
                 <%= `${item.name || 'بدون اسم'}: ${formatNumberDisplay(shownVal)} ${currencySymbol}` %><%= idx < __additionalExpenseItems.length - 1 ? ' | ' : '' %>
               <% }); %>
             <% } else { %>
@@ -211,18 +224,20 @@ if (!Array.isArray(__extraWeights)) __extraWeights = [];
         <% let totalWeight = 0, totalCost = 0; %>
         <% components.forEach(component => { %>
           <%
-            const weight = parseFloat(component.weight_grams) || 0;
-            const pricePerKg = (defaultCurrency && defaultCurrency.code === 'SYP')
+            const weightRaw = component.weight_grams;
+            const weight = parseFloat(weightRaw) || 0;
+            const pricePerKgRaw = (defaultCurrency && defaultCurrency.code === 'SYP')
               ? (component.price_per_kg_syp || component.price_per_kg || 0)
               : (component.price_per_kg || 0);
+            const pricePerKg = parseFloat(pricePerKgRaw) || 0;
             const cost = (weight / 1000) * pricePerKg;
             totalWeight += weight;
             totalCost += cost;
           %>
           <tr>
             <td style="border:1px solid #ccc; padding:4px;"><%= component.component_name || '-' %></td>
-            <td style="border:1px solid #ccc; padding:4px;"><%= formatNumberDisplay(weight) %></td>
-            <td style="border:1px solid #ccc; padding:4px;"><%= `${formatNumberDisplay(pricePerKg)} ${currencySymbol}` %></td>
+            <td style="border:1px solid #ccc; padding:4px;"><%= formatNumberDisplay(weightRaw) %></td>
+            <td style="border:1px solid #ccc; padding:4px;"><%= `${formatNumberDisplay(pricePerKgRaw)} ${currencySymbol}` %></td>
             <td style="border:1px solid #ccc; padding:4px;"><%= `${formatNumberDisplay(cost)} ${currencySymbol}` %></td>
           </tr>
         <% }); %>
@@ -230,9 +245,9 @@ if (!Array.isArray(__extraWeights)) __extraWeights = [];
       <tfoot>
         <tr>
           <th style="border:1px solid #ccc; padding:4px;">المجموع</th>
-          <th style="border:1px solid #ccc; padding:4px;"><%= formatNumberDisplay(totalWeight) %></th>
+          <th style="border:1px solid #ccc; padding:4px;"><%= formatTotalDisplay(totalWeight) %></th>
           <th style="border:1px solid #ccc; padding:4px;"></th>
-          <th style="border:1px solid #ccc; padding:4px;"><%= `${formatNumberDisplay(totalCost)} ${currencySymbol}` %></th>
+          <th style="border:1px solid #ccc; padding:4px;"><%= `${formatTotalDisplay(totalCost)} ${currencySymbol}` %></th>
         </tr>
       </tfoot>
     </table>

@@ -58,14 +58,14 @@
               </thead>
               <tbody id="externalSamplesBody">
                 <tr>
-                  <td><input type="number" class="form-control form-control-sm" name="quantity"></td>
+                  <td><input type="text" inputmode="decimal" class="form-control form-control-sm" name="quantity"></td>
                   <td><input type="text" class="form-control form-control-sm" name="packaging_unit"></td>
-                  <td><input type="number" class="form-control form-control-sm" name="packaging_weight" step="0.001"></td>
-                  <td><input type="number" class="form-control form-control-sm" name="total_weight" step="0.001"></td>
-                  <td><input type="number" class="form-control form-control-sm" name="ph" step="0.001"></td>
-                  <td><input type="number" class="form-control form-control-sm" name="peroxide" step="0.001"></td>
+                  <td><input type="text" inputmode="decimal" class="form-control form-control-sm" name="packaging_weight" step="0.001"></td>
+                  <td><input type="text" inputmode="decimal" class="form-control form-control-sm" name="total_weight" step="0.001"></td>
+                  <td><input type="text" inputmode="decimal" class="form-control form-control-sm" name="ph" step="0.001"></td>
+                  <td><input type="text" inputmode="decimal" class="form-control form-control-sm" name="peroxide" step="0.001"></td>
                   <td><input type="text" class="form-control form-control-sm absorption-readings-input" name="absorption_readings" placeholder="أدخل 5 قيم مفصولة بـ Tab"></td>
-                  <td><input type="number" class="form-control form-control-sm" name="stigmastadiene" step="0.001"></td>
+                  <td><input type="text" inputmode="decimal" class="form-control form-control-sm" name="stigmastadiene" step="0.001"></td>
                   <td><button type="button" class="btn btn-sm btn-danger remove-sample-btn"><i class="bi bi-trash"></i></button></td>
                 </tr>
               </tbody>
@@ -271,14 +271,14 @@ function addExternalSample() {
   const tbody = document.getElementById('externalSamplesBody');
   const row = document.createElement('tr');
   row.innerHTML = `
-    <td><input type="number" class="form-control form-control-sm" name="quantity"></td>
+    <td><input type="text" inputmode="decimal" class="form-control form-control-sm" name="quantity"></td>
     <td><input type="text" class="form-control form-control-sm" name="packaging_unit"></td>
-    <td><input type="number" class="form-control form-control-sm" name="packaging_weight" step="0.001"></td>
-    <td><input type="number" class="form-control form-control-sm" name="total_weight" step="0.001"></td>
-    <td><input type="number" class="form-control form-control-sm" name="ph" step="0.001"></td>
-    <td><input type="number" class="form-control form-control-sm" name="peroxide" step="0.001"></td>
+    <td><input type="text" inputmode="decimal" class="form-control form-control-sm" name="packaging_weight" step="0.001"></td>
+    <td><input type="text" inputmode="decimal" class="form-control form-control-sm" name="total_weight" step="0.001"></td>
+    <td><input type="text" inputmode="decimal" class="form-control form-control-sm" name="ph" step="0.001"></td>
+    <td><input type="text" inputmode="decimal" class="form-control form-control-sm" name="peroxide" step="0.001"></td>
     <td><input type="text" class="form-control form-control-sm absorption-readings-input" name="absorption_readings" placeholder="أدخل 5 قيم مفصولة بـ Tab"></td>
-    <td><input type="number" class="form-control form-control-sm" name="stigmastadiene" step="0.001"></td>
+    <td><input type="text" inputmode="decimal" class="form-control form-control-sm" name="stigmastadiene" step="0.001"></td>
     <td><button type="button" class="btn btn-sm btn-danger remove-sample-btn"><i class="bi bi-trash"></i></button></td>
   `;
   tbody.appendChild(row);

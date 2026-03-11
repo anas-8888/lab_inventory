@@ -52,19 +52,19 @@
                             </select>
                           </td>
                           <td>
-                            <input type="number" class="form-control item-quantity" 
+                            <input type="text" inputmode="decimal" class="form-control item-quantity" 
                                    name="items[<%= index %>][quantity]" 
                                    value="<%= item.quantity %>" min="1" required
                                    onchange="updateTotal(this)">
                           </td>
                           <td>
-                            <input type="number" class="form-control item-price" 
+                            <input type="text" inputmode="decimal" class="form-control item-price" 
                                    name="items[<%= index %>][price]" 
                                    value="<%= item.price %>" min="0" step="0.001" required
                                    onchange="updateTotal(this)">
                           </td>
                           <td>
-                            <input type="number" class="form-control item-total" 
+                            <input type="text" inputmode="decimal" class="form-control item-total" 
                                    value="<%= (item.quantity * item.price).toFixed(2) %>" readonly>
                           </td>
                           <td>
@@ -78,8 +78,10 @@
                     <tr>
                       <td colspan="3" class="text-end"><strong>الإجمالي:</strong></td>
                       <td>
-                        <input type="number" class="form-control" id="totalAmount" name="total_amount" 
+                        <input type="text" inputmode="decimal" class="form-control mb-1" id="totalAmountDisplay" 
                                value="<%= locals.invoice ? invoice.total_amount : '0.00' %>" readonly>
+                        <input type="hidden" id="totalAmount" name="total_amount" 
+                               value="<%= locals.invoice ? invoice.total_amount : '0.00' %>">
                       </td>
                       <td></td>
                     </tr>
@@ -109,7 +111,20 @@
 </div>
 
 <script>
-  let itemIndex = <%= locals.invoice && invoice.items ? invoice.items.length : 0 %>;
+  let itemIndex = Number('<%= locals.invoice && invoice.items ? invoice.items.length : 0 %>');
+  function formatTotalDisplay(value) {
+    const num = parseFloat(value);
+    if (!Number.isFinite(num)) return '0';
+    const normalized = Number.isInteger(num)
+      ? String(num)
+      : num.toFixed(6).replace(/0+$/,'').replace(/\.$/,'');
+    const neg = normalized.startsWith('-');
+    const clean = neg ? normalized.slice(1) : normalized;
+    const [intPart, fracPart] = clean.split('.');
+    const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const out = grouped + (fracPart ? `.${fracPart}` : '');
+    return neg ? ('\u200E-' + out) : out;
+  }
 
   function addItem() {
     const tbody = document.querySelector('#itemsTable tbody');
@@ -124,17 +139,17 @@
         </select>
       </td>
       <td>
-        <input type="number" class="form-control item-quantity" 
+        <input type="text" inputmode="decimal" class="form-control item-quantity" 
                name="items[${itemIndex}][quantity]" value="1" min="1" required
                onchange="updateTotal(this)">
       </td>
       <td>
-        <input type="number" class="form-control item-price" 
+        <input type="text" inputmode="decimal" class="form-control item-price" 
                name="items[${itemIndex}][price]" value="0.00" min="0" step="0.001" required
                onchange="updateTotal(this)">
       </td>
       <td>
-        <input type="number" class="form-control item-total" value="0.00" readonly>
+        <input type="text" inputmode="decimal" class="form-control item-total" value="0.00" readonly>
       </td>
       <td>
         <button type="button" class="btn btn-danger btn-sm" onclick="removeItem(this)">حذف</button>
@@ -162,7 +177,10 @@
     const totals = Array.from(document.querySelectorAll('.item-total'))
       .map(input => parseFloat(input.value) || 0);
     const grandTotal = totals.reduce((sum, total) => sum + total, 0);
-    document.getElementById('totalAmount').value = grandTotal.toFixed(2);
+    const rawValue = grandTotal.toFixed(2);
+    document.getElementById('totalAmount').value = rawValue;
+    const totalDisplay = document.getElementById('totalAmountDisplay');
+    if (totalDisplay) totalDisplay.value = formatTotalDisplay(rawValue);
   }
 
   // Initialize price when item is selected
@@ -183,5 +201,9 @@
       e.preventDefault();
       alert('يجب إضافة منتج واحد على الأقل');
     }
+  });
+
+  document.addEventListener('DOMContentLoaded', function () {
+    updateGrandTotal();
   });
 </script> 

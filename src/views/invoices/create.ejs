@@ -18,7 +18,7 @@
             <div class="row mb-4">
               <div class="col-md-3">
                 <label class="form-label required">رقم طلب الشحن</label>
-                <input type="number" class="form-control" name="invoice_number" id="invoice_number" required min="1">
+                <input type="text" inputmode="decimal" class="form-control" name="invoice_number" id="invoice_number" required min="1">
                 <small class="form-text text-muted">
                   <i class="bi bi-info-circle me-1"></i>
                   آخر طلبية شحن: <span class="fw-bold text-primary"><%= lastInvoiceNumber %></span>
@@ -226,6 +226,20 @@ async function loadInventory() {
   }
 }
 
+function formatTotalDisplay(value) {
+  const num = parseFloat(value);
+  if (!Number.isFinite(num)) return '0';
+  const normalized = Number.isInteger(num)
+    ? String(num)
+    : num.toFixed(6).replace(/0+$/,'').replace(/\.$/,'');
+  const neg = normalized.startsWith('-');
+  const clean = neg ? normalized.slice(1) : normalized;
+  const [intPart, fracPart] = clean.split('.');
+  const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const out = grouped + (fracPart ? `.${fracPart}` : '');
+  return neg ? ('\u200E-' + out) : out;
+}
+
 // Calculate weighted averages
 function calculateWeightedAverages() {
   let totalQuantity = 0;
@@ -262,15 +276,15 @@ function calculateWeightedAverages() {
   }
 
   // Update totals
-  document.getElementById('totalQuantityTanks').textContent = totalQuantity.toFixed(2);
-  document.getElementById('totalQuantityLiters').textContent = totalQuantityLiters.toFixed(2);
+  document.getElementById('totalQuantityTanks').textContent = formatTotalDisplay(totalQuantity.toFixed(2));
+  document.getElementById('totalQuantityLiters').textContent = formatTotalDisplay(totalQuantityLiters.toFixed(2));
   
   if (totalQuantity > 0) {
-    document.getElementById('avgPH').textContent = (weightedSumPH / totalQuantity).toFixed(3);
-    document.getElementById('avgPeroxide').textContent = (weightedSumPeroxide / totalQuantity).toFixed(3);
-    document.getElementById('avg232').textContent = (weightedSum232 / totalQuantity).toFixed(3);
-    document.getElementById('avg270').textContent = (weightedSum270 / totalQuantity).toFixed(3);
-    document.getElementById('avgDeltaK').textContent = (weightedSumDeltaK / totalQuantity).toFixed(3);
+    document.getElementById('avgPH').textContent = formatTotalDisplay((weightedSumPH / totalQuantity).toFixed(3));
+    document.getElementById('avgPeroxide').textContent = formatTotalDisplay((weightedSumPeroxide / totalQuantity).toFixed(3));
+    document.getElementById('avg232').textContent = formatTotalDisplay((weightedSum232 / totalQuantity).toFixed(3));
+    document.getElementById('avg270').textContent = formatTotalDisplay((weightedSum270 / totalQuantity).toFixed(3));
+    document.getElementById('avgDeltaK').textContent = formatTotalDisplay((weightedSumDeltaK / totalQuantity).toFixed(3));
   } else {
     document.getElementById('avgPH').textContent = '0';
     document.getElementById('avgPeroxide').textContent = '0';
@@ -302,11 +316,11 @@ document.getElementById('addSelectedItems').addEventListener('click', () => {
         <td>${tbody.children.length + 1}</td>
         <td>${cells[1].textContent}</td>
         <td>
-          <input type="number" class="form-control form-control-sm quantity-input" 
+          <input type="text" inputmode="decimal" class="form-control form-control-sm quantity-input" 
                  name="quantities[${itemId}]" 
                  min="0.1" 
                  step="0.1"
-                 max="${cells[2].textContent}" 
+                 data-max="${cells[2].textContent}" 
                  value="1"
                  required>
         </td>
@@ -381,7 +395,7 @@ document.getElementById('invoiceForm').addEventListener('submit', function(e) {
     quantityInputs.forEach(input => {
         const quantityRaw = (input.value || '').trim();
         const quantity = parseFloat(quantityRaw);
-        const max = parseFloat(input.max);
+        const max = parseFloat(input.dataset.max || input.getAttribute('max') || '0');
         const itemIdMatch = input.name.match(/quantities\[(\d+)\]/);
         if (quantity <= 0 || quantity > max) {
             isValid = false;
@@ -515,7 +529,7 @@ document.getElementById('invoice_date').addEventListener('change', function() {
   cursor: pointer;
 }
 
-#selectedItems input[type="number"] {
+#selectedItems .quantity-input {
   width: 80px;
 }
 </style> 

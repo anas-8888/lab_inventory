@@ -30,11 +30,30 @@ function formatNumberDisplay(value) {
 
     return result;
 }
+function formatTotalDisplay(value) {
+    const num = parseFloat(value);
+    if (!Number.isFinite(num)) return '0';
+    const normalized = Number.isInteger(num)
+        ? String(num)
+        : num.toFixed(6).replace(/0+$/,'').replace(/\.$/,'');
+    const neg = normalized.startsWith('-');
+    const clean = neg ? normalized.slice(1) : normalized;
+    const [intPart, fracPart] = clean.split('.');
+    const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const out = grouped + (fracPart ? `.${fracPart}` : '');
+    return neg ? ('\u200E-' + out) : out;
+}
 
 function formatWeightedAverage(value) {
     const num = Number(value);
     if (!Number.isFinite(num)) return '0.000';
-    return num.toFixed(3);
+    const fixed = num.toFixed(3);
+    const neg = fixed.startsWith('-');
+    const clean = neg ? fixed.slice(1) : fixed;
+    const [intPart, fracPart] = clean.split('.');
+    const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const out = `${grouped}.${fracPart}`;
+    return neg ? ('\u200E-' + out) : out;
 }
 %>
 
@@ -194,11 +213,11 @@ function formatWeightedAverage(value) {
                                             <strong>المجموع</strong>
                                         </td>
                                         <td style="padding: 6pt 4pt;"><strong>
-                                                <%= formatNumberDisplay(certificate.total_quantity) %>
+                                                <%= formatTotalDisplay(certificate.total_quantity) %>
                                             </strong></td>
                                         <td style="padding: 6pt 4pt;"></td>
                                         <td style="padding: 6pt 4pt;"><strong>
-                                                <%= formatNumberDisplay(certificate.total_weight) %>
+                                                <%= formatTotalDisplay(certificate.total_weight) %>
                                             </strong></td>
                                         <td colspan="9" style="padding: 6pt 4pt;"></td>
                                     </tr>

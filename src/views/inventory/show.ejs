@@ -30,6 +30,19 @@ function formatNumberDisplay(value) {
 
     return result;
 }
+function formatTotalDisplay(value) {
+    const num = parseFloat(value);
+    if (!Number.isFinite(num)) return '0';
+    const normalized = Number.isInteger(num)
+        ? String(num)
+        : num.toFixed(6).replace(/0+$/,'').replace(/\.$/,'');
+    const neg = normalized.startsWith('-');
+    const clean = neg ? normalized.slice(1) : normalized;
+    const [intPart, fracPart] = clean.split('.');
+    const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const out = grouped + (fracPart ? `.${fracPart}` : '');
+    return neg ? ('\u200E-' + out) : out;
+}
 
 // دالة لتنسيق التاريخ باللغة الإنجليزية
 function formatDateEnglish(dateString) {
@@ -267,8 +280,8 @@ function convertToArabicNumbers(num) {
                                 <tfoot>
                                     <tr>
                                         <td colspan="3" class="text-start"><strong>المجموع:</strong></td>
-                                        <td><strong><%= formatNumberDisplay(sales.reduce((sum, sale) => sum + parseFloat(sale.quantity), 0)) %></strong></td>
-                                        <td><strong><%= formatNumberDisplay(sales.reduce((sum, sale) => sum + parseFloat((item.net_weight_total/(item.base_quantity ? item.base_quantity : 1))*sale.quantity), 0)) %></strong></td>
+                                        <td><strong><%= formatTotalDisplay(sales.reduce((sum, sale) => sum + parseFloat(sale.quantity), 0)) %></strong></td>
+                                        <td><strong><%= formatTotalDisplay(sales.reduce((sum, sale) => sum + parseFloat((item.net_weight_total/(item.base_quantity ? item.base_quantity : 1))*sale.quantity), 0)) %></strong></td>
                                         <td colspan="2"></td>
                                     </tr>
                                 </tfoot>

@@ -30,6 +30,19 @@ function formatNumberDisplay(value) {
     return '\u200E' + result;
   }
   return result;
+}
+function formatTotalDisplay(value) {
+  const num = parseFloat(value);
+  if (!Number.isFinite(num)) return '0';
+  const normalized = Number.isInteger(num)
+    ? String(num)
+    : num.toFixed(6).replace(/0+$/,'').replace(/\.$/,'');
+  const neg = normalized.startsWith('-');
+  const clean = neg ? normalized.slice(1) : normalized;
+  const [intPart, fracPart] = clean.split('.');
+  const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const out = grouped + (fracPart ? `.${fracPart}` : '');
+  return neg ? ('\u200E-' + out) : out;
 } %>
 
 <div class="container mt-4">
@@ -49,7 +62,7 @@ function formatNumberDisplay(value) {
           </a>
         </div>
       </div>
-      <input type="hidden" id="orderGrandTotalValue" value="<%= (typeof totals !== 'undefined' && totals ? (parseFloat(totals.grandTotal) || 0) : 0) %>">
+      <input type="hidden" id="orderGrandTotalValue" value="<%= (typeof totals !== 'undefined' && totals ? (totals.grandTotal ?? 0) : 0) %>">
 
       <!-- PDF Export Modal -->
       <div id="orderPdfExportModal" class="modal fade" tabindex="-1" aria-hidden="true">
@@ -205,12 +218,12 @@ function formatNumberDisplay(value) {
               <tfoot>
                 <tr class="table-info">
                   <td colspan="3" class="text-center"><strong>الإجماليات</strong></td>
-                  <td><strong><%= typeof totals !== 'undefined' && totals ? formatNumberDisplay(totals.totalRequestedQuantity) : '0' %></strong></td>
-                  <td><strong><%= typeof totals !== 'undefined' && totals ? formatNumberDisplay(totals.totalPackagingWeight) : '0' %></strong></td>
+                  <td><strong><%= typeof totals !== 'undefined' && totals ? formatTotalDisplay(totals.totalRequestedQuantity) : '0' %></strong></td>
+                  <td><strong><%= typeof totals !== 'undefined' && totals ? formatTotalDisplay(totals.totalPackagingWeight) : '0' %></strong></td>
                   <td></td>
-                  <td><strong><%= typeof totals !== 'undefined' && totals ? formatNumberDisplay(totals.totalGrossWeight || 0) : '0' %></strong></td>
+                  <td><strong><%= typeof totals !== 'undefined' && totals ? formatTotalDisplay(totals.totalGrossWeight || 0) : '0' %></strong></td>
                   <td></td>
-                  <td><strong><%= typeof totals !== 'undefined' && totals ? formatNumberDisplay(totals.grandTotal) : '0' %> <%= (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '' %></strong></td>
+                  <td><strong><%= typeof totals !== 'undefined' && totals ? formatTotalDisplay(totals.grandTotal) : '0' %> <%= (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '' %></strong></td>
                   <td></td>
                 </tr>
               </tfoot>
@@ -347,8 +360,8 @@ function initializeOrderDiscountInputs() {
   const total = Number(document.getElementById('orderGrandTotalValue')?.value || 0);
   const printInput = document.getElementById('printDiscountedTotalInput');
   const exportInput = document.getElementById('exportDiscountedTotalInput');
-  if (printInput) printInput.value = total.toFixed(2);
-  if (exportInput) exportInput.value = total.toFixed(2);
+  if (printInput) printInput.value = String(total);
+  if (exportInput) exportInput.value = String(total);
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -402,7 +415,7 @@ async function exportPDF(url) {
       <div class="modal-body">
         <div class="mb-3">
           <label for="printDiscountedTotalInput" class="form-label">الإجمالي بعد الخصم</label>
-          <input id="printDiscountedTotalInput" type="number" min="0" step="0.01" class="form-control" />
+          <input id="printDiscountedTotalInput" type="text" inputmode="decimal" min="0" step="0.01" class="form-control" />
           <small class="text-muted d-block mt-1">سيتم احتساب الخصم = الإجمالي الحالي - القيمة المدخلة.</small>
         </div>
         <div class="row g-3">
@@ -443,7 +456,7 @@ async function exportPDF(url) {
       <div class="modal-body">
         <div class="mb-3">
           <label for="exportDiscountedTotalInput" class="form-label">الإجمالي بعد الخصم</label>
-          <input id="exportDiscountedTotalInput" type="number" min="0" step="0.01" class="form-control" />
+          <input id="exportDiscountedTotalInput" type="text" inputmode="decimal" min="0" step="0.01" class="form-control" />
           <small class="text-muted d-block mt-1">سيتم احتساب الخصم = الإجمالي الحالي - القيمة المدخلة.</small>
         </div>
         <div class="row g-3">

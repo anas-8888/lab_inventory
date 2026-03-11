@@ -48,9 +48,21 @@ ALTER TABLE inventory
   ADD COLUMN numeric_raw LONGTEXT NULL
   AFTER notes;
 
+ALTER TABLE invoices
+  ADD COLUMN numeric_raw LONGTEXT NULL
+  AFTER total_quantity_liters;
+
 ALTER TABLE invoice_items
   ADD COLUMN numeric_raw LONGTEXT NULL
   AFTER delta_k;
+
+ALTER TABLE material_components
+  ADD COLUMN numeric_raw LONGTEXT NULL
+  AFTER price_per_kg_syp;
+
+ALTER TABLE cost_logs
+  ADD COLUMN numeric_raw LONGTEXT NULL
+  AFTER package_cost_syp;
 
 ALTER TABLE notes
   ADD COLUMN numeric_raw LONGTEXT NULL
@@ -59,6 +71,36 @@ ALTER TABLE notes
 ALTER TABLE certificates
   ADD COLUMN numeric_raw LONGTEXT NULL
   AFTER total_weight;
+
+-- ------------------------------------------------------------
+-- Ensure trigger dependency exists
+-- material_components triggers call this procedure; if missing,
+-- updates on material_components fail with #1305.
+-- ------------------------------------------------------------
+DROP PROCEDURE IF EXISTS `CalculateMaterialCostFromComponents`;
+DELIMITER $$
+CREATE PROCEDURE `CalculateMaterialCostFromComponents` (IN `material_id` INT)
+BEGIN
+  DECLARE total_cost DECIMAL(10,3) DEFAULT 0.00;
+  DECLARE total_cost_syp DECIMAL(15,3) DEFAULT 0.00;
+  DECLARE total_weight DECIMAL(10,3) DEFAULT 0.00;
+
+  SELECT
+    COALESCE(SUM((weight_grams / 1000.0) * price_per_kg), 0),
+    COALESCE(SUM((weight_grams / 1000.0) * price_per_kg_syp), 0),
+    COALESCE(SUM(weight_grams / 1000.0), 0)
+  INTO total_cost, total_cost_syp, total_weight
+  FROM material_components
+  WHERE material_components.material_id = material_id;
+
+  UPDATE materials
+  SET
+    price_before_waste = total_cost,
+    price_before_waste_syp = total_cost_syp,
+    gross_weight = total_weight
+  WHERE id = material_id;
+END$$
+DELIMITER ;
 
 -- ------------------------------------------------------------
 -- Backfill numeric_raw from existing numeric columns
@@ -195,6 +237,21 @@ WHERE numeric_raw IS NULL
    OR TRIM(numeric_raw) = ''
    OR IFNULL(JSON_VALID(numeric_raw), 0) = 0;
 
+UPDATE invoices
+SET numeric_raw = JSON_OBJECT(
+  'total_amount', CAST(total_amount AS CHAR),
+  'avg_ph', CAST(avg_ph AS CHAR),
+  'avg_peroxide', CAST(avg_peroxide AS CHAR),
+  'avg_232', CAST(avg_232 AS CHAR),
+  'avg_270', CAST(avg_270 AS CHAR),
+  'avg_delta_k', CAST(avg_delta_k AS CHAR),
+  'total_quantity_tanks', CAST(total_quantity_tanks AS CHAR),
+  'total_quantity_liters', CAST(total_quantity_liters AS CHAR)
+)
+WHERE numeric_raw IS NULL
+   OR TRIM(numeric_raw) = ''
+   OR IFNULL(JSON_VALID(numeric_raw), 0) = 0;
+
 UPDATE invoice_items
 SET numeric_raw = JSON_OBJECT(
   'quantity', CAST(quantity AS CHAR),
@@ -207,6 +264,27 @@ SET numeric_raw = JSON_OBJECT(
   'absorption_270', CAST(absorption_270 AS CHAR),
   'absorption_274', CAST(absorption_274 AS CHAR),
   'delta_k', CAST(delta_k AS CHAR)
+)
+WHERE numeric_raw IS NULL
+   OR TRIM(numeric_raw) = ''
+   OR IFNULL(JSON_VALID(numeric_raw), 0) = 0;
+
+UPDATE material_components
+SET numeric_raw = JSON_OBJECT(
+  'weight_grams', CAST(weight_grams AS CHAR),
+  'price_per_kg', CAST(price_per_kg AS CHAR),
+  'price_per_kg_syp', CAST(price_per_kg_syp AS CHAR)
+)
+WHERE numeric_raw IS NULL
+   OR TRIM(numeric_raw) = ''
+   OR IFNULL(JSON_VALID(numeric_raw), 0) = 0;
+
+UPDATE cost_logs
+SET numeric_raw = JSON_OBJECT(
+  'unit_cost', CAST(unit_cost AS CHAR),
+  'unit_cost_syp', CAST(unit_cost_syp AS CHAR),
+  'package_cost', CAST(package_cost AS CHAR),
+  'package_cost_syp', CAST(package_cost_syp AS CHAR)
 )
 WHERE numeric_raw IS NULL
    OR TRIM(numeric_raw) = ''

@@ -7,6 +7,7 @@ const { normalizeRawNumeric, parseRawNumericMap, rawOrValue } = require('../util
 
 const INVENTORY_RAW_FIELDS = ['base_quantity', 'current_quantity', 'sample_weight', 'net_weight_total', 'ph', 'peroxide_value', 'sigma_absorbance'];
 const INVOICE_ITEM_RAW_FIELDS = ['quantity', 'price', 'net_weight', 'ph', 'peroxide_value', 'absorption_232', 'absorption_266', 'absorption_270', 'absorption_274', 'delta_k'];
+const INVOICE_RAW_FIELDS = ['total_amount', 'avg_ph', 'avg_peroxide', 'avg_232', 'avg_270', 'avg_delta_k', 'total_quantity_tanks', 'total_quantity_liters'];
 
 function applyInventoryRaw(item) {
     if (!item || typeof item !== 'object') return item;
@@ -23,6 +24,16 @@ function applyInvoiceItemRaw(item) {
     const rawMap = parseRawNumericMap(item.numeric_raw);
     const mapped = { ...item };
     INVOICE_ITEM_RAW_FIELDS.forEach((field) => {
+        mapped[field] = rawOrValue(rawMap, field, mapped[field]);
+    });
+    return mapped;
+}
+
+function applyInvoiceRaw(item) {
+    if (!item || typeof item !== 'object') return item;
+    const rawMap = parseRawNumericMap(item.numeric_raw);
+    const mapped = { ...item };
+    INVOICE_RAW_FIELDS.forEach((field) => {
         mapped[field] = rawOrValue(rawMap, field, mapped[field]);
     });
     return mapped;
@@ -59,7 +70,8 @@ exports.getInvoices = async (req, res) => {
 
         query += ` ORDER BY i.date DESC, i.id DESC`;
 
-        const [invoices] = await pool.query(query, params);
+        const [invoiceRows] = await pool.query(query, params);
+        const invoices = invoiceRows.map(applyInvoiceRaw);
         
         // إعادة حساب الوزن الإجمالي لكل طلبية شحن باستخدام الصيغة المطلوبة
         for (let invoice of invoices) {
@@ -286,19 +298,30 @@ exports.createInvoice = async (req, res) => {
         const avg270 = totalQuantity > 0 ? weightedSum270 / totalQuantity : 0;
         const avgDeltaK = totalQuantity > 0 ? weightedSumDeltaK / totalQuantity : 0;
 
+        const invoiceRawMap = {
+            total_amount: String(totalQuantityLiters),
+            avg_ph: String(avgPH),
+            avg_peroxide: String(avgPeroxide),
+            avg_232: String(avg232),
+            avg_270: String(avg270),
+            avg_delta_k: String(avgDeltaK),
+            total_quantity_tanks: String(totalQuantity),
+            total_quantity_liters: String(totalQuantityLiters)
+        };
+
         // إنشاء طلب الشحن
         const [result] = await connection.query(
             `INSERT INTO invoices (
                 invoice_number, customer_name, driver_name,
                 date, total_amount, status, notes, created_by,
                 avg_ph, avg_peroxide, avg_232, avg_270, avg_delta_k,
-                total_quantity_tanks, total_quantity_liters
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                total_quantity_tanks, total_quantity_liters, numeric_raw
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 invoice_number, customer_name, driver_name,
                 date, totalQuantityLiters, 'pending', notes, req.session.user.id,
                 avgPH, avgPeroxide, avg232, avg270, avgDeltaK,
-                totalQuantity, totalQuantityLiters
+                totalQuantity, totalQuantityLiters, JSON.stringify(invoiceRawMap)
             ]
         );
 
@@ -456,7 +479,7 @@ exports.getInvoice = async (req, res) => {
 
         res.render('invoices/view', {
             title: 'عرض طلب الشحن',
-            invoice: invoices[0],
+            invoice: applyInvoiceRaw(invoices[0]),
             items,
             user: req.session.user
         });
@@ -503,7 +526,7 @@ exports.printInvoice = async (req, res) => {
         // تمرير user: null إذا لم يوجد مستخدم في الجلسة
         res.render('invoices/print', {
             title: 'طباعة طلب الشحن',
-            invoice: invoices[0],
+            invoice: applyInvoiceRaw(invoices[0]),
             items,
             user: req.session.user || null,
             layout: 'invoices/print'
@@ -663,7 +686,7 @@ exports.getEditForm = async (req, res) => {
 
         res.render('invoices/edit', {
             title: 'تعديل طلب الشحن',
-            invoice: invoices[0],
+            invoice: applyInvoiceRaw(invoices[0]),
             items,
             inventory,
             user: req.session.user
@@ -865,6 +888,17 @@ exports.updateInvoice = async (req, res) => {
         const avg270 = totalQuantity > 0 ? weightedSum270 / totalQuantity : 0;
         const avgDeltaK = totalQuantity > 0 ? weightedSumDeltaK / totalQuantity : 0;
 
+        const updatedInvoiceRawMap = {
+            total_amount: String(totalQuantityLiters),
+            avg_ph: String(avgPH),
+            avg_peroxide: String(avgPeroxide),
+            avg_232: String(avg232),
+            avg_270: String(avg270),
+            avg_delta_k: String(avgDeltaK),
+            total_quantity_tanks: String(totalQuantity),
+            total_quantity_liters: String(totalQuantityLiters)
+        };
+
         // تحديث بيانات طلب الشحن
         await connection.query(
             `UPDATE invoices SET 
@@ -872,12 +906,13 @@ exports.updateInvoice = async (req, res) => {
                 date = ?, notes = ?, total_quantity_tanks = ?, 
                 total_quantity_liters = ?, avg_ph = ?, avg_peroxide = ?,
                 avg_232 = ?, avg_270 = ?, avg_delta_k = ?,
+                numeric_raw = ?,
                 updated_at = NOW()
              WHERE id = ?`,
             [
                 invoice_number, customer_name, driver_name, date, notes,
                 totalQuantity, totalQuantityLiters, avgPH, avgPeroxide,
-                avg232, avg270, avgDeltaK, invoiceId
+                avg232, avg270, avgDeltaK, JSON.stringify(updatedInvoiceRawMap), invoiceId
             ]
         );
 
@@ -1027,7 +1062,8 @@ exports.trashMultiple = async (req, res) => {
 // جلب طلبات  الشحن المحذوفة
 exports.getDeletedInvoices = async (req, res) => {
     try {
-        const [deletedInvoices] = await pool.query('SELECT * FROM invoices WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC');
+        const [deletedRows] = await pool.query('SELECT * FROM invoices WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC');
+        const deletedInvoices = deletedRows.map(applyInvoiceRaw);
         
         // إعادة حساب الوزن الإجمالي لكل طلبية شحن محذوفة باستخدام الصيغة المطلوبة
         for (let invoice of deletedInvoices) {

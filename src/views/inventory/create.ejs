@@ -207,28 +207,28 @@
 
                 <div class="mb-3">
                   <label for="base_quantity" class="form-label">الكمية الأساسية <span class="text-danger">*</span></label>
-                  <input type="number" step="0.001" class="form-control" id="base_quantity" name="base_quantity" required>
+                  <input type="text" inputmode="decimal" step="0.001" class="form-control" id="base_quantity" name="base_quantity" required>
                   <div class="invalid-feedback">يرجى إدخال الكمية الأساسية</div>
                   <small class="text-muted">الكمية الأساسية بواحدة التنكة</small>
                 </div>
 
                 <div class="mb-3">
                   <label for="current_quantity" class="form-label">الكمية الحالية</label>
-                  <input type="number" step="0.001" class="form-control" id="current_quantity" name="current_quantity" min="0">
+                  <input type="text" inputmode="decimal" step="0.001" class="form-control" id="current_quantity" name="current_quantity" min="0">
                   <div class="invalid-feedback">يرجى إدخال الكمية الحالية</div>
                   <small class="text-muted">اتركه فارغاً ليتم تعيينه تلقائياً كالكمية الأساسية</small>
                 </div>
 
                 <div class="mb-3">
                   <label for="net_weight_total" class="form-label">الوزن الصافي <span class="text-danger">*</span></label>
-                  <input type="number" step="0.001" class="form-control" id="net_weight_total" name="net_weight_total" required>
+                  <input type="text" inputmode="decimal" step="0.001" class="form-control" id="net_weight_total" name="net_weight_total" required>
                   <div class="invalid-feedback">يرجى إدخال الوزن الصافي</div>
                   <small class="text-muted">يرجى إدخال الوزن الصافي يدوياً</small>
                 </div>
 
                 <div class="mb-3">
                   <label for="sample_weight" class="form-label">وزن العينة (اختياري)</label>
-                  <input type="number" step="0.001" class="form-control" id="sample_weight" name="sample_weight">
+                  <input type="text" inputmode="decimal" step="0.001" class="form-control" id="sample_weight" name="sample_weight">
                   <small class="text-muted">يمكن تركه فارغاً</small>
                 </div>
               </div>
@@ -243,19 +243,19 @@
                 <div class="row">
                   <div class="col-md-4 mb-3">
                     <label for="ph" class="form-label">درجة الحموضة<span class="text-danger">*</span></label>
-                    <input type="number" step="0.001" class="form-control" id="ph" name="ph" required>
+                    <input type="text" inputmode="decimal" step="0.001" class="form-control" id="ph" name="ph" required>
                     <div class="invalid-feedback">يرجى إدخال درجة الحموضة</div>
                   </div>
 
                   <div class="col-md-4 mb-3">
                     <label for="peroxide_value" class="form-label">رقم البيروكسيد</label>
-                    <input type="number" step="0.001" class="form-control" id="peroxide_value" name="peroxide_value">
+                    <input type="text" inputmode="decimal" step="0.001" class="form-control" id="peroxide_value" name="peroxide_value">
                     <div class="invalid-feedback">يرجى إدخال قيمة البيروكسيد</div>
                   </div>
 
                   <div class="col-md-4 mb-3">
                     <label for="sigma_absorbance" class="form-label">ستيغما ستاديين</label>
-                    <input type="number" step="0.001" class="form-control" id="sigma_absorbance" name="sigma_absorbance">
+                    <input type="text" inputmode="decimal" step="0.001" class="form-control" id="sigma_absorbance" name="sigma_absorbance">
                   </div>
                 </div>
 

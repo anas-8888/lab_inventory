@@ -13,7 +13,7 @@
                     <div class="col-12 col-md-auto">
                         <div class="input-group" style="min-width: 240px;">
                             <span class="input-group-text"><i class="bi bi-person"></i></span>
-                            <input type="text" id="orderClientFilter" class="form-control" placeholder="اسم الزبون">
+                            <input type="text" id="orderClientFilter" class="form-control" placeholder="اسم العميل">
                         </div>
                     </div>
                     <div class="col-12 col-md-auto">
@@ -24,7 +24,7 @@
                     </div>
                     <div class="col-12 col-md-auto">
                         <button type="button" class="btn btn-primary w-100 w-md-auto" data-bs-toggle="modal" data-bs-target="#createOrderModal">
-                            <i class="bi bi-plus-circle me-1"></i> إنشاء طلبية جديدة
+                            <i class="bi bi-plus-circle me-1"></i> إضافة طلبية جديدة
                         </button>
                     </div>
                     <div class="col-12 col-md-auto">
@@ -37,7 +37,7 @@
 
             
 
-            <!-- جدول الطلبيات الموجودة -->
+            <!-- جدول الطلبيات المسجلة -->
             <% if (orders && orders.length > 0) { %>
             <div class="card shadow">
                 <div class="card-header">
@@ -49,7 +49,7 @@
                             <thead>
                                 <tr>
                                     <th>رقم الطلبية</th>
-                                    <th>اسم الزبون</th>
+                                    <th>اسم العميل</th>
                                     <th class="text-center">تاريخ الطلبية</th>
                                     <th class="text-center">تاريخ التسليم</th>
                                     <th class="text-center">المسؤول عن التجهيز</th>
@@ -86,13 +86,13 @@
                                             <%= 
                                                 order.status === 'pending' ? 'قيد الانتظار' :
                                                 order.status === 'processing' ? 'قيد المعالجة' :
-                                                order.status === 'completed' ? 'مكتمل' : 'ملغي'
+                                                order.status === 'completed' ? 'مكتمل' : 'ملغى'
                                             %>
                                         </span>
                                     </td>
                                     <td>
                                         <div class="btn-group">
-                                            <a href="/costs/orders/<%= order.id %>/details" class="btn btn-sm btn-secondary" title="معاينة"><i class="bi bi-eye"></i></a>
+                                            <a href="/costs/orders/<%= order.id %>/details" class="btn btn-sm btn-secondary" title="استعراض"><i class="bi bi-eye"></i></a>
                                             <button type="button" class="btn btn-sm btn-info" data-order-id="<%= order.id %>" onclick="editOrder(Number(this.dataset.orderId))" title="تعديل">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
@@ -102,7 +102,7 @@
                                             <button type="button" class="btn btn-sm btn-success" data-order-id="<%= order.id %>" data-status="completed" onclick="updateOrderStatus(this.dataset.orderId, this.dataset.status)" title="مكتمل">
                                                 <i class="bi bi-check"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-danger" data-order-id="<%= order.id %>" data-status="cancelled" onclick="updateOrderStatus(this.dataset.orderId, this.dataset.status)" title="إلغاء">
+                                            <button type="button" class="btn btn-sm btn-danger" data-order-id="<%= order.id %>" data-status="cancelled" onclick="updateOrderStatus(this.dataset.orderId, this.dataset.status)" title="ملغى">
                                                 <i class="bi bi-x"></i>
                                             </button>
                                             <button type="button" class="btn btn-sm btn-danger" data-order-id="<%= order.id %>" onclick="deleteOrder(Number(this.dataset.orderId))" title="حذف">
@@ -122,9 +122,9 @@
               <div class="card-body text-center py-5">
                 <i class="bi bi-cart-x fs-1 text-muted mb-3"></i>
                 <h5 class="mb-2">لا توجد طلبيات حتى الآن</h5>
-                <p class="text-muted">ابدأ بإنشاء أول طلبية باستخدام الزر أدناه.</p>
+                <p class="text-muted">يمكنك إضافة أول طلبية باستخدام الزر أدناه.</p>
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createOrderModal">
-                  <i class="bi bi-plus-circle me-1"></i> إنشاء طلبية جديدة
+                  <i class="bi bi-plus-circle me-1"></i> إضافة طلبية جديدة
                 </button>
                 </div>
             </div>
@@ -151,7 +151,7 @@
                             <input type="text" class="form-control" id="editClientName" name="client_name" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">رقم الهاتف</label>
+                            <label class="form-label">هاتف العميل</label>
                             <input type="text" class="form-control" id="editClientPhone" name="client_phone">
                         </div>
                         <div class="col-md-12">
@@ -168,16 +168,16 @@
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">اسم العامل المسؤول</label>
+                            <label class="form-label">المسؤول عن التجهيز</label>
                             <input type="text" class="form-control" id="editResponsibleWorker" name="responsible_worker">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">مراقب جودة للطلبية</label>
+                            <label class="form-label">مراقب الجودة</label>
                             <input type="text" class="form-control" id="editQualityController" name="quality_controller">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">عدد الطبالي</label>
-                            <input type="number" class="form-control" id="editPalletsCount" name="pallets_count" min="0">
+                            <input type="text" inputmode="decimal" class="form-control" id="editPalletsCount" name="pallets_count" min="0">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">رقم الحاوية</label>
@@ -185,7 +185,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">عدد الطرود</label>
-                            <input type="number" class="form-control" id="editPackagesCount" name="packages_count" min="0">
+                            <input type="text" inputmode="decimal" class="form-control" id="editPackagesCount" name="packages_count" min="0">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">رقم البوليصة</label>
@@ -213,11 +213,11 @@
                             <thead>
                                 <tr>
                                     <th>المادة</th>
-                                    <th>الوحدة</th>
+                                    <th>التعبئة</th>
                                     <th>الكمية المطلوبة</th>
-                                    <th>الوزن الصافي</th>
+                                    <th>وزن التعبئة</th>
                                     <th>وزن الطرد القائم</th>
-                                    <th>سعر الطرد</th>
+                                    <th>سعر الوحدة</th>
                                     <th>السعر الإجمالي</th>
                                     <th>ملاحظات</th>
                                     <th>الإجراءات</th>
@@ -238,19 +238,19 @@
     </div>
 </div>
 
-<!-- Modal إنشاء طلبية جديدة -->
+<!-- Modal إضافة طلبية جديدة -->
 <div class="modal fade" id="createOrderModal" tabindex="-1">
   <div class="modal-dialog modal-fullscreen">
     <div class="modal-content">
       <div class="modal-header" style="position: sticky; top: 0; background: white; border-bottom: 1px solid #dee2e6;">
-        <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i> إنشاء طلبية جديدة</h5>
+        <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i> إضافة طلبية جديدة</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
       </div>
       <div class="modal-body" style="max-height: calc(100vh - 200px); overflow-y: auto;">
         <form id="orderForm" method="POST" action="/costs/orders">
           <div class="row g-3 mb-3">
                          <div class="col-md-6">
-               <label class="form-label">اسم الزبون *</label>
+               <label class="form-label">اسم العميل *</label>
                <input type="text" class="form-control" name="client_name" required>
              </div>
             <div class="col-md-3">
@@ -272,12 +272,12 @@
               <input type="text" class="form-control" name="responsible_worker">
             </div>
             <div class="col-md-4">
-              <label class="form-label">مراقب جودة للطلبية</label>
+              <label class="form-label">مراقب الجودة</label>
               <input type="text" class="form-control" name="quality_controller">
             </div>
             <div class="col-md-4">
               <label class="form-label">عدد الطبالي</label>
-              <input type="number" class="form-control" name="pallets_count" min="0">
+              <input type="text" inputmode="decimal" class="form-control" name="pallets_count" min="0">
             </div>
             <div class="col-md-4">
               <label class="form-label">رقم الحاوية</label>
@@ -285,7 +285,7 @@
             </div>
             <div class="col-md-4">
               <label class="form-label">عدد الطرود</label>
-              <input type="number" class="form-control" name="packages_count" min="0">
+              <input type="text" inputmode="decimal" class="form-control" name="packages_count" min="0">
             </div>
             <div class="col-md-4">
               <label class="form-label">رقم البوليصة</label>
@@ -312,11 +312,11 @@
               <thead>
                 <tr>
                   <th>المادة</th>
-                  <th>الوحدة</th>
+                  <th>التعبئة</th>
                   <th>الكمية المطلوبة</th>
-                  <th>الوزن الصافي</th>
+                  <th>وزن التعبئة</th>
                   <th>وزن الطرد القائم</th>
-                  <th>سعر الطرد</th>
+                  <th>سعر الوحدة</th>
                   <th>السعر الإجمالي</th>
                   <th>ملاحظات</th>
                   <th>الإجراءات</th>
@@ -337,7 +337,7 @@
     </div>
 </div>
 
-<!-- Modal التقويم -->
+<!-- Modal اختيار التاريخ -->
 <div class="modal fade" id="datePickerModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -404,7 +404,7 @@
 <script id="ordersMaterialsJson" type="application/json"><%- JSON.stringify(materials || []) %></script>
 
 <script>
-// تمرير قائمة المواد من الخادم إلى الواجهة
+// تعليق
 (() => {
   const materialsJsonEl = document.getElementById('ordersMaterialsJson');
   try {
@@ -429,25 +429,29 @@ const exchangeRate = parseFloat(pageDataEl?.dataset?.exchangeRate || '1') || 1;
 const defaultCurrencyCode = pageDataEl?.dataset?.currencyCode || '';
 const isSyp = defaultCurrencyCode === 'SYP';
 
-// الحفاظ على العرض الخام داخل مودال التعديل
+// تعليق
 (() => {
   const editModal = document.getElementById('editOrderModal');
   if (!editModal) return;
-  editModal.querySelectorAll('input[type="number"]').forEach((input) => {
+  editModal.querySelectorAll('input[inputmode="decimal"]').forEach((input) => {
     input.setAttribute('type', 'text');
     input.setAttribute('inputmode', 'decimal');
   });
 })();
 
-// دالة تنسيق الأرقام حسب العملة
-const formatUSD = (v) => (parseFloat(v) || 0).toFixed(2);
+// تعليق
+const formatUSD = (v) => {
+  const n = parseFloat(v);
+  if (!Number.isFinite(n)) return '0';
+  return String(n);
+};
 const formatSYP = (v) => String(Math.round(parseFloat(v) || 0));
 const displayMoney = (v) => {
   const value = parseFloat(v) || 0;
   return defaultCurrencyCode === 'SYP' ? formatSYP(value) : formatUSD(value);
 };
 
-// دالة لتقريب الأرقام العشرية بشكل صحيح
+// تعليق
 const roundToDecimal = (value, decimals = 2) => {
   return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
 };
@@ -458,28 +462,28 @@ let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
 let currentOrderPickerRowId = null;
 
-// أسماء الأشهر بالعربية
+// تعليق
 const monthNames = [
     'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
     'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
 ];
 
-// أسماء أيام الأسبوع بالعربية
-const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+// تعليق
+const dayNames = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
-// تهيئة التقويم
+// تعليق
 document.addEventListener('DOMContentLoaded', function() {
     initializeCalendar();
     setDefaultDates();
     
-    // تحسين إمكانية الوصول للمودالات
+    // تعليق
     const modals = document.querySelectorAll('.modal');
     modals.forEach(modal => {
-        // إزالة aria-hidden من جميع المودالات لمنع تضارب التركيز
+        // تعليق
         modal.removeAttribute('aria-hidden');
         
         modal.addEventListener('shown.bs.modal', function() {
-            // التركيز على أول عنصر قابل للتركيز بعد فتح المودال
+            // تعليق
             setTimeout(() => {
                 const firstFocusable = this.querySelector('input:not([readonly]), button:not([disabled]), select, textarea');
                 if (firstFocusable) {
@@ -488,7 +492,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 100);
         });
         
-        // منع Bootstrap من إضافة aria-hidden
+        // تعليق
         const observer = new MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
                 if (mutation.type === 'attributes' && mutation.attributeName === 'aria-hidden') {
@@ -503,7 +507,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // إضافة مستمعي الأحداث
+    // تعليق
     document.getElementById('prevMonth').addEventListener('click', function() {
         currentMonth--;
         if (currentMonth < 0) {
@@ -547,9 +551,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// دالة تهيئة التقويم
+// تعليق
 function initializeCalendar() {
-    // ملء قائمة السنوات
+    // تعليق
     const yearSelect = document.getElementById('yearSelect');
     const currentYear = new Date().getFullYear();
     
@@ -560,26 +564,26 @@ function initializeCalendar() {
         yearSelect.appendChild(option);
     }
     
-    // تعيين القيم الحالية
+    // تعليق
     document.getElementById('monthSelect').value = currentMonth + 1;
     document.getElementById('yearSelect').value = currentYear;
     
     renderCalendar();
 }
 
-// دالة عرض التقويم
+// تعليق
 function renderCalendar() {
     const calendarBody = document.getElementById('calendarBody');
     const currentMonthYear = document.getElementById('currentMonthYear');
     
-    // تحديث العنوان
+    // تعليق
     currentMonthYear.textContent = `${monthNames[currentMonth]} ${currentYear}`;
     
-    // تحديث قوائم الاختيار
+    // تعليق
     document.getElementById('monthSelect').value = currentMonth + 1;
     document.getElementById('yearSelect').value = currentYear;
     
-    // إنشاء التقويم
+    // تعليق
     const firstDay = new Date(currentYear, currentMonth, 1);
     const lastDay = new Date(currentYear, currentMonth + 1, 0);
     const startDate = new Date(firstDay);
@@ -587,12 +591,12 @@ function renderCalendar() {
     
     let calendarHTML = '<div class="calendar-grid">';
     
-    // أيام الأسبوع
+    // تعليق
     dayNames.forEach(day => {
         calendarHTML += `<div class="calendar-day-header">${day}</div>`;
     });
     
-    // أيام الشهر
+    // تعليق
     for (let i = 0; i < 42; i++) {
         const date = new Date(startDate);
         date.setDate(startDate.getDate() + i);
@@ -613,20 +617,20 @@ function renderCalendar() {
     calendarBody.innerHTML = calendarHTML;
 }
 
-// دالة اختيار التاريخ
+// تعليق
 function selectDate(date) {
     selectedDate = date;
     renderCalendar();
 }
 
-// دالة فتح التقويم
+// تعليق
 function openDatePicker(inputId) {
     currentDateInput = document.getElementById(inputId);
     const modal = new bootstrap.Modal(document.getElementById('datePickerModal'));
     modal.show();
 }
 
-// دالة تعيين التواريخ الافتراضية
+// تعليق
 function setDefaultDates() {
     const today = new Date();
     const day = today.getDate().toString().padStart(2, '0');
@@ -640,7 +644,7 @@ function setDefaultDates() {
     if (deliveryDate) deliveryDate.value = formattedDate;
 }
 
-// دالة تنسيق التاريخ
+// تعليق
 function formatDate(dateString) {
     if (!dateString) return '-';
     const date = new Date(dateString);
@@ -650,9 +654,9 @@ function formatDate(dateString) {
     return `${day}/${month}/${year}`;
 }
 
-// دالة تعديل الطلبية
+// تعليق
 function editOrder(orderId) {
-    // جلب بيانات الطلبية
+    // تعليق
     fetch(`/costs/orders/${orderId}`)
         .then(response => response.json())
         .then(data => {
@@ -675,7 +679,7 @@ function editOrder(orderId) {
             document.getElementById('editAccreditationNumber').value = order.accreditation_number || '';
             document.getElementById('editNotes').value = order.notes || '';
 
-            // تعبئة مواد الطلبية
+            // تعليق
             const tbody = document.getElementById('editOrderItemsBody');
             tbody.innerHTML = '';
             items.forEach(it => addEditOrderItemRow(it));
@@ -688,13 +692,13 @@ function editOrder(orderId) {
         });
 }
 
-// دالة حفظ تعديل الطلبية
+// تعليق
 function saveOrderEdit() {
     const formData = new FormData(document.getElementById('editOrderForm'));
     const orderId = document.getElementById('editOrderId').value;
     const clientName = formData.get('client_name')?.trim();
     
-    // التحقق من الحقول المطلوبة
+    // تعليق
     if (!clientName) {
         showAlert('يرجى إدخال اسم العميل', 'error');
         return;
@@ -739,13 +743,13 @@ function saveOrderEdit() {
     });
 }
 
-// تحديث حالة الطلبية
+// تعليق
 function updateOrderStatus(orderId, status) {
     const statusText = {
         'pending': 'قيد الانتظار',
         'processing': 'قيد المعالجة',
         'completed': 'مكتمل',
-        'cancelled': 'ملغي'
+        'cancelled': 'ملغى'
     };
     
     if (confirm(`هل تريد تغيير حالة الطلبية إلى "${statusText[status]}"؟`)) {
@@ -771,7 +775,7 @@ function updateOrderStatus(orderId, status) {
     }
 }
 
-// حذف طلبية
+// تعليق
 function deleteOrder(id) {
     if (confirm('هل أنت متأكد من حذف هذه الطلبية؟')) {
         fetch(`/costs/orders/${id}`, {
@@ -795,16 +799,16 @@ function deleteOrder(id) {
     }
 }
 
-// معالجة نموذج إنشاء الطلبية
+// تعليق
 document.getElementById('orderForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
     const formData = new FormData(this);
     const clientName = formData.get('client_name')?.trim();
     
-    // التحقق من الحقول المطلوبة
+    // تعليق
     if (!clientName) {
-        showAlert('يرجى إدخال اسم الزبون', 'error');
+        showAlert('يرجى إدخال اسم العميل', 'error');
         return;
     }
     
@@ -846,7 +850,7 @@ document.getElementById('orderForm').addEventListener('submit', function(e) {
     });
 });
 
-// دالة عرض التنبيهات
+// تعليق
 function showAlert(message, type) {
     const alertDiv = document.createElement('div');
     alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
@@ -857,7 +861,7 @@ function showAlert(message, type) {
     
     document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.container').firstChild);
     
-    // إزالة التنبيه تلقائياً بعد 5 ثوان
+    // تعليق
     setTimeout(() => {
         if (alertDiv.parentNode) {
             alertDiv.remove();
@@ -865,7 +869,7 @@ function showAlert(message, type) {
     }, 5000);
 }
 
-// مواد الطلبية: إضافة/حذف/جمع
+// تعليق
 function addOrderItemRow(){
   const tbody = document.getElementById('orderItemsBody');
   const tr = document.createElement('tr');
@@ -880,25 +884,25 @@ function addOrderItemRow(){
   tr.innerHTML = `
     <td>
       <div class="d-flex align-items-center gap-2">
-        <input type="text" class="form-control order-material-name" placeholder="لم يتم اختيار مادة" readonly>
+        <input type="text" class="form-control order-material-name" placeholder="اختر مادة مسجلة" readonly>
         <input type="hidden" class="order-material-id">
-        <button type="button" class="btn btn-outline-primary btn-sm" onclick="openOrderMaterialPicker(${rowId})"><i class="bi bi-search"></i> اختر</button>
+        <button type="button" class="btn btn-outline-primary btn-sm" onclick="openOrderMaterialPicker(${rowId})"><i class="bi bi-search"></i> اختيار</button>
       </div>
     </td>
     <td><input type="text" class="form-control order-unit" readonly></td>
-    <td><input type="number" class="form-control order-qty" step="0.001" min="0" value="1" oninput="onOrderCalcRow(this)"></td>
-    <td><input type="number" class="form-control order-net-weight" step="0.001" min="0" placeholder="بعد الهدر (محسوب تلقائياً)"></td>
-    <td><input type="number" class="form-control order-gross-weight" step="0.001" min="0" placeholder="من بيانات المادة (3 أرقام بعد الفاصلة)"></td>
+    <td><input type="text" inputmode="decimal" class="form-control order-qty" step="0.001" min="0" value="1" oninput="onOrderCalcRow(this)"></td>
+    <td><input type="text" inputmode="decimal" class="form-control order-net-weight" step="0.001" min="0" placeholder="وزن التعبئة (اختياري)"></td>
+    <td><input type="text" inputmode="decimal" class="form-control order-gross-weight" step="0.001" min="0" placeholder="وزن الطرد القائم"></td>
     <td>
       <div class="input-group">
-        <input type="number" class="form-control order-unit-price" step="0.01" min="0" placeholder="اختياري" oninput="onOrderCalcRow(this)">
+        <input type="text" inputmode="decimal" class="form-control order-unit-price" step="0.01" min="0" placeholder="سعر الوحدة" oninput="onOrderCalcRow(this)">
         <span class="input-group-text">${currencySymbol}</span>
       </div>
-      <small class="text-muted package-cost-display">اختر مادة لعرض سعر الطرد</small>
+      <small class="text-muted package-cost-display">لا توجد كلفة طرد للمادة</small>
     </td>
     <td>
       <div class="input-group">
-        <input type="number" class="form-control order-total-price" step="0.01" min="0" readonly>
+        <input type="text" inputmode="decimal" class="form-control order-total-price" step="0.01" min="0" readonly>
         <span class="input-group-text">${currencySymbol}</span>
       </div>
     </td>
@@ -913,15 +917,15 @@ function setOrderRowMaterial(tr, material){
   tr.querySelector('.order-material-id').value = material.id;
   tr.querySelector('.order-material-name').value = material.material_name || '';
   tr.querySelector('.order-unit').value = material.packaging_unit || '';
-  // تعبئة الوزن القائم إن وُجد
+  // تعليق
   tr.querySelector('.order-gross-weight').value = material.gross_package_weight != null ? String(material.gross_package_weight) : '';
-  // الكمية الافتراضية 1 وحساب إجمالي السعر إن كان هناك سعر
+  // تعليق
   const qtyEl = tr.querySelector('.order-qty');
   if (qtyEl && (!qtyEl.value || parseFloat(qtyEl.value) <= 0)) qtyEl.value = '1';
   const displayElement = tr.querySelector('.package-cost-display');
   if (displayElement) {
     const pkg = parseFloat(material.package_cost) || 0;
-    displayElement.textContent = `سعر الطرد: ${displayMoney(pkg)} ${currencySymbol}`;
+    displayElement.textContent = `كلفة الطرد: ${displayMoney(pkg)} ${currencySymbol}`;
   }
   onOrderCalcRow(qtyEl);
 }
@@ -947,9 +951,9 @@ function collectOrderItems(){
     const totalPrice = (!isNaN(unitPrice) && !isNaN(qty)) ? roundToDecimal(unitPrice * qty, defaultCurrencyCode === 'SYP' ? 0 : 2) : null;
     const notes = tr.querySelector('.order-notes')?.value || null;
     
-    // جمع بيانات العملات
+    // تعليق
     let packageCostSYP = 0, packageCostUSD = 0;
-    // التكاليف قد لا تكون متاحة بدون select؛ حاول تقديرها لاحقاً إن لزم
+    // تعليق
     
     if (materialId || materialName){
       items.push({
@@ -985,7 +989,7 @@ function onOrderCalcRow(el){
   }
 }
 
-// مواد الطلبية (التعديل)
+// تعليق
 function addEditOrderItemRow(item){
   const tbody = document.getElementById('editOrderItemsBody');
   const tr = document.createElement('tr');
@@ -1002,20 +1006,20 @@ function addEditOrderItemRow(item){
   tr.innerHTML = `
     <td>
       <select class="form-select edit-order-material" onchange="onEditOrderMaterialChange(this)">
-        <option value="">اختر المادة</option>
+        <option value="">اختر مادة</option>
         ${materialOptions}
       </select>
     </td>
     <td><input type="text" class="form-control edit-order-unit" value="${selectedUnit}" readonly></td>
     <td><input type="text" inputmode="decimal" class="form-control edit-order-qty" value="${item && item.requested_quantity != null ? item.requested_quantity : ''}"></td>
-    <td><input type="text" inputmode="decimal" class="form-control edit-order-net-weight" value="${item && item.net_weight != null ? item.net_weight : ''}" placeholder="بعد الهدر (محسوب تلقائياً)"></td>
-    <td><input type="text" inputmode="decimal" class="form-control edit-order-gross-weight" value="${item && item.gross_weight != null ? item.gross_weight : ''}" placeholder="من بيانات المادة"></td>
+    <td><input type="text" inputmode="decimal" class="form-control edit-order-net-weight" value="${item && item.net_weight != null ? item.net_weight : ''}" placeholder="وزن التعبئة (اختياري)"></td>
+    <td><input type="text" inputmode="decimal" class="form-control edit-order-gross-weight" value="${item && item.gross_weight != null ? item.gross_weight : ''}" placeholder="وزن الطرد القائم"></td>
     <td>
       <div class="input-group">
         <input type="text" inputmode="decimal" class="form-control edit-order-unit-price" value="${item && item.unit_price != null ? item.unit_price : ''}" oninput="onEditOrderCalcRow(this)">
         <span class="input-group-text">${currencySymbol}</span>
       </div>
-      <small class="text-muted edit-package-cost-display">اختر مادة لعرض سعر الطرد</small>
+      <small class="text-muted edit-package-cost-display">لا توجد كلفة طرد للمادة</small>
     </td>
     <td>
       <div class="input-group">
@@ -1035,15 +1039,15 @@ function addEditOrderItemRow(item){
     const unit = selectEl.selectedOptions[0]?.getAttribute('data-unit')||'';
     tr.querySelector('.edit-order-unit').value = unit || selectedUnit;
     
-         // تحديث عرض سعر الطرد للمادة المختارة
+         // تعليق
      const packageCost = selectEl.selectedOptions[0]?.getAttribute('data-package-cost');
      const displayElement = tr.querySelector('.edit-package-cost-display');
      if (displayElement && packageCost) {
        const cost = parseFloat(packageCost);
-       displayElement.textContent = `سعر الطرد: ${displayMoney(cost)} ${currencySymbol}`;
+       displayElement.textContent = `كلفة الطرد: ${displayMoney(cost)} ${currencySymbol}`;
      }
   } else if (selectedName){
-    // مادة غير موجودة في القائمة، أضفها مؤقتاً
+    // تعليق
     const opt = document.createElement('option');
     opt.value = '';
     opt.textContent = selectedName;
@@ -1059,20 +1063,20 @@ function onEditOrderMaterialChange(selectEl){
   const unit = opt?.getAttribute('data-unit')||'';
   tr.querySelector('.edit-order-unit').value = unit;
   
-  // جلب بيانات المادة من الخادم
+  // تعليق
   if (opt && opt.value) {
     fetch(`/costs/cost-statement/${opt.value}`)
       .then(response => response.json())
       .then(data => {
         if (data.success && data.material) {
           const material = data.material;
-          // حساب الوزن الصافي بعد الهدر
+          // تعليق
           const grossWeight = parseFloat(material.gross_weight) || 0;
           const wastePercentage = parseFloat(material.waste_percentage) || 0;
           const netWeight = grossWeight * (1 - wastePercentage / 100);
           
-          // تعبئة الوزن الصافي والوزن القائم من بيانات المادة
-          tr.querySelector('.edit-order-net-weight').value = netWeight > 0 ? netWeight.toFixed(3) : '';
+          // تعليق
+          tr.querySelector('.edit-order-net-weight').value = netWeight > 0 ? String(Math.round(netWeight * 1000) / 1000) : '';
           tr.querySelector('.edit-order-gross-weight').value = material.gross_package_weight ? String(material.gross_package_weight) : '';
         }
       })
@@ -1081,14 +1085,14 @@ function onEditOrderMaterialChange(selectEl){
       });
   }
   
-  // تحديث عرض سعر الطرد
+  // تعليق
   const packageCost = opt?.getAttribute('data-package-cost');
   const displayElement = tr.querySelector('.edit-package-cost-display');
   if (displayElement && packageCost && opt && opt.value) {
     const cost = parseFloat(packageCost);
-    displayElement.textContent = `سعر الطرد: ${displayMoney(cost)} ${currencySymbol}`;
+    displayElement.textContent = `كلفة الطرد: ${displayMoney(cost)} ${currencySymbol}`;
   } else if (displayElement) {
-    displayElement.textContent = `اختر مادة لعرض سعر الطرد`;
+    displayElement.textContent = `لا توجد كلفة طرد للمادة`;
   }
   
   onEditOrderCalcRow(tr.querySelector('.edit-order-qty'));
@@ -1117,7 +1121,7 @@ function collectEditOrderItems(){
     const totalPrice = (!isNaN(unitPrice) && !isNaN(qty)) ? roundToDecimal(unitPrice * qty, defaultCurrencyCode === 'SYP' ? 0 : 2) : null;
     const notes = tr.querySelector('.edit-order-notes')?.value || null;
     
-    // جمع بيانات العملات
+    // تعليق
     let packageCostSYP = 0, packageCostUSD = 0;
     if (sel && sel.selectedOptions[0]) {
       packageCostSYP = parseFloat(sel.selectedOptions[0].getAttribute('data-package-cost-syp') || 0);
@@ -1159,12 +1163,12 @@ function onEditOrderCalcRow(el){
 }
 </script>
 
-<!-- Modal اختيار المواد للطلبات -->
+<!-- Modal اختيار مادة مسجلة -->
 <div class="modal fade" id="selectOrderMaterialModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">اختيار مواد من المواد المسجلة</h5>
+        <h5 class="modal-title">اختيار مادة من المواد المسجلة</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
@@ -1179,11 +1183,11 @@ function onEditOrderCalcRow(el){
           <table class="table table-hover">
             <thead class="table-light">
               <tr>
-                <th>الاسم</th>
+                <th>المادة</th>
                 <th>النوع</th>
-                <th>الوحدة</th>
-                <th>سعر الطرد</th>
-                <th>إضافة</th>
+                <th>التعبئة</th>
+                <th>كلفة الطرد</th>
+                <th>اختيار</th>
               </tr>
             </thead>
             <tbody id="materialsPickerBodyOrders"></tbody>
@@ -1273,7 +1277,7 @@ function selectOrderMaterial(materialId){
   if (modal) modal.hide();
 }
 
-// واجهة عامة
+// تعليق
 window.openOrderMaterialPicker = openOrderMaterialPicker;
 window.selectOrderMaterial = selectOrderMaterial;
 </script>
@@ -1334,7 +1338,7 @@ window.selectOrderMaterial = selectOrderMaterial;
     background-color: #218838;
 }
 
-/* تحسين إمكانية الوصول */
+/* تعليق */
 .btn-close:focus {
     box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
     outline: none;
@@ -1344,7 +1348,7 @@ window.selectOrderMaterial = selectOrderMaterial;
     outline: none;
 }
 
-/* تحسين التركيز للعناصر القابلة للتركيز */
+/* تعليق */
 .form-control:focus,
 .form-select:focus,
 .btn:focus {
@@ -1352,7 +1356,7 @@ window.selectOrderMaterial = selectOrderMaterial;
     border-color: #86b7fe;
 }
 
-/* تحسين إمكانية الوصول للمودالات */
+/* تعليق */
 .modal {
     pointer-events: auto;
 }
@@ -1362,12 +1366,12 @@ window.selectOrderMaterial = selectOrderMaterial;
     outline-offset: 2px;
 }
 
-/* منع Bootstrap من إضافة aria-hidden */
+/* تعليق */
 .modal[aria-hidden] {
     aria-hidden: unset !important;
 }
 
-/* تحسين التركيز للمودالات */
+/* تعليق */
 .modal:not(.show) {
     display: none !important;
 }

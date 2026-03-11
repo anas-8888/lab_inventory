@@ -25,11 +25,30 @@ function formatNumberDisplay(value) {
 
     return result;
 }
+function formatTotalDisplay(value) {
+    const num = parseFloat(value);
+    if (!Number.isFinite(num)) return '0';
+    const normalized = Number.isInteger(num)
+        ? String(num)
+        : num.toFixed(6).replace(/0+$/,'').replace(/\.$/,'');
+    const neg = normalized.startsWith('-');
+    const clean = neg ? normalized.slice(1) : normalized;
+    const [intPart, fracPart] = clean.split('.');
+    const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const out = grouped + (fracPart ? `.${fracPart}` : '');
+    return neg ? ('\u200E-' + out) : out;
+}
 
 function formatWeightedAverage(value) {
     const num = Number(value);
     if (!Number.isFinite(num)) return '0.000';
-    return num.toFixed(3);
+    const fixed = num.toFixed(3);
+    const neg = fixed.startsWith('-');
+    const clean = neg ? fixed.slice(1) : fixed;
+    const [intPart, fracPart] = clean.split('.');
+    const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const out = `${grouped}.${fracPart}`;
+    return neg ? ('\u200E-' + out) : out;
 }
 %>
 
@@ -182,8 +201,8 @@ function formatWeightedAverage(value) {
               <tfoot>
                 <tr>
                   <td colspan="2" style="text-align: center; padding: 6pt 4pt; vertical-align: middle;"><strong>المجموع</strong></td>
-                  <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatNumberDisplay(totalQuantity) %></strong></td>
-                  <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatNumberDisplay(totalWeight) %></strong></td>
+                  <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatTotalDisplay(totalQuantity) %></strong></td>
+                  <td style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"><strong><%= formatTotalDisplay(totalWeight) %></strong></td>
                   <td colspan="7" style="padding: 6pt 4pt; text-align: center; vertical-align: middle;"></td>
                 </tr>
                 <tr>

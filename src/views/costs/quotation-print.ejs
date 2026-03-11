@@ -24,10 +24,26 @@ function formatNumberDisplay(value) {
   if (num < 0) return '\u200E' + result;
   return result;
 }
+function formatTotalDisplay(value) {
+  const num = parseFloat(value);
+  if (!Number.isFinite(num)) return '0';
+  const normalized = Number.isInteger(num)
+    ? String(num)
+    : num.toFixed(6).replace(/0+$/,'').replace(/\.$/,'');
+  const neg = normalized.startsWith('-');
+  const clean = neg ? normalized.slice(1) : normalized;
+  const [intPart, fracPart] = clean.split('.');
+  const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const out = grouped + (fracPart ? `.${fracPart}` : '');
+  return neg ? ('\u200E-' + out) : out;
+}
 function formatDiscountDisplay(value) {
   const num = parseFloat(value);
   if (isNaN(num)) return '0.00';
-  return num.toFixed(2);
+  const fixed = num.toFixed(2);
+  const [intPart, fracPart] = fixed.split('.');
+  const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return `${grouped}.${fracPart}`;
 }
 const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '';
 const isFullMode = !!showFullQuotationColumns;
@@ -88,7 +104,7 @@ const hasDiscount = discountValue > 0;
       <div class="grid-kv">
         <div class="kv"><span>التاريخ:</span><span><%= fmtDate(quotation.created_at) %></span></div>
         <div class="kv"><span>عدد المواد:</span><span><%= (items||[]).length %></span></div>
-        <div class="kv"><span>إجمالي السعر:</span><span class="money-inline"><%= `${formatNumberDisplay(totalBeforeDiscount)} ${currencySymbol}` %></span></div>
+          <div class="kv"><span>إجمالي السعر:</span><span class="money-inline"><%= `${formatTotalDisplay(totalBeforeDiscount)} ${currencySymbol}` %></span></div>
         <% if (hasDiscount) { %>
           <div class="kv"><span>الخصم:</span><span class="money-inline"><%= `- ${formatDiscountDisplay(discountValue)} ${currencySymbol}` %></span></div>
           <div class="kv"><span>الإجمالي بعد الخصم:</span><span class="money-inline"><%= `${formatDiscountDisplay(totalAfterDiscount)} ${currencySymbol}` %></span></div>
@@ -172,7 +188,7 @@ const hasDiscount = discountValue > 0;
         <% if ((groupedQuotationPrintRows||[]).length <= rowsOnFirstPage) { %>
           <tr class="total-row">
             <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;">الإجمالي</td>
-            <td style="font-weight:700;"><span class="money-inline"><%= `${formatNumberDisplay(totalBeforeDiscount)} ${currencySymbol}` %></span></td>
+            <td style="font-weight:700;"><span class="money-inline"><%= `${formatTotalDisplay(totalBeforeDiscount)} ${currencySymbol}` %></span></td>
             <td></td>
           </tr>
           <% if (hasDiscount) { %>
@@ -195,7 +211,7 @@ const hasDiscount = discountValue > 0;
           <% } %>
           <tr class="total-row">
             <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;">الإجمالي</td>
-            <td style="font-weight:700;"><span class="money-inline"><%= `${formatNumberDisplay(totalBeforeDiscount)} ${currencySymbol}` %></span></td>
+            <td style="font-weight:700;"><span class="money-inline"><%= `${formatTotalDisplay(totalBeforeDiscount)} ${currencySymbol}` %></span></td>
             <td></td>
           </tr>
           <% if (hasDiscount) { %>

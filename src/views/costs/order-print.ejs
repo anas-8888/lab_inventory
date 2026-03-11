@@ -16,10 +16,26 @@ function formatNumberDisplay(value) {
   if (num < 0) { return '\u200E' + result; }
   return result;
 }
+function formatTotalDisplay(value) {
+  const num = parseFloat(value);
+  if (!Number.isFinite(num)) return '0';
+  const normalized = Number.isInteger(num)
+    ? String(num)
+    : num.toFixed(6).replace(/0+$/,'').replace(/\.$/,'');
+  const neg = normalized.startsWith('-');
+  const clean = neg ? normalized.slice(1) : normalized;
+  const [intPart, fracPart] = clean.split('.');
+  const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const out = grouped + (fracPart ? `.${fracPart}` : '');
+  return neg ? ('\u200E-' + out) : out;
+}
 function formatDiscountDisplay(value) {
   const num = parseFloat(value);
   if (isNaN(num)) return '0.00';
-  return num.toFixed(2);
+  const fixed = num.toFixed(2);
+  const [intPart, fracPart] = fixed.split('.');
+  const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return `${grouped}.${fracPart}`;
 }
 const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '';
 const totalBeforeDiscount = parseFloat(totals?.grandTotal) || 0;
@@ -161,12 +177,12 @@ const hasDiscount = discountValue > 0;
       <tfoot>
         <tr>
           <td colspan="3" style="text-align:center; font-weight: 700;">الإجماليات</td>
-          <td class="num-cell" style="font-weight:700;"><%= formatNumberDisplay(totals.totalRequestedQuantity) %></td>
-          <td class="num-cell" style="font-weight:700;"><%= formatNumberDisplay(totals.totalPackagingWeight) %></td>
+          <td class="num-cell" style="font-weight:700;"><%= formatTotalDisplay(totals.totalRequestedQuantity) %></td>
+          <td class="num-cell" style="font-weight:700;"><%= formatTotalDisplay(totals.totalPackagingWeight) %></td>
           <td></td>
-          <td class="num-cell" style="font-weight:700;"><%= formatNumberDisplay(totals.totalGrossWeight || 0) %></td>
+          <td class="num-cell" style="font-weight:700;"><%= formatTotalDisplay(totals.totalGrossWeight || 0) %></td>
           <td></td>
-          <td class="num-cell" style="font-weight:700;"><%= `${formatNumberDisplay(totalBeforeDiscount)} ${currencySymbol}` %></td>
+          <td class="num-cell" style="font-weight:700;"><%= `${formatTotalDisplay(totalBeforeDiscount)} ${currencySymbol}` %></td>
           <td></td>
         </tr>
         <% if (hasDiscount) { %>

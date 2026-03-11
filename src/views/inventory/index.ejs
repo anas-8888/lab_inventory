@@ -318,7 +318,7 @@ function formatNumberDisplay(value) {
           <!-- Invoice Number Field -->
           <div class="mb-3">
             <label class="form-label required">رقم طلب الشحن</label>
-            <input type="number" class="form-control" name="invoice_number" id="invoice_number_field" required min="1">
+            <input type="text" inputmode="decimal" class="form-control" name="invoice_number" id="invoice_number_field" required min="1">
           </div>
           
           <!-- Display Validation Errors Here -->
@@ -1037,7 +1037,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <td>${item.supplier}</td>
                             <td>${item.available_quantity}</td>
                             <td>
-                                <input type="number" 
+                                <input type="text" inputmode="decimal" 
                                        class="form-control form-control-sm quantity-input" 
                                        data-item-id="${item.id}"
                                        name="quantities[${item.id}]" 
@@ -1195,9 +1195,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const quantities = {};
             document.querySelectorAll('.quantity-input').forEach(input => {
                 const itemId = input.dataset.itemId;
-                const quantity = parseFloat(input.value);
+                const quantityRaw = (input.value || '').trim();
+                const quantity = parseFloat(quantityRaw);
                 if (itemId && !isNaN(quantity) && quantity > 0) {
-                    quantities[itemId] = quantity;
+                    quantities[itemId] = quantityRaw;
                 }
             });
 

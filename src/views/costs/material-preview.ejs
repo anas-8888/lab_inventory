@@ -11,6 +11,19 @@ function formatNumberDisplay(value) {
   if (Number.isInteger(num)) return String(num);
   return num.toString();
 }
+function formatTotalDisplay(value) {
+  const num = parseFloat(value);
+  if (!Number.isFinite(num)) return '0';
+  const normalized = Number.isInteger(num)
+    ? String(num)
+    : num.toFixed(6).replace(/0+$/,'').replace(/\.$/,'');
+  const neg = normalized.startsWith('-');
+  const clean = neg ? normalized.slice(1) : normalized;
+  const [intPart, fracPart] = clean.split('.');
+  const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const out = grouped + (fracPart ? `.${fracPart}` : '');
+  return neg ? ('\u200E-' + out) : out;
+}
 let __additionalExpenseItems = [];
 try {
   if (typeof material.additional_expense_items === 'string') __additionalExpenseItems = JSON.parse(material.additional_expense_items || '[]');
@@ -191,29 +204,25 @@ const __isExternalMaterial = material.material_origin === 'external';
                                     <tbody>
                                         <% let totalWeight = 0, totalCost = 0; %>
                                         <% components.forEach(component => { %>
-                                            <% 
-                                                const weight = parseFloat(component.weight_grams) || 0;
-                                                const price = (defaultCurrency && defaultCurrency.code === 'SYP') 
+                                            <%
+                                                const weightRaw = component.weight_grams;
+                                                const weight = parseFloat(weightRaw) || 0;
+                                                const priceRaw = (defaultCurrency && defaultCurrency.code === 'SYP')
                                                     ? (component.price_per_kg_syp || component.price_per_kg || 0)
                                                     : (component.price_per_kg || 0);
+                                                const price = parseFloat(priceRaw) || 0;
                                                 const cost = (weight / 1000) * price;
                                                 totalWeight += weight;
                                                 totalCost += cost;
                                             %>
                                             <tr>
                                                 <td><%= component.component_name %></td>
-                                                <td><%= weight.toFixed(1) %> غ</td>
+                                                <td><%= formatNumberDisplay(weightRaw) %> غ</td>
                                                 <td>
-                                                    <%= (defaultCurrency && defaultCurrency.code === 'SYP')
-                                                        ? String(Math.round(price))
-                                                        : price.toFixed(2)
-                                                    %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                                                    <%= formatNumberDisplay(priceRaw) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                                                 </td>
                                                 <td>
-                                                    <%= (defaultCurrency && defaultCurrency.code === 'SYP')
-                                                        ? String(Math.round(cost))
-                                                        : cost.toFixed(4)
-                                                    %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                                                    <%= formatNumberDisplay(cost) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                                                 </td>
                                             </tr>
                                         <% }); %>
@@ -221,29 +230,18 @@ const __isExternalMaterial = material.material_origin === 'external';
                                     <tfoot class="table-info">
                                         <tr>
                                             <th>المجموع</th>
-                                            <th><%= totalWeight.toFixed(1) %> غ</th>
+                                            <th><%= formatTotalDisplay(totalWeight) %> غ</th>
                                             <th>
-                                                متوسط: <%= totalWeight > 0 ? 
-                                                    ((defaultCurrency && defaultCurrency.code === 'SYP')
-                                                        ? String(Math.round((totalCost / (totalWeight / 1000))))
-                                                        : (totalCost / (totalWeight / 1000)).toFixed(2)
-                                                    ) : '0'
-                                                %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                                                متوسط: <%= totalWeight > 0 ? formatTotalDisplay(totalCost / (totalWeight / 1000)) : '0' %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                                             </th>
                                             <th>
-                                                <%= (defaultCurrency && defaultCurrency.code === 'SYP')
-                                                    ? String(Math.round(totalCost))
-                                                    : totalCost.toFixed(4)
-                                                %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                                                <%= formatTotalDisplay(totalCost) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                                             </th>
                                         </tr>
                                         <tr class="table-success">
-                                            <th colspan="2">الوزن الإجمالي: <%= (totalWeight / 1000).toFixed(3) %> كجم</th>
+                                            <th colspan="2">الوزن الإجمالي: <%= formatTotalDisplay(totalWeight / 1000) %> كجم</th>
                                             <th colspan="2">السعر الإجمالي: 
-                                                <%= (defaultCurrency && defaultCurrency.code === 'SYP')
-                                                    ? String(Math.round(totalCost))
-                                                    : totalCost.toFixed(4)
-                                                %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                                                <%= formatTotalDisplay(totalCost) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                                             </th>
                                         </tr>
                                     </tfoot>
@@ -440,7 +438,7 @@ const __isExternalMaterial = material.material_origin === 'external';
                                   <tfoot>
                                     <tr>
                                       <th class="text-end">المجموع</th>
-                                      <th><%= extrasTotal.toFixed(3) %></th>
+                                      <th><%= formatTotalDisplay(extrasTotal) %></th>
                                     </tr>
                                   </tfoot>
                                 </table>
@@ -497,7 +495,14 @@ function formatDate(dateString) {
 
             // دالة جلب سجل التكاليف
             const currencySymbol = '<%= defaultCurrency ? defaultCurrency.symbol : "$" %>';
-            function loadCostLogs() {
+function loadCostLogs() {
+    const formatInlineNumber = (value) => {
+        if (value === null || value === undefined || value === '') return '-';
+        if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
+        const num = Number(value);
+        if (!Number.isFinite(num)) return '-';
+        return String(num);
+    };
     fetch(`/costs/cost-statement/<%= material.id %>/logs`)
         .then(response => response.json())
         .then(data => {
@@ -509,8 +514,8 @@ function formatDate(dateString) {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${formatDate(log.calculation_date)}</td>
-                                                        <td>${parseFloat(log.unit_cost).toFixed(2)} ${currencySymbol}</td>
-                                <td>${parseFloat(log.package_cost).toFixed(2)} ${currencySymbol}</td>
+                                <td>${formatInlineNumber(log.unit_cost)} ${currencySymbol}</td>
+                                <td>${formatInlineNumber(log.package_cost)} ${currencySymbol}</td>
                     `;
                     tbody.appendChild(row);
                 });

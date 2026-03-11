@@ -1,8 +1,8 @@
-﻿<div class="container mt-4">
+<div class="container mt-4">
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2><i class="bi bi-file-earmark-text"></i> عرض السعر <%= quotation.quotation_number %></h2>
+                <h2><i class="bi bi-file-earmark-text"></i> عرض سعر <%= quotation.quotation_number %></h2>
                 <div>
                     <button id="printQuotationBtn" class="btn btn-outline-primary me-2" type="button">
                         <i class="bi bi-printer"></i> طباعة
@@ -16,50 +16,68 @@
                 </div>
             </div>
 
-            <!-- تحضير التنسيق والحسابات -->
+            <!-- حساب الإجمالي النهائي -->
             <% 
                 const isSYP = (defaultCurrency && defaultCurrency.code === 'SYP');
+                const addThousands = (s) => {
+                    if (!/^-?\d+(\.\d+)?$/.test(String(s))) return String(s);
+                    const neg = String(s).startsWith('-');
+                    const clean = neg ? String(s).slice(1) : String(s);
+                    const parts = clean.split('.');
+                    const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                    const out = intPart + (parts[1] ? `.${parts[1]}` : '');
+                    return neg ? ('\u200E-' + out) : out;
+                };
                 const fmt = (v) => {
                     if (v === null || v === undefined || v === '') return '0';
                     if (typeof v === 'string' && /^-?\d+(\.\d+)?$/.test(v.trim())) return v.trim();
                     const num = parseFloat(v);
                     if (isNaN(num)) return '0';
-                    return isSYP ? String(Math.round(num)) : num.toFixed(2);
+                    return isSYP ? String(Math.round(num)) : String(num);
+                };
+                const fmtTotal = (v) => {
+                    const num = parseFloat(v);
+                    if (!Number.isFinite(num)) return '0';
+                    if (isSYP) return addThousands(String(Math.round(num)));
+                    const normalized = Number.isInteger(num)
+                        ? String(num)
+                        : num.toFixed(6).replace(/0+$/,'').replace(/\.$/,'');
+                    return addThousands(normalized);
                 };
                 let grandTotal = 0;
                 
                 (items || []).forEach(it => {
-                    // استخدام القيم المحفوظة مباشرة بدلاً من إعادة حسابها
+                    // الاعتماد على السعر النهائي لكل مادة في حساب الإجمالي
                     const unit = parseFloat(it.unit_cost) || 0;
                     const finalPrice = parseFloat(it.final_price) || 0;
                     const total = parseFloat(it.total_price) || 0;
                     grandTotal += total;
                 });
 	            %>
-	            <input type="hidden" id="quotationGrandTotalValue" value="<%= (parseFloat(grandTotal) || 0) %>">
+	            <input type="hidden" id="quotationGrandTotalValue" value="<%= grandTotal %>">
 
-	            <!-- تفاصيل العرض -->
+	            <!-- مودال التخيير -->
             <div class="card shadow mb-4">
                                 <div id="quotationOutputModeModal" class="modal fade" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h5 class="modal-title"><i class="bi bi-sliders2 me-2 text-primary"></i> اختر نوع الإخراج</h5>
+                                <h5 class="modal-title"><i class="bi bi-sliders2 me-2 text-primary"></i> اختر نوع الطباعة</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
                             </div>
                             <div class="modal-body">
-                                <p class="mb-3">اختر النمط المطلوب:</p>
+                                <p class="mb-3">أدخل الإجمالي بعد الخصم:</p>
                                 <div class="mb-3">
                                     <label for="quotationDiscountedTotalInput" class="form-label">الإجمالي بعد الخصم</label>
-                                    <input id="quotationDiscountedTotalInput" type="number" min="0" step="0.01" class="form-control" />
+                                    <input id="quotationDiscountedTotalInput" type="text" inputmode="decimal" min="0" step="0.01" class="form-control" />
                                     <small class="text-muted d-block mt-1">سيتم احتساب الخصم = الإجمالي الحالي - القيمة المدخلة.</small>
                                 </div>
                                 <div class="d-grid gap-2">
                                     <button id="quotationModeNormalBtn" type="button" class="btn btn-outline-secondary">
-                                        عادي (النمط الحالي)
+                                        عادي (عرض السعر الحالي)
                                     </button>
                                     <button id="quotationModeFullBtn" type="button" class="btn btn-outline-primary">
-                                        كامل (يتضمن كلفة الطرد + نسبة الربح)
+                                        كامل (يشمل كلفة الطرد + نسبة الربح)
                                     </button>
                                 </div>
                             </div>
@@ -80,15 +98,15 @@
                                 <div class="d-flex justify-content-center gap-2 mb-2">
                                     <button id="copyQuotationPdfLinkBtn" class="btn btn-outline-primary btn-sm"><i class="bi bi-clipboard me-1"></i> نسخ الرابط</button>
                                     <a id="openQuotationPdfLinkBtn" class="btn btn-outline-info btn-sm" target="_blank"><i class="bi bi-box-arrow-up-right me-1"></i> فتح الرابط</a>
-                                    <a id="whatsappQuotationShareBtn" class="btn btn-outline-success btn-sm" target="_blank"><i class="bi bi-whatsapp me-1"></i> ارسال عبر واتساب</a>
+                                    <a id="whatsappQuotationShareBtn" class="btn btn-outline-success btn-sm" target="_blank"><i class="bi bi-whatsapp me-1"></i> مشاركة عبر واتساب</a>
                                 </div>
-                                <div class="alert alert-success py-2 mb-0">يمكنك مشاركة الرابط مع أي شخص لتحميل عرض السعر مباشرة</div>
+                                <div class="alert alert-success py-2 mb-0">يمكنك نسخ الرابط أو فتحه أو مشاركته عبر واتساب.</div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="card-header">
-                    <h5 class="mb-0">تفاصيل العرض</h5>
+                    <h5 class="mb-0">معلومات العرض</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -107,7 +125,7 @@
                                     <td><%= quotation.client_name %></td>
                                 </tr>
                                 <tr>
-                                    <td><strong>رقم الهاتف:</strong></td>
+                                    <td><strong>هاتف العميل:</strong></td>
                                     <td><%= quotation.client_phone || '-' %></td>
                                 </tr>
                                 <tr>
@@ -128,9 +146,9 @@
                             <table class="table table-borderless no-auto-num-center">
                                 
                                 <tr>
-                                    <td><strong>المبلغ الإجمالي:</strong></td>
+                                    <td><strong>الإجمالي النهائي:</strong></td>
                                     <td><strong class="text-primary">
-                                        <%= fmt(grandTotal) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                                        <%= fmtTotal(grandTotal) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                                     </strong></td>
                                 </tr>
                                 <tr>
@@ -138,7 +156,7 @@
                                     <td><%= items.length %></td>
                                 </tr>
                                 <tr>
-                                    <td><strong>ملاحظات:</strong></td>
+                                    <td><strong>الملاحظات:</strong></td>
                                     <td><%= quotation.notes || '-' %></td>
                                 </tr>
                             </table>
@@ -150,7 +168,7 @@
             <!-- جدول المواد -->
             <div class="card shadow">
                 <div class="card-header">
-                    <h5 class="mb-0">المواد المطلوبة</h5>
+                    <h5 class="mb-0">تفاصيل المواد</h5>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -158,16 +176,16 @@
                             <thead>
                                 <tr>
                                     <th>رقم المادة</th>
-                                    <th>الصنف</th>
-                                    <th>نوع الصنف</th>
+                                    <th>المادة</th>
+                                    <th>نوع المادة</th>
                                     <th>التعبئة</th>
-                                    <th>حجم العبوة (كغ)</th>
-                                    <th>شد الكرتون</th>
-                                    <th>كلفة الطرد</th>
+                                    <th>وزن التعبئة (كغ)</th>
+                                    <th>عدد القطع</th>
+                                    <th>كلفة الوحدة</th>
                                     <th>نسبة الربح</th>
-                                    <th>السعر النهائي</th>
+                                    <th>سعر البيع</th>
                                     <th>الكمية</th>
-                                    <th>المجموع</th>
+                                    <th>الإجمالي</th>
                                     <th>ملاحظات</th>
                                 </tr>
                             </thead>
@@ -220,9 +238,9 @@
                             </tbody>
                             <tfoot>
                                 <tr class="table-info">
-                                    <td colspan="10" class="text-end"><strong>المجموع الإجمالي:</strong></td>
+                                    <td colspan="10" class="text-end"><strong>الإجمالي النهائي:</strong></td>
                                     <td><strong>
-                                        <%= fmt(grandTotal) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
+                                        <%= fmtTotal(grandTotal) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                                     </strong></td>
                                     <td></td>
                                 </tr>
@@ -269,7 +287,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function openOutputModeChooser(action) {
         pendingOutputAction = action;
         if (discountedTotalInput) {
-            discountedTotalInput.value = quotationGrandTotal.toFixed(2);
+            discountedTotalInput.value = String(quotationGrandTotal);
         }
         if (outputModeModal) outputModeModal.show();
     }
@@ -278,17 +296,17 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!discountedTotalInput) return quotationGrandTotal;
         const rawValue = parseFloat(discountedTotalInput.value);
         if (!Number.isFinite(rawValue)) {
-            alert('يرجى إدخال قيمة رقمية صحيحة.');
+            alert('يرجى إدخال رقم صالح.');
             discountedTotalInput.focus();
             return null;
         }
         if (rawValue < 0) {
-            alert('قيمة الإجمالي بعد الخصم يجب أن تكون صفر أو أكبر.');
+            alert('لا يمكن أن تكون القيمة المدخلة أقل من صفر.');
             discountedTotalInput.focus();
             return null;
         }
         if (rawValue > quotationGrandTotal) {
-            alert('لا يمكن أن يكون الإجمالي بعد الخصم أكبر من الإجمالي الحالي.');
+            alert('لا يمكن أن تكون القيمة المدخلة أكبر من الإجمالي الحالي.');
             discountedTotalInput.focus();
             return null;
         }
@@ -308,10 +326,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (waBtn) waBtn.href = `https://wa.me/?text=${encodeURIComponent(data.url)}`;
                     if (modal) modal.show();
                 } else {
-                    alert(data.message || 'حدث خطأ أثناء توليد ملف PDF');
+                    alert(data.message || 'تعذر إنشاء ملف PDF');
                 }
             } catch (e) {
-                alert('حدث خطأ في الاتصال بالخادم');
+                alert('حدث خطأ في التصدير');
             }
             exportBtn.disabled = false;
             exportBtn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> تصدير PDF';

@@ -71,7 +71,7 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">سعر الصرف:</label>
-                                <input type="number" class="form-control" id="exchangeRate" name="rate" 
+                                <input type="text" inputmode="decimal" class="form-control" id="exchangeRate" name="rate" 
                                        step="0.0001" required>
                             </div>
                         </div>
@@ -110,7 +110,7 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <strong><%= parseFloat(rate.rate).toFixed(4) %></strong>
+                                        <strong><%= (typeof rate.rate === 'string' && /^-?\d+(\.\d+)?$/.test(rate.rate.trim())) ? rate.rate.trim() : (isFinite(Number(rate.rate)) ? String(Number(rate.rate)) : '-') %></strong>
                                     </td>
                                     <td><%= formatDate(rate.updated_at) %></td>
                                 </tr>
@@ -137,7 +137,7 @@
                     <div class="row g-3">
                         <div class="col-md-3">
                             <label class="form-label">المبلغ:</label>
-                            <input type="number" class="form-control" id="convertAmount" 
+                            <input type="text" inputmode="decimal" class="form-control" id="convertAmount" 
                                    step="0.01" placeholder="أدخل المبلغ">
                         </div>
                         <div class="col-md-3">
@@ -266,8 +266,14 @@ function convertCurrency() {
         if (data.success) {
             const resultDiv = document.getElementById('conversionResult');
             const convertedSpan = document.getElementById('convertedAmount');
-            
-            convertedSpan.textContent = `${amount} = ${parseFloat(data.converted_amount).toFixed(2)}`;
+
+            const normalizeDisplay = (value) => {
+                if (value === null || value === undefined || value === '') return '-';
+                if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
+                const n = Number(value);
+                return Number.isFinite(n) ? String(n) : '-';
+            };
+            convertedSpan.textContent = `${normalizeDisplay(amount)} = ${normalizeDisplay(data.converted_amount)}`;
             resultDiv.style.display = 'block';
         } else {
             showAlert(data.message || 'حدث خطأ في تحويل العملة', 'error');

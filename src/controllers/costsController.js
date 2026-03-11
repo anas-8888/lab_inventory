@@ -69,23 +69,34 @@ const parseAdditionalExpenseItems = (value) => {
 
 const MATERIAL_RAW_FIELDS = [
     'price_before_waste',
+    'price_before_waste_syp',
     'gross_weight',
     'waste_percentage',
     'packaging_weight',
     'packaging_unit_weight',
     'empty_package_price',
+    'empty_package_price_syp',
     'sticker_price',
+    'sticker_price_syp',
     'additional_expenses',
+    'additional_expenses_syp',
     'labor_cost',
+    'labor_cost_syp',
     'preservatives_cost',
+    'preservatives_cost_syp',
     'carton_price',
+    'carton_price_syp',
     'pieces_per_package',
     'pallet_price',
+    'pallet_price_syp',
     'packages_per_pallet',
     'external_unit_cost',
     'external_package_cost',
     'external_net_weight',
-    'external_cost_per_kg'
+    'external_cost_per_kg',
+    'external_unit_cost_syp',
+    'external_package_cost_syp',
+    'external_cost_per_kg_syp'
 ];
 
 const QUOTATION_HEADER_RAW_FIELDS = [
@@ -114,6 +125,8 @@ const ORDER_ITEM_RAW_FIELDS = [
     'net_weight',
     'gross_weight'
 ];
+const COMPONENT_RAW_FIELDS = ['weight_grams', 'price_per_kg', 'price_per_kg_syp'];
+const COST_LOG_RAW_FIELDS = ['unit_cost', 'unit_cost_syp', 'package_cost', 'package_cost_syp'];
 
 const applyMaterialRaw = (material) => {
     if (!material || typeof material !== 'object') return material;
@@ -126,6 +139,8 @@ const applyMaterialRaw = (material) => {
 
     mapped.unit_cost = rawOrValue(rawMap, 'external_unit_cost', mapped.unit_cost);
     mapped.package_cost = rawOrValue(rawMap, 'external_package_cost', mapped.package_cost);
+    mapped.unit_cost_syp = rawOrValue(rawMap, 'external_unit_cost_syp', mapped.unit_cost_syp);
+    mapped.package_cost_syp = rawOrValue(rawMap, 'external_package_cost_syp', mapped.package_cost_syp);
     mapped.price_before_waste = rawOrValue(rawMap, 'external_cost_per_kg', mapped.price_before_waste);
     mapped.packaging_weight = rawOrValue(rawMap, 'external_net_weight', mapped.packaging_weight);
     mapped.gross_weight = rawOrValue(rawMap, 'external_net_weight', mapped.gross_weight);
@@ -169,6 +184,26 @@ const applyOrderItemRaw = (item) => {
     const rawMap = parseRawNumericMap(item.numeric_raw);
     const mapped = { ...item };
     ORDER_ITEM_RAW_FIELDS.forEach((field) => {
+        mapped[field] = rawOrValue(rawMap, field, mapped[field]);
+    });
+    return mapped;
+};
+
+const applyMaterialComponentRaw = (component) => {
+    if (!component || typeof component !== 'object') return component;
+    const rawMap = parseRawNumericMap(component.numeric_raw);
+    const mapped = { ...component };
+    COMPONENT_RAW_FIELDS.forEach((field) => {
+        mapped[field] = rawOrValue(rawMap, field, mapped[field]);
+    });
+    return mapped;
+};
+
+const applyCostLogRaw = (log) => {
+    if (!log || typeof log !== 'object') return log;
+    const rawMap = parseRawNumericMap(log.numeric_raw);
+    const mapped = { ...log };
+    COST_LOG_RAW_FIELDS.forEach((field) => {
         mapped[field] = rawOrValue(rawMap, field, mapped[field]);
     });
     return mapped;
@@ -343,7 +378,10 @@ const createMaterial = async (req, res) => {
                 'external_unit_cost',
                 'external_package_cost',
                 'external_net_weight',
-                'external_cost_per_kg'
+                'external_cost_per_kg',
+                'external_unit_cost_syp',
+                'external_package_cost_syp',
+                'external_cost_per_kg_syp'
             ]);
 
             const [result] = await req.db.query(`
@@ -370,10 +408,14 @@ const createMaterial = async (req, res) => {
                 JSON.stringify([]), netWeight, JSON.stringify([]), JSON.stringify(externalRawMap)
             ]);
 
+            const externalCostLogRawMap = buildRawNumericMap(
+                { unit_cost: unitCost, unit_cost_syp: unitCostSyp, package_cost: packageCost, package_cost_syp: packageCostSyp },
+                COST_LOG_RAW_FIELDS
+            );
             await req.db.query(`
-                INSERT INTO cost_logs (material_id, material_name, unit_cost, unit_cost_syp, package_cost, package_cost_syp)
-                VALUES (?, ?, ?, ?, ?, ?)
-            `, [result.insertId, name, unitCost, unitCostSyp, packageCost, packageCostSyp]);
+                INSERT INTO cost_logs (material_id, material_name, unit_cost, unit_cost_syp, package_cost, package_cost_syp, numeric_raw)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            `, [result.insertId, name, unitCost, unitCostSyp, packageCost, packageCostSyp, JSON.stringify(externalCostLogRawMap)]);
 
             return res.json({ success: true, message: 'تم حفظ المادة الخارجية بنجاح' });
         }
@@ -438,9 +480,21 @@ const createMaterial = async (req, res) => {
         const syp = {};
         
         currencyFields.forEach((field) => {
-            const usdVal = parseFloat(req.body[field]) || 0;
-            usd[field] = usdVal;
-            syp[field] = usdVal * exchangeRateValue;
+            const usdVal = parseFloat(req.body[field]);
+            const sypBody = req.body[`${field}_syp`];
+            const sypVal = sypBody !== undefined ? parseFloat(sypBody) : NaN;
+            if (!Number.isNaN(usdVal)) {
+                usd[field] = usdVal;
+            } else if (!Number.isNaN(sypVal)) {
+                usd[field] = sypVal / exchangeRateValue;
+            } else {
+                usd[field] = 0;
+            }
+            if (!Number.isNaN(sypVal)) {
+                syp[field] = sypVal;
+            } else {
+                syp[field] = (usd[field] || 0) * exchangeRateValue;
+            }
         });
 
         const additionalExpenseItemsArr = parseAdditionalExpenseItems(additional_expense_items);
@@ -499,22 +553,7 @@ const createMaterial = async (req, res) => {
         
         const package_cost = (unit_cost * pieces_per_package_num) + (usd.carton_price || 0) + pallet_share;
         const package_cost_syp = (unit_cost_syp * pieces_per_package_num) + (syp.carton_price || 0) + pallet_share_syp;
-        const internalRawMap = buildRawNumericMap(req.body, [
-            'price_before_waste',
-            'gross_weight',
-            'waste_percentage',
-            'packaging_weight',
-            'packaging_unit_weight',
-            'empty_package_price',
-            'sticker_price',
-            'additional_expenses',
-            'labor_cost',
-            'preservatives_cost',
-            'carton_price',
-            'pieces_per_package',
-            'pallet_price',
-            'packages_per_pallet'
-        ]);
+        const internalRawMap = buildRawNumericMap(req.body, MATERIAL_RAW_FIELDS);
 
 
         // حفظ المادة
@@ -549,26 +588,35 @@ const createMaterial = async (req, res) => {
                     // حساب السعر بالليرة السورية
                     const price_per_kg_syp = parseFloat(component.price_per_kg) * exchangeRateValue;
                     
+                    const componentRawMap = buildRawNumericMap(
+                        { ...component, price_per_kg_syp },
+                        COMPONENT_RAW_FIELDS
+                    );
                     await req.db.query(`
                         INSERT INTO material_components (
-                            material_id, component_name, weight_grams, price_per_kg, price_per_kg_syp
-                        ) VALUES (?, ?, ?, ?, ?)
+                            material_id, component_name, weight_grams, price_per_kg, price_per_kg_syp, numeric_raw
+                        ) VALUES (?, ?, ?, ?, ?, ?)
                     `, [
                         result.insertId, 
                         component.component_name, 
                         parseFloat(component.weight_grams), 
                         parseFloat(component.price_per_kg),
-                        price_per_kg_syp
+                        price_per_kg_syp,
+                        JSON.stringify(componentRawMap)
                     ]);
                 }
             }
         }
 
         // حفظ في سجل التكاليف
+        const createdCostLogRawMap = buildRawNumericMap(
+            { unit_cost, unit_cost_syp, package_cost, package_cost_syp },
+            COST_LOG_RAW_FIELDS
+        );
         await req.db.query(`
-            INSERT INTO cost_logs (material_id, material_name, unit_cost, unit_cost_syp, package_cost, package_cost_syp)
-            VALUES (?, ?, ?, ?, ?, ?)
-        `, [result.insertId, material_name, unit_cost, unit_cost_syp, package_cost, package_cost_syp]);
+            INSERT INTO cost_logs (material_id, material_name, unit_cost, unit_cost_syp, package_cost, package_cost_syp, numeric_raw)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, [result.insertId, material_name, unit_cost, unit_cost_syp, package_cost, package_cost_syp, JSON.stringify(createdCostLogRawMap)]);
 
         res.json({ success: true, message: 'تم حفظ المادة بنجاح' });
     } catch (error) {
@@ -595,7 +643,7 @@ const getMaterialComponents = async (req, res) => {
         
         res.json({ 
             success: true, 
-            components: components 
+            components: components.map(applyMaterialComponentRaw)
         });
     } catch (error) {
         console.error('خطأ في جلب العناصر الفرعية:', error);
@@ -695,10 +743,14 @@ const updateMaterial = async (req, res) => {
                 JSON.stringify([]), netWeight, JSON.stringify([]), JSON.stringify(externalRawMap), id
             ]);
             await req.db.query(`DELETE FROM material_components WHERE material_id = ?`, [id]);
+            const updatedExternalCostLogRawMap = buildRawNumericMap(
+                { unit_cost: unitCost, unit_cost_syp: unitCostSyp, package_cost: packageCost, package_cost_syp: packageCostSyp },
+                COST_LOG_RAW_FIELDS
+            );
             await req.db.query(`
-                INSERT INTO cost_logs (material_id, material_name, unit_cost, unit_cost_syp, package_cost, package_cost_syp)
-                VALUES (?, ?, ?, ?, ?, ?)
-            `, [id, name, unitCost, unitCostSyp, packageCost, packageCostSyp]);
+                INSERT INTO cost_logs (material_id, material_name, unit_cost, unit_cost_syp, package_cost, package_cost_syp, numeric_raw)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            `, [id, name, unitCost, unitCostSyp, packageCost, packageCostSyp, JSON.stringify(updatedExternalCostLogRawMap)]);
 
             return res.json({ success: true, message: 'تم تحديث المادة الخارجية بنجاح' });
         }
@@ -861,16 +913,21 @@ const updateMaterial = async (req, res) => {
                     // حساب السعر بالليرة السورية
                     const price_per_kg_syp = parseFloat(component.price_per_kg) * exchangeRateValue;
                     
+                    const componentRawMap = buildRawNumericMap(
+                        { ...component, price_per_kg_syp },
+                        COMPONENT_RAW_FIELDS
+                    );
                     await req.db.query(`
                         INSERT INTO material_components (
-                            material_id, component_name, weight_grams, price_per_kg, price_per_kg_syp
-                        ) VALUES (?, ?, ?, ?, ?)
+                            material_id, component_name, weight_grams, price_per_kg, price_per_kg_syp, numeric_raw
+                        ) VALUES (?, ?, ?, ?, ?, ?)
                     `, [
                         id, 
                         component.component_name, 
                         parseFloat(component.weight_grams), 
                         parseFloat(component.price_per_kg),
-                        price_per_kg_syp
+                        price_per_kg_syp,
+                        JSON.stringify(componentRawMap)
                     ]);
                 }
             }
@@ -880,10 +937,14 @@ const updateMaterial = async (req, res) => {
         }
 
         // حفظ في سجل التكاليف
+        const updatedCostLogRawMap = buildRawNumericMap(
+            { unit_cost, unit_cost_syp, package_cost, package_cost_syp },
+            COST_LOG_RAW_FIELDS
+        );
         await req.db.query(`
-            INSERT INTO cost_logs (material_id, material_name, unit_cost, unit_cost_syp, package_cost, package_cost_syp)
-            VALUES (?, ?, ?, ?, ?, ?)
-        `, [id, material_name, unit_cost, unit_cost_syp, package_cost, package_cost_syp]);
+            INSERT INTO cost_logs (material_id, material_name, unit_cost, unit_cost_syp, package_cost, package_cost_syp, numeric_raw)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, [id, material_name, unit_cost, unit_cost_syp, package_cost, package_cost_syp, JSON.stringify(updatedCostLogRawMap)]);
 
         res.json({ success: true, message: 'تم تحديث المادة بنجاح' });
     } catch (error) {
@@ -1536,7 +1597,7 @@ const getMaterialPrintPage = async (req, res) => {
                 WHERE material_id = ?
                 ORDER BY component_name
             `, [id]);
-            components = componentsResult;
+            components = componentsResult.map(applyMaterialComponentRaw);
         }
         const [exchangeRate] = await req.db.query(`
             SELECT rate FROM exchange_rates
@@ -1824,7 +1885,8 @@ const getMaterialCostLogs = async (req, res) => {
         `, [id]);
         
         // تحويل القيم حسب العملة المحددة
-        const displayLogs = logs.map((log) => {
+        const displayLogs = logs.map((rawLog) => {
+            const log = applyCostLogRaw(rawLog);
             if (req.defaultCurrency && req.defaultCurrency.code === 'SYP') {
                 return {
                     ...log,
@@ -2307,7 +2369,7 @@ const getMaterialPreview = async (req, res) => {
                 WHERE material_id = ? 
                 ORDER BY component_name
             `, [id]);
-            components = componentsResult;
+            components = componentsResult.map(applyMaterialComponentRaw);
         }
         const [exchangeRate] = await req.db.query(`
             SELECT rate FROM exchange_rates

@@ -1,4 +1,4 @@
-<%
+﻿<%
 function formatNumberDisplay(value) {
     if (value === null || value === undefined || value === '') return '-';
     if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
@@ -113,7 +113,7 @@ function formatNumberDisplay(value) {
                                         <%= (costPerKg != null)
                                             ? ((defaultCurrency && defaultCurrency.code === 'SYP')
                                                 ? String(Math.round(costPerKg))
-                                                : costPerKg.toFixed(2))
+                                                : formatNumberDisplay(Math.round(costPerKg * 100) / 100))
                                             : '-' 
                                         %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                                     </td>
@@ -193,19 +193,19 @@ function formatNumberDisplay(value) {
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">كلفة القطعة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                                    <input type="number" class="form-control" id="externalUnitCost" step="0.01" min="0">
+                                    <input type="text" inputmode="decimal" class="form-control" id="externalUnitCost" step="0.01" min="0">
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">كلفة الطرد (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                                    <input type="number" class="form-control" id="externalPackageCost" step="0.01" min="0">
+                                    <input type="text" inputmode="decimal" class="form-control" id="externalPackageCost" step="0.01" min="0">
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">الوزن الصافي (كجم) *</label>
-                                    <input type="number" class="form-control" id="externalNetWeight" step="0.001" min="0">
+                                    <input type="text" inputmode="decimal" class="form-control" id="externalNetWeight" step="0.001" min="0">
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">كلفة الكيلو (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                                    <input type="number" class="form-control" id="externalCostPerKg" step="0.01" min="0">
+                                    <input type="text" inputmode="decimal" class="form-control" id="externalCostPerKg" step="0.01" min="0">
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label">ملاحظات</label>
@@ -258,14 +258,14 @@ function formatNumberDisplay(value) {
                         <!-- السعر قبل الهدر (سعر كلي للوزن الجمالي) -->
                                 <div class="col-md-6">
                             <label class="form-label">السعر قبل الهدر (إجمالي) <%= defaultCurrency ? defaultCurrency.symbol : '$' %> *</label>
-                                    <input type="number" class="form-control" name="price_before_waste" step="0.01">
+                                    <input type="text" inputmode="decimal" class="form-control" name="price_before_waste" step="0.01">
                             <small class="text-muted">أدخل السعر الكلي، وسيتم احتساب سعر الكيلو تلقائياً = السعر ÷ الوزن الجمالي</small>
                         </div>
 
                         <!-- الوزن الجمالي -->
                                 <div class="col-md-6">
                             <label class="form-label">الوزن الإجمالي (كجم) *</label>
-                                    <input type="number" class="form-control" name="gross_weight" step="0.01">
+                                    <input type="text" inputmode="decimal" class="form-control" name="gross_weight" step="0.01">
                                 </div>
                             </div>
                         </div>
@@ -325,7 +325,7 @@ function formatNumberDisplay(value) {
                         <!-- نسبة الهدر -->
                         <div class="col-md-4">
                             <label class="form-label">نسبة الهدر (%) *</label>
-                            <input type="number" class="form-control" name="waste_percentage" step="0.01" required>
+                            <input type="text" inputmode="decimal" class="form-control" name="waste_percentage" step="0.01" required>
                         </div>
 
                         <!-- وحدة التعبئة -->
@@ -337,21 +337,21 @@ function formatNumberDisplay(value) {
                         <!-- وزن المادة (داخل العبوة) -->
                         <div class="col-md-4">
                             <label class="form-label">وزن المادة (كجم) *</label>
-                            <input type="number" class="form-control" name="packaging_weight" step="0.001" required>
+                            <input type="text" inputmode="decimal" class="form-control" name="packaging_weight" step="0.001" required>
                             <small class="text-muted">هذا وزن المادة داخل العبوة</small>
                         </div>
 
                         <!-- وزن وحدة التعبئة (وزن العبوة الفارغة) -->
                         <div class="col-md-4">
                             <label class="form-label">وزن وحدة التعبئة (كجم) *</label>
-                            <input type="number" class="form-control" name="packaging_unit_weight" step="0.001" required>
+                            <input type="text" inputmode="decimal" class="form-control" name="packaging_unit_weight" step="0.001" required>
                             <small class="text-muted">وزن العبوة الفارغة بدون المادة</small>
                         </div>
 
                         <!-- ثمن العبوة الفارغة -->
                         <div class="col-md-4">
                             <label class="form-label">ثمن العبوة الفارغة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                            <input type="number" class="form-control" name="empty_package_price" step="0.01" required>
+                            <input type="text" inputmode="decimal" class="form-control" name="empty_package_price" step="0.01" required>
                         </div>
                         <!-- أوزان إضافية -->
                         <div class="col-12">
@@ -383,43 +383,43 @@ function formatNumberDisplay(value) {
                         <!-- ثمن اللصاقة -->
                         <div class="col-md-4">
                             <label class="form-label">ثمن اللصاقة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                            <input type="number" class="form-control" name="sticker_price" step="0.01" required>
+                            <input type="text" inputmode="decimal" class="form-control" name="sticker_price" step="0.01" required>
                         </div>
 
                         <!-- مصروف عمال -->
                         <div class="col-md-4">
                             <label class="form-label">مصروف عمال (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                            <input type="number" class="form-control" name="labor_cost" step="0.01" required>
+                            <input type="text" inputmode="decimal" class="form-control" name="labor_cost" step="0.01" required>
                         </div>
 
                         <!-- مواد حافظة -->
                         <div class="col-md-4">
                             <label class="form-label">مواد حافظة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                            <input type="number" class="form-control" name="preservatives_cost" step="0.01" required>
+                            <input type="text" inputmode="decimal" class="form-control" name="preservatives_cost" step="0.01" required>
                         </div>
 
                         <!-- ثمن كرتونة -->
                         <div class="col-md-4">
                             <label class="form-label">ثمن كرتونة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                            <input type="number" class="form-control" name="carton_price" step="0.01" required>
+                            <input type="text" inputmode="decimal" class="form-control" name="carton_price" step="0.01" required>
                         </div>
 
                         <!-- عدد الحبات في الطرد -->
                         <div class="col-md-4">
                             <label class="form-label">عدد الحبات في الطرد *</label>
-                            <input type="number" class="form-control" name="pieces_per_package" required>
+                            <input type="text" inputmode="decimal" class="form-control" name="pieces_per_package" required>
                         </div>
 
                         <!-- ثمن الطبلية -->
                         <div class="col-md-4">
                             <label class="form-label">ثمن الطبلية (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                            <input type="number" class="form-control" name="pallet_price" step="0.01" required>
+                            <input type="text" inputmode="decimal" class="form-control" name="pallet_price" step="0.01" required>
                         </div>
 
                         <!-- عدد الطرود في الطبلية -->
                         <div class="col-md-4">
                             <label class="form-label">عدد الطرود في الطبلية *</label>
-                            <input type="number" class="form-control" name="packages_per_pallet" value="1" required>
+                            <input type="text" inputmode="decimal" class="form-control" name="packages_per_pallet" value="1" required>
                         </div>
 
                         <div class="col-12">
@@ -473,7 +473,7 @@ function formatNumberDisplay(value) {
     </div>
     <div class="col-md-4">
       <label class="form-label">وزنها (كجم)</label>
-      <input type="number" step="0.001" class="form-control extra-weight-value" placeholder="0.000">
+      <input type="text" inputmode="decimal" step="0.001" class="form-control extra-weight-value" placeholder="0.000">
     </div>
     <div class="col-md-2">
       <button type="button" class="btn btn-outline-danger w-100 remove-extra">حذف</button>
@@ -489,7 +489,7 @@ function formatNumberDisplay(value) {
     </div>
     <div class="col-md-4">
       <label class="form-label">السعر (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>)</label>
-      <input type="number" step="0.01" class="form-control additional-expense-price" placeholder="0.00">
+      <input type="text" inputmode="decimal" step="0.01" class="form-control additional-expense-price" placeholder="0.00">
     </div>
     <div class="col-md-2">
       <button type="button" class="btn btn-outline-danger w-100 remove-additional-expense">حذف</button>
@@ -532,19 +532,19 @@ function formatNumberDisplay(value) {
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">كلفة القطعة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                                    <input type="number" class="form-control" id="editExternalUnitCost" step="0.01" min="0">
+                                    <input type="text" inputmode="decimal" class="form-control" id="editExternalUnitCost" step="0.01" min="0">
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">كلفة الطرد (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                                    <input type="number" class="form-control" id="editExternalPackageCost" step="0.01" min="0">
+                                    <input type="text" inputmode="decimal" class="form-control" id="editExternalPackageCost" step="0.01" min="0">
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">الوزن الصافي (كجم) *</label>
-                                    <input type="number" class="form-control" id="editExternalNetWeight" step="0.001" min="0">
+                                    <input type="text" inputmode="decimal" class="form-control" id="editExternalNetWeight" step="0.001" min="0">
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">كلفة الكيلو (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                                    <input type="number" class="form-control" id="editExternalCostPerKg" step="0.01" min="0">
+                                    <input type="text" inputmode="decimal" class="form-control" id="editExternalCostPerKg" step="0.01" min="0">
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label">ملاحظات</label>
@@ -597,14 +597,14 @@ function formatNumberDisplay(value) {
                         <!-- السعر قبل الهدر (سعر كلي) -->
                                 <div class="col-md-6">
                             <label class="form-label">السعر قبل الهدر (إجمالي) <%= defaultCurrency ? defaultCurrency.symbol : '$' %> *</label>
-                                    <input type="number" class="form-control currency-input" id="editPriceBeforeWaste" name="price_before_waste" step="0.01" data-field="price_before_waste">
+                                    <input type="text" inputmode="decimal" class="form-control currency-input" id="editPriceBeforeWaste" name="price_before_waste" step="0.01" data-field="price_before_waste">
                             <small class="text-muted">أدخل السعر الكلي، وسيتم احتساب سعر الكيلو تلقائياً</small>
                         </div>
 
                         <!-- الوزن الجمالي -->
                                 <div class="col-md-6">
                             <label class="form-label">الوزن الجمالي (كجم) *</label>
-                                    <input type="number" class="form-control" id="editGrossWeight" name="gross_weight" step="0.01">
+                                    <input type="text" inputmode="decimal" class="form-control" id="editGrossWeight" name="gross_weight" step="0.01">
                                 </div>
                             </div>
                         </div>
@@ -664,7 +664,7 @@ function formatNumberDisplay(value) {
                         <!-- نسبة الهدر -->
                         <div class="col-md-4">
                             <label class="form-label">نسبة الهدر (%) *</label>
-                            <input type="number" class="form-control" id="editWastePercentage" name="waste_percentage" step="0.01" required>
+                            <input type="text" inputmode="decimal" class="form-control" id="editWastePercentage" name="waste_percentage" step="0.01" required>
                         </div>
 
                         <!-- وحدة التعبئة -->
@@ -676,18 +676,18 @@ function formatNumberDisplay(value) {
                         <!-- وزن المادة (داخل العبوة) -->
                         <div class="col-md-4">
                             <label class="form-label">وزن المادة (كجم) *</label>
-                            <input type="number" class="form-control" id="editPackagingWeight" name="packaging_weight" step="0.001" required>
+                            <input type="text" inputmode="decimal" class="form-control" id="editPackagingWeight" name="packaging_weight" step="0.001" required>
                         </div>
                         <!-- وزن وحدة التعبئة (العبوة الفارغة) -->
                         <div class="col-md-4">
                             <label class="form-label">وزن وحدة التعبئة (كجم) *</label>
-                            <input type="number" class="form-control" id="editPackagingUnitWeight" name="packaging_unit_weight" step="0.001" required>
+                            <input type="text" inputmode="decimal" class="form-control" id="editPackagingUnitWeight" name="packaging_unit_weight" step="0.001" required>
                         </div>
 
                         <!-- ثمن العبوة الفارغة -->
                         <div class="col-md-4">
                             <label class="form-label">ثمن العبوة الفارغة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                            <input type="number" class="form-control currency-input" id="editEmptyPackagePrice" name="empty_package_price" step="0.01" required data-field="empty_package_price">
+                            <input type="text" inputmode="decimal" class="form-control currency-input" id="editEmptyPackagePrice" name="empty_package_price" step="0.01" required data-field="empty_package_price">
                         </div>
 
                         <div class="col-12">
@@ -714,43 +714,43 @@ function formatNumberDisplay(value) {
                         <!-- ثمن اللصاقة -->
                         <div class="col-md-4">
                             <label class="form-label">ثمن اللصاقة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                            <input type="number" class="form-control currency-input" id="editStickerPrice" name="sticker_price" step="0.01" required data-field="sticker_price">
+                            <input type="text" inputmode="decimal" class="form-control currency-input" id="editStickerPrice" name="sticker_price" step="0.01" required data-field="sticker_price">
                         </div>
 
                         <!-- مصروف عمال -->
                         <div class="col-md-4">
                             <label class="form-label">مصروف عمال (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                            <input type="number" class="form-control currency-input" id="editLaborCost" name="labor_cost" step="0.01" required data-field="labor_cost">
+                            <input type="text" inputmode="decimal" class="form-control currency-input" id="editLaborCost" name="labor_cost" step="0.01" required data-field="labor_cost">
                         </div>
 
                         <!-- مواد حافظة -->
                         <div class="col-md-4">
                             <label class="form-label">مواد حافظة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                            <input type="number" class="form-control currency-input" id="editPreservativesCost" name="preservatives_cost" step="0.01" required data-field="preservatives_cost">
+                            <input type="text" inputmode="decimal" class="form-control currency-input" id="editPreservativesCost" name="preservatives_cost" step="0.01" required data-field="preservatives_cost">
                         </div>
 
                         <!-- ثمن كرتونة -->
                         <div class="col-md-4">
                             <label class="form-label">ثمن كرتونة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                            <input type="number" class="form-control currency-input" id="editCartonPrice" name="carton_price" step="0.01" required data-field="carton_price">
+                            <input type="text" inputmode="decimal" class="form-control currency-input" id="editCartonPrice" name="carton_price" step="0.01" required data-field="carton_price">
                         </div>
 
                         <!-- عدد الحبات في الطرد -->
                         <div class="col-md-4">
                             <label class="form-label">عدد الحبات في الطرد *</label>
-                            <input type="number" class="form-control" id="editPiecesPerPackage" name="pieces_per_package" required>
+                            <input type="text" inputmode="decimal" class="form-control" id="editPiecesPerPackage" name="pieces_per_package" required>
                         </div>
 
                         <!-- ثمن الطبلية -->
                         <div class="col-md-4">
                             <label class="form-label">ثمن الطبلية (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
-                            <input type="number" class="form-control currency-input" id="editPalletPrice" name="pallet_price" step="0.01" required data-field="pallet_price">
+                            <input type="text" inputmode="decimal" class="form-control currency-input" id="editPalletPrice" name="pallet_price" step="0.01" required data-field="pallet_price">
                         </div>
 
                         <!-- عدد الطرود في الطبلية -->
                         <div class="col-md-4">
                             <label class="form-label">عدد الطرود في الطبلية *</label>
-                            <input type="number" class="form-control" id="editPackagesPerPallet" name="packages_per_pallet" required>
+                            <input type="text" inputmode="decimal" class="form-control" id="editPackagesPerPallet" name="packages_per_pallet" required>
                         </div>
                         <!-- أوزان إضافية (تعديل) -->
                         <div class="col-12">
@@ -1277,14 +1277,14 @@ function editMaterial(materialId) {
                 const packageCostUSD = currentCurrency === 'SYP' ? (shownPackageCost / exchangeRate) : shownPackageCost;
                 const unitCostSYP = currentCurrency === 'SYP' ? shownUnitCost : (shownUnitCost * exchangeRate);
                 const packageCostSYP = currentCurrency === 'SYP' ? shownPackageCost : (shownPackageCost * exchangeRate);
-                const formatUSD = (v) => v.toFixed(2);
+                const formatUSD = (v) => rawNumDisplay(Math.round((v || 0) * 100) / 100);
                 const formatSYP = (v) => String(Math.round(v));
                 const unitMain = currentCurrency === 'SYP' ? formatSYP(shownUnitCost) : formatUSD(shownUnitCost);
                 const packMain = currentCurrency === 'SYP' ? formatSYP(shownPackageCost) : formatUSD(shownPackageCost);
                 document.getElementById('editUnitCostResult').textContent = `${unitMain} ${currencySymbol} ( ${formatUSD(unitCostUSD)} $ / ${formatSYP(unitCostSYP)} ل.س )`;
                 document.getElementById('editPackageCostResult').textContent = `${packMain} ${currencySymbol} ( ${formatUSD(packageCostUSD)} $ / ${formatSYP(packageCostSYP)} ل.س )`;
                 const grossEl = document.getElementById('editGrossPackageWeightResult');
-                if (grossEl) grossEl.textContent = `${(parseFloat(material.gross_package_weight) || 0).toFixed(3)} كجم`;
+                if (grossEl) grossEl.textContent = `${rawNumDisplay(Math.round((parseFloat(material.gross_package_weight) || 0) * 1000) / 1000)} كجم`;
                 
                 // فتح Modal
                 const modal = new bootstrap.Modal(document.getElementById('editMaterialModal'));
@@ -1418,13 +1418,13 @@ function addComponentRow() {
             <input type="text" class="form-control component-name" placeholder="مثال: زيتون أخضر" required>
         </td>
         <td>
-            <input type="number" class="form-control component-weight" step="0.1" min="0" placeholder="0" onchange="calculateComponentCost(${rowId})" required>
+            <input type="text" inputmode="decimal" class="form-control component-weight" step="0.1" min="0" placeholder="0" onchange="calculateComponentCost(${rowId})" required>
         </td>
         <td>
-            <input type="number" class="form-control component-price" step="0.01" min="0" placeholder="0.00" onchange="calculateComponentCost(${rowId})" required>
+            <input type="text" inputmode="decimal" class="form-control component-price" step="0.01" min="0" placeholder="0.00" onchange="calculateComponentCost(${rowId})" required>
         </td>
         <td>
-            <input type="number" class="form-control component-cost" readonly>
+            <input type="text" inputmode="decimal" class="form-control component-cost" readonly>
         </td>
         <td>
             <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeComponentRow(${rowId})" title="حذف العنصر">
@@ -1457,7 +1457,7 @@ function calculateComponentCost(rowId) {
     const price = parseFloat(row.querySelector('.component-price').value) || 0;
     const cost = (weight / 1000) * price; // تحويل من غرام إلى كيلو
     
-    row.querySelector('.component-cost').value = cost.toFixed(4);
+    row.querySelector('.component-cost').value = String(Math.round(cost * 10000) / 10000);
     
     // إعادة حساب المجاميع
     calculateComponentsTotals();
@@ -1482,17 +1482,17 @@ function calculateComponentsTotals() {
     });
     
     // تحديث المجاميع في الجدول
-    document.getElementById('totalWeightGrams').textContent = `${totalWeight.toFixed(1)} غ`;
-    document.getElementById('totalComponentsCost').textContent = `${totalCost.toFixed(4)} <%= defaultCurrency ? defaultCurrency.symbol : '$' %>`;
+    document.getElementById('totalWeightGrams').textContent = `${formatAggregateDisplay(Math.round(totalWeight * 10) / 10)} غ`;
+    document.getElementById('totalComponentsCost').textContent = `${formatAggregateDisplay(Math.round(totalCost * 10000) / 10000)} <%= defaultCurrency ? defaultCurrency.symbol : '$' %>`;
     
     // حساب متوسط السعر
     const avgPrice = totalWeight > 0 ? (totalCost / (totalWeight / 1000)) : 0;
-    document.getElementById('avgPricePerKg').textContent = `${avgPrice.toFixed(2)} <%= defaultCurrency ? defaultCurrency.symbol : '$' %>`;
+    document.getElementById('avgPricePerKg').textContent = `${formatAggregateDisplay(Math.round(avgPrice * 100) / 100)} <%= defaultCurrency ? defaultCurrency.symbol : '$' %>`;
     
     // تحديث الوزن والسعر الإجماليين
     const totalWeightKg = totalWeight / 1000;
-    document.getElementById('calculatedTotalWeight').textContent = `${totalWeightKg.toFixed(3)} كجم`;
-    document.getElementById('calculatedTotalPrice').textContent = `${totalCost.toFixed(4)} <%= defaultCurrency ? defaultCurrency.symbol : '$' %>`;
+    document.getElementById('calculatedTotalWeight').textContent = `${formatAggregateDisplay(Math.round(totalWeightKg * 1000) / 1000)} كجم`;
+    document.getElementById('calculatedTotalPrice').textContent = `${formatAggregateDisplay(Math.round(totalCost * 10000) / 10000)} <%= defaultCurrency ? defaultCurrency.symbol : '$' %>`;
     
     // تحديث الحقول المخفية للإرسال
     updateHiddenComponentsFields(totalWeightKg, totalCost);
@@ -1597,13 +1597,13 @@ function addEditComponentRow() {
             <input type="text" class="form-control edit-component-name" placeholder="مثال: زيتون أخضر" required>
         </td>
         <td>
-            <input type="number" class="form-control edit-component-weight" step="0.1" min="0" placeholder="0" onchange="calculateEditComponentCost(${rowId})" required>
+            <input type="text" inputmode="decimal" class="form-control edit-component-weight" step="0.1" min="0" placeholder="0" onchange="calculateEditComponentCost(${rowId})" required>
         </td>
         <td>
-            <input type="number" class="form-control edit-component-price" step="0.01" min="0" placeholder="0.00" onchange="calculateEditComponentCost(${rowId})" required>
+            <input type="text" inputmode="decimal" class="form-control edit-component-price" step="0.01" min="0" placeholder="0.00" onchange="calculateEditComponentCost(${rowId})" required>
         </td>
         <td>
-            <input type="number" class="form-control edit-component-cost" readonly>
+            <input type="text" inputmode="decimal" class="form-control edit-component-cost" readonly>
         </td>
         <td>
             <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeEditComponentRow(${rowId})" title="حذف العنصر">
@@ -1636,7 +1636,7 @@ function calculateEditComponentCost(rowId) {
     const price = parseFloat(row.querySelector('.edit-component-price').value) || 0;
     const cost = (weight / 1000) * price; // تحويل من غرام إلى كيلو
     
-    row.querySelector('.edit-component-cost').value = cost.toFixed(4);
+    row.querySelector('.edit-component-cost').value = String(Math.round(cost * 10000) / 10000);
     
     // إعادة حساب المجاميع
     calculateEditComponentsTotals();
@@ -1661,17 +1661,17 @@ function calculateEditComponentsTotals() {
     });
     
     // تحديث المجاميع في الجدول
-    document.getElementById('editTotalWeightGrams').textContent = `${totalWeight.toFixed(1)} غ`;
-    document.getElementById('editTotalComponentsCost').textContent = `${totalCost.toFixed(4)} <%= defaultCurrency ? defaultCurrency.symbol : '$' %>`;
+    document.getElementById('editTotalWeightGrams').textContent = `${formatAggregateDisplay(Math.round(totalWeight * 10) / 10)} غ`;
+    document.getElementById('editTotalComponentsCost').textContent = `${formatAggregateDisplay(Math.round(totalCost * 10000) / 10000)} <%= defaultCurrency ? defaultCurrency.symbol : '$' %>`;
     
     // حساب متوسط السعر
     const avgPrice = totalWeight > 0 ? (totalCost / (totalWeight / 1000)) : 0;
-    document.getElementById('editAvgPricePerKg').textContent = `${avgPrice.toFixed(2)} <%= defaultCurrency ? defaultCurrency.symbol : '$' %>`;
+    document.getElementById('editAvgPricePerKg').textContent = `${formatAggregateDisplay(Math.round(avgPrice * 100) / 100)} <%= defaultCurrency ? defaultCurrency.symbol : '$' %>`;
     
     // تحديث الوزن والسعر الإجماليين
     const totalWeightKg = totalWeight / 1000;
-    document.getElementById('editCalculatedTotalWeight').textContent = `${totalWeightKg.toFixed(3)} كجم`;
-    document.getElementById('editCalculatedTotalPrice').textContent = `${totalCost.toFixed(4)} <%= defaultCurrency ? defaultCurrency.symbol : '$' %>`;
+    document.getElementById('editCalculatedTotalWeight').textContent = `${formatAggregateDisplay(Math.round(totalWeightKg * 1000) / 1000)} كجم`;
+    document.getElementById('editCalculatedTotalPrice').textContent = `${formatAggregateDisplay(Math.round(totalCost * 10000) / 10000)} <%= defaultCurrency ? defaultCurrency.symbol : '$' %>`;
     
     // تحديث الحقول المخفية للإرسال
     updateEditHiddenComponentsFields(totalWeightKg, totalCost);
@@ -1779,6 +1779,20 @@ function getAdditionalExpenseItems(containerSelector) {
     return items;
 }
 
+function normalizeNumericInput(value, fallback = '0') {
+    const raw = value == null ? '' : String(value).trim();
+    if (/^-?\d+(\.\d+)?$/.test(raw)) return raw;
+    const parsed = parseFloat(raw);
+    if (!Number.isFinite(parsed)) return fallback;
+    return String(parsed);
+}
+
+function convertRawByRate(rawValue, exchangeRate) {
+    const parsed = parseFloat(rawValue);
+    if (!Number.isFinite(parsed) || !Number.isFinite(exchangeRate) || exchangeRate <= 0) return '0';
+    return String(parsed / exchangeRate);
+}
+
 function getAdditionalExpenseItemsTotal(containerSelector) {
     return getAdditionalExpenseItems(containerSelector).reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
 }
@@ -1842,14 +1856,14 @@ function calculateCosts() {
             unitCostSYP = unitRaw * exchangeRate;
             packageCostSYP = packageRaw * exchangeRate;
         }
-        const formatUSD = (v) => v.toFixed(2);
+        const formatUSD = (v) => rawNumDisplay(Math.round((v || 0) * 100) / 100);
         const formatSYP = (v) => String(Math.round(v));
         const unitMain = currentCurrency === 'SYP' ? formatSYP(unitRaw) : formatUSD(unitRaw);
         const packMain = currentCurrency === 'SYP' ? formatSYP(packageRaw) : formatUSD(packageRaw);
         document.getElementById('unitCostResult').textContent = `${unitMain} ${currencySymbol} ( ${formatUSD(unitCostUSD)} $ / ${formatSYP(unitCostSYP)} ل.س )`;
         document.getElementById('packageCostResult').textContent = `${packMain} ${currencySymbol} ( ${formatUSD(packageCostUSD)} $ / ${formatSYP(packageCostSYP)} ل.س )`;
         const grossEl = document.getElementById('grossPackageWeightResult');
-        if (grossEl) grossEl.textContent = `${netWeight.toFixed(3)} كجم`;
+        if (grossEl) grossEl.textContent = `${rawNumDisplay(Math.round(netWeight * 1000) / 1000)} كجم`;
         return;
     }
     const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
@@ -1935,14 +1949,14 @@ function calculateCosts() {
         unitCostSYP = unitCost * exchangeRate;
         packageCostSYP = packageCost * exchangeRate;
     }
-    const formatUSD = (v) => v.toFixed(2);
+    const formatUSD = (v) => rawNumDisplay(Math.round((v || 0) * 100) / 100);
     const formatSYP = (v) => String(Math.round(v));
     const unitMain = currentCurrency === 'SYP' ? formatSYP(unitCost) : formatUSD(unitCost);
     const packMain = currentCurrency === 'SYP' ? formatSYP(packageCost) : formatUSD(packageCost);
     document.getElementById('unitCostResult').textContent = `${unitMain} ${currencySymbol} ( ${formatUSD(unitCostUSD)} $ / ${formatSYP(unitCostSYP)} ل.س )`;
   document.getElementById('packageCostResult').textContent = `${packMain} ${currencySymbol} ( ${formatUSD(packageCostUSD)} $ / ${formatSYP(packageCostSYP)} ل.س )`;
   const grossEl = document.getElementById('grossPackageWeightResult');
-  if (grossEl) grossEl.textContent = `${grossPackageWeight.toFixed(3)} كجم`;
+  if (grossEl) grossEl.textContent = `${rawNumDisplay(Math.round(grossPackageWeight * 1000) / 1000)} كجم`;
 }
 
 // معالجة نموذج إضافة المادة
@@ -1958,10 +1972,14 @@ document.getElementById('materialForm').addEventListener('submit', function(e) {
         const extType = (document.getElementById('externalMaterialType')?.value || '').trim();
         const extName = (document.getElementById('externalMaterialName')?.value || '').trim();
         const extPackagingUnit = (document.getElementById('externalPackagingUnit')?.value || '').trim();
-        const extUnitCostRaw = parseFloat(document.getElementById('externalUnitCost')?.value || '0') || 0;
-        const extPackageCostRaw = parseFloat(document.getElementById('externalPackageCost')?.value || '0') || 0;
-        const extNetWeight = parseFloat(document.getElementById('externalNetWeight')?.value || '0') || 0;
-        const extCostPerKgRaw = parseFloat(document.getElementById('externalCostPerKg')?.value || '0') || 0;
+        const extUnitCostInput = normalizeNumericInput(document.getElementById('externalUnitCost')?.value, '0');
+        const extPackageCostInput = normalizeNumericInput(document.getElementById('externalPackageCost')?.value, '0');
+        const extNetWeightInput = normalizeNumericInput(document.getElementById('externalNetWeight')?.value, '0');
+        const extCostPerKgInput = normalizeNumericInput(document.getElementById('externalCostPerKg')?.value, '0');
+        const extUnitCostRaw = parseFloat(extUnitCostInput) || 0;
+        const extPackageCostRaw = parseFloat(extPackageCostInput) || 0;
+        const extNetWeight = parseFloat(extNetWeightInput) || 0;
+        const extCostPerKgRaw = parseFloat(extCostPerKgInput) || 0;
         const extNotes = (document.getElementById('externalNotes')?.value || '').trim();
 
         if (!extType || !extName || !extPackagingUnit || extUnitCostRaw <= 0 || extPackageCostRaw <= 0 || extNetWeight <= 0 || extCostPerKgRaw <= 0) {
@@ -1977,12 +1995,17 @@ document.getElementById('materialForm').addEventListener('submit', function(e) {
             material_type: extType,
             material_name: extName,
             external_packaging_unit: extPackagingUnit,
-            external_unit_cost: extUnitCostUsd,
-            external_package_cost: extPackageCostUsd,
-            external_net_weight: extNetWeight,
-            external_cost_per_kg: extCostPerKgUsd,
+            external_unit_cost: String(extUnitCostUsd),
+            external_package_cost: String(extPackageCostUsd),
+            external_net_weight: extNetWeightInput,
+            external_cost_per_kg: String(extCostPerKgUsd),
             external_notes: extNotes || null
         };
+        if (currentCurrency === 'SYP') {
+            payload.external_unit_cost_syp = extUnitCostInput;
+            payload.external_package_cost_syp = extPackageCostInput;
+            payload.external_cost_per_kg_syp = extCostPerKgInput;
+        }
 
         fetch('/costs/cost-statement', {
             method: 'POST',
@@ -2075,26 +2098,31 @@ document.getElementById('materialForm').addEventListener('submit', function(e) {
         currencyFields.push('price_before_waste');
     } else {
         // للطريقة الجديدة، استخدم السعر المحسوب
-        const calculatedPrice = parseFloat(formData.get('calculated_price_before_waste') || '0') || 0;
+        const calculatedPriceRaw = normalizeNumericInput(formData.get('calculated_price_before_waste'), '0');
         if (currentCurrency === 'SYP') {
-            bodyPayload.price_before_waste = (calculatedPrice / exchangeRate).toFixed(4);
+            bodyPayload.price_before_waste = convertRawByRate(calculatedPriceRaw, exchangeRate);
+            bodyPayload.price_before_waste_syp = calculatedPriceRaw;
         } else {
-            bodyPayload.price_before_waste = calculatedPrice.toFixed(4);
+            bodyPayload.price_before_waste = calculatedPriceRaw;
         }
     }
 
     currencyFields.forEach((field) => {
-        let raw = parseFloat(formData.get(field) || '0') || 0;
+        const rawInput = normalizeNumericInput(formData.get(field), '0');
         if (currentCurrency === 'SYP') {
-            bodyPayload[field] = (raw / exchangeRate).toFixed(2);
+            bodyPayload[field] = convertRawByRate(rawInput, exchangeRate);
+            bodyPayload[`${field}_syp`] = rawInput;
         } else {
-            bodyPayload[field] = raw.toFixed(2);
+            bodyPayload[field] = rawInput;
         }
     });
     const addAdditionalItemsTotal = getAdditionalExpenseItemsTotal('#additionalExpensesContainer');
     bodyPayload.additional_expenses = currentCurrency === 'SYP'
-        ? (addAdditionalItemsTotal / exchangeRate).toFixed(2)
-        : addAdditionalItemsTotal.toFixed(2);
+        ? String(addAdditionalItemsTotal / exchangeRate)
+        : String(addAdditionalItemsTotal);
+    if (currentCurrency === 'SYP') {
+        bodyPayload.additional_expenses_syp = String(addAdditionalItemsTotal);
+    }
 
     fetch('/costs/cost-statement', {
         method: 'POST',
@@ -2280,7 +2308,7 @@ function resetAddMaterialForm() {
         document.getElementById('unitCostResult').textContent = '0.00 <%= defaultCurrency ? defaultCurrency.symbol : "$" %>';
         document.getElementById('packageCostResult').textContent = '0.00 <%= defaultCurrency ? defaultCurrency.symbol : "$" %>';
         const grossEl = document.getElementById('grossPackageWeightResult');
-        if (grossEl) grossEl.textContent = '0.000 كجم';
+        if (grossEl) grossEl.textContent = '0 كجم';
         const cont = document.getElementById('extraWeightsContainer');
         if (cont) cont.innerHTML = '';
         const addExpCont = document.getElementById('additionalExpensesContainer');
@@ -2418,14 +2446,14 @@ function calculateEditCosts() {
             unitCostSYP = unitRaw * exchangeRate;
             packageCostSYP = packageRaw * exchangeRate;
         }
-        const formatUSD2 = (v) => v.toFixed(2);
+        const formatUSD2 = (v) => rawNumDisplay(Math.round((v || 0) * 100) / 100);
         const formatSYP2 = (v) => String(Math.round(v));
         const unitMain2 = currentCurrency === 'SYP' ? formatSYP2(unitRaw) : formatUSD2(unitRaw);
         const packMain2 = currentCurrency === 'SYP' ? formatSYP2(packageRaw) : formatUSD2(packageRaw);
         document.getElementById('editUnitCostResult').textContent = `${unitMain2} ${currencySymbol} ( ${formatUSD2(unitCostUSD)} $ / ${formatSYP2(unitCostSYP)} ل.س )`;
         document.getElementById('editPackageCostResult').textContent = `${packMain2} ${currencySymbol} ( ${formatUSD2(packageCostUSD)} $ / ${formatSYP2(packageCostSYP)} ل.س )`;
         const grossEl2 = document.getElementById('editGrossPackageWeightResult');
-        if (grossEl2) grossEl2.textContent = `${netWeight.toFixed(3)} كجم`;
+        if (grossEl2) grossEl2.textContent = `${rawNumDisplay(Math.round(netWeight * 1000) / 1000)} كجم`;
         return;
     }
     const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
@@ -2514,14 +2542,14 @@ function calculateEditCosts() {
         unitCostSYP = unitCost * exchangeRate;
         packageCostSYP = packageCost * exchangeRate;
     }
-    const formatUSD2 = (v) => v.toFixed(2);
+    const formatUSD2 = (v) => rawNumDisplay(Math.round((v || 0) * 100) / 100);
     const formatSYP2 = (v) => String(Math.round(v));
     const unitMain2 = currentCurrency === 'SYP' ? formatSYP2(unitCost) : formatUSD2(unitCost);
     const packMain2 = currentCurrency === 'SYP' ? formatSYP2(packageCost) : formatUSD2(packageCost);
     document.getElementById('editUnitCostResult').textContent = `${unitMain2} ${currencySymbol} ( ${formatUSD2(unitCostUSD)} $ / ${formatSYP2(unitCostSYP)} ل.س )`;
   document.getElementById('editPackageCostResult').textContent = `${packMain2} ${currencySymbol} ( ${formatUSD2(packageCostUSD)} $ / ${formatSYP2(packageCostSYP)} ل.س )`;
   const grossEl2 = document.getElementById('editGrossPackageWeightResult');
-  if (grossEl2) grossEl2.textContent = `${grossPackageWeight.toFixed(3)} كجم`;
+  if (grossEl2) grossEl2.textContent = `${rawNumDisplay(Math.round(grossPackageWeight * 1000) / 1000)} كجم`;
     
     // تحديث قيم العملة المحولة
     convertCurrencyInEditForm();
@@ -2638,12 +2666,12 @@ function saveMaterialEdit() {
         currencyFields.push('price_before_waste');
     } else {
         // للطريقة الجديدة، استخدم السعر المحسوب
-        const calculatedPrice = parseFloat(document.querySelector('input[name="edit_calculated_price_before_waste"]')?.value) || 0;
+        const calculatedPriceRaw = normalizeNumericInput(document.querySelector('input[name="edit_calculated_price_before_waste"]')?.value, '0');
         if (currentCurrency === 'SYP') {
-            formData.price_before_waste = (calculatedPrice / exchangeRate);
-            formData.price_before_waste_syp = calculatedPrice;
+            formData.price_before_waste = convertRawByRate(calculatedPriceRaw, exchangeRate);
+            formData.price_before_waste_syp = calculatedPriceRaw;
         } else {
-            formData.price_before_waste = calculatedPrice;
+            formData.price_before_waste = calculatedPriceRaw;
         }
     }
     
@@ -2654,23 +2682,23 @@ function saveMaterialEdit() {
             .map(part => part.charAt(0).toUpperCase() + part.slice(1))
             .join('');
         const input = document.getElementById('edit' + idSuffix);
-        let numericValue = parseFloat((input && input.value) ? input.value : '0') || 0;
+        const rawInput = normalizeNumericInput((input && input.value) ? input.value : '0', '0');
         
         if (currentCurrency === 'SYP') {
             // إذا كانت العملة الحالية هي الليرة السورية، نحول إلى الدولار ونرسل أيضًا القيمة بالليرة كما أدخلها المستخدم
-            formData[field] = (numericValue / exchangeRate);
-            formData[field + '_syp'] = numericValue;
+            formData[field] = convertRawByRate(rawInput, exchangeRate);
+            formData[field + '_syp'] = rawInput;
         } else {
             // إذا كانت العملة الحالية هي الدولار، نرسلها كما هي بدون تقطيع
-            formData[field] = numericValue;
+            formData[field] = rawInput;
         }
     });
     const editAdditionalItemsTotal = getAdditionalExpenseItemsTotal('#editAdditionalExpensesContainer');
     if (currentCurrency === 'SYP') {
-        formData.additional_expenses = (editAdditionalItemsTotal / exchangeRate);
-        formData.additional_expenses_syp = editAdditionalItemsTotal;
+        formData.additional_expenses = String(editAdditionalItemsTotal / exchangeRate);
+        formData.additional_expenses_syp = String(editAdditionalItemsTotal);
     } else {
-        formData.additional_expenses = editAdditionalItemsTotal;
+        formData.additional_expenses = String(editAdditionalItemsTotal);
     }
 
     // جمع الأوزان الإضافية (التعديل)
@@ -2730,6 +2758,19 @@ function rawNumDisplay(value) {
     const n = parseFloat(value);
     if (isNaN(n)) return '0';
     return Number.isInteger(n) ? String(n) : n.toString();
+}
+function formatAggregateDisplay(value) {
+    const n = parseFloat(value);
+    if (!Number.isFinite(n)) return '0';
+    const normalized = Number.isInteger(n)
+        ? String(n)
+        : n.toFixed(6).replace(/0+$/,'').replace(/\.$/,'');
+    const neg = normalized.startsWith('-');
+    const clean = neg ? normalized.slice(1) : normalized;
+    const [intPart, fracPart] = clean.split('.');
+    const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const out = grouped + (fracPart ? `.${fracPart}` : '');
+    return neg ? ('\u200E-' + out) : out;
 }
 
 // دالة استعراض المادة
@@ -2833,8 +2874,8 @@ function loadCostLogs(materialId) {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${formatDate(log.calculation_date)}</td>
-                                                        <td>${parseFloat(log.unit_cost).toFixed(2)} ${currencySymbol}</td>
-                                <td>${parseFloat(log.package_cost).toFixed(2)} ${currencySymbol}</td>
+                        <td>${rawNumDisplay(log.unit_cost)} ${currencySymbol}</td>
+                        <td>${rawNumDisplay(log.package_cost)} ${currencySymbol}</td>
                     `;
                     tbody.appendChild(row);
                 });
@@ -3189,7 +3230,7 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('DOMContentLoaded', function () {
   const editModal = document.getElementById('editMaterialModal');
   if (!editModal) return;
-  editModal.querySelectorAll('input[type="number"]').forEach((input) => {
+  editModal.querySelectorAll('input[inputmode="decimal"]').forEach((input) => {
     input.setAttribute('type', 'text');
     input.setAttribute('inputmode', 'decimal');
   });
@@ -3255,3 +3296,4 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 });
 </script>
+
