@@ -33,6 +33,8 @@ function formatDiscountDisplay(value) {
   return `${grouped}.${fracPart}`;
 }
 const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '';
+const isEn = (typeof printLang !== 'undefined' && printLang === 'en');
+const t = (ar, en) => isEn ? en : ar;
 const totalBeforeDiscount = parseFloat(totals?.grandTotal) || 0;
 const totalAfterDiscount = (typeof discountedTotal !== 'undefined' && discountedTotal !== null)
   ? (parseFloat(discountedTotal) || 0)
@@ -43,9 +45,13 @@ const discountValue = (typeof discountAmount !== 'undefined' && discountAmount !
 const hasDiscount = discountValue > 0;
 %>
 
-<div class="container-fluid" style="direction: rtl; font-family: 'Cairo', 'Amiri', sans-serif;">
+<% if (isEn) { %>
+<div class="container-fluid lang-en" style="font-family: 'Cairo', 'Amiri', sans-serif;">
+<% } else { %>
+<div class="container-fluid" style="font-family: 'Cairo', 'Amiri', sans-serif;">
+<% } %>
   <!-- Header -->
-  <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+  <table style="width: 100%; border-collapse: collapse; margin-top: 10px; direction: rtl;">
     <tr>
       <td style="text-align: right; font-weight: bold; line-height: 1.4; width: 37%; font-size: 9pt;">
         <div>مؤسسة عجاج أخوان التجارية</div>
@@ -69,45 +75,45 @@ const hasDiscount = discountValue > 0;
   <!-- Title -->
   <div style="text-align:center; margin: 12px 0;">
     <% if (typeof printType !== 'undefined' && printType === 'invoice') { %>
-      <div style="font-size: 12pt; font-weight: 700;">طلبية شحن رقم (<%= order.order_number %>)</div>
+      <div style="font-size: 12pt; font-weight: 700;"><%= t('طلبية شحن رقم', 'Shipping Order No.') %> (<%= order.order_number %>)</div>
     <% } else { %>
-      <div style="font-size: 12pt; font-weight: 700;">طلبية رقم (<%= order.order_number %>)</div>
+      <div style="font-size: 12pt; font-weight: 700;"><%= t('طلبية رقم', 'Order No.') %> (<%= order.order_number %>)</div>
     <% } %>
   </div>
 
   <!-- Order Info -->
   <div class="info-stack">
     <div class="box-compact">
-      <h6 class="section-title">بيانات الزبون</h6>
+      <h6 class="section-title"><%= t('بيانات الزبون', 'Customer Info') %></h6>
       <div class="grid-kv">
-        <div class="kv"><span>الاسم:</span><span><%= order.client_name || '-' %></span></div>
-        <% if (order.client_phone) { %><div class="kv"><span>الهاتف:</span><span><%= order.client_phone %></span></div><% } %>
-        <% if (order.client_address) { %><div class="kv full"><span>العنوان:</span><span><%= order.client_address %></span></div><% } %>
+        <div class="kv"><span><%= t('الاسم:', 'Name:') %></span><span><%= order.client_name || '-' %></span></div>
+        <% if (order.client_phone) { %><div class="kv"><span><%= t('الهاتف:', 'Phone:') %></span><span><%= order.client_phone %></span></div><% } %>
+        <% if (order.client_address) { %><div class="kv full"><span><%= t('العنوان:', 'Address:') %></span><span><%= order.client_address %></span></div><% } %>
       </div>
     </div>
     
     <!-- إخفاء بيانات الطلبية عند الطباعة كطلبية شحن -->
     <% if (typeof printType === 'undefined' || printType !== 'invoice') { %>
     <div class="box-compact">
-      <h6 class="section-title">بيانات الطلبية</h6>
+      <h6 class="section-title"><%= t('بيانات الطلبية', 'Order Info') %></h6>
       <div class="grid-kv">
-        <div class="kv"><span>التاريخ:</span><span><%= fmtDate(order.order_date) %></span></div>
-        <div class="kv"><span>تاريخ التسليم:</span><span><%= fmtDate(order.delivery_date) %></span></div>
-        <div class="kv"><span>الحالة:</span><span><%= order.status === 'pending' ? 'قيد الانتظار' : order.status === 'processing' ? 'قيد المعالجة' : order.status === 'completed' ? 'مكتمل' : 'ملغي' %></span></div>
-        <% if (order.responsible_worker) { %><div class="kv"><span>المسؤول:</span><span><%= order.responsible_worker %></span></div><% } %>
-        <% if (order.quality_controller) { %><div class="kv"><span>مراقب الجودة:</span><span><%= order.quality_controller %></span></div><% } %>
-        <% if (order.pallets_count != null) { %><div class="kv"><span>عدد الطبالي:</span><span><%= formatNumberDisplay(order.pallets_count) %></span></div><% } %>
-        <% if (order.container_number) { %><div class="kv"><span>رقم الحاوية:</span><span><%= order.container_number %></span></div><% } %>
-        <% if (order.packages_count != null) { %><div class="kv"><span>عدد الطرود:</span><span><%= formatNumberDisplay(order.packages_count) %></span></div><% } %>
-        <% if (order.waybill_number) { %><div class="kv"><span>رقم البوليصة:</span><span><%= order.waybill_number %></span></div><% } %>
-        <% if (order.accreditation_number) { %><div class="kv"><span>رقم الاعتماد:</span><span><%= order.accreditation_number %></span></div><% } %>
+        <div class="kv"><span><%= t('التاريخ:', 'Date:') %></span><span><%= fmtDate(order.order_date) %></span></div>
+        <div class="kv"><span><%= t('تاريخ التسليم:', 'Delivery Date:') %></span><span><%= fmtDate(order.delivery_date) %></span></div>
+        <div class="kv"><span><%= t('الحالة:', 'Status:') %></span><span><%= order.status === 'pending' ? t('قيد الانتظار','Pending') : order.status === 'processing' ? t('قيد المعالجة','Processing') : order.status === 'completed' ? t('مكتمل','Completed') : t('ملغي','Cancelled') %></span></div>
+        <% if (order.responsible_worker) { %><div class="kv"><span><%= t('المسؤول:', 'Responsible:') %></span><span><%= order.responsible_worker %></span></div><% } %>
+        <% if (order.quality_controller) { %><div class="kv"><span><%= t('مراقب الجودة:', 'Quality Controller:') %></span><span><%= order.quality_controller %></span></div><% } %>
+        <% if (order.pallets_count != null) { %><div class="kv"><span><%= t('عدد الطبالي:', 'Pallets Count:') %></span><span><%= formatNumberDisplay(order.pallets_count) %></span></div><% } %>
+        <% if (order.container_number) { %><div class="kv"><span><%= t('رقم الحاوية:', 'Container No.:') %></span><span><%= order.container_number %></span></div><% } %>
+        <% if (order.packages_count != null) { %><div class="kv"><span><%= t('عدد الطرود:', 'Packages Count:') %></span><span><%= formatNumberDisplay(order.packages_count) %></span></div><% } %>
+        <% if (order.waybill_number) { %><div class="kv"><span><%= t('رقم البوليصة:', 'Waybill No.:') %></span><span><%= order.waybill_number %></span></div><% } %>
+        <% if (order.accreditation_number) { %><div class="kv"><span><%= t('رقم الاعتماد:', 'Accreditation No.:') %></span><span><%= order.accreditation_number %></span></div><% } %>
       </div>
     </div>
     <% } %>
     
     <% if (order.notes && (typeof printType === 'undefined' || printType !== 'invoice')) { %>
       <div class="box-compact">
-        <h6 class="section-title">ملاحظات الطلبية</h6>
+        <h6 class="section-title"><%= t('ملاحظات الطلبية', 'Order Notes') %></h6>
         <div class="notes"><%= order.notes %></div>
       </div>
     <% } %>
@@ -120,15 +126,15 @@ const hasDiscount = discountValue > 0;
       <thead>
         <tr>
           <th style="width: 4%; padding: 6pt 4pt;">#</th>
-          <th style="width: 24%; padding: 6pt 4pt;">اسم المادة</th>
-          <th style="width: 8%; padding: 6pt 4pt;">التعبئة</th>
-          <th style="width: 8%; padding: 6pt 4pt;">الكمية</th>
-          <th style="width: 10%; padding: 6pt 4pt;">وزن التعبئة</th>
-          <th style="width: 8%; padding: 6pt 4pt;">شد الكرتون</th>
-          <th style="width: 10%; padding: 6pt 4pt;">وزن الطرد القائم</th>
-          <th style="width: 12%; padding: 6pt 4pt;">سعر الطرد</th>
-          <th style="width: 12%; padding: 6pt 4pt;">السعر الإجمالي</th>
-          <th style="width: 12%; padding: 6pt 4pt;">ملاحظات</th>
+          <th style="width: 24%; padding: 6pt 4pt;"><%= t('اسم المادة', 'Material Name') %></th>
+          <th style="width: 8%; padding: 6pt 4pt;"><%= t('التعبئة', 'Packaging') %></th>
+          <th style="width: 8%; padding: 6pt 4pt;"><%= t('الكمية', 'Quantity') %></th>
+          <th style="width: 10%; padding: 6pt 4pt;"><%= t('وزن التعبئة', 'Pack Weight') %></th>
+          <th style="width: 8%; padding: 6pt 4pt;"><%= t('شد الكرتون', 'Pieces/Pack') %></th>
+          <th style="width: 10%; padding: 6pt 4pt;"><%= t('وزن الطرد القائم', 'Gross Pack Weight') %></th>
+          <th style="width: 12%; padding: 6pt 4pt;"><%= t('سعر الطرد', 'Package Price') %></th>
+          <th style="width: 12%; padding: 6pt 4pt;"><%= t('السعر الإجمالي', 'Total Price') %></th>
+          <th style="width: 12%; padding: 6pt 4pt;"><%= t('ملاحظات', 'Notes') %></th>
         </tr>
       </thead>
       <tbody>
@@ -156,7 +162,11 @@ const hasDiscount = discountValue > 0;
           <tr>
             <td class="num-cell" style="padding: 6pt 4pt;"><%= formatNumberDisplay(row.rowNumber) %></td>
             <% if (row.isFirstInGroup) { %>
+            <% if (isEn) { %>
+            <td style="padding: 6pt 4pt; text-align: left;" rowspan="<%= row.groupLength %>"><%= item.material_name || '-' %></td>
+            <% } else { %>
             <td style="padding: 6pt 4pt; text-align: right;" rowspan="<%= row.groupLength %>"><%= item.material_name || '-' %></td>
+            <% } %>
             <% } %>
             <td style="padding: 6pt 4pt;"><%= item.unit || '-' %></td>
             <td class="num-cell" style="padding: 6pt 4pt;"><%= item.requested_quantity != null ? formatNumberDisplay(item.requested_quantity) : '-' %></td>
@@ -165,13 +175,17 @@ const hasDiscount = discountValue > 0;
             <td class="num-cell" style="padding: 6pt 4pt;"><%= item.gross_weight != null ? formatNumberDisplay(item.gross_weight) : '-' %></td>
             <td class="num-cell" style="padding: 6pt 4pt;"><%= item.unit_price != null ? `${formatNumberDisplay(item.unit_price)} ${currencySymbol}` : '-' %></td>
             <td class="num-cell" style="padding: 6pt 4pt;"><%= item.total_price != null ? `${formatNumberDisplay(item.total_price)} ${currencySymbol}` : '-' %></td>
+            <% if (isEn) { %>
+            <td style="padding: 6pt 4pt; text-align: left;"><%= item.notes || '-' %></td>
+            <% } else { %>
             <td style="padding: 6pt 4pt; text-align: right;"><%= item.notes || '-' %></td>
+            <% } %>
           </tr>
         <% }) %>
       </tbody>
-      <tfoot>
+      <tbody>
         <tr>
-          <td colspan="3" style="text-align:center; font-weight: 700;">الإجماليات</td>
+          <td colspan="3" style="text-align:center; font-weight: 700;"><%= t('الإجماليات', 'Totals') %></td>
           <td class="num-cell" style="font-weight:700;"><%= formatTotalDisplay(totals.totalRequestedQuantity) %></td>
           <td class="num-cell" style="font-weight:700;"><%= formatTotalDisplay(totals.totalPackagingWeight) %></td>
           <td></td>
@@ -182,26 +196,32 @@ const hasDiscount = discountValue > 0;
         </tr>
         <% if (hasDiscount) { %>
         <tr>
-          <td colspan="8" style="text-align:center; font-weight: 700;">الخصم</td>
+          <td colspan="8" style="text-align:center; font-weight: 700;"><%= t('الخصم', 'Discount') %></td>
           <td class="num-cell" style="font-weight:700;"><%= `- ${formatDiscountDisplay(discountValue)} ${currencySymbol}` %></td>
           <td></td>
         </tr>
         <tr>
-          <td colspan="8" style="text-align:center; font-weight: 700;">الإجمالي بعد الخصم</td>
+          <td colspan="8" style="text-align:center; font-weight: 700;"><%= t('الإجمالي بعد الخصم', 'Total After Discount') %></td>
           <td class="num-cell" style="font-weight:700;"><%= `${formatDiscountDisplay(totalAfterDiscount)} ${currencySymbol}` %></td>
           <td></td>
         </tr>
         <% } %>
-      </tfoot>
+      </tbody>
     </table>
   </div>
 
   <!-- Footer -->
   <div class="print-footer" id="fixed-print-footer" style="text-align:center; font-size: 8pt; margin-top: 10px;">
     <hr style="margin: 4px 0; border: 0.5px solid #bbb;">
-    سوريا، حماة، أوتستراد دمشق-حلب الدولي، س.ت 10369 – س.ص 10<br>
-    0940500511 – 0988111127 | ajajbrothers@gmail.com<br>
-    جميع الحقوق محفوظة © <%= new Date().getFullYear() %> نظام إدارة المختبر | تم التطوير بواسطة شركة NEXA GROUP
+    <% if (isEn) { %>
+      Syria, Hama, Damascus-Aleppo International Highway, C.R. 10369 - P.O. Box 10<br>
+      0940500511 - 0988111127 | ajajbrothers@gmail.com<br>
+      All rights reserved © <%= new Date().getFullYear() %> Laboratory Management System | Developed by NEXA GROUP
+    <% } else { %>
+      سوريا، حماة، أوتستراد دمشق-حلب الدولي، س.ت 10369 – س.ص 10<br>
+      0940500511 – 0988111127 | ajajbrothers@gmail.com<br>
+      جميع الحقوق محفوظة © <%= new Date().getFullYear() %> نظام إدارة المختبر | تم التطوير بواسطة شركة NEXA GROUP
+    <% } %>
   </div>
 </div>
 
@@ -240,7 +260,7 @@ const hasDiscount = discountValue > 0;
   .table-custom th { background: #f5f5f5; font-weight: 700; }
   .table-custom td.num-cell { text-align: center !important; white-space: nowrap; }
   thead { display: table-header-group; }
-  tfoot { display: table-footer-group; }
+  tfoot { display: none; }
   tr { page-break-inside: avoid; }
   .table-responsive { overflow-x: visible; }
 
@@ -252,6 +272,8 @@ const hasDiscount = discountValue > 0;
   .kv.full { grid-column: 1 / -1; }
   .kv span:first-child { color: #333; font-weight: 600; margin-left: 8px; }
   .notes { white-space: pre-wrap; line-height: 1.6; }
+  .container-fluid.lang-en { direction: ltr; text-align: left; }
+  .container-fluid.lang-en .kv span:first-child { margin-left: 0; margin-right: 8px; }
 
   /* مساحة أسفل المحتوى لمنع تداخل الفوتر المثبت */
   .container-fluid { padding-bottom: 80px; }

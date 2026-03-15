@@ -258,35 +258,8 @@ function formatDate(dateString){
 
 <script>
 document.addEventListener('DOMContentLoaded', function(){
-  const exportBtn = document.getElementById('exportOrderPdfBtn');
-  const modalElem = document.getElementById('orderPdfExportModal');
-  const modal = modalElem ? new bootstrap.Modal(modalElem) : null;
   const linkInput = document.getElementById('orderPdfLinkInput');
   const copyBtn = document.getElementById('copyOrderPdfLinkBtn');
-  const openBtn = document.getElementById('openOrderPdfLinkBtn');
-  const waBtn = document.getElementById('whatsappOrderShareBtn');
-  if (!exportBtn) return;
-  exportBtn.addEventListener('click', async function(){
-    exportBtn.disabled = true;
-    exportBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري التصدير...';
-    try {
-      const res = await fetch(`/costs/orders/<%= order.id %>/pdf`);
-      const data = await res.json();
-      if (data.success && data.url) {
-        const link = data.url;
-        if (linkInput) linkInput.value = link;
-        if (openBtn) openBtn.href = link;
-        if (waBtn) waBtn.href = `https://wa.me/?text=${encodeURIComponent(link)}`;
-        if (modal) modal.show();
-      } else {
-        alert(data.message || 'حدث خطأ أثناء توليد ملف PDF');
-      }
-    } catch (e) {
-      alert('حدث خطأ في الاتصال بالخادم');
-    }
-    exportBtn.disabled = false;
-    exportBtn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> تصدير PDF';
-  });
   if (copyBtn && linkInput) {
     copyBtn.addEventListener('click', function(){ linkInput.select(); document.execCommand('copy'); });
   }
@@ -294,70 +267,170 @@ document.addEventListener('DOMContentLoaded', function(){
 
 // Print and Export Functions
 function printAsOrder() {
-  const discountedTotalValue = getValidatedOrderDiscountedTotal('printDiscountedTotalInput');
+  const discountedTotalValue = getValidatedOrderDiscountedTotal('printDiscountedTotalInput', 'printDiscountType');
   if (discountedTotalValue === null) return;
-  window.open(`/costs/orders/<%= order.id %>/print?discounted_total=${encodeURIComponent(discountedTotalValue)}`, '_blank');
+  const lang = document.getElementById('printLanguageSelect')?.value || 'ar';
+  window.open(`/costs/orders/<%= order.id %>/print?discounted_total=${encodeURIComponent(discountedTotalValue)}&lang=${encodeURIComponent(lang)}`, '_blank');
   bootstrap.Modal.getInstance(document.getElementById('printTypeModal')).hide();
 }
 
 function printAsInvoice() {
-  const discountedTotalValue = getValidatedOrderDiscountedTotal('printDiscountedTotalInput');
+  const discountedTotalValue = getValidatedOrderDiscountedTotal('printDiscountedTotalInput', 'printDiscountType');
   if (discountedTotalValue === null) return;
-  window.open(`/costs/orders/<%= order.id %>/print?type=invoice&discounted_total=${encodeURIComponent(discountedTotalValue)}`, '_blank');
+  const lang = document.getElementById('printLanguageSelect')?.value || 'ar';
+  window.open(`/costs/orders/<%= order.id %>/print?type=invoice&discounted_total=${encodeURIComponent(discountedTotalValue)}&lang=${encodeURIComponent(lang)}`, '_blank');
   bootstrap.Modal.getInstance(document.getElementById('printTypeModal')).hide();
 }
 
 async function exportAsOrder() {
-  const discountedTotalValue = getValidatedOrderDiscountedTotal('exportDiscountedTotalInput');
+  const discountedTotalValue = getValidatedOrderDiscountedTotal('exportDiscountedTotalInput', 'exportDiscountType');
   if (discountedTotalValue === null) return;
+  const lang = document.getElementById('exportLanguageSelect')?.value || 'ar';
   bootstrap.Modal.getInstance(document.getElementById('exportTypeModal')).hide();
-  await exportPDF(`/costs/orders/<%= order.id %>/pdf?discounted_total=${encodeURIComponent(discountedTotalValue)}`);
+  await exportPDF(`/costs/orders/<%= order.id %>/pdf?discounted_total=${encodeURIComponent(discountedTotalValue)}&lang=${encodeURIComponent(lang)}`);
 }
 
 async function exportAsInvoice() {
-  const discountedTotalValue = getValidatedOrderDiscountedTotal('exportDiscountedTotalInput');
+  const discountedTotalValue = getValidatedOrderDiscountedTotal('exportDiscountedTotalInput', 'exportDiscountType');
   if (discountedTotalValue === null) return;
+  const lang = document.getElementById('exportLanguageSelect')?.value || 'ar';
   bootstrap.Modal.getInstance(document.getElementById('exportTypeModal')).hide();
-  await exportPDF(`/costs/orders/<%= order.id %>/pdf?type=invoice&discounted_total=${encodeURIComponent(discountedTotalValue)}`);
+  await exportPDF(`/costs/orders/<%= order.id %>/pdf?type=invoice&discounted_total=${encodeURIComponent(discountedTotalValue)}&lang=${encodeURIComponent(lang)}`);
 }
 
-function getValidatedOrderDiscountedTotal(inputId) {
+function getValidatedOrderDiscountedTotal(inputId, typeId) {
+  enforceOrderDiscountLimits(inputId, typeId);
   const total = Number(document.getElementById('orderGrandTotalValue')?.value || 0);
   const input = document.getElementById(inputId);
+  const typeSelect = document.getElementById(typeId);
   if (!input) return total;
   const rawValue = parseFloat(input.value);
+  const mode = typeSelect ? typeSelect.value : 'fixed';
+
   if (!Number.isFinite(rawValue)) {
     alert('يرجى إدخال قيمة رقمية صحيحة.');
     input.focus();
     return null;
   }
-  if (rawValue < 0) {
-    alert('قيمة الإجمالي بعد الخصم يجب أن تكون صفر أو أكبر.');
-    input.focus();
-    return null;
+
+  let discountAmount = 0;
+  if (mode === 'percent') {
+    if (rawValue < 0 || rawValue > 100) {
+      alert('النسبة المئوية يجب أن تكون بين 0 و 100.');
+      input.focus();
+      return null;
+    }
+    discountAmount = (total * rawValue) / 100;
+  } else {
+    if (rawValue < 0) {
+      alert('قيمة الخصم الثابت لا يمكن أن تكون أقل من صفر.');
+      input.focus();
+      return null;
+    }
+    if (rawValue > total) {
+      alert('قيمة الخصم الثابت لا يمكن أن تكون أكبر من الإجمالي الحالي.');
+      input.focus();
+      return null;
+    }
+    discountAmount = rawValue;
   }
-  if (rawValue > total) {
-    alert('لا يمكن أن يكون الإجمالي بعد الخصم أكبر من الإجمالي الحالي.');
-    input.focus();
-    return null;
+
+  return Math.max(0, total - discountAmount);
+}
+
+function enforceOrderDiscountLimits(inputId, typeId) {
+  const total = Number(document.getElementById('orderGrandTotalValue')?.value || 0);
+  const input = document.getElementById(inputId);
+  const typeSelect = document.getElementById(typeId);
+  if (!input) return;
+
+  const mode = typeSelect ? typeSelect.value : 'fixed';
+  const raw = (input.value || '').trim();
+  if (!raw) return;
+  let value = parseFloat(raw);
+  if (!Number.isFinite(value)) return;
+  if (value < 0) value = 0;
+  if (mode === 'percent') {
+    if (value > 100) value = 100;
+  } else {
+    if (value > total) value = total;
   }
-  return rawValue;
+  if (String(value) !== raw) {
+    input.value = String(value);
+  }
 }
 
 function initializeOrderDiscountInputs() {
   const total = Number(document.getElementById('orderGrandTotalValue')?.value || 0);
   const printInput = document.getElementById('printDiscountedTotalInput');
   const exportInput = document.getElementById('exportDiscountedTotalInput');
-  if (printInput) printInput.value = String(total);
-  if (exportInput) exportInput.value = String(total);
+  const printType = document.getElementById('printDiscountType');
+  const exportType = document.getElementById('exportDiscountType');
+  if (printType) printType.value = 'fixed';
+  if (exportType) exportType.value = 'fixed';
+  if (printInput) printInput.value = '0';
+  if (exportInput) exportInput.value = '0';
+  updateOrderDiscountHelper('printDiscountedTotalInput', 'printDiscountType', 'printDiscountHelper');
+  updateOrderDiscountHelper('exportDiscountedTotalInput', 'exportDiscountType', 'exportDiscountHelper');
+}
+
+function updateOrderDiscountHelper(inputId, typeId, helperId) {
+  const total = Number(document.getElementById('orderGrandTotalValue')?.value || 0);
+  const input = document.getElementById(inputId);
+  const typeSelect = document.getElementById(typeId);
+  const helper = document.getElementById(helperId);
+  if (!input || !helper) return;
+  enforceOrderDiscountLimits(inputId, typeId);
+
+  const rawValue = parseFloat(input.value || '0');
+  const numericValue = Number.isFinite(rawValue) ? rawValue : 0;
+  const mode = typeSelect ? typeSelect.value : 'fixed';
+
+  let discountAmount = 0;
+  if (mode === 'percent') {
+    discountAmount = Math.max(0, Math.min(100, numericValue)) * total / 100;
+  } else {
+    discountAmount = Math.max(0, Math.min(total, numericValue));
+  }
+  const afterDiscount = Math.max(0, total - discountAmount);
+
+  if (mode === 'percent') {
+    helper.textContent = `سيتم خصم ${numericValue}% من الإجمالي الحالي، أي خصم ${discountAmount.toFixed(2)}، ليصبح الإجمالي بعد الخصم ${afterDiscount.toFixed(2)}.`;
+  } else {
+    helper.textContent = `سيتم خصم قيمة ثابتة مقدارها ${discountAmount.toFixed(2)} من الإجمالي الحالي، ليصبح الإجمالي بعد الخصم ${afterDiscount.toFixed(2)}.`;
+  }
 }
 
 document.addEventListener('DOMContentLoaded', function () {
   initializeOrderDiscountInputs();
   const printModalEl = document.getElementById('printTypeModal');
   const exportModalEl = document.getElementById('exportTypeModal');
+  const printInput = document.getElementById('printDiscountedTotalInput');
+  const exportInput = document.getElementById('exportDiscountedTotalInput');
+  const printType = document.getElementById('printDiscountType');
+  const exportType = document.getElementById('exportDiscountType');
   if (printModalEl) printModalEl.addEventListener('show.bs.modal', initializeOrderDiscountInputs);
   if (exportModalEl) exportModalEl.addEventListener('show.bs.modal', initializeOrderDiscountInputs);
+  if (printInput) printInput.addEventListener('input', () => updateOrderDiscountHelper('printDiscountedTotalInput', 'printDiscountType', 'printDiscountHelper'));
+  if (exportInput) exportInput.addEventListener('input', () => updateOrderDiscountHelper('exportDiscountedTotalInput', 'exportDiscountType', 'exportDiscountHelper'));
+  if (printType) printType.addEventListener('change', () => {
+    if (printType.value === 'percent') {
+      printInput?.setAttribute('max', '100');
+    } else {
+      printInput?.setAttribute('max', String(Number(document.getElementById('orderGrandTotalValue')?.value || 0)));
+    }
+    updateOrderDiscountHelper('printDiscountedTotalInput', 'printDiscountType', 'printDiscountHelper');
+  });
+  if (exportType) exportType.addEventListener('change', () => {
+    if (exportType.value === 'percent') {
+      exportInput?.setAttribute('max', '100');
+    } else {
+      exportInput?.setAttribute('max', String(Number(document.getElementById('orderGrandTotalValue')?.value || 0)));
+    }
+    updateOrderDiscountHelper('exportDiscountedTotalInput', 'exportDiscountType', 'exportDiscountHelper');
+  });
+  if (printInput && printType && printType.value === 'percent') printInput.setAttribute('max', '100');
+  if (exportInput && exportType && exportType.value === 'percent') exportInput.setAttribute('max', '100');
 });
 
 async function exportPDF(url) {
@@ -402,9 +475,16 @@ async function exportPDF(url) {
       </div>
       <div class="modal-body">
         <div class="mb-3">
-          <label for="printDiscountedTotalInput" class="form-label">الإجمالي بعد الخصم</label>
+          <label for="printDiscountType" class="form-label">نوع الخصم</label>
+          <select id="printDiscountType" class="form-select">
+            <option value="fixed">قيمة ثابتة</option>
+            <option value="percent">نسبة مئوية</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="printDiscountedTotalInput" class="form-label">قيمة الخصم</label>
           <input id="printDiscountedTotalInput" type="text" inputmode="decimal" min="0" step="0.01" class="form-control" />
-          <small class="text-muted d-block mt-1">سيتم احتساب الخصم = الإجمالي الحالي - القيمة المدخلة.</small>
+          <small id="printDiscountHelper" class="text-muted d-block mt-1">عند اختيار "قيمة ثابتة": الرقم هو مبلغ خصم مباشر من الإجمالي الحالي.</small>
         </div>
         <div class="row g-3">
           <div class="col-md-6">
@@ -426,6 +506,14 @@ async function exportPDF(url) {
             </div>
           </div>
         </div>
+        <div class="mt-3">
+          <label for="printLanguageSelect" class="form-label">لغة الطباعة</label>
+          <select id="printLanguageSelect" class="form-select">
+            <option value="ar" selected>العربية</option>
+            <option value="en">English</option>
+          </select>
+          <small class="text-muted d-block mt-1">عند اختيار الإنكليزية سيتم ترجمة المحتوى العربي باستثناء الهيدر والفوتر.</small>
+        </div>
       </div>
     </div>
   </div>
@@ -443,9 +531,16 @@ async function exportPDF(url) {
       </div>
       <div class="modal-body">
         <div class="mb-3">
-          <label for="exportDiscountedTotalInput" class="form-label">الإجمالي بعد الخصم</label>
+          <label for="exportDiscountType" class="form-label">نوع الخصم</label>
+          <select id="exportDiscountType" class="form-select">
+            <option value="fixed">قيمة ثابتة</option>
+            <option value="percent">نسبة مئوية</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="exportDiscountedTotalInput" class="form-label">قيمة الخصم</label>
           <input id="exportDiscountedTotalInput" type="text" inputmode="decimal" min="0" step="0.01" class="form-control" />
-          <small class="text-muted d-block mt-1">سيتم احتساب الخصم = الإجمالي الحالي - القيمة المدخلة.</small>
+          <small id="exportDiscountHelper" class="text-muted d-block mt-1">عند اختيار "قيمة ثابتة": الرقم هو مبلغ خصم مباشر من الإجمالي الحالي.</small>
         </div>
         <div class="row g-3">
           <div class="col-md-6">
@@ -466,6 +561,14 @@ async function exportPDF(url) {
               </div>
             </div>
           </div>
+        </div>
+        <div class="mt-3">
+          <label for="exportLanguageSelect" class="form-label">لغة التصدير</label>
+          <select id="exportLanguageSelect" class="form-select">
+            <option value="ar" selected>العربية</option>
+            <option value="en">English</option>
+          </select>
+          <small class="text-muted d-block mt-1">عند اختيار الإنكليزية سيتم ترجمة المحتوى العربي باستثناء الهيدر والفوتر.</small>
         </div>
       </div>
     </div>

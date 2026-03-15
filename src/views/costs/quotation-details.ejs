@@ -66,11 +66,20 @@
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
                             </div>
                             <div class="modal-body">
-                                <p class="mb-3">أدخل الإجمالي بعد الخصم:</p>
+                                <p class="mb-3">حدد طريقة الخصم ثم أدخل القيمة:</p>
                                 <div class="mb-3">
-                                    <label for="quotationDiscountedTotalInput" class="form-label">الإجمالي بعد الخصم</label>
+                                    <label for="quotationDiscountType" class="form-label">نوع الخصم</label>
+                                    <select id="quotationDiscountType" class="form-select">
+                                        <option value="fixed">قيمة ثابتة</option>
+                                        <option value="percent">نسبة مئوية</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="quotationDiscountedTotalInput" class="form-label">قيمة الخصم</label>
                                     <input id="quotationDiscountedTotalInput" type="text" inputmode="decimal" min="0" step="0.01" class="form-control" />
-                                    <small class="text-muted d-block mt-1">سيتم احتساب الخصم = الإجمالي الحالي - القيمة المدخلة.</small>
+                                    <small id="quotationDiscountHelper" class="text-muted d-block mt-1">
+                                        عند اختيار "قيمة ثابتة": الرقم هو مبلغ الخصم المباشر من الإجمالي الحالي.
+                                    </small>
                                 </div>
                                 <div class="d-grid gap-2">
                                     <button id="quotationModeNormalBtn" type="button" class="btn btn-outline-secondary">
@@ -79,6 +88,14 @@
                                     <button id="quotationModeFullBtn" type="button" class="btn btn-outline-primary">
                                         كامل (يشمل كلفة الطرد + نسبة الربح)
                                     </button>
+                                </div>
+                                <div class="mt-3">
+                                    <label for="quotationPrintLanguage" class="form-label">لغة الطباعة/التصدير</label>
+                                    <select id="quotationPrintLanguage" class="form-select">
+                                        <option value="ar" selected>العربية</option>
+                                        <option value="en">English</option>
+                                    </select>
+                                    <small class="text-muted d-block mt-1">عند اختيار الإنكليزية سيتم ترجمة المحتوى العربي باستثناء الهيدر والفوتر.</small>
                                 </div>
                             </div>
                         </div>
@@ -275,6 +292,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const modeNormalBtn = document.getElementById('quotationModeNormalBtn');
     const modeFullBtn = document.getElementById('quotationModeFullBtn');
     const discountedTotalInput = document.getElementById('quotationDiscountedTotalInput');
+    const discountTypeSelect = document.getElementById('quotationDiscountType');
+    const quotationPrintLanguage = document.getElementById('quotationPrintLanguage');
+    const discountHelper = document.getElementById('quotationDiscountHelper');
     const modalElem = document.getElementById('quotationPdfExportModal');
     const modal = modalElem ? new bootstrap.Modal(modalElem) : null;
     const linkInput = document.getElementById('quotationPdfLinkInput');
@@ -286,39 +306,100 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function openOutputModeChooser(action) {
         pendingOutputAction = action;
-        if (discountedTotalInput) {
-            discountedTotalInput.value = String(quotationGrandTotal);
+        if (discountTypeSelect) {
+            discountTypeSelect.value = 'fixed';
         }
+        if (discountedTotalInput) {
+            discountedTotalInput.value = '0';
+        }
+        updateQuotationDiscountHelper();
         if (outputModeModal) outputModeModal.show();
+    }
+
+    function updateQuotationDiscountHelper() {
+        if (!discountHelper) return;
+        enforceQuotationDiscountLimits();
+        const mode = discountTypeSelect ? discountTypeSelect.value : 'fixed';
+        const enteredValue = parseFloat(discountedTotalInput?.value || '0');
+        const numericValue = Number.isFinite(enteredValue) ? enteredValue : 0;
+        const total = quotationGrandTotal;
+        let discountAmount = 0;
+
+        if (mode === 'percent') {
+            discountAmount = Math.max(0, Math.min(100, numericValue)) * total / 100;
+        } else {
+            discountAmount = Math.max(0, Math.min(total, numericValue));
+        }
+
+        const afterDiscount = Math.max(0, total - discountAmount);
+        if (mode === 'percent') {
+            discountHelper.textContent = `سيتم خصم ${numericValue}% من الإجمالي الحالي، أي خصم ${discountAmount.toFixed(2)}، ليصبح الإجمالي بعد الخصم ${afterDiscount.toFixed(2)}.`;
+        } else {
+            discountHelper.textContent = `سيتم خصم قيمة ثابتة مقدارها ${discountAmount.toFixed(2)} من الإجمالي الحالي، ليصبح الإجمالي بعد الخصم ${afterDiscount.toFixed(2)}.`;
+        }
     }
 
     function getValidatedDiscountedTotal() {
         if (!discountedTotalInput) return quotationGrandTotal;
+        enforceQuotationDiscountLimits();
+        const mode = discountTypeSelect ? discountTypeSelect.value : 'fixed';
         const rawValue = parseFloat(discountedTotalInput.value);
         if (!Number.isFinite(rawValue)) {
             alert('يرجى إدخال رقم صالح.');
             discountedTotalInput.focus();
             return null;
         }
-        if (rawValue < 0) {
-            alert('لا يمكن أن تكون القيمة المدخلة أقل من صفر.');
-            discountedTotalInput.focus();
-            return null;
+
+        let discountAmount = 0;
+        if (mode === 'percent') {
+            if (rawValue < 0 || rawValue > 100) {
+                alert('النسبة المئوية يجب أن تكون بين 0 و 100.');
+                discountedTotalInput.focus();
+                return null;
+            }
+            discountAmount = (quotationGrandTotal * rawValue) / 100;
+        } else {
+            if (rawValue < 0) {
+                alert('قيمة الخصم الثابت لا يمكن أن تكون أقل من صفر.');
+                discountedTotalInput.focus();
+                return null;
+            }
+            if (rawValue > quotationGrandTotal) {
+                alert('قيمة الخصم الثابت لا يمكن أن تكون أكبر من الإجمالي الحالي.');
+                discountedTotalInput.focus();
+                return null;
+            }
+            discountAmount = rawValue;
         }
-        if (rawValue > quotationGrandTotal) {
-            alert('لا يمكن أن تكون القيمة المدخلة أكبر من الإجمالي الحالي.');
-            discountedTotalInput.focus();
-            return null;
+
+        return Math.max(0, quotationGrandTotal - discountAmount);
+    }
+
+    function enforceQuotationDiscountLimits() {
+        if (!discountedTotalInput) return;
+        const mode = discountTypeSelect ? discountTypeSelect.value : 'fixed';
+        const raw = (discountedTotalInput.value || '').trim();
+        if (!raw) return;
+        let value = parseFloat(raw);
+        if (!Number.isFinite(value)) return;
+        if (value < 0) value = 0;
+        if (mode === 'percent') {
+            if (value > 100) value = 100;
+        } else {
+            if (value > quotationGrandTotal) value = quotationGrandTotal;
         }
-        return rawValue;
+        if (String(value) !== raw) {
+            discountedTotalInput.value = String(value);
+        }
     }
 
     async function exportPdfByMode(mode, discountedTotalValue) {
         if (!exportBtn) return;
+            const lang = quotationPrintLanguage ? quotationPrintLanguage.value : 'ar';
             exportBtn.disabled = true;
             exportBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري التصدير...';
             try {
-            const res = await fetch(`/costs/quotations/<%= quotation.id %>/pdf?mode=${encodeURIComponent(mode)}&discounted_total=${encodeURIComponent(discountedTotalValue)}`);
+            const res = await fetch(`/costs/quotations/<%= quotation.id %>/pdf?mode=${encodeURIComponent(mode)}&discounted_total=${encodeURIComponent(discountedTotalValue)}&lang=${encodeURIComponent(lang)}`);
                 const data = await res.json();
                 if (data.success && data.url) {
                     if (linkInput) linkInput.value = data.url;
@@ -336,7 +417,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function printByMode(mode, discountedTotalValue) {
-        window.open(`/costs/quotations/<%= quotation.id %>/print?mode=${encodeURIComponent(mode)}&discounted_total=${encodeURIComponent(discountedTotalValue)}`, '_blank');
+        const lang = quotationPrintLanguage ? quotationPrintLanguage.value : 'ar';
+        window.open(`/costs/quotations/<%= quotation.id %>/print?mode=${encodeURIComponent(mode)}&discounted_total=${encodeURIComponent(discountedTotalValue)}&lang=${encodeURIComponent(lang)}`, '_blank');
     }
 
     async function handleModeSelection(mode) {
@@ -372,6 +454,25 @@ document.addEventListener('DOMContentLoaded', function () {
             handleModeSelection('full');
         });
     }
+    if (discountTypeSelect) {
+        discountTypeSelect.addEventListener('change', function () {
+            if (discountTypeSelect.value === 'percent') {
+                discountedTotalInput?.setAttribute('max', '100');
+            } else {
+                discountedTotalInput?.setAttribute('max', String(quotationGrandTotal));
+            }
+            updateQuotationDiscountHelper();
+        });
+    }
+    if (discountedTotalInput) {
+        discountedTotalInput.addEventListener('input', updateQuotationDiscountHelper);
+    }
+    if (discountTypeSelect && discountTypeSelect.value === 'percent') {
+        discountedTotalInput?.setAttribute('max', '100');
+    } else {
+        discountedTotalInput?.setAttribute('max', String(quotationGrandTotal));
+    }
+    updateQuotationDiscountHelper();
     if (copyBtn && linkInput) {
         copyBtn.addEventListener('click', function () {
             linkInput.select();

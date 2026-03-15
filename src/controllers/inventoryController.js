@@ -44,7 +44,7 @@ function convertDateToISO(dateString) {
 
 // دالة تجلب بيانات المخزون فقط (بدون رندر)
 exports.fetchInventoryData = async (query) => {
-    const { date, supplier, sample_number, positive_quantity } = query;
+    const { date, supplier, sample_number, positive_quantity, ids } = query;
     let sql = `
         SELECT *, COALESCE(is_rejected, 0) as is_rejected FROM inventory 
         WHERE deleted_at IS NULL
@@ -73,6 +73,17 @@ exports.fetchInventoryData = async (query) => {
     if (positive_quantity === '1') {
         sql += ` AND current_quantity > 0`;
     }
+
+    if (ids) {
+        const parsedIds = (Array.isArray(ids) ? ids : String(ids).split(','))
+            .map(v => parseInt(String(v).trim(), 10))
+            .filter(v => Number.isFinite(v) && v > 0);
+        if (parsedIds.length > 0) {
+            sql += ` AND id IN (?)`;
+            params.push(parsedIds);
+        }
+    }
+
     sql += ` ORDER BY CAST(sample_number AS UNSIGNED) DESC`;
     const [inventory] = await pool.query(sql, params);
     return inventory.map(applyInventoryRaw);

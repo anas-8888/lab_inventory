@@ -26,6 +26,86 @@ function applyInventoryRaw(item) {
   return mapped;
 }
 
+const CERTIFICATE_TOTAL_RAW_FIELDS = ['total_quantity', 'total_weight'];
+
+function roundTo3(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return 0;
+  return Number(num.toFixed(3));
+}
+
+function buildWeightedAverages(totalQuantity, weightedSums) {
+  const denominator = Number(totalQuantity);
+  if (!Number.isFinite(denominator) || denominator <= 0) {
+    return {
+      ph: 0,
+      peroxide: 0,
+      abs232: 0,
+      abs266: 0,
+      abs270: 0,
+      abs274: 0,
+      deltaK: 0,
+      stigmastadiene: 0
+    };
+  }
+
+  return {
+    ph: roundTo3(weightedSums.weightedPH / denominator),
+    peroxide: roundTo3(weightedSums.weightedPeroxide / denominator),
+    abs232: roundTo3(weightedSums.weighted232 / denominator),
+    abs266: roundTo3(weightedSums.weighted266 / denominator),
+    abs270: roundTo3(weightedSums.weighted270 / denominator),
+    abs274: roundTo3(weightedSums.weighted274 / denominator),
+    deltaK: roundTo3(weightedSums.weightedDeltaK / denominator),
+    stigmastadiene: roundTo3(weightedSums.weightedStigmastadiene / denominator)
+  };
+}
+
+function normalizeCertificateDate(input, fallbackDate = null) {
+  const raw = (input || '').toString().trim();
+  if (!raw) return fallbackDate;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return fallbackDate;
+  const dd = String(parseInt(m[1], 10)).padStart(2, '0');
+  const mm = String(parseInt(m[2], 10)).padStart(2, '0');
+  const yyyy = m[3];
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function normalizeCertificateItems(itemsInput = []) {
+  const itemsArray = Array.isArray(itemsInput) ? itemsInput : [itemsInput];
+  return itemsArray
+    .map(item => ({
+      sample_number: item.sample_number || null,
+      quantity: normalizeRawNumeric(item.quantity) ?? (item.quantity != null ? parseFloat(item.quantity) : null),
+      packaging_unit: item.packaging_unit || null,
+      packaging_weight: normalizeRawNumeric(item.packaging_weight) ?? (item.packaging_weight != null ? parseFloat(item.packaging_weight) : null),
+      total_weight: normalizeRawNumeric(item.total_weight) ?? (item.total_weight != null ? parseFloat(item.total_weight) : null),
+      ph: normalizeRawNumeric(item.ph) ?? (item.ph != null ? parseFloat(item.ph) : null),
+      peroxide: normalizeRawNumeric(item.peroxide) ?? (item.peroxide != null ? parseFloat(item.peroxide) : null),
+      abs_232: normalizeRawNumeric(item.abs_232) ?? (item.abs_232 != null ? parseFloat(item.abs_232) : null),
+      abs_270: normalizeRawNumeric(item.abs_270) ?? (item.abs_270 != null ? parseFloat(item.abs_270) : null),
+      abs_268: normalizeRawNumeric(item.abs_268) ?? (item.abs_268 != null ? parseFloat(item.abs_268) : null),
+      abs_262: normalizeRawNumeric(item.abs_262) ?? (item.abs_262 != null ? parseFloat(item.abs_262) : null),
+      abs_274: normalizeRawNumeric(item.abs_274) ?? (item.abs_274 != null ? parseFloat(item.abs_274) : null),
+      abs_266: normalizeRawNumeric(item.abs_266) ?? (item.abs_266 != null ? parseFloat(item.abs_266) : null),
+      k_232: normalizeRawNumeric(item.k_232) ?? (item.k_232 != null ? parseFloat(item.k_232) : null),
+      k_270: normalizeRawNumeric(item.k_270) ?? (item.k_270 != null ? parseFloat(item.k_270) : null),
+      delta_k: normalizeRawNumeric(item.delta_k) ?? (item.delta_k != null ? parseFloat(item.delta_k) : null),
+      stigmastadiene: normalizeRawNumeric(item.stigmastadiene) ?? (item.stigmastadiene != null ? parseFloat(item.stigmastadiene) : null)
+    }))
+    .filter(item => {
+      const hasSample = item.sample_number && String(item.sample_number).trim() !== '';
+      const hasAnyNumeric = [
+        item.quantity, item.packaging_weight, item.total_weight, item.ph, item.peroxide,
+        item.abs_232, item.abs_266, item.abs_270, item.abs_274, item.delta_k, item.stigmastadiene
+      ].some(v => v !== null && v !== undefined && String(v).trim() !== '');
+      const hasUnit = item.packaging_unit && String(item.packaging_unit).trim() !== '';
+      return hasSample || hasAnyNumeric || hasUnit;
+    });
+}
+
 exports.index = async (req, res) => {
   try {
     const { date, customer } = req.query;
@@ -114,30 +194,8 @@ exports.store = async (req, res) => {
       certificate_number
     } = req.body;
 
-    // Ensure items is an array
-    const itemsArray = Array.isArray(items) ? items : [items];
-
-    // Format items data
-    const formattedItems = itemsArray.map(item => ({
-      sample_number: item.sample_number || null,
-      quantity: normalizeRawNumeric(item.quantity) ?? (item.quantity != null ? parseFloat(item.quantity) : null),
-      packaging_unit: item.packaging_unit || null,
-      packaging_weight: normalizeRawNumeric(item.packaging_weight) ?? (item.packaging_weight != null ? parseFloat(item.packaging_weight) : null),
-      total_weight: normalizeRawNumeric(item.total_weight) ?? (item.total_weight != null ? parseFloat(item.total_weight) : null),
-      ph: normalizeRawNumeric(item.ph) ?? (item.ph != null ? parseFloat(item.ph) : null),
-      peroxide: normalizeRawNumeric(item.peroxide) ?? (item.peroxide != null ? parseFloat(item.peroxide) : null),
-      abs_232: normalizeRawNumeric(item.abs_232) ?? (item.abs_232 != null ? parseFloat(item.abs_232) : null),
-      abs_270: normalizeRawNumeric(item.abs_270) ?? (item.abs_270 != null ? parseFloat(item.abs_270) : null),
-      abs_268: normalizeRawNumeric(item.abs_268) ?? (item.abs_268 != null ? parseFloat(item.abs_268) : null),
-      abs_262: normalizeRawNumeric(item.abs_262) ?? (item.abs_262 != null ? parseFloat(item.abs_262) : null),
-      abs_274: normalizeRawNumeric(item.abs_274) ?? (item.abs_274 != null ? parseFloat(item.abs_274) : null),
-      abs_266: normalizeRawNumeric(item.abs_266) ?? (item.abs_266 != null ? parseFloat(item.abs_266) : null),
-      k_232: normalizeRawNumeric(item.k_232) ?? (item.k_232 != null ? parseFloat(item.k_232) : null),
-      k_270: normalizeRawNumeric(item.k_270) ?? (item.k_270 != null ? parseFloat(item.k_270) : null),
-      delta_k: normalizeRawNumeric(item.delta_k) ?? (item.delta_k != null ? parseFloat(item.delta_k) : null),
-      stigmastadiene: normalizeRawNumeric(item.stigmastadiene) ?? (item.stigmastadiene != null ? parseFloat(item.stigmastadiene) : null)
-    }));
-    const certificateRawMap = buildRawNumericMap(req.body, ['total_quantity', 'total_weight']);
+    const formattedItems = normalizeCertificateItems(items);
+    const certificateRawMap = buildRawNumericMap(req.body, CERTIFICATE_TOTAL_RAW_FIELDS);
 
     // Generate public ID
     const public_id = crypto.randomBytes(4).toString('hex');
@@ -268,6 +326,138 @@ exports.store = async (req, res) => {
   }
 };
 
+exports.getCertificateJson = async (req, res) => {
+  try {
+    const [rows] = await req.db.execute(
+      'SELECT * FROM certificates WHERE id = ? AND deleted_at IS NULL',
+      [req.params.id]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ success: false, message: 'الشهادة غير موجودة' });
+    }
+
+    const certificate = rows[0];
+    const rawMap = parseRawNumericMap(certificate.numeric_raw);
+    let items = [];
+    try {
+      items = JSON.parse(certificate.items || '[]');
+    } catch (_) {
+      items = [];
+    }
+
+    return res.json({
+      success: true,
+      certificate: {
+        ...certificate,
+        total_quantity: rawOrValue(rawMap, 'total_quantity', certificate.total_quantity),
+        total_weight: rawOrValue(rawMap, 'total_weight', certificate.total_weight),
+        items
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching certificate json:', error);
+    return res.status(500).json({ success: false, message: 'حدث خطأ أثناء جلب بيانات الشهادة' });
+  }
+};
+
+exports.update = async (req, res) => {
+  try {
+    await req.db.beginTransaction();
+
+    const [existingRows] = await req.db.execute(
+      'SELECT * FROM certificates WHERE id = ? AND deleted_at IS NULL',
+      [req.params.id]
+    );
+
+    if (!existingRows.length) {
+      await req.db.rollback();
+      return res.status(404).json({ success: false, message: 'الشهادة غير موجودة' });
+    }
+
+    const existing = existingRows[0];
+    const {
+      type,
+      certificate_number,
+      date,
+      customer_name,
+      customer_phone,
+      customer_address,
+      analyst,
+      notes,
+      items = [],
+      total_quantity,
+      total_weight
+    } = req.body;
+
+    const normalizedType = (type === 'internal' || type === 'external') ? type : existing.type;
+    const normalizedDate = normalizeCertificateDate(date, existing.date ? new Date(existing.date).toISOString().slice(0, 10) : null);
+    const targetYear = normalizedDate ? parseInt(normalizedDate.slice(0, 4), 10) : (existing.year || new Date().getFullYear());
+    const certNumber = (certificate_number !== undefined && certificate_number !== null && String(certificate_number).trim() !== '')
+      ? String(certificate_number).trim()
+      : String(existing.certificate_number || '');
+
+    if (!certNumber) {
+      throw new Error('رقم الشهادة مطلوب');
+    }
+
+    const [dupRows] = await req.db.execute(
+      'SELECT id FROM certificates WHERE certificate_number = ? AND year = ? AND id <> ? LIMIT 1',
+      [certNumber, targetYear, req.params.id]
+    );
+    if (dupRows.length > 0) {
+      throw new Error('رقم الشهادة مستخدم بالفعل لهذه السنة');
+    }
+
+    const formattedItems = normalizeCertificateItems(items);
+    const computedTotalQuantity = formattedItems.reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+    const computedTotalWeight = formattedItems.reduce((sum, item) => sum + (parseFloat(item.total_weight) || 0), 0);
+
+    const totalQuantityRaw = normalizeRawNumeric(total_quantity);
+    const totalWeightRaw = normalizeRawNumeric(total_weight);
+    const finalTotalQuantity = totalQuantityRaw !== null ? parseFloat(totalQuantityRaw) : computedTotalQuantity;
+    const finalTotalWeight = totalWeightRaw !== null ? parseFloat(totalWeightRaw) : computedTotalWeight;
+
+    const certificateRawMap = buildRawNumericMap(
+      {
+        total_quantity: totalQuantityRaw !== null ? totalQuantityRaw : String(finalTotalQuantity),
+        total_weight: totalWeightRaw !== null ? totalWeightRaw : String(finalTotalWeight)
+      },
+      CERTIFICATE_TOTAL_RAW_FIELDS
+    );
+
+    await req.db.execute(
+      `UPDATE certificates
+       SET certificate_number = ?, year = ?, type = ?, date = ?, customer_name = ?, customer_phone = ?,
+           customer_address = ?, analyst = ?, notes = ?, items = ?, total_quantity = ?, total_weight = ?, numeric_raw = ?
+       WHERE id = ?`,
+      [
+        certNumber,
+        targetYear,
+        normalizedType,
+        normalizedDate,
+        customer_name || null,
+        customer_phone || null,
+        customer_address || null,
+        analyst || null,
+        notes || null,
+        JSON.stringify(formattedItems),
+        finalTotalQuantity,
+        finalTotalWeight,
+        JSON.stringify(certificateRawMap),
+        req.params.id
+      ]
+    );
+
+    await req.db.commit();
+    return res.json({ success: true, message: 'تم تحديث الشهادة بنجاح' });
+  } catch (error) {
+    await req.db.rollback();
+    console.error('Error updating certificate:', error);
+    return res.status(400).json({ success: false, message: error.message || 'حدث خطأ أثناء تحديث الشهادة' });
+  }
+};
+
 exports.show = async (req, res) => {
   try {
     const [certificates] = await req.db.execute(
@@ -315,6 +505,17 @@ exports.show = async (req, res) => {
       `${process.env.BASE_URL}/certificates/public/${certificate.public_id}`
     );
 
+    const weightedAverages = buildWeightedAverages(totalWeight, {
+      weightedPH,
+      weightedPeroxide,
+      weighted232,
+      weighted266,
+      weighted270,
+      weighted274,
+      weightedDeltaK,
+      weightedStigmastadiene
+    });
+
     res.render('certificates/show', {
       title: `شهادة رقم ${certificate.certificate_number}`,
       certificate,
@@ -329,7 +530,8 @@ exports.show = async (req, res) => {
       weighted270,
       weighted274,
       weightedDeltaK,
-      weightedStigmastadiene
+      weightedStigmastadiene,
+      weightedAverages
     });
   } catch (error) {
     console.error(error);
@@ -387,6 +589,17 @@ exports.showPublic = async (req, res) => {
       `${process.env.BASE_URL}/certificates/public/${certificate.public_id}`
     );
 
+    const weightedAverages = buildWeightedAverages(totalWeight, {
+      weightedPH,
+      weightedPeroxide,
+      weighted232,
+      weighted266,
+      weighted270,
+      weighted274,
+      weightedDeltaK,
+      weightedStigmastadiene
+    });
+
     res.render('certificates/public', {
       title: `شهادة رقم ${certificate.certificate_number}`,
       certificate,
@@ -400,7 +613,8 @@ exports.showPublic = async (req, res) => {
       weighted270,
       weighted274,
       weightedDeltaK,
-      weightedStigmastadiene
+      weightedStigmastadiene,
+      weightedAverages
     });
   } catch (error) {
     console.error(error);
@@ -589,6 +803,17 @@ exports.printCertificate = async (req, res) => {
       `${process.env.BASE_URL}/certificates/public/${certificate.public_id}`
     );
 
+    const weightedAverages = buildWeightedAverages(totalWeight, {
+      weightedPH,
+      weightedPeroxide,
+      weighted232,
+      weighted266,
+      weighted270,
+      weighted274,
+      weightedDeltaK,
+      weightedStigmastadiene
+    });
+
     res.render('certificates/print', {
       title: `طباعة شهادة رقم ${certificate.certificate_number}`,
       certificate,
@@ -602,7 +827,8 @@ exports.printCertificate = async (req, res) => {
       weighted270,
       weighted274,
       weightedDeltaK,
-      weightedStigmastadiene
+      weightedStigmastadiene,
+      weightedAverages
     });
   } catch (error) {
     console.error('Error printing certificate:', error);

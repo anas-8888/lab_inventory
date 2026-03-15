@@ -1375,6 +1375,12 @@ window.selectOrderMaterial = selectOrderMaterial;
 .modal:not(.show) {
     display: none !important;
 }
+
+/* إبقاء رقم الطلبية في سطر واحد داخل جدول الطلبيات */
+#ordersTable th:first-child,
+#ordersTable td.order-number {
+    white-space: nowrap;
+}
 </style> 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

@@ -9,6 +9,12 @@ const INVENTORY_RAW_FIELDS = ['base_quantity', 'current_quantity', 'sample_weigh
 const INVOICE_ITEM_RAW_FIELDS = ['quantity', 'price', 'net_weight', 'ph', 'peroxide_value', 'absorption_232', 'absorption_266', 'absorption_270', 'absorption_274', 'delta_k'];
 const INVOICE_RAW_FIELDS = ['total_amount', 'avg_ph', 'avg_peroxide', 'avg_232', 'avg_270', 'avg_delta_k', 'total_quantity_tanks', 'total_quantity_liters'];
 
+function roundTo3(value) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return 0;
+    return Number(num.toFixed(3));
+}
+
 function applyInventoryRaw(item) {
     if (!item || typeof item !== 'object') return item;
     const rawMap = parseRawNumericMap(item.numeric_raw);
@@ -94,7 +100,7 @@ exports.getInvoices = async (req, res) => {
             });
             
             // تحديث الوزن في الكائن
-            invoice.total_quantity_liters = recalculatedWeight;
+            invoice.total_quantity_liters = roundTo3(recalculatedWeight);
         }
         
         res.render('invoices/index', {
@@ -675,12 +681,12 @@ exports.getEditForm = async (req, res) => {
         let inventory;
         if (currentIds.length > 0) {
             const [inventoryRows] = await pool.query(
-                'SELECT * FROM inventory WHERE deleted_at IS NULL AND id NOT IN (?)',
+                'SELECT * FROM inventory WHERE deleted_at IS NULL AND current_quantity > 0 AND id NOT IN (?)',
                 [currentIds]
             );
             inventory = inventoryRows.map(applyInventoryRaw);
         } else {
-            const [inventoryRows] = await pool.query('SELECT * FROM inventory WHERE deleted_at IS NULL');
+            const [inventoryRows] = await pool.query('SELECT * FROM inventory WHERE deleted_at IS NULL AND current_quantity > 0');
             inventory = inventoryRows.map(applyInventoryRaw);
         }
 
@@ -1086,7 +1092,7 @@ exports.getDeletedInvoices = async (req, res) => {
             });
             
             // تحديث الوزن في الكائن
-            invoice.total_quantity_liters = recalculatedWeight;
+            invoice.total_quantity_liters = roundTo3(recalculatedWeight);
         }
         
         res.render('invoices/deleted', { deletedInvoices, user: req.session.user });

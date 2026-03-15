@@ -1,4 +1,7 @@
-<div class="container mt-4">
+<div
+    class="container mt-4"
+    id="certificatesPageRoot"
+    data-can-manage-certificates="<%= (user && (user.role === 'editor' || user.role === 'admin')) ? 'true' : 'false' %>">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2>الشهادات</h2>
         <% if (user.role === 'editor' || user.role === 'admin') { %>
@@ -50,7 +53,7 @@
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-hover">
-                    <thead>
+                    <thead class="text-center">
                         <tr>
                             <% if (user.role === 'editor' || user.role === 'admin') { %>
                             <th><input type="checkbox" id="selectAllCertificates"></th>
@@ -81,11 +84,24 @@
                                             خارجية
                                         <% } %>
                                     </td>
-                                    <td>
+                                    <td class="text-center">
                                         <div class="btn-group">
                                             <a href="/certificates/<%= certificate.id %>" class="btn btn-sm btn-info me-1" title="معاينة">
                                                 <i class="bi bi-eye-fill"></i>
                                             </a>
+                                            <% if (user.role === 'editor' || user.role === 'admin') { %>
+                                            <button type="button" class="btn btn-sm btn-primary me-1 edit-certificate" data-id="<%= certificate.id %>" title="تعديل">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="btn btn-sm btn-warning delete-certificate"
+                                                data-id="<%= certificate.id %>"
+                                                data-number="<%= certificate.certificate_number %>"
+                                                title="نقل إلى سلة المحذوفات">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                            <% } %>
                                         </div>
                                     </td>
                                 </tr>
@@ -108,22 +124,127 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
-                    <i class="fas fa-exclamation-triangle text-danger me-2"></i>
-                    تأكيد الحذف
+                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                    تأكيد النقل إلى سلة المحذوفات
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                هل أنت متأكد من حذف الشهادة رقم <span id="certificateNumber" class="fw-bold"></span>؟
+                هل أنت متأكد من نقل الشهادة رقم <span id="certificateNumber" class="fw-bold"></span> إلى سلة المحذوفات؟
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="fas fa-times me-1"></i>
                     إلغاء
                 </button>
-                <button type="button" class="btn btn-danger" id="confirmDelete">
-                    <i class="fas fa-trash me-1"></i>
-                    حذف
+                <button type="button" class="btn btn-warning" id="confirmDelete">
+                    <i class="fas fa-archive me-1"></i>
+                    نقل إلى السلة
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Certificate Modal -->
+<div class="modal fade" id="editCertificateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil-square me-2"></i>
+                    تعديل الشهادة
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editCertificateForm">
+                    <input type="hidden" id="editCertificateId">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-3">
+                            <label class="form-label">نوع الشهادة</label>
+                            <select class="form-select" id="editType">
+                                <option value="internal">داخلية</option>
+                                <option value="external">خارجية</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">رقم الشهادة</label>
+                            <input type="text" class="form-control" id="editCertificateNumber">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">التاريخ</label>
+                            <input type="date" class="form-control" id="editCertificateDate">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">اسم العميل</label>
+                            <input type="text" class="form-control" id="editCustomerName">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">رقم الهاتف</label>
+                            <input type="text" class="form-control" id="editCustomerPhone">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">العنوان</label>
+                            <input type="text" class="form-control" id="editCustomerAddress">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">المحلل</label>
+                            <input type="text" class="form-control" id="editAnalyst">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">ملاحظات</label>
+                            <textarea class="form-control" id="editNotes" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">بنود الشهادة</h6>
+                        <button type="button" class="btn btn-outline-success btn-sm" id="addEditItemRowBtn">
+                            <i class="bi bi-plus"></i> إضافة سطر
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm align-middle">
+                            <thead class="text-center">
+                                <tr>
+                                    <th>رقم العينة</th>
+                                    <th>الكمية</th>
+                                    <th>التعبئة</th>
+                                    <th>وزن التعبئة</th>
+                                    <th>الوزن الصافي</th>
+                                    <th>الحموضة</th>
+                                    <th>البيروكسيد</th>
+                                    <th>232</th>
+                                    <th>266</th>
+                                    <th>270</th>
+                                    <th>274</th>
+                                    <th>دلتا K</th>
+                                    <th>ستيغما</th>
+                                    <th>إجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody id="editCertificateItemsBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-6">
+                            <label class="form-label">إجمالي الكمية</label>
+                            <input type="text" inputmode="decimal" class="form-control" id="editTotalQuantity">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">إجمالي الوزن</label>
+                            <input type="text" inputmode="decimal" class="form-control" id="editTotalWeight">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="saveCertificateEditBtn">
+                    <i class="bi bi-save me-1"></i>
+                    حفظ التعديلات
                 </button>
             </div>
         </div>
@@ -177,14 +298,23 @@ document.addEventListener('DOMContentLoaded', function() {
     // Delete certificate functionality
     let certificateToDelete = null;
     const deleteModal = new bootstrap.Modal(document.getElementById('deleteCertificateModal'));
+    const editCertificateModalEl = document.getElementById('editCertificateModal');
+    const editCertificateModal = editCertificateModalEl ? new bootstrap.Modal(editCertificateModalEl) : null;
+    const editItemsBody = document.getElementById('editCertificateItemsBody');
 
     // Handle delete button clicks
     document.querySelector('.table').addEventListener('click', function(e) {
+        const editBtn = e.target.closest('.edit-certificate');
+        if (editBtn) {
+            openEditCertificateModal(editBtn.dataset.id);
+            return;
+        }
+
         const deleteBtn = e.target.closest('.delete-certificate');
         if (!deleteBtn) return;
         
         const certificateId = deleteBtn.dataset.id;
-        const certificateNumber = deleteBtn.closest('tr').querySelector('td:first-child').textContent;
+        const certificateNumber = deleteBtn.dataset.number || '';
         
         certificateToDelete = certificateId;
         document.getElementById('certificateNumber').textContent = certificateNumber;
@@ -217,8 +347,193 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    function normalizeNumericRaw(value) {
+        if (value === undefined || value === null) return null;
+        const str = String(value).trim();
+        return /^-?\d+(\.\d+)?$/.test(str) ? str : null;
+    }
+
+    function formatNumericDisplay(value) {
+        const raw = normalizeNumericRaw(value);
+        if (raw !== null) return raw;
+        const n = Number(value);
+        if (!Number.isFinite(n)) return '';
+        if (n === 0 || Object.is(n, -0)) return '0';
+        const safe = Number(n.toFixed(12));
+        let out = Number.isInteger(safe) ? String(safe) : safe.toString();
+        out = out.replace(/(\.\d*?[1-9])0+$/,'$1').replace(/\.0+$/,'');
+        if (out === '-0') out = '0';
+        return out;
+    }
+
+    function parseDateToInput(value) {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '';
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
+    function buildEditItemRow(item = {}) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><input type="text" class="form-control form-control-sm item-sample-number" value="${item.sample_number || ''}"></td>
+            <td><input type="text" inputmode="decimal" class="form-control form-control-sm item-quantity" value="${formatNumericDisplay(item.quantity)}"></td>
+            <td><input type="text" class="form-control form-control-sm item-packaging-unit" value="${item.packaging_unit || ''}"></td>
+            <td><input type="text" inputmode="decimal" class="form-control form-control-sm item-packaging-weight" value="${formatNumericDisplay(item.packaging_weight)}"></td>
+            <td><input type="text" inputmode="decimal" class="form-control form-control-sm item-total-weight" value="${formatNumericDisplay(item.total_weight)}"></td>
+            <td><input type="text" inputmode="decimal" class="form-control form-control-sm item-ph" value="${formatNumericDisplay(item.ph)}"></td>
+            <td><input type="text" inputmode="decimal" class="form-control form-control-sm item-peroxide" value="${formatNumericDisplay(item.peroxide)}"></td>
+            <td><input type="text" inputmode="decimal" class="form-control form-control-sm item-abs-232" value="${formatNumericDisplay(item.abs_232)}"></td>
+            <td><input type="text" inputmode="decimal" class="form-control form-control-sm item-abs-266" value="${formatNumericDisplay(item.abs_266)}"></td>
+            <td><input type="text" inputmode="decimal" class="form-control form-control-sm item-abs-270" value="${formatNumericDisplay(item.abs_270)}"></td>
+            <td><input type="text" inputmode="decimal" class="form-control form-control-sm item-abs-274" value="${formatNumericDisplay(item.abs_274)}"></td>
+            <td><input type="text" inputmode="decimal" class="form-control form-control-sm item-delta-k" value="${formatNumericDisplay(item.delta_k)}"></td>
+            <td><input type="text" inputmode="decimal" class="form-control form-control-sm item-stigma" value="${formatNumericDisplay(item.stigmastadiene)}"></td>
+            <td><button type="button" class="btn btn-sm btn-danger remove-edit-item-row"><i class="bi bi-trash"></i></button></td>
+        `;
+        return tr;
+    }
+
+    function recalculateEditTotals() {
+        const rows = Array.from(editItemsBody.querySelectorAll('tr'));
+        const sum = (selector) => rows.reduce((acc, row) => {
+            const v = parseFloat(row.querySelector(selector)?.value || '0');
+            return acc + (Number.isFinite(v) ? v : 0);
+        }, 0);
+        document.getElementById('editTotalQuantity').value = formatNumericDisplay(sum('.item-quantity'));
+        document.getElementById('editTotalWeight').value = formatNumericDisplay(sum('.item-total-weight'));
+    }
+
+    async function openEditCertificateModal(id) {
+        try {
+            const response = await fetch(`/certificates/${id}/json`, { headers: { 'Accept': 'application/json' } });
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || 'تعذر جلب بيانات الشهادة');
+            }
+
+            const c = data.certificate || {};
+            document.getElementById('editCertificateId').value = c.id || '';
+            document.getElementById('editType').value = c.type || 'internal';
+            document.getElementById('editCertificateNumber').value = c.certificate_number || '';
+            document.getElementById('editCertificateDate').value = parseDateToInput(c.date);
+            document.getElementById('editCustomerName').value = c.customer_name || '';
+            document.getElementById('editCustomerPhone').value = c.customer_phone || '';
+            document.getElementById('editCustomerAddress').value = c.customer_address || '';
+            document.getElementById('editAnalyst').value = c.analyst || '';
+            document.getElementById('editNotes').value = c.notes || '';
+            document.getElementById('editTotalQuantity').value = formatNumericDisplay(c.total_quantity);
+            document.getElementById('editTotalWeight').value = formatNumericDisplay(c.total_weight);
+
+            editItemsBody.innerHTML = '';
+            const items = Array.isArray(c.items) ? c.items : [];
+            if (items.length) {
+                items.forEach(item => editItemsBody.appendChild(buildEditItemRow(item)));
+            } else {
+                editItemsBody.appendChild(buildEditItemRow({}));
+            }
+            recalculateEditTotals();
+            editCertificateModal.show();
+        } catch (error) {
+            alert(error.message || 'حدث خطأ أثناء فتح التعديل');
+        }
+    }
+
+    const addEditItemRowBtn = document.getElementById('addEditItemRowBtn');
+    if (addEditItemRowBtn) {
+        addEditItemRowBtn.addEventListener('click', () => {
+            editItemsBody.appendChild(buildEditItemRow({}));
+        });
+    }
+
+    if (editItemsBody) {
+        editItemsBody.addEventListener('click', function(e) {
+            const removeBtn = e.target.closest('.remove-edit-item-row');
+            if (!removeBtn) return;
+            const rows = editItemsBody.querySelectorAll('tr');
+            if (rows.length <= 1) {
+                alert('يجب وجود بند واحد على الأقل');
+                return;
+            }
+            removeBtn.closest('tr').remove();
+            recalculateEditTotals();
+        });
+        editItemsBody.addEventListener('input', function(e) {
+            if (e.target && (e.target.classList.contains('item-quantity') || e.target.classList.contains('item-total-weight'))) {
+                recalculateEditTotals();
+            }
+        });
+    }
+
+    const saveCertificateEditBtn = document.getElementById('saveCertificateEditBtn');
+    if (saveCertificateEditBtn) {
+        saveCertificateEditBtn.addEventListener('click', async function() {
+            const id = document.getElementById('editCertificateId').value;
+            if (!id) return;
+
+            const rows = Array.from(editItemsBody.querySelectorAll('tr'));
+            const items = rows.map(row => ({
+                sample_number: row.querySelector('.item-sample-number')?.value?.trim() || null,
+                quantity: normalizeNumericRaw(row.querySelector('.item-quantity')?.value),
+                packaging_unit: row.querySelector('.item-packaging-unit')?.value?.trim() || null,
+                packaging_weight: normalizeNumericRaw(row.querySelector('.item-packaging-weight')?.value),
+                total_weight: normalizeNumericRaw(row.querySelector('.item-total-weight')?.value),
+                ph: normalizeNumericRaw(row.querySelector('.item-ph')?.value),
+                peroxide: normalizeNumericRaw(row.querySelector('.item-peroxide')?.value),
+                abs_232: normalizeNumericRaw(row.querySelector('.item-abs-232')?.value),
+                abs_266: normalizeNumericRaw(row.querySelector('.item-abs-266')?.value),
+                abs_270: normalizeNumericRaw(row.querySelector('.item-abs-270')?.value),
+                abs_274: normalizeNumericRaw(row.querySelector('.item-abs-274')?.value),
+                delta_k: normalizeNumericRaw(row.querySelector('.item-delta-k')?.value),
+                stigmastadiene: normalizeNumericRaw(row.querySelector('.item-stigma')?.value)
+            }));
+
+            const payload = {
+                type: document.getElementById('editType').value,
+                certificate_number: document.getElementById('editCertificateNumber').value.trim(),
+                date: document.getElementById('editCertificateDate').value,
+                customer_name: document.getElementById('editCustomerName').value.trim() || null,
+                customer_phone: document.getElementById('editCustomerPhone').value.trim() || null,
+                customer_address: document.getElementById('editCustomerAddress').value.trim() || null,
+                analyst: document.getElementById('editAnalyst').value.trim() || null,
+                notes: document.getElementById('editNotes').value || null,
+                total_quantity: normalizeNumericRaw(document.getElementById('editTotalQuantity').value),
+                total_weight: normalizeNumericRaw(document.getElementById('editTotalWeight').value),
+                items
+            };
+
+            this.disabled = true;
+            const originalHtml = this.innerHTML;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> جاري الحفظ...';
+            try {
+                const response = await fetch(`/certificates/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                    throw new Error(result.message || 'فشل تحديث الشهادة');
+                }
+                window.location.reload();
+            } catch (error) {
+                alert(error.message || 'حدث خطأ أثناء تحديث الشهادة');
+                this.disabled = false;
+                this.innerHTML = originalHtml;
+            }
+        });
+    }
+
     // Bulk actions functionality
-    <% if (user.role === 'editor' || user.role === 'admin') { %>
+    const certificatesPageRoot = document.getElementById('certificatesPageRoot');
+    const canManageCertificates = certificatesPageRoot?.dataset?.canManageCertificates === 'true';
+    if (canManageCertificates) {
     // Select all functionality
     const selectAllCheckbox = document.getElementById('selectAllCertificates');
     if (selectAllCheckbox) {
@@ -381,7 +696,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize bulk action buttons state
     updateBulkActionButtons();
-    <% } %>
+    }
 });
 
 // Filter today function

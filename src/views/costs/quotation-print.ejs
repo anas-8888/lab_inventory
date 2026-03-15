@@ -33,6 +33,8 @@ function formatDiscountDisplay(value) {
   return `${grouped}.${fracPart}`;
 }
 const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '';
+const isEn = (typeof printLang !== 'undefined' && printLang === 'en');
+const t = (ar, en) => isEn ? en : ar;
 const isFullMode = !!showFullQuotationColumns;
 const quotationTableColumnCount = isFullMode ? 11 : 9;
 const quotationTotalLabelColspan = isFullMode ? 9 : 7;
@@ -46,9 +48,13 @@ const discountValue = (typeof discountAmount !== 'undefined' && discountAmount !
 const hasDiscount = discountValue > 0;
 %>
 
-<div class="container-fluid" style="direction: rtl; font-family: 'Cairo','Amiri',sans-serif;">
+<% if (isEn) { %>
+<div class="container-fluid lang-en" style="font-family: 'Cairo','Amiri',sans-serif;">
+<% } else { %>
+<div class="container-fluid" style="font-family: 'Cairo','Amiri',sans-serif;">
+<% } %>
   <!-- Header -->
-  <table style="width: 100%; border-collapse: collapse; margin-top: 4px;">
+  <table style="width: 100%; border-collapse: collapse; margin-top: 4px; direction: rtl;">
     <tr>
       <td style="text-align: right; font-weight: bold; line-height: 1.2; width: 37%; font-size: 9pt;">
         <div>مؤسسة عجاج أخوان التجارية</div>
@@ -71,36 +77,36 @@ const hasDiscount = discountValue > 0;
 
   <!-- Title -->
   <div style="text-align:center; margin: 6px 0;">
-    <div style="font-size: 11pt; font-weight: 700;">عرض سعر رقم (<%= quotation.quotation_number %>)</div>
+    <div style="font-size: 11pt; font-weight: 700;"><%= t('عرض سعر رقم', 'Quotation No.') %> (<%= quotation.quotation_number %>)</div>
   </div>
 
   <!-- Customer/Quotation Info -->
   <div class="info-grid">
     <div class="box-compact">
-      <h6 class="section-title">بيانات العميل</h6>
+      <h6 class="section-title"><%= t('بيانات العميل', 'Customer Info') %></h6>
       <div class="grid-kv">
-        <div class="kv"><span>الاسم:</span><span><%= quotation.client_name ? ('السيد/ة ' + quotation.client_name + ' المحترم/ة') : '-' %></span></div>
-        <% if (quotation.client_phone) { %><div class="kv"><span>الهاتف:</span><span><%= quotation.client_phone %></span></div><% } %>
-        <% if (quotation.client_address) { %><div class="kv full"><span>العنوان:</span><span><%= quotation.client_address %></span></div><% } %>
-        <% if (quotation.sale_description) { %><div class="kv"><span>صفة البيع:</span><span><%= quotation.sale_description %></span></div><% } %>
-        <% if (quotation.payment_method) { %><div class="kv"><span>طريقة الدفع:</span><span><%= quotation.payment_method %></span></div><% } %>
+        <div class="kv"><span><%= t('الاسم:', 'Name:') %></span><span><%= quotation.client_name || '-' %></span></div>
+        <% if (quotation.client_phone) { %><div class="kv"><span><%= t('الهاتف:', 'Phone:') %></span><span><%= quotation.client_phone %></span></div><% } %>
+        <% if (quotation.client_address) { %><div class="kv full"><span><%= t('العنوان:', 'Address:') %></span><span><%= quotation.client_address %></span></div><% } %>
+        <% if (quotation.sale_description) { %><div class="kv"><span><%= t('صفة البيع:', 'Sale Type:') %></span><span><%= quotation.sale_description %></span></div><% } %>
+        <% if (quotation.payment_method) { %><div class="kv"><span><%= t('طريقة الدفع:', 'Payment Method:') %></span><span><%= quotation.payment_method %></span></div><% } %>
       </div>
     </div>
     <div class="box-compact">
-      <h6 class="section-title">بيانات العرض</h6>
+      <h6 class="section-title"><%= t('بيانات العرض', 'Quotation Info') %></h6>
       <div class="grid-kv">
-        <div class="kv"><span>التاريخ:</span><span><%= fmtDate(quotation.created_at) %></span></div>
-        <div class="kv"><span>عدد المواد:</span><span><%= (items||[]).length %></span></div>
-          <div class="kv"><span>إجمالي السعر:</span><span class="money-inline"><%= `${formatTotalDisplay(totalBeforeDiscount)} ${currencySymbol}` %></span></div>
+        <div class="kv"><span><%= t('التاريخ:', 'Date:') %></span><span><%= fmtDate(quotation.created_at) %></span></div>
+        <div class="kv"><span><%= t('عدد المواد:', 'Items Count:') %></span><span><%= (items||[]).length %></span></div>
+          <div class="kv"><span><%= t('إجمالي السعر:', 'Total Amount:') %></span><span class="money-inline"><%= `${formatTotalDisplay(totalBeforeDiscount)} ${currencySymbol}` %></span></div>
         <% if (hasDiscount) { %>
-          <div class="kv"><span>الخصم:</span><span class="money-inline"><%= `- ${formatDiscountDisplay(discountValue)} ${currencySymbol}` %></span></div>
-          <div class="kv"><span>الإجمالي بعد الخصم:</span><span class="money-inline"><%= `${formatDiscountDisplay(totalAfterDiscount)} ${currencySymbol}` %></span></div>
+          <div class="kv"><span><%= t('الخصم:', 'Discount:') %></span><span class="money-inline"><%= `- ${formatDiscountDisplay(discountValue)} ${currencySymbol}` %></span></div>
+          <div class="kv"><span><%= t('الإجمالي بعد الخصم:', 'Total After Discount:') %></span><span class="money-inline"><%= `${formatDiscountDisplay(totalAfterDiscount)} ${currencySymbol}` %></span></div>
         <% } %>
       </div>
     </div>
     <% if (quotation.notes) { %>
       <div class="box-compact">
-        <h6 class="section-title">ملاحظات</h6>
+        <h6 class="section-title"><%= t('ملاحظات', 'Notes') %></h6>
         <div class="notes"><%= quotation.notes %></div>
       </div>
     <% } %>
@@ -112,18 +118,18 @@ const hasDiscount = discountValue > 0;
       <thead>
         <tr>
           <th style="width: 4%; padding: 2pt 2pt;">#</th>
-          <th style="width: 26%; padding: 2pt 2pt;">الصنف</th>
-          <th style="width: 10%; padding: 2pt 2pt;">التعبئة</th>
-          <th style="width: 10%; padding: 2pt 2pt;">حجم العبوة</th>
-          <th style="width: 10%; padding: 2pt 2pt;">شد الكرتون</th>
+          <th style="width: 26%; padding: 2pt 2pt;"><%= t('الصنف', 'Item') %></th>
+          <th style="width: 10%; padding: 2pt 2pt;"><%= t('التعبئة', 'Packaging') %></th>
+          <th style="width: 10%; padding: 2pt 2pt;"><%= t('حجم العبوة', 'Pack Weight') %></th>
+          <th style="width: 10%; padding: 2pt 2pt;"><%= t('شد الكرتون', 'Pieces/Pack') %></th>
           <% if (isFullMode) { %>
-          <th style="width: 12%; padding: 2pt 2pt;">كلفة الطرد</th>
-          <th style="width: 8%; padding: 2pt 2pt;">نسبة الربح</th>
+          <th style="width: 12%; padding: 2pt 2pt;"><%= t('كلفة الطرد', 'Package Cost') %></th>
+          <th style="width: 8%; padding: 2pt 2pt;"><%= t('نسبة الربح', 'Profit %') %></th>
           <% } %>
-          <th style="width: 12%; padding: 2pt 2pt;">السعر</th>
-          <th style="width: 8%; padding: 2pt 2pt;">الكمية</th>
-          <th style="width: 14%; padding: 2pt 2pt;">المجموع</th>
-          <th style="width: 6%; padding: 2pt 2pt;">ملاحظات</th>
+          <th style="width: 12%; padding: 2pt 2pt;"><%= t('السعر', 'Price') %></th>
+          <th style="width: 8%; padding: 2pt 2pt;"><%= t('الكمية', 'Quantity') %></th>
+          <th style="width: 14%; padding: 2pt 2pt;"><%= t('المجموع', 'Total') %></th>
+          <th style="width: 6%; padding: 2pt 2pt;"><%= t('ملاحظات', 'Notes') %></th>
         </tr>
       </thead>
       <tbody>
@@ -155,7 +161,11 @@ const hasDiscount = discountValue > 0;
           <tr>
             <td style="padding: 2pt 2pt;"><%= row.rowNumber %></td>
             <% if (row.isFirstInGroup) { %>
+            <% if (isEn) { %>
+            <td style="padding: 2pt 2pt; text-align: left; line-height: 1.15;" rowspan="<%= row.groupLength %>">
+            <% } else { %>
             <td style="padding: 2pt 2pt; text-align: right; line-height: 1.15;" rowspan="<%= row.groupLength %>">
+            <% } %>
               <div><%= item.material_name || '-' %></div>
             </td>
             <% } %>
@@ -174,18 +184,18 @@ const hasDiscount = discountValue > 0;
         <% }) %>
         <% if ((groupedQuotationPrintRows||[]).length <= rowsOnFirstPage) { %>
           <tr class="total-row">
-            <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;">الإجمالي</td>
+            <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;"><%= t('الإجمالي', 'Total') %></td>
             <td style="font-weight:700;"><span class="money-inline"><%= `${formatTotalDisplay(totalBeforeDiscount)} ${currencySymbol}` %></span></td>
             <td></td>
           </tr>
           <% if (hasDiscount) { %>
           <tr class="total-row">
-            <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;">الخصم</td>
+            <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;"><%= t('الخصم', 'Discount') %></td>
             <td style="font-weight:700;"><span class="money-inline"><%= `- ${formatDiscountDisplay(discountValue)} ${currencySymbol}` %></span></td>
             <td></td>
           </tr>
           <tr class="total-row">
-            <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;">الإجمالي بعد الخصم</td>
+            <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;"><%= t('الإجمالي بعد الخصم', 'Total After Discount') %></td>
             <td style="font-weight:700;"><span class="money-inline"><%= `${formatDiscountDisplay(totalAfterDiscount)} ${currencySymbol}` %></span></td>
             <td></td>
           </tr>
@@ -197,18 +207,18 @@ const hasDiscount = discountValue > 0;
             <tr class="page-break"><td colspan="<%= quotationTableColumnCount %>"></td></tr>
           <% } %>
           <tr class="total-row">
-            <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;">الإجمالي</td>
+            <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;"><%= t('الإجمالي', 'Total') %></td>
             <td style="font-weight:700;"><span class="money-inline"><%= `${formatTotalDisplay(totalBeforeDiscount)} ${currencySymbol}` %></span></td>
             <td></td>
           </tr>
           <% if (hasDiscount) { %>
           <tr class="total-row">
-            <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;">الخصم</td>
+            <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;"><%= t('الخصم', 'Discount') %></td>
             <td style="font-weight:700;"><span class="money-inline"><%= `- ${formatDiscountDisplay(discountValue)} ${currencySymbol}` %></span></td>
             <td></td>
           </tr>
           <tr class="total-row">
-            <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;">الإجمالي بعد الخصم</td>
+            <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;"><%= t('الإجمالي بعد الخصم', 'Total After Discount') %></td>
             <td style="font-weight:700;"><span class="money-inline"><%= `${formatDiscountDisplay(totalAfterDiscount)} ${currencySymbol}` %></span></td>
             <td></td>
           </tr>
@@ -222,9 +232,15 @@ const hasDiscount = discountValue > 0;
   <!-- Footer -->
   <div class="print-footer" id="fixed-print-footer" style="text-align:center; font-size: 8.5pt; margin-top: 6px;">
     <hr style="margin: 4px 0; border: 0.5px solid #bbb;">
-    سوريا، حماة، أوتستراد دمشق-حلب الدولي، س.ت 10369 – س.ص 10<br>
-    0940500511 – 0988111127 | ajajbrothers@gmail.com<br>
-    جميع الحقوق محفوظة © <%= new Date().getFullYear() %> نظام إدارة المختبر | تم التطوير بواسطة شركة NEXA GROUP
+    <% if (isEn) { %>
+      Syria, Hama, Damascus-Aleppo International Highway, C.R. 10369 - P.O. Box 10<br>
+      0940500511 - 0988111127 | ajajbrothers@gmail.com<br>
+      All rights reserved © <%= new Date().getFullYear() %> Laboratory Management System | Developed by NEXA GROUP
+    <% } else { %>
+      سوريا، حماة، أوتستراد دمشق-حلب الدولي، س.ت 10369 – س.ص 10<br>
+      0940500511 – 0988111127 | ajajbrothers@gmail.com<br>
+      جميع الحقوق محفوظة © <%= new Date().getFullYear() %> نظام إدارة المختبر | تم التطوير بواسطة شركة NEXA GROUP
+    <% } %>
   </div>
 </div>
 
@@ -259,6 +275,8 @@ const hasDiscount = discountValue > 0;
   .kv span:first-child { color: #333; font-weight: 600; margin-left: 6px; }
   .kv span:last-child { white-space: normal; word-break: break-word; }
   .notes { white-space: pre-wrap; line-height: 1.3; font-size: 9pt; }
+  .container-fluid.lang-en { direction: ltr; text-align: left; }
+  .container-fluid.lang-en .kv span:first-child { margin-left: 0; margin-right: 6px; }
   .money-inline { white-space: nowrap; display: inline-block; }
   .container-fluid { padding-bottom: 120px; }
   .print-footer { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; }

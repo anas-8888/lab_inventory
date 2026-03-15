@@ -33,6 +33,10 @@ router.post('/',
     certificatesController.store
 );
 
+// بيانات شهادة للتعديل + حفظ التعديل
+router.get('/:id/json', isAuthenticated, isEditor, certificatesController.getCertificateJson);
+router.put('/:id', isAuthenticated, isEditor, express.json(), certificatesController.update);
+
 // مسارات حفظ وتحديث الشهادات
 router.post('/:id/status', isAuthenticated, isEditor, async (req, res) => {
     try {

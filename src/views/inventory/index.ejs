@@ -88,7 +88,7 @@ function formatNumberDisplay(value) {
         <a href="/inventory/deleted" class="btn btn-sm btn-primary me-2">
           <i class="fas fa-trash"></i> سلة المحذوفات
         </a>
-        <button type="button" class="btn btn-sm btn-success" id="exportPdfBtn">
+        <button type="button" class="btn btn-sm btn-success d-none" id="exportPdfBtn">
           <i class="fas fa-file-pdf"></i> تصدير PDF
         </button>
       </div>
@@ -552,6 +552,7 @@ function formatNumberDisplay(value) {
     .table th {
       background-color: #f2f2f2 !important;
       -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
       font-weight: bold;
     }
 
@@ -754,7 +755,6 @@ function formatNumberDisplay(value) {
     }
   }
   
-  @media print {
 </style>
 
 <script>
@@ -819,41 +819,44 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Handle select all checkboxes for each page
-    const totalPages = <%= Math.ceil((inventory && inventory.length ? inventory.length : 0) / 30) %>;
-    for (let page = 0; page < totalPages; page++) {
-        const selectAllCheckbox = document.getElementById(`selectAll${page}`);
-        if (selectAllCheckbox) {
-            selectAllCheckbox.addEventListener('change', function() {
-                const pageContainer = this.closest('.table-responsive');
-                const checkboxes = pageContainer.querySelectorAll('.item-checkbox');
-                checkboxes.forEach(checkbox => {
-                    checkbox.checked = this.checked;
-                });
-                updateCreateInvoiceButton();
-            });
-        }
+    // Handle global select all checkboxes (across all paged tables)
+    const selectAllCheckboxes = document.querySelectorAll('[id^="selectAll"]');
+    const allItemCheckboxes = document.querySelectorAll('.item-checkbox');
+
+    function syncGlobalSelectAllState() {
+        const allChecked = allItemCheckboxes.length > 0 && Array.from(allItemCheckboxes).every(cb => cb.checked);
+        const someChecked = Array.from(allItemCheckboxes).some(cb => cb.checked);
+        selectAllCheckboxes.forEach((selectAllCheckbox) => {
+            selectAllCheckbox.checked = allChecked;
+            selectAllCheckbox.indeterminate = someChecked && !allChecked;
+        });
     }
+
+    selectAllCheckboxes.forEach((selectAllCheckbox) => {
+        selectAllCheckbox.addEventListener('change', function() {
+            allItemCheckboxes.forEach((checkbox) => {
+                checkbox.checked = this.checked;
+            });
+            // Keep all page-level "select all" checkboxes visually synchronized
+            selectAllCheckboxes.forEach((cb) => {
+                cb.checked = this.checked;
+                cb.indeterminate = false;
+            });
+            updateCreateInvoiceButton();
+        });
+    });
 
     // Handle individual checkboxes
     const checkboxes = document.querySelectorAll('.item-checkbox');
     checkboxes.forEach(checkbox => {
         checkbox.addEventListener('change', function() {
             updateCreateInvoiceButton();
-            
-            // Update the select all checkbox state
-            const pageContainer = this.closest('.table-responsive');
-            const pageCheckboxes = pageContainer.querySelectorAll('.item-checkbox');
-            const selectAllCheckbox = pageContainer.querySelector('[id^="selectAll"]');
-            
-            if (selectAllCheckbox) {
-                const allChecked = Array.from(pageCheckboxes).every(cb => cb.checked);
-                const someChecked = Array.from(pageCheckboxes).some(cb => cb.checked);
-                selectAllCheckbox.checked = allChecked;
-                selectAllCheckbox.indeterminate = someChecked && !allChecked;
-            }
+            syncGlobalSelectAllState();
         });
     });
+
+    // Set initial state for all "select all" checkboxes
+    syncGlobalSelectAllState();
 
     // Handle bulk delete button click
     const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
@@ -1310,13 +1313,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const copyBtn = document.getElementById('copyPdfLinkBtn');
     const whatsappBtn = document.getElementById('whatsappShareBtn');
 
+    function getAllSelectedInventoryIds() {
+        const checkedBoxes = document.querySelectorAll('input.item-checkbox:checked');
+        const uniqueIds = new Set();
+        checkedBoxes.forEach((cb) => {
+            const id = parseInt(String(cb.dataset.id || '').trim(), 10);
+            if (Number.isFinite(id) && id > 0) uniqueIds.add(String(id));
+        });
+        return Array.from(uniqueIds);
+    }
+
     exportBtn?.addEventListener('click', async function() {
+        const selectedIds = getAllSelectedInventoryIds();
+        if (!selectedIds.length) {
+            alert('يرجى تحديد عينات للتصدير');
+            return;
+        }
+
         exportBtn.disabled = true;
         exportBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري التصدير...';
         try {
-            // اجمع الفلاتر الحالية من النموذج
-            const form = document.getElementById('filterForm');
-            const params = new URLSearchParams(new FormData(form)).toString();
+            const params = new URLSearchParams();
+            selectedIds.forEach((id) => params.append('ids', id));
             const res = await fetch(`/inventory/export/pdf?${params}`);
             const data = await res.json();
             if (data.success && data.url) {
@@ -1398,6 +1416,7 @@ function updateCreateInvoiceButton() {
     const createInvoiceBtn = document.getElementById('createInvoiceBtn');
     const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
     const trashSelectedBtn = document.getElementById('trashSelectedBtn');
+    const exportPdfBtn = document.getElementById('exportPdfBtn');
     
     if (createInvoiceBtn) {
         if (checkedBoxes.length > 0) {
@@ -1432,6 +1451,16 @@ function updateCreateInvoiceButton() {
             trashSelectedBtn.disabled = true;
             trashSelectedBtn.classList.remove('btn-danger');
             trashSelectedBtn.classList.add('btn-outline-danger');
+        }
+    }
+
+    if (exportPdfBtn) {
+        if (checkedBoxes.length > 0) {
+            exportPdfBtn.classList.remove('d-none');
+            exportPdfBtn.disabled = false;
+        } else {
+            exportPdfBtn.classList.add('d-none');
+            exportPdfBtn.disabled = true;
         }
     }
 }

@@ -174,14 +174,14 @@ function formatNumberDisplay(value) {
 </div>
 
 <!-- Sample Selection Modal -->
-<div class="modal fade" id="selectSampleModal" tabindex="-1">
+<div class="modal fade sample-select-modal-fixed" id="selectSampleModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">اختيار عينة من المخزون</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body sample-select-modal-body">
         <!-- Search Box -->
         <div class="search-container mb-3">
           <div class="input-group">
@@ -243,6 +243,24 @@ function formatNumberDisplay(value) {
 </div>
 
 <style>
+.sample-select-modal-fixed .modal-content {
+  height: 82vh;
+  max-height: 82vh;
+}
+
+.sample-select-modal-fixed .sample-select-modal-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sample-select-modal-fixed .modal-table-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+}
+
 .required:after {
   content: " *";
   color: red;
@@ -375,6 +393,11 @@ function formatNumberDisplay(value) {
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
+  .sample-select-modal-fixed .modal-content {
+    height: 88vh;
+    max-height: 88vh;
+  }
+
   .modal-table-container {
     max-height: 300px;
   }

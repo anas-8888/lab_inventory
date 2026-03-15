@@ -107,7 +107,7 @@
 </div>
 
 <!-- Inventory Selection Modal -->
-<div class="modal fade" id="inventoryModal" tabindex="-1">
+<div class="modal fade inventory-modal-fixed" id="inventoryModal" tabindex="-1">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
       <div class="modal-header">
@@ -117,7 +117,7 @@
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body inventory-modal-body">
         <!-- Filters -->
         <div class="row mb-3">
           <div class="col-md-6">
@@ -131,7 +131,7 @@
         </div>
 
         <!-- Inventory Table -->
-        <div class="table-responsive">
+        <div class="table-responsive inventory-modal-scroll">
           <table class="table table-hover" id="inventoryTable">
             <thead>
               <tr>
@@ -520,6 +520,23 @@ document.getElementById('invoice_date').addEventListener('change', function() {
 </script>
 
 <style>
+.inventory-modal-fixed .modal-content {
+  height: 82vh;
+  max-height: 82vh;
+}
+
+.inventory-modal-fixed .inventory-modal-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.inventory-modal-fixed .inventory-modal-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
 .required:after {
   content: " *";
   color: red;
@@ -531,5 +548,12 @@ document.getElementById('invoice_date').addEventListener('change', function() {
 
 #selectedItems .quantity-input {
   width: 80px;
+}
+
+@media (max-width: 768px) {
+  .inventory-modal-fixed .modal-content {
+    height: 88vh;
+    max-height: 88vh;
+  }
 }
 </style> 

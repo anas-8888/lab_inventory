@@ -50,10 +50,10 @@
                                     <td>
                                         <div class="btn-group">
                                             <button type="button" class="btn btn-sm btn-success restore-certificate" data-id="<%= certificate.id %>" title="استعادة">
-                                                <i class="fas fa-undo"></i>
+                                                <i class="bi bi-arrow-counterclockwise"></i>
                                             </button>
                                             <a href="/certificates/<%= certificate.id %>" class="btn btn-sm btn-info" title="معاينة">
-                                                <i class="fas fa-eye"></i>
+                                                <i class="bi bi-eye-fill"></i>
                                             </a>
                                         </div>
                                     </td>
@@ -194,7 +194,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Re-enable button
                 this.disabled = false;
-                this.innerHTML = '<i class="fas fa-undo me-1"></i> استعادة المحدد';
+                this.innerHTML = '<i class="bi bi-arrow-counterclockwise me-1"></i> استعادة المحدد';
             });
         });
     }

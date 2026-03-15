@@ -15,6 +15,41 @@ const roundToDecimal = (value, decimals = 2) => {
     return result;
 };
 
+const ARABIC_TEXT_REGEX = /[\u0600-\u06FF]/;
+const translationCache = new Map();
+
+const translateArabicToEnglish = async (value) => {
+    const text = (value === null || value === undefined) ? '' : String(value).trim();
+    if (!text || !ARABIC_TEXT_REGEX.test(text)) return value;
+    if (translationCache.has(text)) return translationCache.get(text);
+
+    try {
+        const endpoint = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ar&tl=en&dt=t&q=${encodeURIComponent(text)}`;
+        const response = await fetch(endpoint, { method: 'GET' });
+        if (!response.ok) throw new Error(`Translate HTTP ${response.status}`);
+        const data = await response.json();
+        const translated = Array.isArray(data?.[0])
+            ? data[0].map((chunk) => (Array.isArray(chunk) ? (chunk[0] || '') : '')).join('')
+            : text;
+        const safeResult = translated && translated.trim() ? translated.trim() : text;
+        translationCache.set(text, safeResult);
+        return safeResult;
+    } catch (_) {
+        translationCache.set(text, text);
+        return text;
+    }
+};
+
+const translateObjectFieldsToEnglish = async (obj, fields) => {
+    if (!obj || typeof obj !== 'object') return obj;
+    for (const field of fields) {
+        if (Object.prototype.hasOwnProperty.call(obj, field) && obj[field] !== null && obj[field] !== undefined && obj[field] !== '') {
+            obj[field] = await translateArabicToEnglish(obj[field]);
+        }
+    }
+    return obj;
+};
+
 const normalizeAuxiliaryCostsByBasis = ({
     basis,
     usd,
@@ -1419,6 +1454,7 @@ const getQuotationDetails = async (req, res) => {
 const getQuotationPrintPage = async (req, res) => {
     try {
         const { id } = req.params;
+        const printLang = String(req.query.lang || 'ar').toLowerCase() === 'en' ? 'en' : 'ar';
         const printMode = req.query.mode === 'full' ? 'full' : 'normal';
         const showFullQuotationColumns = printMode === 'full';
         const requestedDiscountedTotal = parseFloat(req.query.discounted_total);
@@ -1468,6 +1504,17 @@ const getQuotationPrintPage = async (req, res) => {
             : grandTotal;
         const discountAmount = Math.max(0, grandTotal - discountedTotal);
 
+        if (printLang === 'en') {
+            await translateObjectFieldsToEnglish(quotation, [
+                'client_name', 'client_address', 'notes', 'sale_description', 'payment_method'
+            ]);
+            for (const item of displayItems) {
+                await translateObjectFieldsToEnglish(item, [
+                    'material_name', 'material_type', 'packaging_unit', 'item_notes'
+                ]);
+            }
+        }
+
         res.render('costs/quotation-print', {
             title: `طباعة عرض السعر ${quotation.quotation_number}`,
             quotation,
@@ -1477,6 +1524,7 @@ const getQuotationPrintPage = async (req, res) => {
             discountAmount,
             printMode,
             showFullQuotationColumns,
+            printLang,
             defaultCurrency: req.defaultCurrency || null,
             layout: false
         });
@@ -1495,12 +1543,13 @@ const exportQuotationPDF = async (req, res) => {
     const { v4: uuidv4 } = require('uuid');
     try {
         const { id } = req.params;
+        const printLang = String(req.query.lang || 'ar').toLowerCase() === 'en' ? 'en' : 'ar';
         const printMode = req.query.mode === 'full' ? 'full' : 'normal';
         const requestedDiscountedTotal = parseFloat(req.query.discounted_total);
         const discountedTotalQuery = Number.isFinite(requestedDiscountedTotal)
             ? `&discounted_total=${encodeURIComponent(requestedDiscountedTotal)}`
             : '';
-        const url = `${process.env.BASE_URL}/costs/quotations/${id}/print-pdf-raw?mode=${printMode}${discountedTotalQuery}`;
+        const url = `${process.env.BASE_URL}/costs/quotations/${id}/print-pdf-raw?mode=${printMode}&lang=${encodeURIComponent(printLang)}${discountedTotalQuery}`;
         const options = { format: 'A4' };
         const file = { url };
         const fileName = `${uuidv4()}.pdf`;
@@ -1520,6 +1569,7 @@ const exportQuotationPDF = async (req, res) => {
 const getQuotationPrintRaw = async (req, res) => {
     try {
         const { id } = req.params;
+        const printLang = String(req.query.lang || 'ar').toLowerCase() === 'en' ? 'en' : 'ar';
         const printMode = req.query.mode === 'full' ? 'full' : 'normal';
         const showFullQuotationColumns = printMode === 'full';
         const requestedDiscountedTotal = parseFloat(req.query.discounted_total);
@@ -1568,6 +1618,17 @@ const getQuotationPrintRaw = async (req, res) => {
             : grandTotal;
         const discountAmount = Math.max(0, grandTotal - discountedTotal);
 
+        if (printLang === 'en') {
+            await translateObjectFieldsToEnglish(quotation, [
+                'client_name', 'client_address', 'notes', 'sale_description', 'payment_method'
+            ]);
+            for (const item of displayItems) {
+                await translateObjectFieldsToEnglish(item, [
+                    'material_name', 'material_type', 'packaging_unit', 'item_notes'
+                ]);
+            }
+        }
+
         res.render('costs/quotation-print', {
             title: `طباعة عرض السعر ${quotation.quotation_number}`,
             quotation,
@@ -1577,6 +1638,7 @@ const getQuotationPrintRaw = async (req, res) => {
             discountAmount,
             printMode,
             showFullQuotationColumns,
+            printLang,
             defaultCurrency: req.defaultCurrency || null,
             layout: false
         });
@@ -2491,6 +2553,7 @@ const getOrderPrintPage = async (req, res) => {
     try {
         const { id } = req.params;
         const { type } = req.query; // invoice أو order (افتراضي)
+        const printLang = String(req.query.lang || 'ar').toLowerCase() === 'en' ? 'en' : 'ar';
         const requestedDiscountedTotal = parseFloat(req.query.discounted_total);
         
         const [orders] = await req.db.query('SELECT * FROM orders WHERE id = ?', [id]);
@@ -2560,6 +2623,19 @@ const getOrderPrintPage = async (req, res) => {
             : totals.grandTotal;
         const discountAmount = Math.max(0, totals.grandTotal - discountedTotal);
 
+        if (printLang === 'en') {
+            await translateObjectFieldsToEnglish(displayOrder, [
+                'client_name',
+                'client_address',
+                'notes',
+                'responsible_worker',
+                'quality_controller'
+            ]);
+            for (const item of pricedItems) {
+                await translateObjectFieldsToEnglish(item, ['material_name', 'unit', 'notes']);
+            }
+        }
+
         res.render('costs/order-print', {
             title: type === 'invoice' ? `طلبية شحن ${orders[0].order_number}` : `طباعة طلبية ${orders[0].order_number}`,
             order: displayOrder,
@@ -2567,6 +2643,7 @@ const getOrderPrintPage = async (req, res) => {
             totals,
             discountedTotal,
             discountAmount,
+            printLang,
             defaultCurrency: req.defaultCurrency || null,
             printType: type || 'order', // order أو invoice
             layout: false
@@ -2587,9 +2664,11 @@ const exportOrderPDF = async (req, res) => {
     try {
         const { id } = req.params;
         const { type } = req.query; // invoice أو order (افتراضي)
+        const printLang = String(req.query.lang || 'ar').toLowerCase() === 'en' ? 'en' : 'ar';
         const requestedDiscountedTotal = parseFloat(req.query.discounted_total);
         const queryParts = [];
         if (type) queryParts.push(`type=${encodeURIComponent(type)}`);
+        queryParts.push(`lang=${encodeURIComponent(printLang)}`);
         if (Number.isFinite(requestedDiscountedTotal)) queryParts.push(`discounted_total=${encodeURIComponent(requestedDiscountedTotal)}`);
         const queryString = queryParts.length ? `?${queryParts.join('&')}` : '';
         const url = `${process.env.BASE_URL}/costs/orders/${id}/print-pdf-raw${queryString}`;
