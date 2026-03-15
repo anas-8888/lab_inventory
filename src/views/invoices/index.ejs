@@ -1,29 +1,15 @@
-<%
+﻿<%
 function formatNumberDisplay(value) {
-    if (value === null || value === undefined || value === '') return '-';
-    if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
-
-    const num = parseFloat(value);
-    if (isNaN(num)) return '-';
-
-    if (num === 0) return '0';
-
-    let precision = 3;
-    const absNum = Math.abs(num);
-    if (absNum > 0 && absNum < 1) precision = 6;
-
-    let rounded = Number(num.toFixed(precision));
-    if (rounded === 0 && num !== 0) {
-        rounded = Number(num.toFixed(8));
-    }
-
-    const result = rounded.toString();
-
-    if (num < 0) {
-        return '\u200E' + result;
-    }
-
-    return result;
+  if (value === null || value === undefined || value === '') return '-';
+  if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
+  const num = (typeof value === 'number') ? value : parseFloat(value);
+  if (!Number.isFinite(num)) return '-';
+  if (num === 0 || Object.is(num, -0)) return '0';
+  const safe = Number(num.toFixed(12));
+  let out = Number.isInteger(safe) ? String(safe) : safe.toString();
+  out = out.replace(/(\.\d*?[1-9])0+$/,'$1').replace(/\.0+$/,'');
+  if (out === '-0') out = '0';
+  return safe < 0 ? ('\u200E' + out) : out;
 }
 %>
 <div class="container mt-4">
@@ -204,15 +190,17 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Set the initial date value in Flatpickr if a filter date exists
-    <% if (locals && locals.filters && locals.filters.date) { %>
+    const initialDateInput = document.querySelector('input[name="date"]');
+    const initialFilterDate = ((initialDateInput && initialDateInput.value) ? initialDateInput.value : '').trim();
+    if (initialFilterDate) {
         try {
-            const [year, month, day] = '<%= locals.filters.date %>'.split('-').map(Number);
+            const [year, month, day] = initialFilterDate.split('-').map(Number);
             const initialDate = new Date(year, month - 1, day);
             datepickerInput.setDate(initialDate, true);
         } catch (e) {
             console.error("Error setting Flatpickr date:", e);
         }
-    <% } %>
+    }
 
     // Initialize filter today button
     const filterTodayBtn = document.getElementById('filterTodayBtn');
@@ -473,3 +461,5 @@ function showAlert(message, type) {
     .container { max-width: 100% !important; }
 }
 </style> 
+
+

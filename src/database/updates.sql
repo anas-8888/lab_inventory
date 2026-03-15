@@ -315,3 +315,10 @@ WHERE numeric_raw IS NULL
 INSERT INTO roles (id, name)
 VALUES (5, 'shipping_manager')
 ON DUPLICATE KEY UPDATE name = VALUES(name);
+
+-- دعم سلة المحذوفات لجدول المواد
+ALTER TABLE materials
+  ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER updated_at;
+
+ALTER TABLE materials
+  ADD INDEX IF NOT EXISTS idx_materials_deleted_at (deleted_at);

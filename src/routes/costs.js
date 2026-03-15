@@ -11,6 +11,13 @@ router.get('/cost-statement', isAuthenticated, isAdmin, costsController.getCostS
 // مسارات عامة وثابتة يجب أن تسبق المسارات الديناميكية
 router.get('/cost-statement/print-list', costsController.getMaterialsListPrintPage);
 router.get('/cost-statement/print-list-pdf-raw', costsController.getMaterialsListPrintPage);
+router.get('/cost-statement/deleted', isAuthenticated, isAdmin, costsController.getDeletedMaterials);
+router.post('/cost-statement/trash-multiple', isAuthenticated, isAdmin, costsController.trashMaterialsMultiple);
+router.post('/cost-statement/restore-multiple', isAuthenticated, isAdmin, costsController.restoreMaterialsMultiple);
+router.post('/cost-statement/empty-trash', isAuthenticated, isAdmin, costsController.emptyMaterialsTrash);
+router.delete('/cost-statement/delete-multiple', isAuthenticated, isAdmin, costsController.deleteMaterialsMultiple);
+router.post('/cost-statement/export/excel-selected', isAuthenticated, isAdmin, costsController.exportSelectedMaterialsExcel);
+router.post('/cost-statement/export/pdf-selected', isAuthenticated, isAdmin, costsController.exportSelectedMaterialsPdf);
 // تصدير PDF لقائمة المواد (رندر محلي)
 router.get('/cost-statement/export/pdf', async (req, res) => {
   try {
@@ -115,7 +122,7 @@ router.get('/cost-statement/export/pdf', async (req, res) => {
     const fs = require('fs');
     const { v4: uuidv4 } = require('uuid');
     // بدلاً من جلب HTML عبر HTTP (قد يصطدم بالمصادقة)، قم بالرندر محلياً
-    const [materials] = await req.db.query(`SELECT * FROM materials ORDER BY created_at DESC`);
+    const [materials] = await req.db.query(`SELECT * FROM materials WHERE deleted_at IS NULL ORDER BY created_at DESC`);
     const isSyp = req.defaultCurrency && req.defaultCurrency.code === 'SYP';
     const displayMaterials = materials.map(m => ({
       ...m,

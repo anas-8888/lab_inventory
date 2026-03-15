@@ -1,0 +1,152 @@
+﻿<%
+function formatNumberDisplay(value) {
+  if (value === null || value === undefined || value === '') return '-';
+  if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
+  const num = (typeof value === 'number') ? value : parseFloat(value);
+  if (!Number.isFinite(num)) return '-';
+  if (num === 0 || Object.is(num, -0)) return '0';
+  const safe = Number(num.toFixed(12));
+  let out = Number.isInteger(safe) ? String(safe) : safe.toString();
+  out = out.replace(/(\.\d*?[1-9])0+$/,'$1').replace(/\.0+$/,'');
+  if (out === '-0') out = '0';
+  return safe < 0 ? ('\u200E' + out) : out;
+}
+%>
+
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-trash3"></i> سلة محذوفات المواد</h2>
+    <a href="/costs/cost-statement" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-right"></i> العودة لبيان الكلفة
+    </a>
+  </div>
+
+  <div class="mb-3 d-flex gap-2">
+    <button id="restoreSelectedBtn" class="btn btn-success" disabled>
+      <i class="bi bi-arrow-counterclockwise"></i> استعادة المحدد
+    </button>
+    <button id="deleteSelectedBtn" class="btn btn-danger" disabled>
+      <i class="bi bi-x-circle"></i> حذف المحدد نهائياً
+    </button>
+    <button id="emptyTrashBtn" class="btn btn-outline-danger">
+      <i class="bi bi-trash"></i> تفريغ السلة
+    </button>
+  </div>
+
+  <div class="card shadow">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th class="text-center"><input type="checkbox" id="selectAllDeletedMaterials"></th>
+              <th>اسم المادة</th>
+              <th>نوع المادة</th>
+              <th>وحدة التعبئة</th>
+              <th>كلفة القطعة</th>
+              <th>كلفة الطرد</th>
+              <th>تاريخ الحذف</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (materials && materials.length > 0) { %>
+              <% materials.forEach(function(material) { %>
+                <tr>
+                  <td class="text-center">
+                    <input type="checkbox" class="deleted-material-checkbox" value="<%= material.id %>">
+                  </td>
+                  <td><%= material.material_name || '-' %></td>
+                  <td><%= material.material_type || '-' %></td>
+                  <td><%= material.packaging_unit || '-' %></td>
+                  <td><%= formatNumberDisplay(material.unit_cost) %> $</td>
+                  <td><%= formatNumberDisplay(material.package_cost) %> $</td>
+                  <td><%= formatDate(material.deleted_at) %></td>
+                </tr>
+              <% }) %>
+            <% } else { %>
+              <tr>
+                <td colspan="7" class="text-center text-muted py-4">سلة المحذوفات فارغة</td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const selectAll = document.getElementById('selectAllDeletedMaterials');
+  const checkboxes = () => Array.from(document.querySelectorAll('.deleted-material-checkbox'));
+  const restoreBtn = document.getElementById('restoreSelectedBtn');
+  const deleteBtn = document.getElementById('deleteSelectedBtn');
+  const emptyBtn = document.getElementById('emptyTrashBtn');
+
+  const getIds = () => checkboxes().filter(cb => cb.checked).map(cb => Number(cb.value)).filter(Boolean);
+
+  function updateButtons() {
+    const count = getIds().length;
+    if (restoreBtn) restoreBtn.disabled = count === 0;
+    if (deleteBtn) deleteBtn.disabled = count === 0;
+  }
+
+  if (selectAll) {
+    selectAll.addEventListener('change', function() {
+      checkboxes().forEach(cb => { cb.checked = this.checked; });
+      updateButtons();
+    });
+  }
+
+  checkboxes().forEach(cb => {
+    cb.addEventListener('change', function() {
+      const allChecked = checkboxes().length > 0 && checkboxes().every(x => x.checked);
+      if (selectAll) selectAll.checked = allChecked;
+      updateButtons();
+    });
+  });
+
+  async function send(url, method, body) {
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body || {})
+    });
+    return res.json();
+  }
+
+  if (restoreBtn) {
+    restoreBtn.addEventListener('click', async function() {
+      const ids = getIds();
+      if (!ids.length) return;
+      const data = await send('/costs/cost-statement/restore-multiple', 'POST', { ids });
+      if (data.success) window.location.reload();
+      else alert(data.message || 'حدث خطأ أثناء الاستعادة');
+    });
+  }
+
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', async function() {
+      const ids = getIds();
+      if (!ids.length) return;
+      if (!confirm(`سيتم حذف ${ids.length} مادة نهائياً. متابعة؟`)) return;
+      const data = await send('/costs/cost-statement/delete-multiple', 'DELETE', { ids });
+      if (data.success) window.location.reload();
+      else alert(data.message || 'حدث خطأ أثناء الحذف النهائي');
+    });
+  }
+
+  if (emptyBtn) {
+    emptyBtn.addEventListener('click', async function() {
+      if (!confirm('سيتم حذف جميع المواد في السلة نهائياً. متابعة؟')) return;
+      const data = await send('/costs/cost-statement/empty-trash', 'POST', {});
+      if (data.success) window.location.reload();
+      else alert(data.message || 'حدث خطأ أثناء تفريغ السلة');
+    });
+  }
+
+  updateButtons();
+});
+</script>
+
+

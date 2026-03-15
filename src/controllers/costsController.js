@@ -1,5 +1,9 @@
 const { pool } = require('../database/db');
 const { normalizeRawNumeric, buildRawNumericMap, parseRawNumericMap, rawOrValue } = require('../utils/rawNumbers');
+const Excel = require('exceljs');
+const fs = require('fs');
+const path = require('path');
+const { v4: uuidv4 } = require('uuid');
 
 // دالة لتقريب الأرقام العشرية بشكل صحيح
 const roundToDecimal = (value, decimals = 2) => {
@@ -214,6 +218,7 @@ const getCosts = async (req, res) => {
     try {
         const [materials] = await req.db.query(`
             SELECT * FROM materials 
+            WHERE deleted_at IS NULL
             ORDER BY created_at DESC
         `);
         
@@ -275,6 +280,7 @@ const getCostStatement = async (req, res) => {
     try {
         const [materials] = await req.db.query(`
             SELECT * FROM materials 
+            WHERE deleted_at IS NULL
             ORDER BY created_at DESC
         `);
         // جلب سعر الصرف الحالي لعرضه في الواجهة واستخدامه في التحويلات على الواجهة
@@ -1859,7 +1865,7 @@ const getMaterial = async (req, res) => {
         const { id } = req.params;
         
         const [materials] = await req.db.query(`
-            SELECT * FROM materials WHERE id = ?
+            SELECT * FROM materials WHERE id = ? AND deleted_at IS NULL
         `, [id]);
         
         if (materials.length === 0) {
@@ -1909,13 +1915,289 @@ const getMaterialCostLogs = async (req, res) => {
 const deleteMaterial = async (req, res) => {
     try {
         const { id } = req.params;
-        
-        await req.db.query('DELETE FROM materials WHERE id = ?', [id]);
-        
-        res.json({ success: true, message: 'تم حذف المادة بنجاح' });
+        await req.db.query(
+            'UPDATE materials SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL',
+            [id]
+        );
+        res.json({ success: true, message: 'تم نقل المادة إلى سلة المحذوفات' });
     } catch (error) {
         console.error('خطأ في حذف المادة:', error);
         res.status(500).json({ success: false, message: 'حدث خطأ في حذف المادة' });
+    }
+};
+
+const parseIds = (ids) => {
+    if (!Array.isArray(ids)) return [];
+    return ids
+        .map((id) => parseInt(id, 10))
+        .filter((id) => Number.isInteger(id) && id > 0);
+};
+
+const trashMaterialsMultiple = async (req, res) => {
+    try {
+        const ids = parseIds(req.body.ids);
+        if (!ids.length) {
+            return res.status(400).json({ success: false, message: 'لم يتم تحديد أي مواد' });
+        }
+        const placeholders = ids.map(() => '?').join(',');
+        const [result] = await req.db.query(
+            `UPDATE materials SET deleted_at = NOW() WHERE id IN (${placeholders}) AND deleted_at IS NULL`,
+            ids
+        );
+        res.json({ success: true, message: `تم نقل ${result.affectedRows} مادة إلى سلة المحذوفات` });
+    } catch (error) {
+        console.error('خطأ في نقل المواد إلى السلة:', error);
+        res.status(500).json({ success: false, message: 'حدث خطأ أثناء نقل المواد إلى السلة' });
+    }
+};
+
+const deleteMaterialsMultiple = async (req, res) => {
+    try {
+        const ids = parseIds(req.body.ids);
+        if (!ids.length) {
+            return res.status(400).json({ success: false, message: 'لم يتم تحديد أي مواد' });
+        }
+        const placeholders = ids.map(() => '?').join(',');
+        const [result] = await req.db.query(
+            `DELETE FROM materials WHERE id IN (${placeholders})`,
+            ids
+        );
+        res.json({ success: true, message: `تم حذف ${result.affectedRows} مادة نهائياً` });
+    } catch (error) {
+        console.error('خطأ في الحذف النهائي للمواد:', error);
+        res.status(500).json({ success: false, message: 'حدث خطأ أثناء الحذف النهائي' });
+    }
+};
+
+const getDeletedMaterials = async (req, res) => {
+    try {
+        const [materials] = await req.db.query(`
+            SELECT * FROM materials
+            WHERE deleted_at IS NOT NULL
+            ORDER BY deleted_at DESC
+        `);
+        res.render('costs/materials-deleted', {
+            title: 'سلة محذوفات المواد',
+            materials: materials.map(applyMaterialRaw),
+            formatDate
+        });
+    } catch (error) {
+        console.error('خطأ في عرض سلة محذوفات المواد:', error);
+        req.flash('error_msg', 'حدث خطأ في عرض سلة المحذوفات');
+        res.redirect('/costs/cost-statement');
+    }
+};
+
+const restoreMaterialsMultiple = async (req, res) => {
+    try {
+        const ids = parseIds(req.body.ids);
+        if (!ids.length) {
+            return res.status(400).json({ success: false, message: 'لم يتم تحديد أي مواد' });
+        }
+        const placeholders = ids.map(() => '?').join(',');
+        const [result] = await req.db.query(
+            `UPDATE materials SET deleted_at = NULL WHERE id IN (${placeholders}) AND deleted_at IS NOT NULL`,
+            ids
+        );
+        res.json({ success: true, message: `تمت استعادة ${result.affectedRows} مادة` });
+    } catch (error) {
+        console.error('خطأ في استعادة المواد:', error);
+        res.status(500).json({ success: false, message: 'حدث خطأ أثناء الاستعادة' });
+    }
+};
+
+const emptyMaterialsTrash = async (req, res) => {
+    try {
+        const [result] = await req.db.query('DELETE FROM materials WHERE deleted_at IS NOT NULL');
+        res.json({ success: true, message: `تم تفريغ السلة وحذف ${result.affectedRows} مادة` });
+    } catch (error) {
+        console.error('خطأ في تفريغ سلة المواد:', error);
+        res.status(500).json({ success: false, message: 'حدث خطأ أثناء تفريغ السلة' });
+    }
+};
+
+const exportSelectedMaterialsExcel = async (req, res) => {
+    try {
+        const ids = parseIds(req.body.ids);
+        if (!ids.length) {
+            return res.status(400).json({ success: false, message: 'يرجى تحديد مواد للتصدير' });
+        }
+
+        const placeholders = ids.map(() => '?').join(',');
+        const [materials] = await req.db.query(
+            `SELECT * FROM materials WHERE id IN (${placeholders}) AND deleted_at IS NULL ORDER BY created_at DESC`,
+            ids
+        );
+
+        if (!materials.length) {
+            return res.status(404).json({ success: false, message: 'لا توجد مواد صالحة للتصدير' });
+        }
+
+        const workbook = new Excel.Workbook();
+        const worksheet = workbook.addWorksheet('مواد محددة');
+        worksheet.views = [{ rightToLeft: true }];
+
+        const columns = [
+            { header: '#', key: 'row_number', width: 8 },
+            { header: 'اسم المادة', key: 'material_name', width: 34 },
+            { header: 'وحدة التعبئة', key: 'packaging_unit', width: 16 },
+            { header: 'كلفة القطعة', key: 'unit_cost', width: 14 },
+            { header: 'كلفة الطرد', key: 'package_cost', width: 14 },
+            { header: 'وزن الطرد القائم', key: 'gross_package_weight', width: 16 },
+            { header: 'الوزن الصافي', key: 'packaging_weight', width: 14 },
+            { header: 'شد الكرتون', key: 'pieces_per_package', width: 12 },
+            { header: 'كلفة الكيلو', key: 'cost_per_kg', width: 14 },
+            { header: 'تاريخ الإضافة', key: 'created_at', width: 14 }
+        ];
+        worksheet.columns = columns;
+
+        const formatDate = (dateValue) => {
+            if (!dateValue) return '-';
+            const d = new Date(dateValue);
+            if (Number.isNaN(d.getTime())) return '-';
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}/${month}/${year}`;
+        };
+
+        const formatNum = (value, decimals = 2) => {
+            if (value === null || value === undefined || value === '') return '-';
+            if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) {
+                return value.trim();
+            }
+            const n = typeof value === 'number' ? value : parseFloat(value);
+            if (!Number.isFinite(n)) return '-';
+            if (Number.isInteger(n)) return String(n);
+            const fixed = n.toFixed(Math.max(0, decimals));
+            return fixed.replace(/\.?0+$/, '');
+        };
+
+        const currencySymbol = (req.defaultCurrency && req.defaultCurrency.symbol) ? req.defaultCurrency.symbol : '$';
+        const isSyp = req.defaultCurrency && req.defaultCurrency.code === 'SYP';
+
+        materials.forEach((material, index) => {
+            const row = applyMaterialRaw(material);
+            const unitCostValue = isSyp ? (row.unit_cost_syp || row.unit_cost) : row.unit_cost;
+            const packageCostValue = isSyp ? (row.package_cost_syp || row.package_cost) : row.package_cost;
+            const netWeightNum = parseFloat(row.packaging_weight);
+            const unitCostNum = parseFloat(unitCostValue);
+            const computedCostPerKg = (Number.isFinite(netWeightNum) && netWeightNum > 0 && Number.isFinite(unitCostNum))
+                ? (unitCostNum / netWeightNum)
+                : null;
+            const storedCostPerKg = isSyp
+                ? (row.price_before_waste_syp ?? row.price_before_waste)
+                : row.price_before_waste;
+            const costPerKgValue = (storedCostPerKg !== null && storedCostPerKg !== undefined && String(storedCostPerKg).trim() !== '')
+                ? storedCostPerKg
+                : computedCostPerKg;
+
+            worksheet.addRow({
+                row_number: index + 1,
+                material_name: row.material_name || '-',
+                packaging_unit: row.packaging_unit || '-',
+                unit_cost: `${formatNum(unitCostValue, isSyp ? 0 : 2)} ${currencySymbol}`.trim(),
+                package_cost: `${formatNum(packageCostValue, isSyp ? 0 : 2)} ${currencySymbol}`.trim(),
+                gross_package_weight: `${formatNum(row.gross_package_weight, 3)} كجم`,
+                packaging_weight: `${formatNum(row.packaging_weight, 3)} كجم`,
+                pieces_per_package: formatNum(row.pieces_per_package, 0),
+                cost_per_kg: `${(costPerKgValue === null ? '-' : formatNum(costPerKgValue, isSyp ? 0 : 2))} ${currencySymbol}`.trim(),
+                created_at: formatDate(row.created_at)
+            });
+        });
+
+        worksheet.getRow(1).font = { bold: true };
+        worksheet.getRow(1).alignment = { horizontal: 'center', vertical: 'middle' };
+        worksheet.eachRow((row, rowNumber) => {
+            if (rowNumber === 1) return;
+            row.alignment = { vertical: 'middle', horizontal: 'center' };
+            row.getCell('material_name').alignment = { vertical: 'middle', horizontal: 'right' };
+        });
+
+        const fileName = `${uuidv4()}.xlsx`;
+        const savePath = path.join(__dirname, '../public/materials_list_excel', fileName);
+        fs.mkdirSync(path.dirname(savePath), { recursive: true });
+        await workbook.xlsx.writeFile(savePath);
+
+        const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+        const fileUrl = `${baseUrl}/public/materials_list_excel/${fileName}`;
+        res.json({ success: true, url: fileUrl });
+    } catch (error) {
+        console.error('خطأ في تصدير المواد المحددة إلى Excel:', error);
+        res.status(500).json({ success: false, message: 'حدث خطأ أثناء تصدير ملف Excel' });
+    }
+};
+
+const exportSelectedMaterialsPdf = async (req, res) => {
+    try {
+        const ids = parseIds(req.body.ids);
+        if (!ids.length) {
+            return res.status(400).json({ success: false, message: 'يرجى تحديد مواد للتصدير' });
+        }
+
+        const placeholders = ids.map(() => '?').join(',');
+        const [materials] = await req.db.query(
+            `SELECT * FROM materials WHERE id IN (${placeholders}) AND deleted_at IS NULL ORDER BY created_at DESC`,
+            ids
+        );
+
+        if (!materials.length) {
+            return res.status(404).json({ success: false, message: 'لا توجد مواد صالحة للتصدير' });
+        }
+
+        const isSyp = req.defaultCurrency && req.defaultCurrency.code === 'SYP';
+        const displayMaterials = materials.map((material) => {
+            const rawMaterial = applyMaterialRaw(material);
+            return {
+                ...rawMaterial,
+                unit_cost: isSyp ? (rawMaterial.unit_cost_syp || rawMaterial.unit_cost) : rawMaterial.unit_cost,
+                package_cost: isSyp ? (rawMaterial.package_cost_syp || rawMaterial.package_cost) : rawMaterial.package_cost
+            };
+        });
+
+        const pdf = require('html-pdf-node');
+        const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+        const path = require('path');
+        const fs = require('fs');
+        const { v4: uuidv4 } = require('uuid');
+
+        req.app.render('costs/materials-print-list', {
+            title: 'طباعة المواد المحددة',
+            materials: displayMaterials,
+            defaultCurrency: req.defaultCurrency || null,
+            baseUrl,
+            layout: false
+        }, async (err, html) => {
+            if (err) {
+                console.error('Render selected materials PDF failed:', err);
+                return res.status(500).json({ success: false, message: 'تعذر إنشاء ملف PDF' });
+            }
+
+            const options = {
+                format: 'A4',
+                preferCSSPageSize: true,
+                printBackground: true,
+                margin: {
+                    top: '14mm',
+                    right: '14mm',
+                    bottom: '14mm',
+                    left: '14mm'
+                }
+            };
+            const pdfBuffer = await pdf.generatePdf({ content: html }, options);
+            const fileName = `${uuidv4()}.pdf`;
+            const savePath = path.join(__dirname, '../public/materials_list_pdf', fileName);
+            fs.mkdirSync(path.dirname(savePath), { recursive: true });
+            fs.writeFileSync(savePath, pdfBuffer);
+
+            return res.json({
+                success: true,
+                url: `${baseUrl}/public/materials_list_pdf/${fileName}`
+            });
+        });
+    } catch (error) {
+        console.error('خطأ في تصدير المواد المحددة إلى PDF:', error);
+        res.status(500).json({ success: false, message: 'حدث خطأ أثناء تصدير ملف PDF' });
     }
 };
 
@@ -2351,7 +2633,7 @@ const getMaterialPreview = async (req, res) => {
         const { id } = req.params;
         
         const [materials] = await req.db.query(`
-            SELECT * FROM materials WHERE id = ?
+            SELECT * FROM materials WHERE id = ? AND deleted_at IS NULL
         `, [id]);
         
         if (materials.length === 0) {
@@ -2458,9 +2740,16 @@ module.exports = {
     deleteOrder,
     exportOrderPDF,
     getOrderPrintRaw,
+    exportSelectedMaterialsExcel,
+    exportSelectedMaterialsPdf,
+    trashMaterialsMultiple,
+    deleteMaterialsMultiple,
+    getDeletedMaterials,
+    restoreMaterialsMultiple,
+    emptyMaterialsTrash,
     async getMaterialsListPrintPage(req, res) {
         try {
-            const [materials] = await req.db.query(`SELECT * FROM materials ORDER BY material_name ASC, created_at DESC`);
+            const [materials] = await req.db.query(`SELECT * FROM materials WHERE deleted_at IS NULL ORDER BY material_name ASC, created_at DESC`);
             // احترام العملة الافتراضية
             const isSyp = req.defaultCurrency && req.defaultCurrency.code === 'SYP';
             const displayMaterials = materials.map((m) => {

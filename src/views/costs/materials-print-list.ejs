@@ -1,16 +1,21 @@
 <% function fmtDate(d){ if(!d) return '-'; const dt=new Date(d); const dd=String(dt.getDate()).padStart(2,'0'); const mm=String(dt.getMonth()+1).padStart(2,'0'); const yy=dt.getFullYear(); return `${dd}/${mm}/${yy}`; }
 function num(v, d=2){
   if (typeof v === 'string' && /^-?\d+(\.\d+)?$/.test(v.trim())) return v.trim();
-  const n=parseFloat(v);
-  if(isNaN(n)) return '-';
-  return Number.isInteger(n)? String(n): n.toString();
+  const n = (typeof v === 'number') ? v : parseFloat(v);
+  if(!Number.isFinite(n)) return '-';
+  if (n === 0 || Object.is(n, -0)) return '0';
+  const safe = Number(n.toFixed(12));
+  let out = Number.isInteger(safe) ? String(safe) : safe.toString();
+  out = out.replace(/(\.\d*?[1-9])0+$/,'$1').replace(/\.0+$/,'');
+  if (out === '-0') out = '0';
+  return safe < 0 ? ('\u200E' + out) : out;
 }
 const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '';
 %>
 <div class="container-fluid" style="direction: rtl; font-family: 'Cairo','Amiri',sans-serif;">
 
   <%
-    const pageSize = 10;
+    const pageSize = 14;
     const indexedMaterials = (materials || []).map((m, idx) => ({ material: m, rowNumber: idx + 1 }));
     const groupedAllMap = new Map();
     indexedMaterials.forEach((item) => {
@@ -79,7 +84,7 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
         </thead>
         <tbody>
           <% groupedMaterials.forEach((group) => { %>
-            <% group.forEach((item, idxInGroup) => { const m = item.material; const netW = parseFloat(m.packaging_weight); const unitCost = parseFloat(m.unit_cost)||0; const costPerKg = (!isNaN(netW) && netW>0) ? (unitCost/netW) : null; %>
+            <% group.forEach((item, idxInGroup) => { const m = item.material; const netW = parseFloat(m.packaging_weight); const unitCost = parseFloat(m.unit_cost)||0; const computedCostPerKg = (!isNaN(netW) && netW>0) ? (unitCost/netW) : null; const storedCostSource = (currencySymbol === 'SYP') ? m.price_before_waste_syp : m.price_before_waste; const storedCostPerKg = (storedCostSource !== null && storedCostSource !== undefined && String(storedCostSource).trim() !== '') ? storedCostSource : null; const costPerKg = storedCostPerKg !== null ? storedCostPerKg : computedCostPerKg; %>
             <tr>
               <td style="padding: 6pt 4pt; text-align:center;"><%= num(item.rowNumber,0) %></td>
               <% if (idxInGroup === 0) { %>
@@ -92,7 +97,7 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
               <td class="nowrap-value" style="padding: 6pt 4pt;"><%= (m.packaging_weight!=null) ? num(m.packaging_weight, 3) : '-' %> كجم</td>
               <td style="padding: 6pt 4pt;"><%= (m.pieces_per_package!=null)? Number(m.pieces_per_package): '-' %></td>
               <td class="nowrap-value" style="padding: 6pt 4pt;">
-                <%= (costPerKg!=null) ? ((currencySymbol==='SYP')? String(Math.round(costPerKg)) : costPerKg.toFixed(2)) : '-' %>
+                <%= (costPerKg!=null) ? num(costPerKg, (currencySymbol==='SYP' ? 0 : 2)) : '-' %>
                 <%= currencySymbol %>
               </td>
               <td style="padding: 6pt 4pt;"><%= fmtDate(m.created_at) %></td>
@@ -152,7 +157,7 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
   tfoot { display: table-footer-group; }
   tr { page-break-inside: avoid; }
   .table-responsive { overflow-x: visible; }
-  .container-fluid { padding-bottom: 80px; }
+  .container-fluid { padding-bottom: 50px; }
   .print-footer { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; }
   .table-custom th, .table-custom td { padding: 4pt 3pt; }
   .page-break { page-break-after: always; }

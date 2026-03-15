@@ -1,4 +1,4 @@
-<%- include('../layouts/header') %>
+﻿<%- include('../layouts/header') %>
 <%
 const __isSyp = (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.code === 'SYP');
 const __exchangeRate = (typeof exchangeRate !== 'undefined' && exchangeRate) ? parseFloat(exchangeRate) : 13000;
@@ -6,10 +6,14 @@ const __currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurre
 function formatNumberDisplay(value) {
   if (value === null || value === undefined || value === '') return '-';
   if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
-  const num = parseFloat(value);
-  if (isNaN(num)) return '-';
-  if (Number.isInteger(num)) return String(num);
-  return num.toString();
+  const num = (typeof value === 'number') ? value : parseFloat(value);
+  if (!Number.isFinite(num)) return '-';
+  if (num === 0 || Object.is(num, -0)) return '0';
+  const safe = Number(num.toFixed(12));
+  let out = Number.isInteger(safe) ? String(safe) : safe.toString();
+  out = out.replace(/(\.\d*?[1-9])0+$/,'$1').replace(/\.0+$/,'');
+  if (out === '-0') out = '0';
+  return safe < 0 ? ('\u200E' + out) : out;
 }
 function formatTotalDisplay(value) {
   const num = parseFloat(value);
@@ -276,7 +280,7 @@ const __isExternalMaterial = material.material_origin === 'external';
                                 </tr>
                                 <tr>
                                     <td><strong>الوزن الصافي:</strong></td>
-                                    <td><%= (parseFloat(material.gross_weight) * (1 - parseFloat(material.waste_percentage) / 100)).toFixed(2) %> كجم</td>
+                                    <td><%= formatNumberDisplay(parseFloat(material.gross_weight) * (1 - parseFloat(material.waste_percentage) / 100)) %> كجم</td>
                                 </tr>
                             </table>
                         </div>
@@ -577,7 +581,7 @@ function printMaterialDetails() {
                     <tr><th>السعر قبل الهدر</th><td><%= formatNumberDisplay(material.price_before_waste) %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>/كجم</td></tr>
                     <tr><th>الوزن الجمالي</th><td><%= formatNumberDisplay(material.gross_weight) %> كجم</td></tr>
                     <tr><th>نسبة الهدر</th><td><%= formatNumberDisplay(material.waste_percentage) %>%</td></tr>
-                    <tr><th>الوزن الصافي</th><td><%= (parseFloat(material.gross_weight) * (1 - parseFloat(material.waste_percentage) / 100)).toFixed(2) %> كجم</td></tr>
+                    <tr><th>الوزن الصافي</th><td><%= formatNumberDisplay(parseFloat(material.gross_weight) * (1 - parseFloat(material.waste_percentage) / 100)) %> كجم</td></tr>
                 </table>
             </div>
             
@@ -710,3 +714,5 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 });
 </script>
+
+

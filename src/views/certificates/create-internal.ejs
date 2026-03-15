@@ -339,8 +339,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if (value === null || value === undefined || value === '') return '';
     if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
     const n = parseNumericValue(value);
-    if (isNaN(n)) return '';
-    return Number.isInteger(n) ? String(n) : n.toString();
+    if (!Number.isFinite(n)) return '';
+    if (n === 0 || Object.is(n, -0)) return '0';
+    const safe = Number(n.toFixed(12));
+    let out = Number.isInteger(safe) ? String(safe) : safe.toString();
+    out = out.replace(/(\.\d*?[1-9])0+$/,'$1').replace(/\.0+$/,'');
+    if (out === '-0') out = '0';
+    return safe < 0 ? ('\u200E' + out) : out;
   }
 
   // Update selected samples table

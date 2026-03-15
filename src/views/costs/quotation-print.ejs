@@ -1,28 +1,15 @@
-<% function fmtDate(d){ if(!d) return '-'; const dt=new Date(d); const dd=String(dt.getDate()).padStart(2,'0'); const mm=String(dt.getMonth()+1).padStart(2,'0'); const yy=dt.getFullYear(); return `${dd}/${mm}/${yy}`; }
+﻿<% function fmtDate(d){ if(!d) return '-'; const dt=new Date(d); const dd=String(dt.getDate()).padStart(2,'0'); const mm=String(dt.getMonth()+1).padStart(2,'0'); const yy=dt.getFullYear(); return `${dd}/${mm}/${yy}`; }
 function formatNumberDisplay(value) {
   if (value === null || value === undefined || value === '') return '-';
-  // للأرقام النصية الصرفة، نعرضها كما أُدخلت دون إعادة تنسيق
-  if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) {
-    return value.trim();
-  }
-  const num = parseFloat(value);
-  if (isNaN(num)) return '-';
-  if (num === 0) return '0';
-  let result = '';
-  if (Number.isInteger(num)) {
-    // للأرقام الصحيحة، أضف 3 منازل عشرية
-    result = num.toString();
-  } else {
-    const ds = num.toString().split('.')[1];
-    if (!ds) {
-      result = num.toString();
-    } else {
-      // احتفظ بالمنازل الموجودة مع حد أدنى 3
-      result = num.toString();
-    }
-  }
-  if (num < 0) return '\u200E' + result;
-  return result;
+  if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
+  const num = (typeof value === 'number') ? value : parseFloat(value);
+  if (!Number.isFinite(num)) return '-';
+  if (num === 0 || Object.is(num, -0)) return '0';
+  const safe = Number(num.toFixed(12));
+  let out = Number.isInteger(safe) ? String(safe) : safe.toString();
+  out = out.replace(/(\.\d*?[1-9])0+$/,'$1').replace(/\.0+$/,'');
+  if (out === '-0') out = '0';
+  return safe < 0 ? ('\u200E' + out) : out;
 }
 function formatTotalDisplay(value) {
   const num = parseFloat(value);
@@ -280,3 +267,5 @@ const hasDiscount = discountValue > 0;
   .table-custom tr.page-break td { border: 0; padding: 0; height: 0; }
   .total-row td { background: #f5f5f5; }
 </style>
+
+

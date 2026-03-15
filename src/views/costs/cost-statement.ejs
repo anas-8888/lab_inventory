@@ -1,43 +1,47 @@
 ﻿<%
 function formatNumberDisplay(value) {
-    if (value === null || value === undefined || value === '') return '-';
-    if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
-    const num = parseFloat(value);
-    if (isNaN(num)) return '-';
-    if (Number.isInteger(num)) return String(num);
-    return num.toString();
+  if (value === null || value === undefined || value === '') return '-';
+  if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
+  const num = (typeof value === 'number') ? value : parseFloat(value);
+  if (!Number.isFinite(num)) return '-';
+  if (num === 0 || Object.is(num, -0)) return '0';
+  const safe = Number(num.toFixed(12));
+  let out = Number.isInteger(safe) ? String(safe) : safe.toString();
+  out = out.replace(/(\.\d*?[1-9])0+$/,'$1').replace(/\.0+$/,'');
+  if (out === '-0') out = '0';
+  return safe < 0 ? ('\u200E' + out) : out;
 }
 %>
 <div class="container mt-4">
     <div class="row">
         <div class="col-12">
-            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center mb-4">
-                <h2 class="mb-3 mb-lg-0"><i class="bi bi-calculator"></i> بيان الكلفة</h2>
-                <div class="row g-2 align-items-center justify-content-end w-100 w-lg-auto">
-                    <div class="col-12 col-md-auto">
-                        <div class="input-group" style="min-width: 260px;">
-                            <span class="input-group-text"><i class="bi bi-search"></i></span>
-                            <input type="text" id="materialKeywordSearch" class="form-control" placeholder="ابحث بالاسم أو النوع">
-                        </div>
+            <div class="d-flex flex-column mb-4 gap-3">
+                <h2 class="mb-0"><i class="bi bi-calculator"></i> بيان الكلفة</h2>
+
+                <div class="d-flex flex-wrap gap-2 align-items-center cost-actions-bar">
+                    <a href="/costs" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-right me-1"></i> العودة للتكاليف
+                    </a>
+                    <div class="input-group cost-search-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" id="materialKeywordSearch" class="form-control" placeholder="ابحث بالاسم أو النوع">
                     </div>
-                    <div class="col-12 col-md-auto">
-                        <input type="text" id="materialDateSearch" class="form-control datepicker" placeholder="يوم/شهر/سنة" style="min-width: 220px;">
-                    </div>
-                    <div class="col-12 col-md-auto">
-                        <button type="button" class="btn btn-primary w-100 w-md-auto" data-bs-toggle="modal" data-bs-target="#addMaterialModal">
-                            <i class="bi bi-plus-circle me-1"></i> إضافة مادة جديدة
-                        </button>
-                    </div>
-                    <div class="col-12 col-md-auto">
-                        <button type="button" id="exportMaterialsListBtn" class="btn btn-success w-100 w-md-auto me-md-2">
-                            <i class="bi bi-file-earmark-pdf"></i> تصدير
-                        </button>
-                    </div>
-                    <div class="col-12 col-md-auto">
-                        <a href="/costs" class="btn btn-outline-secondary w-100 w-md-auto">
-                            <i class="bi bi-arrow-right me-1"></i> العودة للتكاليف
-                        </a>
-                    </div>
+                    <input type="text" id="materialDateSearch" class="form-control datepicker cost-date-filter" placeholder="يوم/شهر/سنة">
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMaterialModal">
+                        <i class="bi bi-plus-circle me-1"></i> إضافة مادة جديدة
+                    </button>
+                    <button type="button" id="exportMaterialsSelectedBtn" class="btn btn-success d-none">
+                        <i class="bi bi-download"></i> تصدير المحدد
+                    </button>
+                    <button type="button" id="trashMaterialsSelectedBtn" class="btn btn-warning" disabled>
+                        <i class="bi bi-trash"></i> نقل المحدد إلى السلة
+                    </button>
+                    <button type="button" id="deleteMaterialsSelectedBtn" class="btn btn-danger" disabled>
+                        <i class="bi bi-x-circle"></i> حذف المحدد نهائياً
+                    </button>
+                    <a href="/costs/cost-statement/deleted" class="btn btn-outline-danger">
+                        <i class="bi bi-trash3"></i> سلة المحذوفات
+                    </a>
                 </div>
             </div>
 
@@ -52,6 +56,9 @@ function formatNumberDisplay(value) {
                         <table id="materialsTable" class="table">
                             <thead>
                                 <tr>
+                                    <th class="text-center">
+                                        <input type="checkbox" id="selectAllMaterials">
+                                    </th>
                                     <th>اسم المادة</th>
                                     <th>وحدة التعبئة</th>
                                     <th class="text-center">كلفة القطعة</th>
@@ -79,6 +86,9 @@ function formatNumberDisplay(value) {
                                 <% groupedMaterials.forEach((group, groupIndex) => { %>
                                 <% group.forEach((material, indexInGroup) => { %>
                                 <tr data-group-key="g-<%= groupIndex %>" data-material-name="<%= material.material_name || '' %>" data-material-type="<%= material.material_type || '' %>">
+                                    <td class="text-center">
+                                        <input type="checkbox" class="material-row-checkbox" value="<%= material.id %>">
+                                    </td>
                                     <% if (indexInGroup === 0) { %>
                                     <td class="material-name" data-group-key="g-<%= groupIndex %>" rowspan="<%= group.length %>"><%= material.material_name %><span class="material-type" style="display:none"><%= material.material_type %></span></td>
                                     <% } %>
@@ -108,12 +118,17 @@ function formatNumberDisplay(value) {
                                         <% 
                                             const netWForCalc = parseFloat(material.packaging_weight);
                                             const unitCostVal = parseFloat(material.unit_cost) || 0;
-                                            const costPerKg = (!isNaN(netWForCalc) && netWForCalc > 0) ? (unitCostVal / netWForCalc) : null;
+                                            const computedCostPerKg = (!isNaN(netWForCalc) && netWForCalc > 0) ? (unitCostVal / netWForCalc) : null;
+                                            const storedCostSource = (defaultCurrency && defaultCurrency.code === 'SYP')
+                                                ? material.price_before_waste_syp
+                                                : material.price_before_waste;
+                                            const storedCostPerKg = (storedCostSource !== null && storedCostSource !== undefined && String(storedCostSource).trim() !== '') ? storedCostSource : null;
+                                            const costPerKg = storedCostPerKg !== null ? storedCostPerKg : computedCostPerKg;
                                         %>
                                         <%= (costPerKg != null)
                                             ? ((defaultCurrency && defaultCurrency.code === 'SYP')
-                                                ? String(Math.round(costPerKg))
-                                                : formatNumberDisplay(Math.round(costPerKg * 100) / 100))
+                                                ? formatNumberDisplay(costPerKg)
+                                                : formatNumberDisplay(costPerKg))
                                             : '-' 
                                         %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                                     </td>
@@ -986,7 +1001,7 @@ function formatNumberDisplay(value) {
                     <div class="d-flex justify-content-center gap-2 mb-2">
                       <button id="copyMaterialPdfLinkBtn" class="btn btn-outline-primary btn-sm"><i class="bi bi-clipboard me-1"></i> نسخ الرابط</button>
                       <a id="openMaterialPdfLinkBtn" class="btn btn-outline-info btn-sm" target="_blank"><i class="bi bi-box-arrow-up-right me-1"></i> فتح الرابط</a>
-                      <a id="whatsappMaterialShareBtn" class="btn btn-outline-success btn-sm" target="_blank"><i class="bi bi-whatsapp me-1"></i> ارسال عبر واتساب</a>
+                      <a id="whatsappMaterialShareBtn" class="btn btn-outline-success btn-sm" target="_blank"><i class="bi bi-whatsapp me-1"></i> إرسال عبر واتساب</a>
                     </div>
                     <div class="alert alert-success py-2 mb-0">يمكنك مشاركة الرابط مع أي شخص لتحميل تفاصيل المادة مباشرة</div>
                   </div>
@@ -2335,7 +2350,7 @@ function resetAddMaterialForm() {
 
 // حذف مادة
 function deleteMaterial(id) {
-    if (confirm('هل أنت متأكد من حذف هذه المادة؟')) {
+    if (confirm('هل تريد نقل هذه المادة إلى سلة المحذوفات؟')) {
         fetch(`/costs/cost-statement/${id}`, {
             method: 'DELETE',
             headers: {
@@ -2345,16 +2360,16 @@ function deleteMaterial(id) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showAlert('تم حذف المادة بنجاح', 'success');
+                showAlert(data.message || 'تم نقل المادة إلى سلة المحذوفات', 'success');
                 // إزالة backdrop المعلق
                 removeStuckBackdrop();
                 setTimeout(() => window.location.reload(), 1500);
             } else {
-                showAlert(data.message || 'حدث خطأ في حذف المادة', 'error');
+                showAlert(data.message || 'حدث خطأ أثناء نقل المادة إلى السلة', 'error');
             }
         })
         .catch(error => {
-            showAlert('حدث خطأ في حذف المادة', 'error');
+            showAlert('حدث خطأ أثناء نقل المادة إلى السلة', 'error');
         });
     }
 }
@@ -2755,9 +2770,14 @@ function formatDate(dateString) {
 function rawNumDisplay(value) {
     if (value === null || value === undefined || value === '') return '0';
     if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
-    const n = parseFloat(value);
-    if (isNaN(n)) return '0';
-    return Number.isInteger(n) ? String(n) : n.toString();
+    const n = (typeof value === 'number') ? value : parseFloat(value);
+    if (!Number.isFinite(n)) return '0';
+    if (n === 0 || Object.is(n, -0)) return '0';
+    const safe = Number(n.toFixed(12));
+    let out = Number.isInteger(safe) ? String(safe) : safe.toString();
+    out = out.replace(/(\.\d*?[1-9])0+$/,'$1').replace(/\.0+$/,'');
+    if (out === '-0') out = '0';
+    return safe < 0 ? ('\u200E' + out) : out;
 }
 function formatAggregateDisplay(value) {
     const n = parseFloat(value);
@@ -3064,6 +3084,40 @@ body.modal-open {
     background-color: #eef6ff !important;
     box-shadow: inset 0 0 0 9999px #eef6ff !important;
 }
+
+.cost-actions-bar .btn {
+    white-space: nowrap;
+}
+
+.cost-actions-bar {
+    justify-content: flex-end;
+}
+
+.cost-search-group {
+    width: 260px;
+    min-width: 260px;
+    flex: 0 0 auto;
+}
+
+.cost-date-filter {
+    width: 220px !important;
+    min-width: 220px;
+    flex: 0 0 auto;
+}
+
+@media (max-width: 768px) {
+    .cost-actions-bar {
+        display: grid !important;
+        grid-template-columns: 1fr;
+        width: 100%;
+    }
+    .cost-actions-bar .btn,
+    .cost-search-group,
+    .cost-date-filter {
+        width: 100%;
+        min-width: 100%;
+    }
+}
 </style>
 
 <script>
@@ -3237,7 +3291,30 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
-<!-- Export Modal -->
+<!-- اختيار نوع التصدير -->
+<div id="materialsExportTypeModal" class="modal fade" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-download me-2 text-success"></i> اختر نوع التصدير</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+      </div>
+      <div class="modal-body text-center">
+        <p class="mb-3">اختر تنسيق الملف للمواد المحددة.</p>
+        <div class="d-flex justify-content-center gap-2">
+          <button type="button" id="exportSelectedPdfFromModalBtn" class="btn btn-outline-danger">
+            <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+          </button>
+          <button type="button" id="exportSelectedExcelFromModalBtn" class="btn btn-outline-success">
+            <i class="bi bi-file-earmark-excel me-1"></i> Excel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Export PDF Modal -->
 <div id="materialsListPdfExportModal" class="modal fade" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -3252,7 +3329,7 @@ document.addEventListener('DOMContentLoaded', function () {
         <div class="d-flex justify-content-center gap-2 mb-2">
           <button id="copyMaterialsListPdfLinkBtn" class="btn btn-outline-primary btn-sm"><i class="bi bi-clipboard me-1"></i> نسخ الرابط</button>
           <a id="openMaterialsListPdfLinkBtn" class="btn btn-outline-info btn-sm" target="_blank"><i class="bi bi-box-arrow-up-right me-1"></i> فتح الرابط</a>
-          <a id="whatsappMaterialsListShareBtn" class="btn btn-outline-success btn-sm" target="_blank"><i class="bi bi-whatsapp me-1"></i> ارسال عبر واتساب</a>
+          <a id="whatsappMaterialsListShareBtn" class="btn btn-outline-success btn-sm" target="_blank"><i class="bi bi-whatsapp me-1"></i> إرسال عبر واتساب</a>
         </div>
         <div class="alert alert-success py-2 mb-0">يمكنك مشاركة الرابط مع أي شخص لتحميل الملف مباشرة</div>
       </div>
@@ -3260,40 +3337,199 @@ document.addEventListener('DOMContentLoaded', function () {
   </div>
   </div>
 
+<!-- Export Excel Modal -->
+<div id="materialsListExcelExportModal" class="modal fade" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-file-earmark-excel me-2 text-success"></i> تم إنشاء ملف Excel</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+      </div>
+      <div class="modal-body text-center">
+        <div class="mb-3">
+          <input type="text" id="materialsListExcelLinkInput" class="form-control text-center" readonly style="direction:ltr; font-size:0.95em;" />
+        </div>
+        <div class="d-flex justify-content-center gap-2 mb-2">
+          <button id="copyMaterialsListExcelLinkBtn" class="btn btn-outline-primary btn-sm"><i class="bi bi-clipboard me-1"></i> نسخ الرابط</button>
+          <a id="openMaterialsListExcelLinkBtn" class="btn btn-outline-info btn-sm" target="_blank"><i class="bi bi-box-arrow-up-right me-1"></i> فتح الرابط</a>
+          <a id="whatsappMaterialsListExcelShareBtn" class="btn btn-outline-success btn-sm" target="_blank"><i class="bi bi-whatsapp me-1"></i> إرسال عبر واتساب</a>
+        </div>
+        <div class="alert alert-success py-2 mb-0">يمكنك مشاركة الرابط مع أي شخص لتحميل الملف مباشرة</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
-// زر تصدير قائمة المواد
-document.addEventListener('DOMContentLoaded', function(){
-  const exportBtn = document.getElementById('exportMaterialsListBtn');
-  if (!exportBtn) return;
-  exportBtn.addEventListener('click', async function(){
-    try {
-      exportBtn.disabled = true;
-      exportBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري التصدير...';
-      const res = await fetch('/costs/cost-statement/export/pdf');
-      const data = await res.json();
-      if (data.success && data.url){
-        const linkInput = document.getElementById('materialsListPdfLinkInput');
-        const openBtn = document.getElementById('openMaterialsListPdfLinkBtn');
-        const waBtn = document.getElementById('whatsappMaterialsListShareBtn');
-        if (linkInput) linkInput.value = data.url;
-        if (openBtn) openBtn.href = data.url;
-        if (waBtn) waBtn.href = `https://wa.me/?text=${encodeURIComponent(data.url)}`;
-        const modal = new bootstrap.Modal(document.getElementById('materialsListPdfExportModal'));
-        modal.show();
+document.addEventListener('DOMContentLoaded', function () {
+  const selectAll = document.getElementById('selectAllMaterials');
+  const rowCheckboxes = () => Array.from(document.querySelectorAll('.material-row-checkbox'));
+  const exportSelectedBtn = document.getElementById('exportMaterialsSelectedBtn');
+  const exportTypeModalEl = document.getElementById('materialsExportTypeModal');
+  const exportTypeModal = exportTypeModalEl ? new bootstrap.Modal(exportTypeModalEl) : null;
+  const exportSelectedPdfFromModalBtn = document.getElementById('exportSelectedPdfFromModalBtn');
+  const exportSelectedExcelFromModalBtn = document.getElementById('exportSelectedExcelFromModalBtn');
+  const trashBtn = document.getElementById('trashMaterialsSelectedBtn');
+  const deleteBtn = document.getElementById('deleteMaterialsSelectedBtn');
+
+  const getSelectedIds = () => rowCheckboxes().filter(cb => cb.checked).map(cb => Number(cb.value)).filter(Boolean);
+
+  const updateBulkButtons = () => {
+    const selectedCount = getSelectedIds().length;
+    if (trashBtn) trashBtn.disabled = selectedCount === 0;
+    if (deleteBtn) deleteBtn.disabled = selectedCount === 0;
+    if (exportSelectedBtn) {
+      if (selectedCount > 0) {
+        exportSelectedBtn.classList.remove('d-none');
+        exportSelectedBtn.innerHTML = `<i class="bi bi-download"></i> تصدير المحدد (${selectedCount})`;
       } else {
-        alert(data.message || 'حدث خطأ أثناء توليد ملف PDF');
+        exportSelectedBtn.classList.add('d-none');
+      }
+    }
+  };
+
+  if (selectAll) {
+    selectAll.addEventListener('change', function () {
+      rowCheckboxes().forEach((cb) => { cb.checked = this.checked; });
+      updateBulkButtons();
+    });
+  }
+
+  rowCheckboxes().forEach((cb) => {
+    cb.addEventListener('change', () => {
+      const allChecked = rowCheckboxes().length > 0 && rowCheckboxes().every(x => x.checked);
+      if (selectAll) selectAll.checked = allChecked;
+      updateBulkButtons();
+    });
+  });
+
+  async function postJson(url, method, body) {
+    const res = await fetch(url, {
+      method: method || 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body || {})
+    });
+    return res.json();
+  }
+
+  if (trashBtn) {
+    trashBtn.addEventListener('click', async function () {
+      const ids = getSelectedIds();
+      if (!ids.length) return;
+      if (!confirm(`هل تريد نقل ${ids.length} مادة إلى سلة المحذوفات؟`)) return;
+      const data = await postJson('/costs/cost-statement/trash-multiple', 'POST', { ids });
+      if (data.success) {
+        alert(data.message || 'تم نقل المواد إلى سلة المحذوفات');
+        window.location.reload();
+      } else {
+        alert(data.message || 'حدث خطأ أثناء تنفيذ العملية');
+      }
+    });
+  }
+
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', async function () {
+      const ids = getSelectedIds();
+      if (!ids.length) return;
+      if (!confirm(`سيتم حذف ${ids.length} مادة نهائياً. هل أنت متأكد؟`)) return;
+      const data = await postJson('/costs/cost-statement/delete-multiple', 'DELETE', { ids });
+      if (data.success) {
+        alert(data.message || 'تم الحذف النهائي');
+        window.location.reload();
+      } else {
+        alert(data.message || 'حدث خطأ أثناء تنفيذ العملية');
+      }
+    });
+  }
+
+  const openResultModal = (format, url) => {
+    if (format === 'pdf') {
+      const linkInput = document.getElementById('materialsListPdfLinkInput');
+      const openBtn = document.getElementById('openMaterialsListPdfLinkBtn');
+      const waBtn = document.getElementById('whatsappMaterialsListShareBtn');
+      if (linkInput) linkInput.value = url;
+      if (openBtn) openBtn.href = url;
+      if (waBtn) waBtn.href = `https://wa.me/?text=${encodeURIComponent(url)}`;
+      const modal = new bootstrap.Modal(document.getElementById('materialsListPdfExportModal'));
+      modal.show();
+      return;
+    }
+    const linkInput = document.getElementById('materialsListExcelLinkInput');
+    const openBtn = document.getElementById('openMaterialsListExcelLinkBtn');
+    const waBtn = document.getElementById('whatsappMaterialsListExcelShareBtn');
+    if (linkInput) linkInput.value = url;
+    if (openBtn) openBtn.href = url;
+    if (waBtn) waBtn.href = `https://wa.me/?text=${encodeURIComponent(url)}`;
+    const modal = new bootstrap.Modal(document.getElementById('materialsListExcelExportModal'));
+    modal.show();
+  };
+
+  const exportSelectedByFormat = async (format) => {
+    const ids = getSelectedIds();
+    if (!ids.length) return;
+    if (exportTypeModal) exportTypeModal.hide();
+    if (exportSelectedBtn) {
+      exportSelectedBtn.disabled = true;
+      exportSelectedBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري التصدير...';
+    }
+    try {
+      const endpoint = format === 'pdf'
+        ? '/costs/cost-statement/export/pdf-selected'
+        : '/costs/cost-statement/export/excel-selected';
+      const data = await postJson(endpoint, 'POST', { ids });
+      if (data.success && data.url) {
+        openResultModal(format, data.url);
+      } else {
+        alert(data.message || 'حدث خطأ أثناء إنشاء الملف');
       }
     } catch (e) {
       alert('حدث خطأ في الاتصال بالخادم');
+    } finally {
+      updateBulkButtons();
+      if (exportSelectedBtn) exportSelectedBtn.disabled = false;
     }
-    exportBtn.disabled = false;
-    exportBtn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> تصدير';
-  });
-  const copyBtn = document.getElementById('copyMaterialsListPdfLinkBtn');
-  const linkInput = document.getElementById('materialsListPdfLinkInput');
-  if (copyBtn && linkInput){
-    copyBtn.addEventListener('click', function(){ linkInput.select(); document.execCommand('copy'); });
+  };
+
+  if (exportSelectedBtn) {
+    exportSelectedBtn.addEventListener('click', function () {
+      if (!getSelectedIds().length) return;
+      if (exportTypeModal) exportTypeModal.show();
+    });
   }
+
+  if (exportSelectedPdfFromModalBtn) {
+    exportSelectedPdfFromModalBtn.addEventListener('click', function () {
+      exportSelectedByFormat('pdf');
+    });
+  }
+
+  if (exportSelectedExcelFromModalBtn) {
+    exportSelectedExcelFromModalBtn.addEventListener('click', function () {
+      exportSelectedByFormat('excel');
+    });
+  }
+
+  const copyPdfBtn = document.getElementById('copyMaterialsListPdfLinkBtn');
+  const pdfInput = document.getElementById('materialsListPdfLinkInput');
+  if (copyPdfBtn && pdfInput) {
+    copyPdfBtn.addEventListener('click', function () {
+      pdfInput.select();
+      document.execCommand('copy');
+    });
+  }
+
+  const copyExcelBtn = document.getElementById('copyMaterialsListExcelLinkBtn');
+  const excelInput = document.getElementById('materialsListExcelLinkInput');
+  if (copyExcelBtn && excelInput) {
+    copyExcelBtn.addEventListener('click', function () {
+      excelInput.select();
+      document.execCommand('copy');
+    });
+  }
+
+  updateBulkButtons();
 });
 </script>
+
+
 
