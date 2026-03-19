@@ -127,6 +127,7 @@ app.use(async (req, res, next) => {
 // وسيط المصادقة
 app.use((req, res, next) => {
     const publicPaths = [
+        '/site-management/contact-messages',
         '/inventory/print-pdf-raw',
         '/inventory/export/pdf',
         '/costs/cost-statement/print-list',
@@ -147,6 +148,7 @@ app.use((req, res, next) => {
     res.locals.error = req.flash('error');
     res.locals.user = req.session.user || null;
     res.locals.session = req.session;
+    res.locals.currentPath = req.path;
     res.locals.appName = 'نظام إدارة المختبر';
     res.locals.title = 'نظام إدارة المختبر'; // العنوان الافتراضي
     next();
@@ -203,6 +205,7 @@ app.use('/exports', require('./routes/exports'));
 app.use('/costs', require('./routes/costs'));
 app.use('/notes', require('./routes/notes'));
 app.use('/activity-logs', require('./routes/activity'));
+app.use('/site-management', require('./routes/siteManagement'));
 
 // معالجة خطأ 404
 app.use((req, res, next) => {
@@ -233,7 +236,14 @@ cron.schedule('0 0 * * *', async () => {
         `);
         
         const [inventoryResult] = await conn.query(`
-            DELETE FROM inventory WHERE deleted_at < NOW() - INTERVAL 1 MONTH
+            DELETE i
+            FROM inventory i
+            WHERE i.deleted_at < NOW() - INTERVAL 1 MONTH
+              AND NOT EXISTS (
+                SELECT 1
+                FROM invoice_items ii
+                WHERE ii.inventory_id = i.id
+              )
         `);
         
         const [invoicesResult] = await conn.query(`

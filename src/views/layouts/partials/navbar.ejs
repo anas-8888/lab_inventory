@@ -1,0 +1,113 @@
+<%
+  const pathNow = currentPath || '';
+  const isRouteActive = (paths) => paths.some((route) => (
+    pathNow === route || pathNow.startsWith(`${route}/`)
+  ));
+%>
+
+<nav class="navbar navbar-expand-lg app-navbar sticky-top no-print">
+  <div class="container-fluid app-navbar-shell">
+    <a class="navbar-brand app-brand" href="/home" aria-label="الرئيسية">
+      <img src="/public/images/nexa.png" alt="نظام إدارة المختبر Logo">
+      <span class="app-brand-title">نظام إدارة المختبر</span>
+    </a>
+
+    <button
+      class="navbar-toggler app-navbar-toggler"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#mainNavbar"
+      aria-controls="mainNavbar"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+    >
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="mainNavbar">
+      <% if (typeof user !== 'undefined' && user) { %>
+        <ul class="navbar-nav app-navbar-links mb-3 mb-lg-0">
+          <% if (user.role !== 'shipping_manager') { %>
+            <li class="nav-item">
+              <a class="nav-link app-nav-link <%= isRouteActive(['/inventory']) ? 'active' : '' %>" href="/inventory">
+                <i class="bi bi-box-seam"></i>
+                <span>المخزون</span>
+              </a>
+            </li>
+          <% } %>
+
+          <li class="nav-item">
+            <a class="nav-link app-nav-link <%= isRouteActive(['/invoices']) ? 'active' : '' %>" href="/invoices">
+              <i class="bi bi-receipt"></i>
+              <span>طلبات الشحن</span>
+            </a>
+          </li>
+
+          <% if (user.role !== 'shipping_manager') { %>
+            <li class="nav-item">
+              <a class="nav-link app-nav-link <%= isRouteActive(['/certificates']) ? 'active' : '' %>" href="/certificates">
+                <i class="bi bi-award"></i>
+                <span>الشهادات</span>
+              </a>
+            </li>
+          <% } %>
+
+          <% if (user.role === 'admin') { %>
+            <li class="nav-item">
+              <a class="nav-link app-nav-link <%= isRouteActive(['/costs']) ? 'active' : '' %>" href="/costs">
+                <i class="bi bi-cash-stack"></i>
+                <span>التكاليف</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link app-nav-link <%= isRouteActive(['/site-management']) ? 'active' : '' %>" href="/site-management">
+                <i class="bi bi-globe2"></i>
+                <span>إدارة الموقع</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link app-nav-link <%= isRouteActive(['/users']) ? 'active' : '' %>" href="/users">
+                <i class="bi bi-people"></i>
+                <span>المستخدمين</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link app-nav-link <%= isRouteActive(['/notes']) ? 'active' : '' %>" href="/notes">
+                <i class="bi bi-journal-text"></i>
+                <span>الملاحظات</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link app-nav-link <%= isRouteActive(['/activity-logs']) ? 'active' : '' %>" href="/activity-logs">
+                <i class="bi bi-clock-history"></i>
+                <span>سجل الحركات</span>
+              </a>
+            </li>
+          <% } %>
+        </ul>
+
+        <ul class="navbar-nav app-user-nav mb-0">
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle app-user-trigger" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-person-circle"></i>
+              <span><%= user.username %></span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end app-user-menu">
+              <li>
+                <a class="dropdown-item" href="/auth/change-password">
+                  <i class="bi bi-key me-1"></i> تغيير كلمة المرور
+                </a>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <a class="dropdown-item text-danger" href="/auth/logout">
+                  <i class="bi bi-box-arrow-right me-1"></i> تسجيل الخروج
+                </a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      <% } %>
+    </div>
+  </div>
+</nav>

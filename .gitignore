@@ -13,6 +13,7 @@ src/public/quotations_pdf
 src/public/materials_pdf
 src/public/materials_list_pdf
 src/public/materials_list_excel
+src/public/website_images
 
 node_modules/
 logs/
