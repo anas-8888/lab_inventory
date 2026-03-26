@@ -163,8 +163,6 @@ body {
   border-radius: 12px;
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.18);
   padding: 0.45rem;
-  right: 0 !important;
-  left: auto !important;
   max-width: min(92vw, 280px);
   overflow-wrap: anywhere;
 }
@@ -446,6 +444,16 @@ body {
 
 /* Responsive Adjustments */
 @media (max-width: 768px) {
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
+  .app-navbar-shell {
+    max-width: 100%;
+    overflow: visible;
+  }
+
   .card, .table {
     font-size: 0.95em;
   }
@@ -483,11 +491,35 @@ body {
   .app-user-nav {
     width: 100%;
     margin-top: 0.6rem;
+    margin-inline: 0;
+  }
+
+  .app-user-nav .dropdown {
+    width: 100%;
   }
 
   .app-user-trigger {
     width: 100%;
+    max-width: 100%;
     justify-content: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .app-user-menu {
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+    width: 100%;
+    max-width: 100%;
+    margin-top: 0.5rem;
+  }
+
+  .app-user-menu[data-bs-popper] {
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
   }
 }
 

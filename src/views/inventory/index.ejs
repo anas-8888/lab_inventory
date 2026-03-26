@@ -15,12 +15,12 @@ function formatNumberDisplay(value) {
 %>
 
 
-<div class="container-fluid mt-4" style="width: full;">
-  <div class="d-flex justify-content-between align-items-center mb-3">
+<div class="container-fluid mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3 inventory-topbar">
     <h2 class="mb-0 no-print">
       <i class="fas fa-vial"></i> المخزون
     </h2>
-    <div class="d-flex gap-2 no-print">
+    <div class="d-flex gap-2 no-print inventory-top-actions">
       <button type="button" class="btn btn-success" id="filterTodayBtn">
         <i class="fas fa-calendar-day me-1"></i> عرض نتائج اليوم
       </button>
@@ -736,6 +736,23 @@ function formatNumberDisplay(value) {
   
   /* تحسين التجاوب مع الشاشات الصغيرة */
   @media (max-width: 768px) {
+    .inventory-topbar {
+      flex-direction: column;
+      align-items: stretch !important;
+      gap: 0.6rem;
+    }
+
+    .inventory-top-actions {
+      width: 100%;
+      flex-wrap: wrap;
+      margin: 0;
+    }
+
+    .inventory-top-actions .btn {
+      width: 100%;
+      margin: 0 !important;
+    }
+
     .inventory-header-actions {
       flex-direction: column;
       gap: 0.5rem;
