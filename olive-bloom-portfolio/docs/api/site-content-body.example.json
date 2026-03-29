@@ -1,0 +1,197 @@
+{
+  "siteId": "olive-bloom-portfolio",
+  "defaultLanguage": "ar",
+  "supportedLanguages": ["ar", "en"],
+  "metadata": {
+    "ar": {
+      "title": "عجاح الغذائية | زيت زيتون فاخر",
+      "description": "عجاح الغذائية - تصنيع وتجارة زيت الزيتون الفاخر بجودة متوسطية أصيلة.",
+      "keywords": ["زيت زيتون", "زيت زيتون فاخر", "عجاح الغذائية"]
+    },
+    "en": {
+      "title": "Ajaj Foodstuffs | Premium Olive Oil",
+      "description": "Ajaj Foodstuffs - Premium olive oil manufacturing and trade with authentic Mediterranean quality.",
+      "keywords": ["olive oil", "premium olive oil", "Ajaj Foodstuffs"]
+    },
+    "ogImage": "https://cdn.example.com/seo/og-image.jpg",
+    "twitterImage": "https://cdn.example.com/seo/twitter-image.jpg"
+  },
+  "branding": {
+    "logo": {
+      "url": "https://cdn.example.com/branding/logo.png",
+      "alt": {
+        "ar": "شعار عجاح الغذائية",
+        "en": "Ajaj Foodstuffs Logo"
+      }
+    }
+  },
+  "navigation": {
+    "items": [
+      { "key": "home", "label": { "ar": "الرئيسية", "en": "Home" } },
+      { "key": "about", "label": { "ar": "من نحن", "en": "About" } },
+      { "key": "products", "label": { "ar": "المنتجات", "en": "Products" } },
+      { "key": "production", "label": { "ar": "الإنتاج", "en": "Production" } },
+      { "key": "contact", "label": { "ar": "تواصل معنا", "en": "Contact" } }
+    ]
+  },
+  "hero": {
+    "subtitle": { "ar": "عجاح الغذائية", "en": "Ajaj Foodstuffs" },
+    "title": { "ar": "تصنيع وتجارة زيت الزيتون", "en": "Olive Oil Production & Trade" },
+    "description": {
+      "ar": "نقوم بتصنيع وتجارة زيت الزيتون بجودة عالية، ونجمع بين الحرفة المتوسطية الأصيلة ومعايير الجودة الحديثة.",
+      "en": "We produce and trade premium olive oil, combining authentic Mediterranean craftsmanship with modern quality standards."
+    },
+    "ctaPrimary": { "ar": "استكشف منتجاتنا", "en": "Explore Our Products" },
+    "ctaSecondary": { "ar": "اعرف المزيد", "en": "Learn More" },
+    "backgroundImage": {
+      "url": "https://cdn.example.com/home/hero-oil.jpg",
+      "alt": {
+        "ar": "زيت زيتون فاخر",
+        "en": "Premium Olive Oil"
+      }
+    }
+  },
+  "about": {
+    "subtitle": { "ar": "عجاح للمواد الغذائية", "en": "Ajaj Foodstuffs" },
+    "title": { "ar": "إرث من زيت الزيتون الفاخر", "en": "A Legacy of Premium Olive Oil" },
+    "paragraph1": {
+      "ar": "تأسست شركة عجاح الغذائية على حب عميق لشجرة الزيتون.",
+      "en": "Ajaj Foodstuffs was founded on a deep love for the olive tree."
+    },
+    "paragraph2": {
+      "ar": "نجمع بين الخبرة التقليدية وأحدث تقنيات الاستخلاص والتعبئة.",
+      "en": "We combine traditional expertise with modern extraction and packaging technologies."
+    },
+    "stats": [
+      { "key": "years", "number": { "ar": "٢٥+", "en": "25+" }, "label": { "ar": "عاماً من التميز", "en": "Years of Excellence" } },
+      { "key": "natural", "number": { "ar": "١٠٠٪", "en": "100%" }, "label": { "ar": "طبيعي ونقي", "en": "Natural & Pure" } },
+      { "key": "markets", "number": { "ar": "٣٠+", "en": "30+" }, "label": { "ar": "أسواق تصدير", "en": "Export Markets" } }
+    ],
+    "images": {
+      "main": "https://cdn.example.com/about/olive-grove.jpg",
+      "secondary": "https://cdn.example.com/about/oil-pour.jpg"
+    }
+  },
+  "products": {
+    "subtitle": { "ar": "مجموعتنا", "en": "Our Collection" },
+    "title": { "ar": "مصنوع من أجود ما في الطبيعة", "en": "Crafted with Nature's Finest" },
+    "intro": {
+      "ar": "اكتشف مجموعتنا المختارة بعناية من زيوت الزيتون الفاخرة.",
+      "en": "Discover our carefully curated selection of premium olive oils."
+    },
+    "items": [
+      {
+        "id": "1",
+        "category": "premium",
+        "name": { "ar": "زيت زيتون بكر ممتاز", "en": "Extra Virgin Olive Oil" },
+        "description": {
+          "ar": "معصور على البارد من أجود أنواع الزيتون المقطوف يدوياً.",
+          "en": "Cold-pressed from the finest hand-picked olives at peak ripeness."
+        },
+        "features": [
+          { "ar": "عصر بارد أول", "en": "First cold-pressed extraction" },
+          { "ar": "رائحة فاكهية غنية", "en": "Rich, fruity aroma" },
+          { "ar": "مثالي للاستهلاك الخام", "en": "Ideal for raw consumption" }
+        ],
+        "acidity": "0.3%",
+        "image": "https://cdn.example.com/products/product-1.jpg"
+      },
+      {
+        "id": "2",
+        "category": "virgin",
+        "name": { "ar": "زيت زيتون بكر", "en": "Virgin Olive Oil" },
+        "description": {
+          "ar": "رفيق طهي متعدد الاستخدامات بطابع متوسطي أصيل.",
+          "en": "A versatile and flavorful cooking companion with Mediterranean character."
+        },
+        "features": [
+          { "ar": "استخلاص طبيعي", "en": "Natural extraction" },
+          { "ar": "نكهة متوازنة", "en": "Balanced flavor" },
+          { "ar": "للاستخدام اليومي", "en": "Everyday use" }
+        ],
+        "acidity": "0.6%",
+        "image": "https://cdn.example.com/products/product-2.jpg"
+      },
+      {
+        "id": "3",
+        "category": "organic",
+        "name": { "ar": "زيت زيتون عضوي", "en": "Organic Olive Oil" },
+        "description": {
+          "ar": "عضوي معتمد ومصدره مستدام من بساتين تراثية.",
+          "en": "Certified organic and sustainably sourced from heritage groves."
+        },
+        "features": [
+          { "ar": "عضوي معتمد", "en": "Certified organic" },
+          { "ar": "مصدر مستدام", "en": "Sustainably sourced" },
+          { "ar": "صديق للبيئة", "en": "Eco-friendly" }
+        ],
+        "acidity": "0.4%",
+        "image": "https://cdn.example.com/products/product-3.jpg"
+      }
+    ]
+  },
+  "production": {
+    "subtitle": { "ar": "عمليتنا", "en": "Our Process" },
+    "title": { "ar": "من البستان إلى الزجاجة", "en": "From Grove to Bottle" },
+    "image": "https://cdn.example.com/production/production.jpg",
+    "steps": [
+      {
+        "order": 1,
+        "title": { "ar": "الحصاد", "en": "Harvesting" },
+        "description": { "ar": "يقطف يدوياً في ذروة النضج.", "en": "Hand-picked at peak ripeness." }
+      },
+      {
+        "order": 2,
+        "title": { "ar": "العصر البارد", "en": "Cold Pressing" },
+        "description": { "ar": "يستخلص خلال ساعات بأحدث التقنيات.", "en": "Extracted within hours using modern cold-press technology." }
+      },
+      {
+        "order": 3,
+        "title": { "ar": "اختبار الجودة", "en": "Quality Testing" },
+        "description": { "ar": "اختبارات صارمة لضمان النقاء.", "en": "Rigorous testing to ensure purity and standards." }
+      },
+      {
+        "order": 4,
+        "title": { "ar": "التعبئة", "en": "Packaging" },
+        "description": { "ar": "تعبئة تحفظ الطزاجة والجودة.", "en": "Sealed to preserve freshness and quality." }
+      }
+    ]
+  },
+  "contact": {
+    "subtitle": { "ar": "تواصل معنا", "en": "Get in Touch" },
+    "title": { "ar": "لنعمل معاً", "en": "Let's Work Together" },
+    "form": {
+      "placeholders": {
+        "name": { "ar": "اسمك", "en": "Your Name" },
+        "email": { "ar": "name@example.com", "en": "name@example.com" },
+        "message": { "ar": "رسالتك", "en": "Your Message" }
+      },
+      "submitLabel": { "ar": "إرسال الرسالة", "en": "Send Message" }
+    },
+    "contactInfo": {
+      "address": { "ar": "سوريا، حماة", "en": "Hama, Syria" },
+      "phone": "+963-000-000-000",
+      "email": "info@ajajfood.com"
+    },
+    "map": {
+      "embedUrl": "https://www.google.com/maps?q=35.19565997274785,36.74721407542121&z=16&output=embed"
+    }
+  },
+  "footer": {
+    "tagline": { "ar": "زيت زيتون فاخر", "en": "Premium Olive Oil" },
+    "description": {
+      "ar": "نقدّم لمائدتكم المذاق الأصيل للبحر المتوسط من خلال زيوت زيتون فاخرة.",
+      "en": "Bringing authentic Mediterranean taste through premium olive oils."
+    },
+    "quickLinksTitle": { "ar": "روابط سريعة", "en": "Quick Links" },
+    "contactInfoTitle": { "ar": "معلومات التواصل", "en": "Contact Info" },
+    "rights": { "ar": "جميع الحقوق محفوظة.", "en": "All rights reserved." },
+    "crafted": { "ar": "صنع بحب وزيت الزيتون", "en": "Crafted with love & olive oil" },
+    "socialLinks": {
+      "facebook": "https://facebook.com/your-page",
+      "instagram": "https://instagram.com/your-page",
+      "linkedin": "https://linkedin.com/company/your-page"
+    }
+  },
+  "updatedBy": "admin@ajajfood.com"
+}
