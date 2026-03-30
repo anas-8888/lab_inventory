@@ -100,8 +100,7 @@ const ContactSection = () => {
             <div className="relative w-full aspect-[4/3] overflow-hidden rounded-2xl border border-primary-foreground/15 bg-primary-foreground/5">
               <iframe
                 src="https://www.google.com/maps?q=35.19565997274785,36.74721407542121&z=16&output=embed"
-                className="absolute inset-0 h-full w-full"
-                style={{ border: 0 }}
+                className="absolute inset-0 h-full w-full border-0"
                 allowFullScreen
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"

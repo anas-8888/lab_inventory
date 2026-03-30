@@ -74,7 +74,7 @@ const Footer = () => {
                 <a
                   href="https://wa.me/0988111127"
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   aria-label="WhatsApp"
                   className="text-primary-foreground/70 hover:text-gold-light transition-colors w-9 h-9 rounded-lg bg-primary-foreground/10 hover:bg-primary-foreground/15 flex items-center justify-center"
                 >
@@ -90,7 +90,7 @@ const Footer = () => {
                 <a
                   href="https://www.facebook.com/share/1ASeV8DqZg/?mibextid=wwXIfr"
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   aria-label="Facebook"
                   className="text-primary-foreground/70 hover:text-gold-light transition-colors w-9 h-9 rounded-lg bg-primary-foreground/10 hover:bg-primary-foreground/15 flex items-center justify-center"
                 >
@@ -99,7 +99,7 @@ const Footer = () => {
                 <a
                   href="https://www.instagram.com/ajajbrothersfoodproducts?igsh=MWNvMmxvamY1Z3ZjNQ=="
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   aria-label="Instagram"
                   className="text-primary-foreground/70 hover:text-gold-light transition-colors w-9 h-9 rounded-lg bg-primary-foreground/10 hover:bg-primary-foreground/15 flex items-center justify-center"
                 >
@@ -133,7 +133,7 @@ const Footer = () => {
             className="font-body text-xs text-primary-foreground/50 hover:text-gold-light transition-colors"
             href="https://nexa-group.net"
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
           >
             Developed By NEXA-Group
           </a>

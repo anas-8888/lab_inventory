@@ -182,7 +182,8 @@ html {
 
 /* Sell modal scrollbar */
 .sell-modal-scroll {
-  scrollbar-gutter: stable;
+  /* Cross-browser fallback to avoid layout jump without using unsupported scrollbar-gutter */
+  padding-inline-end: 4px;
   padding-bottom: 4px;
 }
 

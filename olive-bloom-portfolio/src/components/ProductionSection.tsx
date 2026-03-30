@@ -47,8 +47,7 @@ const ProductionSection = () => {
           <div ref={timelineRef} className="relative">
             {/* Static background track */}
             <div
-              className="absolute w-[2px] bg-border/30 rounded-full left-[23px] rtl:left-auto rtl:right-[23px]"
-              style={{ top: "24px", bottom: "24px" }}
+              className="absolute top-6 bottom-6 w-[2px] bg-border/30 rounded-full left-[23px] rtl:left-auto rtl:right-[23px]"
             />
             {/* Animated gold fill */}
             <motion.div

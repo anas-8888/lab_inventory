@@ -105,6 +105,16 @@ const Navbar = () => {
           </button>
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label={
+              mobileOpen
+                ? (language === "ar" ? "إغلاق القائمة" : "Close menu")
+                : (language === "ar" ? "فتح القائمة" : "Open menu")
+            }
+            title={
+              mobileOpen
+                ? (language === "ar" ? "إغلاق القائمة" : "Close menu")
+                : (language === "ar" ? "فتح القائمة" : "Open menu")
+            }
             className={`transition-colors ${scrolled ? "text-olive" : "text-primary-foreground"}`}
           >
             {mobileOpen ? <X size={24} /> : <Menu size={24} />}
@@ -141,7 +151,12 @@ const Navbar = () => {
                       {language === "ar" ? "عجاج للمواد الغذائية" : "AJAJ FOOD STUFFS"}
                     </span>
                   </div>
-                  <button onClick={() => setMobileOpen(false)} className="text-foreground/60 hover:text-foreground transition-colors">
+                  <button
+                    onClick={() => setMobileOpen(false)}
+                    aria-label={language === "ar" ? "إغلاق القائمة" : "Close menu"}
+                    title={language === "ar" ? "إغلاق القائمة" : "Close menu"}
+                    className="text-foreground/60 hover:text-foreground transition-colors"
+                  >
                     <X size={24} />
                   </button>
                 </div>
@@ -171,7 +186,7 @@ const Navbar = () => {
                       className="text-foreground/80 hover:text-accent transition-colors"
                       href="https://nexa-group.net"
                       target="_blank"
-                      rel="noreferrer"
+                      rel="noopener noreferrer"
                     >
                       NEXA-Group
                     </a>
