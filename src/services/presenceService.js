@@ -25,8 +25,10 @@ module.exports = (io, pool) => {
                 UPDATE users 
                 SET activity_status = 'offline', last_seen_at = NOW() 
                 WHERE activity_status = 'online' 
-                AND last_seen_at IS NOT NULL 
-                AND last_seen_at < NOW() - INTERVAL 45 SECOND
+                AND (
+                    last_seen_at IS NULL
+                    OR last_seen_at < NOW() - INTERVAL 45 SECOND
+                )
             `);
             
             if (affectedRows.affectedRows > 0) {

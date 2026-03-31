@@ -7,7 +7,7 @@ const trackUserActivity = async (req, res, next) => {
         try {
             // تحديث حالة النشاط إلى online عند أي طلب API موثق
             await pool.query(
-                'UPDATE users SET activity_status = ? WHERE id = ?',
+                'UPDATE users SET activity_status = ?, last_seen_at = NOW() WHERE id = ?',
                 ['online', req.session.user.id]
             );
         } catch (error) {
@@ -21,7 +21,7 @@ const trackUserActivity = async (req, res, next) => {
 const onUserLogin = async (userId) => {
     try {
         await pool.query(
-            'UPDATE users SET activity_status = ? WHERE id = ?',
+            'UPDATE users SET activity_status = ?, last_seen_at = NOW() WHERE id = ?',
             ['online', userId]
         );
     } catch (error) {

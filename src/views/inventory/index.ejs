@@ -29,7 +29,7 @@ function formatNumberDisplay(value) {
           <i class="fas fa-plus"></i> إضافة عينة جديدة
         </a>
       <% } %>
-      <a href="/exports/inventory/excel" class="btn btn-success">
+      <a href="/exports/inventory/excel" class="btn btn-success" id="exportExcelBtn">
         <i class="fas fa-plus"></i>تصدير إلى Excel 
       </a>
     </div>
@@ -800,6 +800,39 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearFiltersBtn = document.getElementById('clearFiltersBtn');
     if (clearFiltersBtn) {
         clearFiltersBtn.addEventListener('click', clearFilters);
+    }
+
+    // تصدير Excel: إذا يوجد تحديد => صدّر المحدد فقط، وإلا صدّر حسب فلاتر الصفحة الحالية
+    const exportExcelBtn = document.getElementById('exportExcelBtn');
+    if (exportExcelBtn) {
+        exportExcelBtn.addEventListener('click', function(event) {
+            event.preventDefault();
+
+            const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+            const exportUrl = new URL('/exports/inventory/excel', window.location.origin);
+            const currentUrl = new URL(window.location.href);
+
+            const date = currentUrl.searchParams.get('date');
+            const supplier = currentUrl.searchParams.get('supplier');
+            const sampleNumber = currentUrl.searchParams.get('sample_number');
+            const positiveQuantity = currentUrl.searchParams.get('positive_quantity');
+
+            if (date) exportUrl.searchParams.set('date', date);
+            if (supplier) exportUrl.searchParams.set('supplier', supplier);
+            if (sampleNumber) exportUrl.searchParams.set('sample_number', sampleNumber);
+            if (positiveQuantity) exportUrl.searchParams.set('positive_quantity', positiveQuantity);
+
+            if (checkedBoxes.length > 0) {
+                const selectedIds = Array.from(checkedBoxes)
+                    .map((cb) => cb.dataset.id)
+                    .filter(Boolean);
+                if (selectedIds.length > 0) {
+                    exportUrl.searchParams.set('ids', selectedIds.join(','));
+                }
+            }
+
+            window.location.href = exportUrl.toString();
+        });
     }
     // أزرار الحذف
     document.querySelectorAll('.delete-btn').forEach(button => {

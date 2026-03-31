@@ -1,18 +1,18 @@
 :root {
-  --primary-color: #1b7a33;
+  --primary-color: #186d2e;
   --primary-light: #43a047;
   --primary-dark: #155724;
   --secondary-color: #124a1f;
-  --bs-success: #157347;
-  --bs-success-rgb: 21, 115, 71;
-  --bs-primary: #1b7a33;
-  --bs-primary-rgb: 27, 122, 51;
+  --bs-success: #13683f;
+  --bs-success-rgb: 19, 104, 63;
+  --bs-primary: #186d2e;
+  --bs-primary-rgb: 24, 109, 46;
   --accent-color: #e9f5e1;
   --background-light: #f8fdf5;
-  --text-dark: #222;
+  --text-dark: #131313;
   --text-light: #fff;
   --border-color: #C8E6C9;
-  --text-color: #333333;
+  --text-color: #1c1b1b;
   --light-bg: #F5F5F5;
   --white: #FFFFFF;
   --danger: #D32F2F;
@@ -47,7 +47,7 @@ body {
 
 /* Navbar (Modern RTL) */
 .app-navbar {
-  background: linear-gradient(130deg, #0d462b 0%, #157347 55%, #1b7a4d 100%);
+  background: linear-gradient(130deg, #0b3f26 0%, #13683f 55%, #176c44 100%);
   box-shadow: 0 10px 30px rgba(13, 70, 43, 0.28);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
@@ -69,7 +69,7 @@ body {
 
 .app-brand img {
   width: auto;
-  height: 54px;
+  height: 72px;
   object-fit: contain;
 }
 
@@ -154,6 +154,14 @@ body {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.app-username {
+  display: inline-block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
 }
 
 .app-user-trigger:hover,
@@ -467,7 +475,7 @@ body {
   }
 
   .app-brand img {
-    height: 46px;
+    height: 58px;
   }
 
   .app-brand-title {
@@ -511,6 +519,10 @@ body {
     white-space: nowrap;
   }
 
+  .app-username {
+    max-width: 72vw;
+  }
+
   .app-user-menu {
     position: static !important;
     inset: auto !important;
@@ -533,8 +545,66 @@ body {
   }
 
   .app-nav-link {
-    padding: 0.48rem 0.56rem !important;
-    font-size: 0.92rem;
+    padding: 0.45rem 0.5rem !important;
+    font-size: 0.86rem;
+    white-space: nowrap;
+  }
+
+  .app-user-trigger {
+    font-size: 0.88rem;
+  }
+
+  .app-username {
+    max-width: 112px;
+  }
+}
+
+@media (min-width: 992px) {
+  .app-navbar .navbar-collapse {
+    flex-wrap: nowrap;
+    gap: 0.55rem;
+    min-width: 0;
+  }
+
+  .app-navbar-links {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-wrap: nowrap;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .app-navbar-links .nav-item {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  .app-nav-link {
+    font-size: clamp(0.74rem, 0.68vw, 0.9rem);
+    padding: 0.48rem 0.48rem !important;
+    white-space: nowrap;
+  }
+
+  .app-nav-link span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .app-user-nav {
+    flex: 0 0 auto;
+    margin-inline-start: 0.2rem;
+  }
+
+  .app-user-trigger {
+    max-width: 178px;
+    font-size: 0.86rem;
+    padding: 0.48rem 0.65rem !important;
+  }
+
+  .app-username {
+    max-width: 94px;
   }
 }
 

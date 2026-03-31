@@ -2,8 +2,28 @@ const Excel = require('exceljs');
 const { pool } = require('../database/db');
 const { parseRawNumericMap, rawOrValue } = require('../utils/rawNumbers');
 
+function convertDateToISO(dateString) {
+    if (!dateString) return null;
+    if (dateString.includes('-') && dateString.length === 10) return dateString;
+    if (dateString.includes('/')) {
+        const [day, month, year] = dateString.split('/');
+        return `${year}-${String(month || '').padStart(2, '0')}-${String(day || '').padStart(2, '0')}`;
+    }
+    return dateString;
+}
+
+function parseIds(rawIds) {
+    if (!rawIds) return [];
+    const values = Array.isArray(rawIds) ? rawIds : String(rawIds).split(',');
+    return values
+        .map((value) => parseInt(String(value).trim(), 10))
+        .filter((value) => Number.isFinite(value) && value > 0);
+}
+
 exports.exportInventoryToExcel = async (req, res) => {
     try {
+        const { date, supplier, sample_number, positive_quantity, ids } = req.query || {};
+
         // Create a new workbook and worksheet
         const workbook = new Excel.Workbook();
         const worksheet = workbook.addWorksheet('المخزون');
@@ -41,7 +61,7 @@ exports.exportInventoryToExcel = async (req, res) => {
         };
 
         // Get data from database
-        const [rows] = await pool.query(`
+        let sql = `
             SELECT 
                 i.sample_number,
                 i.supplier_or_sample_name,
@@ -63,8 +83,40 @@ exports.exportInventoryToExcel = async (req, res) => {
                 i.notes
             FROM inventory i
             WHERE i.deleted_at IS NULL
-            ORDER BY CAST(i.sample_number AS UNSIGNED) DESC
-        `);
+        `;
+        const params = [];
+
+        if (date) {
+            const formattedDate = convertDateToISO(String(date).trim());
+            if (formattedDate) {
+                sql += ` AND DATE(i.date) = ?`;
+                params.push(formattedDate);
+            }
+        }
+
+        if (supplier) {
+            sql += ` AND i.supplier_or_sample_name LIKE ?`;
+            params.push(`%${String(supplier).trim()}%`);
+        }
+
+        if (sample_number) {
+            sql += ` AND i.sample_number LIKE ?`;
+            params.push(`%${String(sample_number).trim()}%`);
+        }
+
+        if (positive_quantity === '1') {
+            sql += ` AND i.current_quantity > 0`;
+        }
+
+        const selectedIds = parseIds(ids);
+        if (selectedIds.length > 0) {
+            sql += ` AND i.id IN (?)`;
+            params.push(selectedIds);
+        }
+
+        sql += ` ORDER BY CAST(i.sample_number AS UNSIGNED) DESC`;
+
+        const [rows] = await pool.query(sql, params);
 
         // Add rows to worksheet
         rows.forEach((row) => {

@@ -61,7 +61,7 @@
             <li class="nav-item">
               <a class="nav-link app-nav-link <%= isRouteActive(['/site-management']) ? 'active' : '' %>" href="/site-management">
                 <i class="bi bi-globe2"></i>
-                <span>إدارة الموقع</span>
+                <span>الموقع</span>
               </a>
             </li>
             <li class="nav-item">
@@ -89,7 +89,7 @@
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle app-user-trigger" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
               <i class="bi bi-person-circle"></i>
-              <span><%= user.username %></span>
+              <span class="app-username"><%= user.username %></span>
             </a>
             <ul class="dropdown-menu dropdown-menu-end app-user-menu">
               <li>

@@ -4,6 +4,17 @@ const { pool } = require('../database/db');
 // عرض قائمة المستخدمين
 exports.getUsers = async (req, res) => {
     try {
+        // تنظيف سريع للحالات العالقة قبل عرض الصفحة
+        await pool.query(`
+            UPDATE users
+            SET activity_status = 'offline', last_seen_at = NOW()
+            WHERE activity_status = 'online'
+            AND (
+                last_seen_at IS NULL
+                OR last_seen_at < NOW() - INTERVAL 45 SECOND
+            )
+        `);
+
         const [users] = await pool.query(`
             SELECT u.id, u.username, u.role_id, u.created_at, r.name as role_name,
                    u.activity_status, u.last_seen_at
