@@ -1,18 +1,49 @@
 import { motion, useInView } from "framer-motion";
-import { useRef, useState } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
+
+const apiBase = (import.meta.env.VITE_SITE_API_BASE_URL || "http://localhost:3000").replace(/\/+$/, "");
 
 const ContactSection = () => {
   const { t } = useLanguage();
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-100px" });
-  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [form, setForm] = useState({ name: "", phone: "", message: "" });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    toast.success(t("nav.contact"));
-    setForm({ name: "", email: "", message: "" });
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`${apiBase}/site-management/contact-messages`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          sender_name: form.name.trim(),
+          sender_phone: form.phone.trim(),
+          message_text: form.message.trim(),
+        }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload?.success === false) {
+        throw new Error(payload?.message || (response.status === 429 ? "Too many requests." : "Request failed."));
+      }
+
+      toast.success(payload?.message || t("sell.toast"));
+      setForm({ name: "", phone: "", message: "" });
+    } catch (error) {
+      const fallback = t("contact.send");
+      const message = error instanceof Error && error.message ? error.message : fallback;
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -53,10 +84,10 @@ const ContactSection = () => {
             </div>
             <div>
               <input
-                type="email"
-                placeholder={t("contact.email")}
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                type="tel"
+                placeholder={t("contact.phone")}
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 required
                 dir="ltr"
                 className="w-full text-left bg-primary-foreground/5 border border-primary-foreground/20 rounded-xl px-5 py-4 text-primary-foreground placeholder:text-primary-foreground/40 font-body focus:outline-none focus:border-gold transition-colors"
@@ -75,9 +106,10 @@ const ContactSection = () => {
             <div className="flex flex-wrap gap-4">
               <button
                 type="submit"
+                disabled={isSubmitting}
                 className="bg-gradient-gold text-primary-foreground px-10 py-4 font-body text-sm tracking-wider uppercase rounded-full hover:shadow-lg hover:shadow-gold/30 transition-all duration-500"
               >
-                {t("contact.send")}
+                {isSubmitting ? "..." : t("contact.send")}
               </button>
               <a
                 href="https://wa.me/963988111127"

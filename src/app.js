@@ -37,6 +37,40 @@ app.use((req, res, next) => {
     next();
 });
 
+// CORS للمسارات العامة الخاصة بالموقع الخارجي (Landing Page)
+const publicSiteAllowedOrigins = (process.env.PUBLIC_SITE_ALLOWED_ORIGINS || 'http://localhost:8081')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+function applyPublicSiteCors(req, res) {
+    const requestOrigin = req.headers.origin;
+    if (!requestOrigin) return;
+
+    if (publicSiteAllowedOrigins.includes(requestOrigin)) {
+        res.setHeader('Access-Control-Allow-Origin', requestOrigin);
+        res.setHeader('Vary', 'Origin');
+    } else {
+        return;
+    }
+
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+}
+
+app.use((req, res, next) => {
+    const isPublicSiteApi =
+        req.path.startsWith('/site-management/public/') ||
+        req.path.startsWith('/site-management/public-content') ||
+        req.path.startsWith('/site-management/contact-messages');
+
+    if (!isPublicSiteApi) return next();
+
+    applyPublicSiteCors(req, res);
+    if (req.method === 'OPTIONS') return res.sendStatus(204);
+    return next();
+});
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -127,6 +161,8 @@ app.use(async (req, res, next) => {
 // وسيط المصادقة
 app.use((req, res, next) => {
     const publicPaths = [
+        '/site-management/public/',
+        '/site-management/public-content',
         '/site-management/contact-messages',
         '/inventory/print-pdf-raw',
         '/inventory/export/pdf',

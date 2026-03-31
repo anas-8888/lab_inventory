@@ -11,6 +11,8 @@ import Footer from "@/components/Footer";
 import SellProductsModal from "@/components/SellProductsModal";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+const SELL_MODAL_SEEN_KEY = "sell_products_modal_seen";
+
 const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSellModalOpen, setIsSellModalOpen] = useState(false);
@@ -24,9 +26,16 @@ const Index = () => {
 
   useEffect(() => {
     if (!isLoading) {
+      const hasSeenModal = window.localStorage.getItem(SELL_MODAL_SEEN_KEY) === "1";
+      if (hasSeenModal) {
+        setSellModalSeen(true);
+        return undefined;
+      }
+
       const timer = setTimeout(() => {
         setIsSellModalOpen(true);
         setSellModalSeen(true);
+        window.localStorage.setItem(SELL_MODAL_SEEN_KEY, "1");
       }, 200);
       return () => clearTimeout(timer);
     }

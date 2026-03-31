@@ -43,6 +43,9 @@
     .inbox-message-card { border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; }
     .inbox-meta { font-size: 12px; color: #6b7280; }
     .inbox-attachment-img { width: 72px; height: 72px; object-fit: cover; border-radius: 8px; border: 1px solid #dee2e6; }
+    .products-table .product-thumb { width: 64px; height: 64px; border-radius: 8px; }
+    .products-table td, .products-table th { vertical-align: middle; }
+    .products-table thead th { text-align: center; }
   </style>
 
   <div class="d-flex justify-content-between align-items-center mb-3">
@@ -53,11 +56,10 @@
   <ul class="nav nav-pills mb-3" id="siteTabs" role="tablist">
     <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tab-navbar" type="button">اللوغو</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-products" type="button">المنتجات</button></li>
-    <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-contact" type="button">التواصل</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-inbox" type="button">البريد الوارد</button></li>
   </ul>
 
-  <form method="POST" action="/site-management/<%= currentRecord.id %>/update" enctype="multipart/form-data">
+  <form id="siteManagementForm" method="POST" action="/site-management/<%= currentRecord.id %>/update" enctype="multipart/form-data">
     <div class="tab-content">
       <div class="tab-pane fade show active" id="tab-navbar">
         <div class="card shadow-sm mb-3">
@@ -66,14 +68,32 @@
             <div class="col-md-6">
               <label class="form-label">صورة اللوغو</label>
               <input type="hidden" name="current_logo_image" value="<%= formData.current_logo_image || '' %>">
-              <input class="form-control" type="file" name="logo_image_file" accept="image/*">
-              <% if (formData.current_logo_image) { %><img src="<%= formData.current_logo_image %>" class="site-image-preview" alt="logo"><% } %>
+              <input id="logoImageInput" class="form-control" type="file" name="logo_image_file" accept="image/*">
+              <img
+                id="logoPreviewImage"
+                src="<%= formData.current_logo_image || '' %>"
+                data-existing-src="<%= formData.current_logo_image || '' %>"
+                class="site-image-preview <%= formData.current_logo_image ? '' : 'd-none' %>"
+                alt="logo"
+              >
+              <div id="logoPreviewHint" class="small text-muted mt-1 <%= formData.current_logo_image ? 'd-none' : '' %>">
+                لا توجد صورة حالية.
+              </div>
             </div>
             <div class="col-md-6">
               <label class="form-label">صورة الأيقونة</label>
               <input type="hidden" name="current_logo_icon" value="<%= formData.current_logo_icon || '' %>">
-              <input class="form-control" type="file" name="logo_icon_file" accept="image/*">
-              <% if (formData.current_logo_icon) { %><img src="<%= formData.current_logo_icon %>" class="site-image-preview" alt="logo-icon"><% } %>
+              <input id="iconImageInput" class="form-control" type="file" name="logo_icon_file" accept="image/*">
+              <img
+                id="iconPreviewImage"
+                src="<%= formData.current_logo_icon || '' %>"
+                data-existing-src="<%= formData.current_logo_icon || '' %>"
+                class="site-image-preview <%= formData.current_logo_icon ? '' : 'd-none' %>"
+                alt="logo-icon"
+              >
+              <div id="iconPreviewHint" class="small text-muted mt-1 <%= formData.current_logo_icon ? 'd-none' : '' %>">
+                لا توجد صورة حالية.
+              </div>
             </div>
           </div>
         </div>
@@ -100,17 +120,16 @@
                           <label class="form-label mb-0 fw-bold">فئات <%= def.label %></label>
                           <button
                             type="button"
-                            class="btn btn-sm btn-outline-success manage-categories-btn"
+                            class="btn btn-sm btn-outline-success add-category-btn"
                             data-section="<%= def.key %>"
                             data-label="<%= def.label %>"
                           >
-                            <i class="bi bi-tags"></i> إدارة الفئات
+                            <i class="bi bi-plus-circle"></i> إضافة فئة
                           </button>
                         </div>
-                        <div id="<%= def.key %>_categories_preview" class="category-preview-box"></div>
+                        <div id="<%= def.key %>_categories_list" class="category-preview-box d-flex flex-column gap-2"></div>
                         <textarea class="d-none categories-ar-storage" data-section="<%= def.key %>" name="<%= def.key %>_categories_ar_text"><%= section.categories_ar_text || '' %></textarea>
                         <textarea class="d-none categories-en-storage" data-section="<%= def.key %>" name="<%= def.key %>_categories_en_text"><%= section.categories_en_text || '' %></textarea>
-                        <div class="product-help-text mt-1">إضافة الفئات تتم عبر زر "إدارة الفئات".</div>
                       </div>
 
                       <div class="d-flex justify-content-between align-items-center mb-2 mt-3">
@@ -118,89 +137,61 @@
                         <button type="button" class="btn btn-sm btn-outline-primary add-product-btn" data-section="<%= def.key %>"><i class="bi bi-plus-circle"></i> إضافة منتج</button>
                       </div>
 
-                      <div id="<%= def.key %>_products_container" class="row g-3">
+                      <div class="table-responsive">
+                        <table class="table table-bordered table-hover products-table mb-0">
+                          <thead class="table-light">
+                            <tr>
+                              <th style="width:90px;">الصورة</th>
+                              <th>الاسم عربي</th>
+                              <th>الاسم EN</th>
+                              <th>الفئة</th>
+                              <th style="width:220px;">تغيير الصورة</th>
+                              <th style="width:170px;">الإجراءات</th>
+                            </tr>
+                          </thead>
+                          <tbody id="<%= def.key %>_products_container">
                         <% items.forEach((p, idx) => { %>
-                          <div class="col-md-6 col-xl-4 product-row" data-section="<%= def.key %>">
-                            <div class="product-card-item h-100">
-                              <div class="p-3 d-flex gap-3 product-card-click js-edit-product">
-                                <img class="product-thumb js-card-image" src="<%= p.current_image || '/public/img/placeholder-image.png' %>" alt="product-image">
-                                <div class="flex-grow-1">
-                                  <div class="product-card-title js-name-ar"><%= p.name_ar || 'منتج بدون اسم' %></div>
-                                  <div class="product-card-sub js-name-en"><%= p.name_en || '-' %></div>
-                                  <div class="product-card-sub js-category-ar">الفئة: <%= p.category_ar || '-' %></div>
-                                  <div class="product-card-sub js-acidity">الحموضة: <%= p.acidity || '-' %></div>
-                                </div>
-                              </div>
-                              <div class="product-card-foot p-2 d-flex justify-content-between align-items-center gap-2">
+                          <tr class="product-row" data-section="<%= def.key %>">
+                            <td><img class="product-thumb js-card-image" src="<%= p.current_image || '/public/img/placeholder-image.png' %>" alt="product-image"></td>
+                            <td class="js-name-ar"><%= p.name_ar || 'منتج بدون اسم' %></td>
+                            <td class="js-name-en"><%= p.name_en || '-' %></td>
+                            <td class="js-category-ar"><%= p.category_ar || '-' %></td>
+                            <td>
+                              <input class="form-control form-control-sm section-product-image-input" type="file" name="<%= def.key %>_product_image_<%= idx %>" accept="image/*">
+                            </td>
+                            <td>
+                              <div class="d-flex gap-1">
                                 <button type="button" class="btn btn-sm btn-outline-primary js-edit-product"><i class="bi bi-pencil-square"></i> تعديل</button>
+                                <button
+                                  type="button"
+                                  class="btn btn-sm btn-outline-secondary duplicate-product-btn"
+                                  title="استنساخ المنتج"
+                                  aria-label="استنساخ المنتج"
+                                >
+                                  <i class="bi bi-copy"></i>
+                                </button>
                                 <button type="button" class="btn btn-sm btn-outline-danger product-delete-btn"><i class="bi bi-trash"></i> حذف</button>
-                              </div>
-                              <div class="p-2 border-top">
-                                <label class="form-label mb-1 small">تغيير صورة المنتج</label>
-                                <input class="form-control form-control-sm section-product-image-input" type="file" name="<%= def.key %>_product_image_<%= idx %>" accept="image/*">
                               </div>
                               <input type="hidden" data-field="id" name="<%= def.key %>_product_id" value="<%= p.id || '' %>">
                               <input type="hidden" data-field="category_ar" name="<%= def.key %>_product_category_ar" value="<%= p.category_ar || '' %>">
                               <input type="hidden" data-field="category_en" name="<%= def.key %>_product_category_en" value="<%= p.category_en || '' %>">
                               <input type="hidden" data-field="name_ar" name="<%= def.key %>_product_name_ar" value="<%= p.name_ar || '' %>">
                               <input type="hidden" data-field="name_en" name="<%= def.key %>_product_name_en" value="<%= p.name_en || '' %>">
-                              <input type="hidden" data-field="acidity" name="<%= def.key %>_product_acidity" value="<%= p.acidity || '' %>">
                               <textarea class="d-none" data-field="description_ar" name="<%= def.key %>_product_description_ar"><%= p.description_ar || '' %></textarea>
                               <textarea class="d-none" data-field="description_en" name="<%= def.key %>_product_description_en"><%= p.description_en || '' %></textarea>
                               <textarea class="d-none" data-field="features_ar" name="<%= def.key %>_product_features_ar"><%= p.features_ar || '' %></textarea>
                               <textarea class="d-none" data-field="features_en" name="<%= def.key %>_product_features_en"><%= p.features_en || '' %></textarea>
                               <input type="hidden" data-field="current_image" name="<%= def.key %>_current_product_image" value="<%= p.current_image || '' %>">
-                            </div>
-                          </div>
+                            </td>
+                          </tr>
                         <% }) %>
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   </div>
                 </div>
               <% }) %>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="tab-pane fade" id="tab-contact">
-        <div class="row g-3">
-          <div class="col-12">
-            <div class="card shadow-sm contact-group-card">
-              <div class="card-body">
-                <div class="contact-group-title">العناوين</div>
-                <div class="row g-3">
-                  <div class="col-md-6"><label class="form-label">عنوان فرعي عربي</label><input class="form-control" name="contact_subtitle_ar" value="<%= formData.contact_subtitle_ar || '' %>"></div>
-                  <div class="col-md-6"><label class="form-label">عنوان فرعي إنكليزي</label><input class="form-control" name="contact_subtitle_en" value="<%= formData.contact_subtitle_en || '' %>"></div>
-                  <div class="col-md-6"><label class="form-label">عنوان رئيسي عربي</label><input class="form-control" name="contact_title_ar" value="<%= formData.contact_title_ar || '' %>"></div>
-                  <div class="col-md-6"><label class="form-label">عنوان رئيسي إنكليزي</label><input class="form-control" name="contact_title_en" value="<%= formData.contact_title_en || '' %>"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-12">
-            <div class="card shadow-sm contact-group-card">
-              <div class="card-body">
-                <div class="contact-group-title">معلومات التواصل</div>
-                <div class="row g-3">
-                  <div class="col-md-4"><label class="form-label">الهاتف</label><input class="form-control" name="contact_phone" value="<%= formData.contact_phone || '' %>"></div>
-                  <div class="col-md-4"><label class="form-label">الإيميل</label><input class="form-control" name="contact_email" value="<%= formData.contact_email || '' %>"></div>
-                  <div class="col-md-4"><label class="form-label">رابط الخريطة</label><input class="form-control" name="contact_map_url" value="<%= formData.contact_map_url || '' %>"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-12">
-            <div class="card shadow-sm contact-group-card">
-              <div class="card-body">
-                <div class="contact-group-title">روابط الشبكات الاجتماعية</div>
-                <div class="row g-3">
-                  <div class="col-md-6"><label class="form-label">رابط فيسبوك</label><input class="form-control" name="footer_facebook" value="<%= formData.footer_facebook || '' %>"></div>
-                  <div class="col-md-6"><label class="form-label">رابط إنستغرام</label><input class="form-control" name="footer_instagram" value="<%= formData.footer_instagram || '' %>"></div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -216,32 +207,57 @@
             <% if (!inboxMessages.length) { %>
               <div class="text-muted">لا توجد رسائل حتى الآن.</div>
             <% } else { %>
-              <div class="d-flex flex-column gap-3">
-                <% inboxMessages.forEach((mail) => { %>
-                  <div class="inbox-message-card p-3">
-                    <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">
-                      <div class="fw-bold"><%= mail.sender_name || '-' %></div>
-                      <div class="inbox-meta"><%= mail.created_at_display || '-' %></div>
-                    </div>
-                    <div class="inbox-meta mb-2">الرقم: <%= mail.sender_phone || '-' %></div>
-                    <div class="mb-2"><%= mail.message_text || '-' %></div>
-                    <div class="inbox-meta mb-2">IP: <code><%= mail.sender_ip || '-' %></code></div>
-                    <div>
-                      <div class="small fw-bold mb-1">المرفقات:</div>
-                      <% if (mail.attachments && mail.attachments.length) { %>
-                        <div class="d-flex flex-wrap gap-2">
-                          <% mail.attachments.forEach((att) => { %>
-                            <a href="<%= att.file_url %>" target="_blank" rel="noreferrer">
-                              <img src="<%= att.file_url %>" class="inbox-attachment-img" alt="attachment">
-                            </a>
-                          <% }) %>
-                        </div>
-                      <% } else { %>
-                        <div class="text-muted small">لا يوجد مرفقات</div>
-                      <% } %>
-                    </div>
-                  </div>
-                <% }) %>
+              <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th class="text-center" style="width: 60px;">#</th>
+                      <th class="text-center" style="min-width: 150px;">المرسل</th>
+                      <th class="text-center" style="min-width: 130px;">الرقم</th>
+                      <th class="text-center" style="min-width: 280px;">الرسالة</th>
+                      <th class="text-center" style="min-width: 150px;">التاريخ</th>
+                      <th class="text-center" style="min-width: 160px;">IP</th>
+                      <th class="text-center" style="min-width: 180px;">المرفقات</th>
+                      <th class="text-center" style="width: 90px;">حذف</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% inboxMessages.forEach((mail, idx) => { %>
+                      <tr>
+                        <td class="text-center"><%= idx + 1 %></td>
+                        <td><strong><%= mail.sender_name || '-' %></strong></td>
+                        <td dir="ltr"><%= mail.sender_phone || '-' %></td>
+                        <td style="white-space: pre-wrap;"><%= mail.message_text || '-' %></td>
+                        <td class="text-center"><%= mail.created_at_display || '-' %></td>
+                        <td class="text-center"><code><%= mail.sender_ip || '-' %></code></td>
+                        <td>
+                          <% if (mail.attachments && mail.attachments.length) { %>
+                            <div class="d-flex flex-wrap gap-2">
+                              <% mail.attachments.forEach((att) => { %>
+                                <a href="<%= att.file_url %>" target="_blank" rel="noreferrer">
+                                  <img src="<%= att.file_url %>" class="inbox-attachment-img" alt="attachment">
+                                </a>
+                              <% }) %>
+                            </div>
+                          <% } else { %>
+                            <span class="text-muted small">لا يوجد</span>
+                          <% } %>
+                        </td>
+                        <td class="text-center">
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-outline-danger delete-inbox-message-btn"
+                            data-message-id="<%= mail.id %>"
+                            title="حذف الرسالة"
+                            aria-label="حذف الرسالة"
+                          >
+                            <i class="bi bi-trash"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
               </div>
             <% } %>
           </div>
@@ -249,52 +265,75 @@
       </div>
     </div>
 
-    <div class="d-none">
-      <input type="hidden" name="contact_address_ar" value="<%= formData.contact_address_ar || '' %>">
-      <input type="hidden" name="contact_address_en" value="<%= formData.contact_address_en || '' %>">
-      <input type="hidden" name="contact_placeholder_name_ar" value="<%= formData.contact_placeholder_name_ar || '' %>">
-      <input type="hidden" name="contact_placeholder_name_en" value="<%= formData.contact_placeholder_name_en || '' %>">
-      <input type="hidden" name="contact_placeholder_email_ar" value="<%= formData.contact_placeholder_email_ar || '' %>">
-      <input type="hidden" name="contact_placeholder_email_en" value="<%= formData.contact_placeholder_email_en || '' %>">
-      <input type="hidden" name="contact_placeholder_message_ar" value="<%= formData.contact_placeholder_message_ar || '' %>">
-      <input type="hidden" name="contact_placeholder_message_en" value="<%= formData.contact_placeholder_message_en || '' %>">
-      <input type="hidden" name="contact_submit_ar" value="<%= formData.contact_submit_ar || '' %>">
-      <input type="hidden" name="contact_submit_en" value="<%= formData.contact_submit_en || '' %>">
-    </div>
-
     <div class="d-flex gap-2 mb-5">
-      <button type="submit" class="btn btn-success"><i class="bi bi-check2-circle me-1"></i> حفظ التعديلات</button>
-      <a href="/site-management" class="btn btn-outline-secondary">إلغاء</a>
+      <button id="saveChangesBtn" type="submit" class="btn btn-success d-none"><i class="bi bi-check2-circle me-1"></i> حفظ التعديلات</button>
     </div>
   </form>
+  <form id="deleteInboxMessageForm" method="POST" class="d-none"></form>
 </div>
 
 <div class="modal fade" id="productEditorModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">تعديل المنتج</h5>
+        <h5 class="modal-title">إضافة منتج جديد</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <div class="border rounded p-3 mb-3">
-          <h6 class="mb-3 text-success">البيانات الأساسية</h6>
-          <div class="row g-2">
-            <div class="col-md-2"><label class="form-label">#</label><input id="pm_id" class="form-control"></div>
-            <div class="col-md-5"><label class="form-label">الاسم عربي</label><input id="pm_name_ar" class="form-control"></div>
-            <div class="col-md-5"><label class="form-label">الاسم EN</label><input id="pm_name_en" class="form-control"></div>
-            <div class="col-md-6"><label class="form-label">الفئة عربي</label><input id="pm_category_ar" class="form-control"></div>
-            <div class="col-md-6"><label class="form-label">الفئة EN</label><input id="pm_category_en" class="form-control"></div>
-            <div class="col-md-4"><label class="form-label">الحموضة</label><input id="pm_acidity" class="form-control"></div>
+        <div class="card border-0 bg-light-subtle mb-3">
+          <div class="card-body">
+            <h6 class="mb-3 text-success">البيانات الأساسية</h6>
+            <div class="row g-3">
+              <div class="col-md-2">
+                <label class="form-label fw-semibold">المعرّف</label>
+                <input id="pm_id" class="form-control" placeholder="1">
+              </div>
+              <div class="col-md-5">
+                <label class="form-label fw-semibold">اسم المنتج (عربي)</label>
+                <input id="pm_name_ar" class="form-control" placeholder="مثال: زيت زيتون بكر ممتاز">
+              </div>
+              <div class="col-md-5">
+                <label class="form-label fw-semibold">Product Name (EN)</label>
+                <input id="pm_name_en" class="form-control" placeholder="Example: Extra Virgin Olive Oil">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">اختيار الفئة</label>
+                <select id="pm_category_select" class="form-select">
+                  <option value="">اختر فئة</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">الفئة (عربي)</label>
+                <input id="pm_category_ar" class="form-control" readonly>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Category (EN)</label>
+                <input id="pm_category_en" class="form-control" readonly>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="border rounded p-3">
-          <h6 class="mb-3 text-success">الوصف والمميزات</h6>
-          <div class="row g-2">
-            <div class="col-md-6"><label class="form-label">الوصف عربي</label><textarea id="pm_description_ar" class="form-control" rows="3"></textarea></div>
-            <div class="col-md-6"><label class="form-label">الوصف EN</label><textarea id="pm_description_en" class="form-control" rows="3"></textarea></div>
-            <div class="col-md-6"><label class="form-label">المميزات عربي</label><textarea id="pm_features_ar" class="form-control" rows="4"></textarea></div>
-            <div class="col-md-6"><label class="form-label">المميزات EN</label><textarea id="pm_features_en" class="form-control" rows="4"></textarea></div>
+        <div class="card border-0 bg-light-subtle">
+          <div class="card-body">
+            <h6 class="mb-3 text-success">الوصف والمميزات</h6>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">الوصف (عربي)</label>
+                <textarea id="pm_description_ar" class="form-control" rows="3" placeholder="أدخل وصفًا موجزًا للمنتج"></textarea>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Description (EN)</label>
+                <textarea id="pm_description_en" class="form-control" rows="3" placeholder="Add a short product description"></textarea>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">المميزات (عربي) - كل ميزة بسطر</label>
+                <textarea id="pm_features_ar" class="form-control" rows="4" placeholder="ميزة 1&#10;ميزة 2"></textarea>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Features (EN) - one per line</label>
+                <textarea id="pm_features_en" class="form-control" rows="4" placeholder="Feature 1&#10;Feature 2"></textarea>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -310,22 +349,68 @@
 </div>
 
 <div class="modal fade" id="categoriesModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+  <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="categoriesModalTitle">إدارة الفئات</h5>
+        <h5 class="modal-title" id="categoriesModalTitle">إضافة فئة</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <div id="categoriesRowsContainer" class="d-flex flex-column gap-2"></div>
-        <button type="button" class="btn btn-sm btn-outline-success mt-3" id="addCategoryRowBtn">
-          <i class="bi bi-plus-circle"></i> إضافة فئة
-        </button>
+        <div class="row g-2">
+          <div class="col-12">
+            <label class="form-label">الفئة عربي</label>
+            <input id="categoryArInput" class="form-control" placeholder="مثال: زيتون أخضر">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Category EN</label>
+            <input id="categoryEnInput" class="form-control" placeholder="Example: Green Olives">
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
-        <button type="button" class="btn btn-success" id="saveCategoriesBtn">
-          <i class="bi bi-check2"></i> حفظ الفئات
+        <button type="button" class="btn btn-success" id="saveCategoryBtn">
+          <i class="bi bi-check2"></i> حفظ
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="duplicateProductModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">تأكيد الاستنساخ</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        هل تريد استنساخ هذا المنتج؟
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-primary" id="confirmDuplicateProductBtn">
+          <i class="bi bi-copy"></i> استنساخ
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmDeleteTitle">تأكيد الحذف</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="confirmDeleteMessage">
+        هل أنت متأكد من عملية الحذف؟
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+          <i class="bi bi-trash"></i> حذف
         </button>
       </div>
     </div>
@@ -342,13 +427,69 @@
   const productEditorModal = productEditorModalElement ? new bootstrap.Modal(productEditorModalElement) : null;
   const productEditorTitle = productEditorModalElement?.querySelector('.modal-title');
   const productEditorDeleteBtn = document.getElementById('pm_delete_btn');
+  const pmCategorySelect = document.getElementById('pm_category_select');
   const categoriesModalElement = document.getElementById('categoriesModal');
   const categoriesModal = categoriesModalElement ? new bootstrap.Modal(categoriesModalElement) : null;
-  const categoriesRowsContainer = document.getElementById('categoriesRowsContainer');
+  const duplicateProductModalElement = document.getElementById('duplicateProductModal');
+  const duplicateProductModal = duplicateProductModalElement ? new bootstrap.Modal(duplicateProductModalElement) : null;
+  const confirmDuplicateProductBtn = document.getElementById('confirmDuplicateProductBtn');
+  const confirmDeleteModalElement = document.getElementById('confirmDeleteModal');
+  const confirmDeleteModal = confirmDeleteModalElement ? new bootstrap.Modal(confirmDeleteModalElement) : null;
+  const confirmDeleteTitle = document.getElementById('confirmDeleteTitle');
+  const confirmDeleteMessage = document.getElementById('confirmDeleteMessage');
+  const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
   const categoriesModalTitle = document.getElementById('categoriesModalTitle');
+  const categoryArInput = document.getElementById('categoryArInput');
+  const categoryEnInput = document.getElementById('categoryEnInput');
+  const saveCategoryBtn = document.getElementById('saveCategoryBtn');
+  const siteManagementForm = document.getElementById('siteManagementForm');
+  const deleteInboxMessageForm = document.getElementById('deleteInboxMessageForm');
+  const saveChangesBtn = document.getElementById('saveChangesBtn');
   let activeProductCard = null;
+  let pendingDuplicateProductCard = null;
+  let pendingDeleteAction = null;
   let pendingNewSectionKey = null;
+  let activeProductSectionKey = null;
   let activeCategorySectionKey = null;
+  let activeCategoryIndex = null;
+  let initialFormSignature = '';
+
+  function formFieldSignature(el) {
+    if (!el || el.disabled || !el.name) return '';
+    const tag = (el.tagName || '').toUpperCase();
+    const type = String(el.type || '').toLowerCase();
+
+    if (tag === 'INPUT' && type === 'file') {
+      const files = Array.from(el.files || []);
+      if (!files.length) return `${el.name}=<empty-file>`;
+      const fileSig = files.map((f) => `${f.name}:${f.size}:${f.type || ''}`).join('|');
+      return `${el.name}=<file:${fileSig}>`;
+    }
+
+    if ((tag === 'INPUT' && (type === 'checkbox' || type === 'radio'))) {
+      return `${el.name}=${el.checked ? '1' : '0'}:${el.value || ''}`;
+    }
+
+    return `${el.name}=${el.value || ''}`;
+  }
+
+  function buildFormSignature() {
+    if (!siteManagementForm) return '';
+    const fields = Array.from(siteManagementForm.querySelectorAll('input[name], textarea[name], select[name]'));
+    const signatures = fields
+      .map(formFieldSignature)
+      .filter(Boolean)
+      .sort();
+    return signatures.join('||');
+  }
+
+  function updateSaveButtonVisibility() {
+    if (!saveChangesBtn) return;
+    const currentSignature = buildFormSignature();
+    const isDirty = currentSignature !== initialFormSignature;
+    saveChangesBtn.classList.toggle('d-none', !isDirty);
+    saveChangesBtn.disabled = !isDirty;
+  }
 
   function field(card, key) {
     return card.querySelector(`[data-field="${key}"]`);
@@ -368,35 +509,71 @@
     const nameAr = readField(card, 'name_ar') || 'منتج بدون اسم';
     const nameEn = readField(card, 'name_en') || '-';
     const categoryAr = readField(card, 'category_ar') || '-';
-    const acidity = readField(card, 'acidity') || '-';
     const image = readField(card, 'current_image') || placeholderSvg;
 
     const nameArEl = card.querySelector('.js-name-ar');
     const nameEnEl = card.querySelector('.js-name-en');
     const catArEl = card.querySelector('.js-category-ar');
-    const acidityEl = card.querySelector('.js-acidity');
     const imgEl = card.querySelector('.js-card-image');
 
     if (nameArEl) nameArEl.textContent = nameAr;
     if (nameEnEl) nameEnEl.textContent = nameEn;
-    if (catArEl) catArEl.textContent = `الفئة: ${categoryAr}`;
-    if (acidityEl) acidityEl.textContent = `الحموضة: ${acidity}`;
+    if (catArEl) catArEl.textContent = categoryAr;
     if (imgEl) imgEl.src = image;
+  }
+
+  function syncProductCategoryInputsFromSelect() {
+    if (!pmCategorySelect) return;
+    const selectedOption = pmCategorySelect.options[pmCategorySelect.selectedIndex];
+    const ar = selectedOption?.dataset?.ar || '';
+    const en = selectedOption?.dataset?.en || '';
+    document.getElementById('pm_category_ar').value = ar;
+    document.getElementById('pm_category_en').value = en;
+  }
+
+  function populateProductCategoryOptions(sectionKey, currentAr = '', currentEn = '') {
+    if (!pmCategorySelect) return;
+    const rows = readSectionCategories(sectionKey);
+    const currentPair = `${currentAr}|||${currentEn}`;
+    const values = rows.map((x) => `${x.ar || ''}|||${x.en || ''}`);
+    const hasCurrent = currentAr || currentEn ? values.includes(currentPair) : true;
+    const normalizedRows = hasCurrent ? rows : [...rows, { ar: currentAr, en: currentEn }];
+
+    pmCategorySelect.innerHTML = '<option value="">اختر فئة</option>';
+    normalizedRows.forEach((row) => {
+      const option = document.createElement('option');
+      option.value = `${row.ar || ''}|||${row.en || ''}`;
+      option.dataset.ar = row.ar || '';
+      option.dataset.en = row.en || '';
+      option.textContent = `${row.ar || '-'} / ${row.en || '-'}`;
+      pmCategorySelect.appendChild(option);
+    });
+
+    if (currentAr || currentEn) {
+      pmCategorySelect.value = `${currentAr || ''}|||${currentEn || ''}`;
+    } else if (normalizedRows.length) {
+      pmCategorySelect.selectedIndex = 1;
+    } else {
+      pmCategorySelect.selectedIndex = 0;
+    }
+
+    syncProductCategoryInputsFromSelect();
   }
 
   function openProductEditor(card) {
     if (!productEditorModal) return;
     activeProductCard = card;
     pendingNewSectionKey = null;
+    activeProductSectionKey = card.dataset.section || null;
     if (productEditorTitle) productEditorTitle.textContent = 'تعديل المنتج';
     if (productEditorDeleteBtn) productEditorDeleteBtn.classList.remove('d-none');
 
     document.getElementById('pm_id').value = readField(card, 'id');
     document.getElementById('pm_name_ar').value = readField(card, 'name_ar');
     document.getElementById('pm_name_en').value = readField(card, 'name_en');
-    document.getElementById('pm_category_ar').value = readField(card, 'category_ar');
-    document.getElementById('pm_category_en').value = readField(card, 'category_en');
-    document.getElementById('pm_acidity').value = readField(card, 'acidity');
+    const currentCategoryAr = readField(card, 'category_ar');
+    const currentCategoryEn = readField(card, 'category_en');
+    populateProductCategoryOptions(activeProductSectionKey, currentCategoryAr, currentCategoryEn);
     document.getElementById('pm_description_ar').value = readField(card, 'description_ar');
     document.getElementById('pm_description_en').value = readField(card, 'description_en');
     document.getElementById('pm_features_ar').value = readField(card, 'features_ar');
@@ -409,15 +586,14 @@
     if (!productEditorModal) return;
     activeProductCard = null;
     pendingNewSectionKey = sectionKey;
+    activeProductSectionKey = sectionKey;
     if (productEditorTitle) productEditorTitle.textContent = 'إضافة منتج جديد';
     if (productEditorDeleteBtn) productEditorDeleteBtn.classList.add('d-none');
 
     document.getElementById('pm_id').value = '';
     document.getElementById('pm_name_ar').value = '';
     document.getElementById('pm_name_en').value = '';
-    document.getElementById('pm_category_ar').value = '';
-    document.getElementById('pm_category_en').value = '';
-    document.getElementById('pm_acidity').value = '';
+    populateProductCategoryOptions(sectionKey, '', '');
     document.getElementById('pm_description_ar').value = '';
     document.getElementById('pm_description_en').value = '';
     document.getElementById('pm_features_ar').value = '';
@@ -429,9 +605,9 @@
   function createProductCardFromValues(sectionKey, values) {
     const container = document.getElementById(`${sectionKey}_products_container`);
     if (!container) return null;
-    const html = `<div class="col-md-6 col-xl-4 product-row" data-section="${sectionKey}"><div class="product-card-item h-100"><div class="p-3 d-flex gap-3 product-card-click js-edit-product"><img class="product-thumb js-card-image" src="${placeholderSvg}" alt="product-image"><div class="flex-grow-1"><div class="product-card-title js-name-ar">منتج جديد</div><div class="product-card-sub js-name-en">-</div><div class="product-card-sub js-category-ar">الفئة: -</div><div class="product-card-sub js-acidity">الحموضة: -</div></div></div><div class="product-card-foot p-2 d-flex justify-content-between align-items-center gap-2"><button type="button" class="btn btn-sm btn-outline-primary js-edit-product"><i class="bi bi-pencil-square"></i> تعديل</button><button type="button" class="btn btn-sm btn-outline-danger product-delete-btn"><i class="bi bi-trash"></i> حذف</button></div><div class="p-2 border-top"><label class="form-label mb-1 small">تغيير صورة المنتج</label><input class="form-control form-control-sm section-product-image-input" type="file" accept="image/*"></div><input type="hidden" data-field="id" name="${sectionKey}_product_id" value=""><input type="hidden" data-field="category_ar" name="${sectionKey}_product_category_ar" value=""><input type="hidden" data-field="category_en" name="${sectionKey}_product_category_en" value=""><input type="hidden" data-field="name_ar" name="${sectionKey}_product_name_ar" value=""><input type="hidden" data-field="name_en" name="${sectionKey}_product_name_en" value=""><input type="hidden" data-field="acidity" name="${sectionKey}_product_acidity" value=""><textarea class="d-none" data-field="description_ar" name="${sectionKey}_product_description_ar"></textarea><textarea class="d-none" data-field="description_en" name="${sectionKey}_product_description_en"></textarea><textarea class="d-none" data-field="features_ar" name="${sectionKey}_product_features_ar"></textarea><textarea class="d-none" data-field="features_en" name="${sectionKey}_product_features_en"></textarea><input type="hidden" data-field="current_image" name="${sectionKey}_current_product_image" value=""></div></div>`;
+    const html = `<tr class="product-row" data-section="${sectionKey}"><td><img class="product-thumb js-card-image" src="${placeholderSvg}" alt="product-image"></td><td class="js-name-ar">منتج جديد</td><td class="js-name-en">-</td><td class="js-category-ar">-</td><td><input class="form-control form-control-sm section-product-image-input" type="file" accept="image/*"></td><td><div class="d-flex gap-1"><button type="button" class="btn btn-sm btn-outline-primary js-edit-product"><i class="bi bi-pencil-square"></i> تعديل</button><button type="button" class="btn btn-sm btn-outline-secondary duplicate-product-btn" title="استنساخ المنتج" aria-label="استنساخ المنتج"><i class="bi bi-copy"></i></button><button type="button" class="btn btn-sm btn-outline-danger product-delete-btn"><i class="bi bi-trash"></i> حذف</button></div><input type="hidden" data-field="id" name="${sectionKey}_product_id" value=""><input type="hidden" data-field="category_ar" name="${sectionKey}_product_category_ar" value=""><input type="hidden" data-field="category_en" name="${sectionKey}_product_category_en" value=""><input type="hidden" data-field="name_ar" name="${sectionKey}_product_name_ar" value=""><input type="hidden" data-field="name_en" name="${sectionKey}_product_name_en" value=""><textarea class="d-none" data-field="description_ar" name="${sectionKey}_product_description_ar"></textarea><textarea class="d-none" data-field="description_en" name="${sectionKey}_product_description_en"></textarea><textarea class="d-none" data-field="features_ar" name="${sectionKey}_product_features_ar"></textarea><textarea class="d-none" data-field="features_en" name="${sectionKey}_product_features_en"></textarea><input type="hidden" data-field="current_image" name="${sectionKey}_current_product_image" value=""></td></tr>`;
     addRow(container, html);
-    const newCard = container.querySelector('.product-row:last-child');
+    const newCard = container.querySelector('tr.product-row:last-child');
     if (!newCard) return null;
 
     writeField(newCard, 'id', values.id);
@@ -439,7 +615,6 @@
     writeField(newCard, 'name_en', values.name_en);
     writeField(newCard, 'category_ar', values.category_ar);
     writeField(newCard, 'category_en', values.category_en);
-    writeField(newCard, 'acidity', values.acidity);
     writeField(newCard, 'description_ar', values.description_ar);
     writeField(newCard, 'description_en', values.description_en);
     writeField(newCard, 'features_ar', values.features_ar);
@@ -450,13 +625,24 @@
   }
 
   function saveProductEditor() {
+    if (pmCategorySelect) {
+      if (pmCategorySelect.options.length <= 1) {
+        alert('لا توجد فئات في هذا القسم. أضف فئة أولاً.');
+        return;
+      }
+      if (pmCategorySelect.selectedIndex <= 0) {
+        alert('يرجى اختيار فئة للمنتج.');
+        return;
+      }
+      syncProductCategoryInputsFromSelect();
+    }
+
     const values = {
       id: document.getElementById('pm_id').value,
       name_ar: document.getElementById('pm_name_ar').value,
       name_en: document.getElementById('pm_name_en').value,
       category_ar: document.getElementById('pm_category_ar').value,
       category_en: document.getElementById('pm_category_en').value,
-      acidity: document.getElementById('pm_acidity').value,
       description_ar: document.getElementById('pm_description_ar').value,
       description_en: document.getElementById('pm_description_en').value,
       features_ar: document.getElementById('pm_features_ar').value,
@@ -469,7 +655,6 @@
       writeField(activeProductCard, 'name_en', values.name_en);
       writeField(activeProductCard, 'category_ar', values.category_ar);
       writeField(activeProductCard, 'category_en', values.category_en);
-      writeField(activeProductCard, 'acidity', values.acidity);
       writeField(activeProductCard, 'description_ar', values.description_ar);
       writeField(activeProductCard, 'description_en', values.description_en);
       writeField(activeProductCard, 'features_ar', values.features_ar);
@@ -479,21 +664,25 @@
       createProductCardFromValues(pendingNewSectionKey, values);
     }
 
+    updateSaveButtonVisibility();
     productEditorModal.hide();
   }
 
   function deleteActiveProduct() {
     if (!activeProductCard) return;
     const sectionKey = activeProductCard.dataset.section;
-    const wrapperCol = activeProductCard.closest('.col-md-6, .col-xl-4');
-    if (wrapperCol) {
-      wrapperCol.remove();
-    } else {
-      activeProductCard.remove();
-    }
+    activeProductCard.remove();
     if (sectionKey) reindexProductFiles(sectionKey);
+    updateSaveButtonVisibility();
     productEditorModal.hide();
     activeProductCard = null;
+  }
+
+  function requestDelete(options) {
+    pendingDeleteAction = typeof options?.onConfirm === 'function' ? options.onConfirm : null;
+    if (confirmDeleteTitle) confirmDeleteTitle.textContent = options?.title || 'تأكيد الحذف';
+    if (confirmDeleteMessage) confirmDeleteMessage.textContent = options?.message || 'هل أنت متأكد من عملية الحذف؟';
+    confirmDeleteModal?.show();
   }
 
   function reindexProductFiles(sectionKey) {
@@ -502,6 +691,38 @@
     container.querySelectorAll('.section-product-image-input').forEach((input, idx) => {
       input.name = `${sectionKey}_product_image_${idx}`;
     });
+  }
+
+  function nextProductIdForSection(sectionKey) {
+    const container = document.getElementById(`${sectionKey}_products_container`);
+    if (!container) return '';
+    const ids = Array.from(container.querySelectorAll('.product-row'))
+      .map((row) => Number(readField(row, 'id')))
+      .filter((n) => Number.isFinite(n) && n > 0);
+    if (!ids.length) return '';
+    return String(Math.max(...ids) + 1);
+  }
+
+  function duplicateProductRow(sourceRow) {
+    const sectionKey = sourceRow?.dataset?.section;
+    if (!sectionKey) return;
+    const values = {
+      id: nextProductIdForSection(sectionKey),
+      name_ar: readField(sourceRow, 'name_ar'),
+      name_en: readField(sourceRow, 'name_en'),
+      category_ar: readField(sourceRow, 'category_ar'),
+      category_en: readField(sourceRow, 'category_en'),
+      description_ar: readField(sourceRow, 'description_ar'),
+      description_en: readField(sourceRow, 'description_en'),
+      features_ar: readField(sourceRow, 'features_ar'),
+      features_en: readField(sourceRow, 'features_en')
+    };
+    const newRow = createProductCardFromValues(sectionKey, values);
+    if (newRow) {
+      writeField(newRow, 'current_image', readField(sourceRow, 'current_image'));
+      updateProductCardSummary(newRow);
+      updateSaveButtonVisibility();
+    }
   }
 
   function activateTabByTarget(target) {
@@ -525,102 +746,175 @@
     };
   }
 
-  function renderCategoriesPreview(sectionKey) {
-    const preview = document.getElementById(`${sectionKey}_categories_preview`);
-    const pill = document.querySelector(`.js-category-count-pill[data-section="${sectionKey}"]`);
-    if (!preview) return;
+  function readSectionCategories(sectionKey) {
     const storage = categoriesStorage(sectionKey);
     const arRows = splitLines(storage.ar?.value || '');
     const enRows = splitLines(storage.en?.value || '');
     const max = Math.max(arRows.length, enRows.length);
-    if (!max) {
+    const rows = [];
+    for (let i = 0; i < max; i += 1) {
+      const ar = arRows[i] || '';
+      const en = enRows[i] || '';
+      if (!ar && !en) continue;
+      rows.push({ ar, en });
+    }
+    return rows;
+  }
+
+  function writeSectionCategories(sectionKey, rows) {
+    const storage = categoriesStorage(sectionKey);
+    if (!storage.ar || !storage.en) return;
+    storage.ar.value = rows.map((x) => x.ar || '').join('\n');
+    storage.en.value = rows.map((x) => x.en || '').join('\n');
+  }
+
+  function renderCategoriesPreview(sectionKey) {
+    const preview = document.getElementById(`${sectionKey}_categories_list`);
+    const pill = document.querySelector(`.js-category-count-pill[data-section="${sectionKey}"]`);
+    if (!preview) return;
+    const rows = readSectionCategories(sectionKey);
+    if (!rows.length) {
       preview.innerHTML = '<span class="text-muted small">لا توجد فئات مضافة بعد.</span>';
       if (pill) pill.textContent = 'عدد الفئات: 0';
       return;
     }
-    const html = [];
-    for (let i = 0; i < max; i += 1) {
-      const ar = arRows[i] || '-';
-      const en = enRows[i] || '-';
-      html.push(`<span class="category-chip">${ar} / ${en}</span>`);
-    }
-    preview.innerHTML = html.join('');
-    if (pill) pill.textContent = `عدد الفئات: ${max}`;
+    preview.innerHTML = rows
+      .map((row, idx) => `
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 border rounded px-2 py-1 bg-white">
+          <span class="category-chip mb-0">${row.ar || '-'} / ${row.en || '-'}</span>
+          <div class="d-flex gap-1">
+            <button type="button" class="btn btn-sm btn-outline-primary edit-category-btn" data-section="${sectionKey}" data-index="${idx}">
+              <i class="bi bi-pencil-square"></i> تعديل
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger delete-category-btn" data-section="${sectionKey}" data-index="${idx}">
+              <i class="bi bi-trash"></i> حذف
+            </button>
+          </div>
+        </div>
+      `)
+      .join('');
+    if (pill) pill.textContent = `عدد الفئات: ${rows.length}`;
   }
 
-  function addCategoryRow(arValue = '', enValue = '') {
-    if (!categoriesRowsContainer) return;
-    const row = document.createElement('div');
-    row.className = 'row g-2 align-items-center category-modal-row';
-    row.innerHTML = `
-      <div class="col-md-5">
-        <input class="form-control category-ar-input" placeholder="الفئة عربي">
-      </div>
-      <div class="col-md-5">
-        <input class="form-control category-en-input" placeholder="Category EN">
-      </div>
-      <div class="col-md-2 d-grid">
-        <button type="button" class="btn btn-outline-danger remove-category-row-btn">
-          <i class="bi bi-trash"></i>
-        </button>
-      </div>
-    `;
-    const arInput = row.querySelector('.category-ar-input');
-    const enInput = row.querySelector('.category-en-input');
-    if (arInput) arInput.value = arValue;
-    if (enInput) enInput.value = enValue;
-    categoriesRowsContainer.appendChild(row);
-  }
+  function initSiteImagePreview(inputId, imageId, hintId) {
+    const input = document.getElementById(inputId);
+    const img = document.getElementById(imageId);
+    const hint = document.getElementById(hintId);
+    if (!input || !img) return;
 
-  function openCategoriesModal(sectionKey, sectionLabel) {
-    if (!categoriesModal || !categoriesRowsContainer) return;
-    activeCategorySectionKey = sectionKey;
-    if (categoriesModalTitle) categoriesModalTitle.textContent = `إدارة فئات ${sectionLabel}`;
-    const storage = categoriesStorage(sectionKey);
-    const arRows = splitLines(storage.ar?.value || '');
-    const enRows = splitLines(storage.en?.value || '');
-    const max = Math.max(arRows.length, enRows.length);
-    categoriesRowsContainer.innerHTML = '';
-    if (!max) addCategoryRow('', '');
-    else {
-      for (let i = 0; i < max; i += 1) {
-        addCategoryRow(arRows[i] || '', enRows[i] || '');
+    let objectUrl = null;
+
+    const resetToExisting = () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+        objectUrl = null;
       }
+      const existingSrc = img.getAttribute('data-existing-src') || '';
+      if (existingSrc) {
+        img.src = existingSrc;
+        img.classList.remove('d-none');
+        if (hint) hint.classList.add('d-none');
+      } else {
+        img.removeAttribute('src');
+        img.classList.add('d-none');
+        if (hint) hint.classList.remove('d-none');
+      }
+    };
+
+    input.addEventListener('change', () => {
+      const [file] = input.files || [];
+      if (!file) {
+        resetToExisting();
+        return;
+      }
+
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      objectUrl = URL.createObjectURL(file);
+      img.src = objectUrl;
+      img.classList.remove('d-none');
+      if (hint) hint.classList.add('d-none');
+    });
+
+    window.addEventListener('beforeunload', () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    });
+  }
+
+  function openCategoriesModal(sectionKey, sectionLabel, index = null) {
+    if (!categoriesModal) return;
+    activeCategorySectionKey = sectionKey;
+    activeCategoryIndex = Number.isInteger(index) ? index : null;
+    const rows = readSectionCategories(sectionKey);
+    if (activeCategoryIndex === null) {
+      if (categoriesModalTitle) categoriesModalTitle.textContent = `إضافة فئة - ${sectionLabel}`;
+      if (categoryArInput) categoryArInput.value = '';
+      if (categoryEnInput) categoryEnInput.value = '';
+    } else {
+      if (categoriesModalTitle) categoriesModalTitle.textContent = `تعديل فئة - ${sectionLabel}`;
+      const current = rows[activeCategoryIndex] || { ar: '', en: '' };
+      if (categoryArInput) categoryArInput.value = current.ar || '';
+      if (categoryEnInput) categoryEnInput.value = current.en || '';
     }
     categoriesModal.show();
   }
 
   function saveCategoriesModal() {
     if (!activeCategorySectionKey) return;
-    const storage = categoriesStorage(activeCategorySectionKey);
-    if (!storage.ar || !storage.en) return;
-    const rows = Array.from(document.querySelectorAll('.category-modal-row'));
-    const arValues = [];
-    const enValues = [];
-    rows.forEach((row) => {
-      const ar = row.querySelector('.category-ar-input')?.value?.trim() || '';
-      const en = row.querySelector('.category-en-input')?.value?.trim() || '';
-      if (!ar && !en) return;
-      arValues.push(ar);
-      enValues.push(en);
-    });
-    storage.ar.value = arValues.join('\n');
-    storage.en.value = enValues.join('\n');
+    const ar = categoryArInput?.value?.trim() || '';
+    const en = categoryEnInput?.value?.trim() || '';
+    if (!ar && !en) return;
+
+    const rows = readSectionCategories(activeCategorySectionKey);
+    if (activeCategoryIndex === null) {
+      rows.push({ ar, en });
+    } else if (rows[activeCategoryIndex]) {
+      rows[activeCategoryIndex] = { ar, en };
+    }
+
+    writeSectionCategories(activeCategorySectionKey, rows);
     renderCategoriesPreview(activeCategorySectionKey);
+    if (activeProductSectionKey && activeProductSectionKey === activeCategorySectionKey) {
+      const currentAr = document.getElementById('pm_category_ar').value;
+      const currentEn = document.getElementById('pm_category_en').value;
+      populateProductCategoryOptions(activeProductSectionKey, currentAr, currentEn);
+    }
+    updateSaveButtonVisibility();
     categoriesModal.hide();
   }
 
   document.querySelectorAll('.add-product-btn').forEach((btn) => {
     btn.addEventListener('click', () => openCreateProductModal(btn.dataset.section));
   });
-  document.querySelectorAll('.manage-categories-btn').forEach((btn) => {
-    btn.addEventListener('click', () => openCategoriesModal(btn.dataset.section, btn.dataset.label || ''));
+  document.querySelectorAll('.add-category-btn').forEach((btn) => {
+    btn.addEventListener('click', () => openCategoriesModal(btn.dataset.section, btn.dataset.label || '', null));
   });
 
   document.getElementById('pm_save_btn')?.addEventListener('click', saveProductEditor);
-  document.getElementById('pm_delete_btn')?.addEventListener('click', deleteActiveProduct);
-  document.getElementById('saveCategoriesBtn')?.addEventListener('click', saveCategoriesModal);
-  document.getElementById('addCategoryRowBtn')?.addEventListener('click', () => addCategoryRow('', ''));
+  document.getElementById('pm_delete_btn')?.addEventListener('click', () => {
+    if (!activeProductCard) return;
+    requestDelete({
+      title: 'تأكيد حذف المنتج',
+      message: 'هل تريد حذف هذا المنتج؟',
+      onConfirm: () => deleteActiveProduct()
+    });
+  });
+  saveCategoryBtn?.addEventListener('click', saveCategoriesModal);
+  confirmDuplicateProductBtn?.addEventListener('click', () => {
+    if (pendingDuplicateProductCard) {
+      duplicateProductRow(pendingDuplicateProductCard);
+    }
+    pendingDuplicateProductCard = null;
+    duplicateProductModal?.hide();
+  });
+  confirmDeleteBtn?.addEventListener('click', () => {
+    if (pendingDeleteAction) pendingDeleteAction();
+    pendingDeleteAction = null;
+    confirmDeleteModal?.hide();
+  });
+  pmCategorySelect?.addEventListener('change', () => {
+    syncProductCategoryInputsFromSelect();
+    updateSaveButtonVisibility();
+  });
 
   document.addEventListener('click', (e) => {
     const editBtn = e.target.closest('.js-edit-product');
@@ -634,12 +928,40 @@
     if (productDeleteBtn) {
       const row = productDeleteBtn.closest('.product-row');
       const sectionKey = row?.dataset?.section;
-      if (row) {
-        const wrapperCol = row.closest('.col-md-6, .col-xl-4');
-        if (wrapperCol) wrapperCol.remove();
-        else row.remove();
-      }
-      if (sectionKey) reindexProductFiles(sectionKey);
+      if (!row) return;
+      requestDelete({
+        title: 'تأكيد حذف المنتج',
+        message: 'هل تريد حذف هذا المنتج؟',
+        onConfirm: () => {
+          row.remove();
+          if (sectionKey) reindexProductFiles(sectionKey);
+          updateSaveButtonVisibility();
+        }
+      });
+      return;
+    }
+
+    const duplicateProductBtn = e.target.closest('.duplicate-product-btn');
+    if (duplicateProductBtn) {
+      const row = duplicateProductBtn.closest('.product-row');
+      if (!row) return;
+      pendingDuplicateProductCard = row;
+      duplicateProductModal?.show();
+      return;
+    }
+
+    const deleteInboxMessageBtn = e.target.closest('.delete-inbox-message-btn');
+    if (deleteInboxMessageBtn) {
+      const messageId = Number(deleteInboxMessageBtn.dataset.messageId);
+      if (!Number.isFinite(messageId) || messageId <= 0 || !deleteInboxMessageForm) return;
+      requestDelete({
+        title: 'تأكيد حذف الرسالة',
+        message: 'هل تريد حذف هذه الرسالة من البريد الوارد؟',
+        onConfirm: () => {
+          deleteInboxMessageForm.action = `/site-management/contact-messages/${messageId}/delete`;
+          deleteInboxMessageForm.submit();
+        }
+      });
       return;
     }
 
@@ -650,15 +972,53 @@
       return;
     }
 
-    const removeCategoryBtn = e.target.closest('.remove-category-row-btn');
-    if (!removeCategoryBtn) return;
-    const row = removeCategoryBtn.closest('.category-modal-row');
-    if (row) row.remove();
+    const editCategoryBtn = e.target.closest('.edit-category-btn');
+    if (editCategoryBtn) {
+      const sectionKey = editCategoryBtn.dataset.section;
+      const sectionLabel = document.querySelector(`.add-category-btn[data-section="${sectionKey}"]`)?.dataset?.label || '';
+      const index = Number(editCategoryBtn.dataset.index);
+      if (sectionKey && Number.isFinite(index)) openCategoriesModal(sectionKey, sectionLabel, index);
+      return;
+    }
+
+    const deleteCategoryBtn = e.target.closest('.delete-category-btn');
+    if (!deleteCategoryBtn) return;
+    const sectionKey = deleteCategoryBtn.dataset.section;
+    const index = Number(deleteCategoryBtn.dataset.index);
+    if (!sectionKey || !Number.isFinite(index)) return;
+    requestDelete({
+      title: 'تأكيد حذف الفئة',
+      message: 'هل تريد حذف هذه الفئة؟',
+      onConfirm: () => {
+        const rows = readSectionCategories(sectionKey);
+        if (!rows[index]) return;
+        rows.splice(index, 1);
+        writeSectionCategories(sectionKey, rows);
+        renderCategoriesPreview(sectionKey);
+        updateSaveButtonVisibility();
+      }
+    });
   });
 
   document.querySelectorAll('.product-row').forEach(updateProductCardSummary);
   ['olive_products', 'olive_oil', 'agri_crops'].forEach(reindexProductFiles);
   ['olive_products', 'olive_oil', 'agri_crops'].forEach(renderCategoriesPreview);
+  initSiteImagePreview('logoImageInput', 'logoPreviewImage', 'logoPreviewHint');
+  initSiteImagePreview('iconImageInput', 'iconPreviewImage', 'iconPreviewHint');
+
+  if (siteManagementForm) {
+    siteManagementForm.addEventListener('input', updateSaveButtonVisibility);
+    siteManagementForm.addEventListener('change', updateSaveButtonVisibility);
+    siteManagementForm.addEventListener('submit', () => {
+      if (saveChangesBtn) {
+        saveChangesBtn.classList.remove('d-none');
+        saveChangesBtn.disabled = true;
+      }
+    });
+  }
+
+  initialFormSignature = buildFormSignature();
+  updateSaveButtonVisibility();
 
   if (siteTabsElement) {
     siteTabsElement.querySelectorAll('[data-bs-toggle="pill"]').forEach((btn) => {

@@ -1,10 +1,13 @@
-﻿import { motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useSiteBranding } from "@/contexts/useSiteBranding";
 import { MapPin, Phone, Mail, Leaf, Facebook, Instagram } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 const Footer = () => {
   const { t } = useLanguage();
+  const { logoUrl } = useSiteBranding();
+  const brandLogo = logoUrl || logo;
 
   const scrollTo = (href: string) => {
     const el = document.querySelector(href);
@@ -33,7 +36,7 @@ const Footer = () => {
           {/* Brand column */}
           <div>
             <div className="flex items-center gap-3 mb-6">
-              <img src={logo} alt="Ajaj" className="h-14 w-14 object-contain" />
+              <img src={brandLogo} alt="Ajaj" className="h-14 w-14 object-contain" />
               <div>
                 <p className="text-xl font-display font-semibold tracking-wider text-primary-foreground">AJAJ</p>
                 <p className="text-xs font-body text-primary-foreground/50 tracking-wide">{t("footer.tagline")}</p>
@@ -144,4 +147,5 @@ const Footer = () => {
 };
 
 export default Footer;
+
 

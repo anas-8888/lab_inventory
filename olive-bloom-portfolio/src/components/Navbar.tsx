@@ -1,13 +1,16 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Leaf } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useSiteBranding } from "@/contexts/useSiteBranding";
 import logo from "@/assets/logo.png";
 
 const Navbar = () => {
   const { t, language, toggleLanguage } = useLanguage();
+  const { logoUrl } = useSiteBranding();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const brandLogo = logoUrl || logo;
 
   useEffect(() => {
     const getThreshold = () => {
@@ -53,7 +56,7 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between h-20">
         {/* Logo */}
         <button onClick={() => scrollTo("#home")} className="flex items-center gap-3 group">
-          <img src={logo} alt="Ajaj" className="h-20 w-20 object-contain group-hover:scale-105 transition-transform duration-300" />
+          <img src={brandLogo} alt="Ajaj" className="h-20 w-20 object-contain group-hover:scale-105 transition-transform duration-300" />
         </button>
 
         {/* Desktop Links */}
@@ -146,7 +149,7 @@ const Navbar = () => {
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-border">
                   <div className="flex items-center gap-3">
-                    <img src={logo} alt="Ajaj" className="h-10 w-10 object-contain" />
+                    <img src={brandLogo} alt="Ajaj" className="h-10 w-10 object-contain" />
                     <span className="text-lg font-display font-semibold tracking-wider text-foreground">
                       {language === "ar" ? "عجاج للمواد الغذائية" : "AJAJ FOOD STUFFS"}
                     </span>

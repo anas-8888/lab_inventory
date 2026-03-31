@@ -70,6 +70,41 @@ function extractClientIp(req) {
   return t(req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress);
 }
 
+function toPublicAssetUrl(req, rawUrl) {
+  const value = t(rawUrl);
+  if (!value) return '';
+
+  if (/^https?:\/\//i.test(value) || value.startsWith('data:') || value.startsWith('blob:')) {
+    return value;
+  }
+
+  const origin = `${req.protocol}://${req.get('host')}`;
+  if (value.startsWith('/')) {
+    return `${origin}${value}`;
+  }
+  return `${origin}/${value}`;
+}
+
+function buildMinimalContent(rawContent, fallbackUpdatedBy = '') {
+  const content = rawContent && typeof rawContent === 'object' ? rawContent : {};
+  const sections = normalizeProductSections(content);
+
+  return {
+    branding: {
+      logo: {
+        url: t(content?.branding?.logo?.url)
+      },
+      icon: {
+        url: t(content?.branding?.icon?.url)
+      }
+    },
+    products: {
+      sections
+    },
+    updatedBy: t(content?.updatedBy) || t(fallbackUpdatedBy)
+  };
+}
+
 async function fetchInboxMessages(db) {
   try {
     const [messages] = await db.query(
@@ -182,12 +217,8 @@ async function ensureSingletonSiteContent(db, userId = null) {
 }
 
 function buildFormData(contentObj, row = null) {
-  const c = contentObj || {};
-  const navItems = Array.isArray(c?.navigation?.items) ? c.navigation.items : [];
-  const stats = Array.isArray(c?.about?.stats) ? c.about.stats : [];
+  const c = buildMinimalContent(contentObj || {}, row?.updated_by || '');
   const productSectionsRaw = normalizeProductSections(c);
-  const steps = Array.isArray(c?.production?.steps) ? c.production.steps : [];
-  const footerCounters = Array.isArray(c?.footer?.counters) ? c.footer.counters : [];
 
   const productSections = {};
   PRODUCT_SECTION_DEFS.forEach((def) => {
@@ -219,119 +250,12 @@ function buildFormData(contentObj, row = null) {
   return {
     id: row?.id || null,
     content_name: row?.content_name || 'محتوى الموقع',
-    site_id: row?.site_id || c.siteId || '',
-    default_language: c.defaultLanguage || 'ar',
+    site_id: row?.site_id || '',
     updated_by: c.updatedBy || '',
-
-    seo_title_ar: c?.metadata?.ar?.title || '',
-    seo_title_en: c?.metadata?.en?.title || '',
-    seo_description_ar: c?.metadata?.ar?.description || '',
-    seo_description_en: c?.metadata?.en?.description || '',
-    seo_keywords_ar: Array.isArray(c?.metadata?.ar?.keywords) ? c.metadata.ar.keywords.join(', ') : '',
-    seo_keywords_en: Array.isArray(c?.metadata?.en?.keywords) ? c.metadata.en.keywords.join(', ') : '',
-    current_og_image: c?.metadata?.ogImage || '',
-    current_twitter_image: c?.metadata?.twitterImage || '',
 
     current_logo_image: c?.branding?.logo?.url || '',
     current_logo_icon: c?.branding?.icon?.url || '',
-
-    hero_subtitle_ar: c?.hero?.subtitle?.ar || '',
-    hero_subtitle_en: c?.hero?.subtitle?.en || '',
-    hero_title_ar: c?.hero?.title?.ar || '',
-    hero_title_en: c?.hero?.title?.en || '',
-    hero_description_ar: c?.hero?.description?.ar || '',
-    hero_description_en: c?.hero?.description?.en || '',
-    hero_cta_primary_ar: c?.hero?.ctaPrimary?.ar || '',
-    hero_cta_primary_en: c?.hero?.ctaPrimary?.en || '',
-    hero_cta_secondary_ar: c?.hero?.ctaSecondary?.ar || '',
-    hero_cta_secondary_en: c?.hero?.ctaSecondary?.en || '',
-    hero_image_alt_ar: c?.hero?.backgroundImage?.alt?.ar || '',
-    hero_image_alt_en: c?.hero?.backgroundImage?.alt?.en || '',
-    current_hero_image: c?.hero?.backgroundImage?.url || '',
-
-    about_subtitle_ar: c?.about?.subtitle?.ar || '',
-    about_subtitle_en: c?.about?.subtitle?.en || '',
-    about_title_ar: c?.about?.title?.ar || '',
-    about_title_en: c?.about?.title?.en || '',
-    about_paragraph1_ar: c?.about?.paragraph1?.ar || '',
-    about_paragraph1_en: c?.about?.paragraph1?.en || '',
-    about_paragraph2_ar: c?.about?.paragraph2?.ar || '',
-    about_paragraph2_en: c?.about?.paragraph2?.en || '',
-    current_about_main_image: c?.about?.images?.main || '',
-    current_about_secondary_image: c?.about?.images?.secondary || '',
-
-    products_subtitle_ar: c?.products?.subtitle?.ar || '',
-    products_subtitle_en: c?.products?.subtitle?.en || '',
-    products_title_ar: c?.products?.title?.ar || '',
-    products_title_en: c?.products?.title?.en || '',
-    products_intro_ar: c?.products?.intro?.ar || '',
-    products_intro_en: c?.products?.intro?.en || '',
-
-    production_subtitle_ar: c?.production?.subtitle?.ar || '',
-    production_subtitle_en: c?.production?.subtitle?.en || '',
-    production_title_ar: c?.production?.title?.ar || '',
-    production_title_en: c?.production?.title?.en || '',
-    current_production_image: c?.production?.image || '',
-
-    contact_subtitle_ar: c?.contact?.subtitle?.ar || '',
-    contact_subtitle_en: c?.contact?.subtitle?.en || '',
-    contact_title_ar: c?.contact?.title?.ar || '',
-    contact_title_en: c?.contact?.title?.en || '',
-    contact_placeholder_name_ar: c?.contact?.form?.placeholders?.name?.ar || '',
-    contact_placeholder_name_en: c?.contact?.form?.placeholders?.name?.en || '',
-    contact_placeholder_email_ar: c?.contact?.form?.placeholders?.email?.ar || '',
-    contact_placeholder_email_en: c?.contact?.form?.placeholders?.email?.en || '',
-    contact_placeholder_message_ar: c?.contact?.form?.placeholders?.message?.ar || '',
-    contact_placeholder_message_en: c?.contact?.form?.placeholders?.message?.en || '',
-    contact_submit_ar: c?.contact?.form?.submitLabel?.ar || '',
-    contact_submit_en: c?.contact?.form?.submitLabel?.en || '',
-    contact_address_ar: c?.contact?.contactInfo?.address?.ar || '',
-    contact_address_en: c?.contact?.contactInfo?.address?.en || '',
-    contact_phone: c?.contact?.contactInfo?.phone || '',
-    contact_email: c?.contact?.contactInfo?.email || '',
-    contact_map_url: c?.contact?.map?.embedUrl || '',
-
-    footer_tagline_ar: c?.footer?.tagline?.ar || '',
-    footer_tagline_en: c?.footer?.tagline?.en || '',
-    footer_description_ar: c?.footer?.description?.ar || '',
-    footer_description_en: c?.footer?.description?.en || '',
-    footer_quick_links_title_ar: c?.footer?.quickLinksTitle?.ar || '',
-    footer_quick_links_title_en: c?.footer?.quickLinksTitle?.en || '',
-    footer_contact_info_title_ar: c?.footer?.contactInfoTitle?.ar || '',
-    footer_contact_info_title_en: c?.footer?.contactInfoTitle?.en || '',
-    footer_rights_ar: c?.footer?.rights?.ar || '',
-    footer_rights_en: c?.footer?.rights?.en || '',
-    footer_crafted_ar: c?.footer?.crafted?.ar || '',
-    footer_crafted_en: c?.footer?.crafted?.en || '',
-    footer_facebook: c?.footer?.socialLinks?.facebook || '',
-    footer_instagram: c?.footer?.socialLinks?.instagram || '',
-    footer_linkedin: c?.footer?.socialLinks?.linkedin || '',
-
-    navItems: navItems.map((n) => ({
-      key: n?.key || '',
-      label_ar: n?.label?.ar || '',
-      label_en: n?.label?.en || ''
-    })),
-    stats: stats.map((s) => ({
-      key: s?.key || '',
-      number_ar: s?.number?.ar || '',
-      number_en: s?.number?.en || '',
-      label_ar: s?.label?.ar || '',
-      label_en: s?.label?.en || ''
-    })),
-    productSections,
-    footerCounters: footerCounters.map((x) => ({
-      label_ar: x?.label?.ar || '',
-      label_en: x?.label?.en || '',
-      value: x?.value || ''
-    })),
-    steps: steps.map((s) => ({
-      order: s?.order || '',
-      title_ar: s?.title?.ar || '',
-      title_en: s?.title?.en || '',
-      description_ar: s?.description?.ar || '',
-      description_en: s?.description?.en || ''
-    }))
+    productSections
   };
 }
 
@@ -410,51 +334,7 @@ function buildContentFromFriendlyForm(body) {
     products: {
       sections: productSections
     },
-    contact: {
-      subtitle: { ar: t(body.contact_subtitle_ar), en: t(body.contact_subtitle_en) },
-      title: { ar: t(body.contact_title_ar), en: t(body.contact_title_en) },
-      form: {
-        placeholders: {
-          name: { ar: t(body.contact_placeholder_name_ar), en: t(body.contact_placeholder_name_en) },
-          email: { ar: t(body.contact_placeholder_email_ar), en: t(body.contact_placeholder_email_en) },
-          message: { ar: t(body.contact_placeholder_message_ar), en: t(body.contact_placeholder_message_en) }
-        },
-        submitLabel: { ar: t(body.contact_submit_ar), en: t(body.contact_submit_en) }
-      },
-      contactInfo: {
-        address: { ar: t(body.contact_address_ar), en: t(body.contact_address_en) },
-        phone: t(body.contact_phone),
-        email: t(body.contact_email)
-      },
-      map: { embedUrl: t(body.contact_map_url) }
-    },
-    footer: {
-      tagline: { ar: t(body.footer_tagline_ar), en: t(body.footer_tagline_en) },
-      description: { ar: t(body.footer_description_ar), en: t(body.footer_description_en) },
-      quickLinksTitle: { ar: t(body.footer_quick_links_title_ar), en: t(body.footer_quick_links_title_en) },
-      contactInfoTitle: { ar: t(body.footer_contact_info_title_ar), en: t(body.footer_contact_info_title_en) },
-      rights: { ar: t(body.footer_rights_ar), en: t(body.footer_rights_en) },
-      crafted: { ar: t(body.footer_crafted_ar), en: t(body.footer_crafted_en) },
-      socialLinks: {
-        facebook: t(body.footer_facebook),
-        instagram: t(body.footer_instagram),
-        linkedin: t(body.footer_linkedin)
-      },
-      counters: (() => {
-        const labelsAr = toArray(body.footer_counter_label_ar);
-        const labelsEn = toArray(body.footer_counter_label_en);
-        const values = toArray(body.footer_counter_value);
-        const counters = [];
-        for (let i = 0; i < Math.max(labelsAr.length, labelsEn.length, values.length); i += 1) {
-          const ar = t(labelsAr[i]);
-          const en = t(labelsEn[i]);
-          const value = t(values[i]);
-          if (!ar && !en && !value) continue;
-          counters.push({ label: { ar, en }, value });
-        }
-        return counters;
-      })()
-    }
+    updatedBy: t(body.updated_by)
   };
 }
 
@@ -483,6 +363,67 @@ function applyUploadedImages(contentObj, body, files) {
         sectionItems[index].image = `/public/website_images/${f.filename}`;
       });
   });
+}
+
+async function loadPublicContentSnapshot(req) {
+  const [rows] = await req.db.query(
+    `SELECT id, site_id, content_json, updated_at
+     FROM website_content
+     WHERE deleted_at IS NULL
+     ORDER BY id ASC
+     LIMIT 1`
+  );
+
+  const row = rows[0];
+  const contentObj = buildMinimalContent(
+    row ? parseJsonSafe(row.content_json, readTemplateContent()) : readTemplateContent(),
+    row?.updated_by || ''
+  );
+
+  return { row, contentObj };
+}
+
+function buildPublicSections(req, contentObj) {
+  const rawSections = normalizeProductSections(contentObj);
+  const sections = {};
+
+  PRODUCT_SECTION_DEFS.forEach((def) => {
+    const section = rawSections?.[def.key] || {};
+    const categories = Array.isArray(section.categories) ? section.categories : [];
+    const items = Array.isArray(section.items) ? section.items : [];
+
+    sections[def.key] = {
+      key: def.key,
+      name: {
+        ar: t(section?.name?.ar) || def.defaultAr,
+        en: t(section?.name?.en) || def.defaultEn
+      },
+      categories: categories.map((cat) => ({
+        ar: typeof cat === 'string' ? t(cat) : t(cat?.ar),
+        en: typeof cat === 'string' ? '' : t(cat?.en)
+      })),
+      items: items.map((item, index) => ({
+        id: t(item?.id) || String(index + 1),
+        category: {
+          ar: t(item?.category?.ar || item?.category),
+          en: t(item?.category?.en)
+        },
+        name: {
+          ar: t(item?.name?.ar),
+          en: t(item?.name?.en)
+        },
+        description: {
+          ar: t(item?.description?.ar),
+          en: t(item?.description?.en)
+        },
+        acidity: t(item?.acidity),
+        image_url: toPublicAssetUrl(req, item?.image),
+        image_raw: t(item?.image)
+      }))
+    };
+  });
+
+  return sections;
 }
 
 exports.getSiteContentIndex = async (req, res) => {
@@ -545,9 +486,9 @@ exports.getEditSiteContent = async (req, res) => {
 
 exports.createContactMessage = async (req, res) => {
   try {
-    const senderName = t(req.body.sender_name);
-    const senderPhone = t(req.body.sender_phone);
-    const messageText = t(req.body.message_text);
+    const senderName = t(req.body.sender_name).slice(0, 191);
+    const senderPhone = t(req.body.sender_phone).slice(0, 100);
+    const messageText = t(req.body.message_text).slice(0, 4000);
 
     if (!senderName || !senderPhone || !messageText) {
       return res.status(400).json({
@@ -556,8 +497,15 @@ exports.createContactMessage = async (req, res) => {
       });
     }
 
+    if (messageText.length < 3) {
+      return res.status(400).json({
+        success: false,
+        message: 'نص الرسالة قصير جدًا'
+      });
+    }
+
     const senderIp = extractClientIp(req);
-    const userAgent = t(req.headers['user-agent']);
+    const userAgent = t(req.headers['user-agent']).slice(0, 1000);
 
     const [insertResult] = await req.db.query(
       `INSERT INTO website_contact_messages
@@ -602,6 +550,157 @@ exports.createContactMessage = async (req, res) => {
   }
 };
 
+exports.deleteContactMessage = async (req, res) => {
+  try {
+    const messageId = Number(req.params.id);
+    const singleton = await ensureSingletonSiteContent(req.db, req.session.user?.id || null);
+
+    if (!Number.isFinite(messageId) || messageId <= 0) {
+      req.flash('error_msg', 'معرف الرسالة غير صالح');
+      return res.redirect(`/site-management/${singleton.id}/edit#tab-inbox`);
+    }
+
+    const [result] = await req.db.query(
+      `DELETE FROM website_contact_messages WHERE id = ? LIMIT 1`,
+      [messageId]
+    );
+
+    if (!result.affectedRows) {
+      req.flash('error_msg', 'الرسالة غير موجودة أو تم حذفها مسبقًا');
+      return res.redirect(`/site-management/${singleton.id}/edit#tab-inbox`);
+    }
+
+    req.flash('success_msg', 'تم حذف الرسالة بنجاح');
+    return res.redirect(`/site-management/${singleton.id}/edit#tab-inbox`);
+  } catch (error) {
+    console.error('خطأ في حذف رسالة البريد الوارد:', error);
+    req.flash('error_msg', 'تعذر حذف الرسالة');
+    return res.redirect('/site-management');
+  }
+};
+
+exports.getPublicLogo = async (req, res) => {
+  try {
+    const { contentObj } = await loadPublicContentSnapshot(req);
+    const logoRaw = contentObj?.branding?.logo?.url || '';
+
+    return res.json({
+      success: true,
+      data: {
+        logo_url: toPublicAssetUrl(req, logoRaw),
+        logo_raw: t(logoRaw)
+      }
+    });
+  } catch (error) {
+    console.error('خطأ في جلب شعار الموقع:', error);
+    return res.status(500).json({ success: false, message: 'تعذر تحميل الشعار' });
+  }
+};
+
+exports.getPublicIcon = async (req, res) => {
+  try {
+    const { contentObj } = await loadPublicContentSnapshot(req);
+    const iconRaw = contentObj?.branding?.icon?.url || '';
+
+    return res.json({
+      success: true,
+      data: {
+        icon_url: toPublicAssetUrl(req, iconRaw),
+        icon_raw: t(iconRaw)
+      }
+    });
+  } catch (error) {
+    console.error('خطأ في جلب أيقونة الموقع:', error);
+    return res.status(500).json({ success: false, message: 'تعذر تحميل الأيقونة' });
+  }
+};
+
+exports.getPublicProductCategories = async (req, res) => {
+  try {
+    const { contentObj } = await loadPublicContentSnapshot(req);
+    const sections = buildPublicSections(req, contentObj);
+    const categoriesBySection = {};
+
+    PRODUCT_SECTION_DEFS.forEach((def) => {
+      categoriesBySection[def.key] = {
+        key: def.key,
+        name: sections[def.key]?.name || { ar: def.defaultAr, en: def.defaultEn },
+        categories: Array.isArray(sections[def.key]?.categories) ? sections[def.key].categories : []
+      };
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        sections: categoriesBySection
+      }
+    });
+  } catch (error) {
+    console.error('خطأ في جلب فئات المنتجات:', error);
+    return res.status(500).json({ success: false, message: 'تعذر تحميل الفئات' });
+  }
+};
+
+exports.getPublicProducts = async (req, res) => {
+  try {
+    const { contentObj } = await loadPublicContentSnapshot(req);
+    const sections = buildPublicSections(req, contentObj);
+    const productsBySection = {};
+
+    PRODUCT_SECTION_DEFS.forEach((def) => {
+      productsBySection[def.key] = {
+        key: def.key,
+        name: sections[def.key]?.name || { ar: def.defaultAr, en: def.defaultEn },
+        items: Array.isArray(sections[def.key]?.items) ? sections[def.key].items : []
+      };
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        sections: productsBySection
+      }
+    });
+  } catch (error) {
+    console.error('خطأ في جلب المنتجات:', error);
+    return res.status(500).json({ success: false, message: 'تعذر تحميل المنتجات' });
+  }
+};
+
+exports.getPublicSiteContent = async (req, res) => {
+  try {
+    const { row, contentObj } = await loadPublicContentSnapshot(req);
+
+    const logoRaw = contentObj?.branding?.logo?.url || '';
+    const iconRaw = contentObj?.branding?.icon?.url || '';
+    const sections = buildPublicSections(req, contentObj);
+
+    return res.json({
+      success: true,
+      data: {
+        site_id: row?.site_id || contentObj?.siteId || '',
+        updated_at: row?.updated_at || null,
+        updated_by: t(contentObj?.updatedBy),
+        branding: {
+          logo_url: toPublicAssetUrl(req, logoRaw),
+          icon_url: toPublicAssetUrl(req, iconRaw),
+          logo_raw: t(logoRaw),
+          icon_raw: t(iconRaw)
+        },
+        products: {
+          sections
+        }
+      }
+    });
+  } catch (error) {
+    console.error('خطأ في جلب محتوى الموقع العام:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'تعذر تحميل محتوى الموقع'
+    });
+  }
+};
+
 exports.updateSiteContent = async (req, res) => {
   try {
     const singleton = await ensureSingletonSiteContent(req.db, req.session.user?.id || null);
@@ -617,36 +716,22 @@ exports.updateSiteContent = async (req, res) => {
     const existingRow = existsRows[0];
     const contentName = existingRow.content_name || 'محتوى الموقع';
 
-    const existingContentObj = parseJsonSafe(existingRow.content_json, readTemplateContent());
+    const existingContentObj = buildMinimalContent(
+      parseJsonSafe(existingRow.content_json, readTemplateContent()),
+      req.session.user?.email || req.session.user?.username || ''
+    );
     const contentObj = buildContentFromFriendlyForm(req.body);
-    contentObj.navigation = existingContentObj?.navigation || { items: [] };
     const existingSections = normalizeProductSections(existingContentObj);
     const newSections = normalizeProductSections(contentObj);
     PRODUCT_SECTION_DEFS.forEach((def) => {
       const oldName = existingSections?.[def.key]?.name;
-      if (oldName && typeof oldName === 'object') {
-        newSections[def.key].name = {
-          ar: t(oldName.ar) || def.defaultAr,
-          en: t(oldName.en) || def.defaultEn
-        };
-      } else {
-        newSections[def.key].name = { ar: def.defaultAr, en: def.defaultEn };
-      }
+      newSections[def.key].name = {
+        ar: t(oldName?.ar) || def.defaultAr,
+        en: t(oldName?.en) || def.defaultEn
+      };
     });
-    contentObj.products = contentObj.products || {};
-    contentObj.products.sections = newSections;
-    const existingFooter = existingContentObj?.footer && typeof existingContentObj.footer === 'object'
-      ? existingContentObj.footer
-      : {};
-    contentObj.footer = {
-      ...existingFooter,
-      socialLinks: {
-        ...(existingFooter.socialLinks || {}),
-        facebook: t(req.body.footer_facebook),
-        instagram: t(req.body.footer_instagram),
-        linkedin: ''
-      }
-    };
+    contentObj.products = { sections: newSections };
+    contentObj.updatedBy = req.session.user?.email || req.session.user?.username || t(contentObj.updatedBy);
     applyUploadedImages(contentObj, req.body, req.files || []);
 
     await req.db.query(

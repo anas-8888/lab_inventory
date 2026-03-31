@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
+import { useSiteBranding } from "@/contexts/useSiteBranding";
 import logo from "@/assets/logo.png";
 import oliveBranch from "@/assets/olive.png";
 
@@ -7,6 +8,9 @@ interface LoadingScreenProps {
 }
 
 const LoadingScreen = ({ isLoading }: LoadingScreenProps) => {
+  const { logoUrl } = useSiteBranding();
+  const brandLogo = logoUrl || logo;
+
   return (
     <AnimatePresence>
       {isLoading && (
@@ -74,7 +78,7 @@ const LoadingScreen = ({ isLoading }: LoadingScreenProps) => {
               transition={{ duration: 1, delay: 0.4, ease: "easeOut" }}
             >
               <img
-                src={logo}
+                src={brandLogo}
                 alt="Ajaj"
                 className="h-full w-full object-contain"
               />

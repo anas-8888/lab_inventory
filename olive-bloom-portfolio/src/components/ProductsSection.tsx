@@ -1,112 +1,85 @@
 import { motion, useInView } from "framer-motion";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useSiteBranding } from "@/contexts/useSiteBranding";
 import { Droplets, Leaf, Award, Star } from "lucide-react";
-import productsImg from "@/assets/products-lineup.jpg";
-import productImg from "@/assets/product.jpg";
+import productFallback from "@/assets/product.jpg";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 
-const products = [
-  {
-    key: "1",
-    icon: Droplets,
-    category: "premium" as const,
-    image: productsImg,
-    features: ["products.1.f1", "products.1.f2", "products.1.f3"],
-    acidity: "<= 0.8%",
-    rating: 5,
-  },
-  {
-    key: "2",
-    icon: Leaf,
-    category: "virgin" as const,
-    image: productImg,
-    features: ["products.2.f1", "products.2.f2", "products.2.f3"],
-    acidity: "<= 2%",
-    rating: 4,
-  },
-  {
-    key: "3",
-    icon: Award,
-    category: "organic" as const,
-    image: productsImg,
-    features: ["products.3.f1", "products.3.f2", "products.3.f3"],
-    acidity: "<= 0.5%",
-    rating: 5,
-  },
-  {
-    key: "4",
-    icon: Star,
-    category: "premium" as const,
-    image: productImg,
-    features: ["products.4.f1", "products.4.f2", "products.4.f3"],
-    acidity: "<= 0.7%",
-    rating: 5,
-  },
-  {
-    key: "5",
-    icon: Leaf,
-    category: "virgin" as const,
-    image: productsImg,
-    features: ["products.5.f1", "products.5.f2", "products.5.f3"],
-    acidity: "<= 1.8%",
-    rating: 4,
-  },
-  {
-    key: "6",
-    icon: Award,
-    category: "organic" as const,
-    image: productImg,
-    features: ["products.6.f1", "products.6.f2", "products.6.f3"],
-    acidity: "<= 0.6%",
-    rating: 5,
-  },
-];
-
-type FilterKey = "all" | "premium" | "virgin" | "organic";
-
-type ProductsCarouselSectionProps = {
-  id: string;
-  subtitleKey: string;
-  titleKey: string;
-  introKey: string;
+type Localized = { ar?: string; en?: string };
+type ProductItem = {
+  id?: string;
+  category?: Localized;
+  name?: Localized;
+  description?: Localized;
+  acidity?: string;
+  image_url?: string;
+  image_raw?: string;
+};
+type ProductSection = {
+  key?: string;
+  name?: Localized;
+  categories?: Localized[];
+  items?: ProductItem[];
 };
 
-const ProductsCarouselSection = ({
-  id,
-  subtitleKey,
-  titleKey,
-  introKey,
-}: ProductsCarouselSectionProps) => {
-  const { t } = useLanguage();
+const ICONS = [Droplets, Leaf, Award, Star];
+
+const sectionDefs = [
+  { key: "olive_products", fallbackAr: "منتجات الزيتون", fallbackEn: "Olive Products", id: "products" },
+  { key: "olive_oil", fallbackAr: "زيت الزيتون", fallbackEn: "Olive Oil", id: "products-oil" },
+  { key: "agri_crops", fallbackAr: "المحاصيل الزراعية", fallbackEn: "Agricultural Crops", id: "products-crops" },
+];
+
+const pickText = (value: Localized | undefined, language: "ar" | "en", fallback = "") =>
+  (language === "ar" ? value?.ar : value?.en) || (language === "ar" ? value?.en : value?.ar) || fallback;
+
+const categoryLabel = (category: Localized | undefined, language: "ar" | "en") =>
+  pickText(category, language, language === "ar" ? "غير مصنف" : "Uncategorized");
+
+function SectionCarousel({
+  section,
+  sectionId,
+  fallbackTitleAr,
+  fallbackTitleEn,
+}: {
+  section: ProductSection;
+  sectionId: string;
+  fallbackTitleAr: string;
+  fallbackTitleEn: string;
+}) {
+  const { language } = useLanguage();
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-100px" });
-  const [activeFilter, setActiveFilter] = useState<FilterKey>("all");
 
-  const filters = [
-    { key: "all" as const, label: t("products.filter.all") },
-    { key: "premium" as const, label: t("products.filter.premium") },
-    { key: "virgin" as const, label: t("products.filter.virgin") },
-    { key: "organic" as const, label: t("products.filter.organic") },
-  ];
+  const title = pickText(section?.name, language, language === "ar" ? fallbackTitleAr : fallbackTitleEn);
+  const items = useMemo(() => (Array.isArray(section?.items) ? section.items : []), [section?.items]);
 
-  const filteredProducts =
-    activeFilter === "all"
-      ? products
-      : products.filter((p) => p.category === activeFilter);
+  const categoryOptions = useMemo(() => {
+    const allCategories = Array.isArray(section?.categories) ? section.categories : [];
+    const fromItems = items
+      .map((item) => categoryLabel(item?.category, language))
+      .filter(Boolean);
+    const fromSection = allCategories
+      .map((cat) => pickText(cat, language, ""))
+      .filter(Boolean);
+    return Array.from(new Set([...fromSection, ...fromItems]));
+  }, [section?.categories, items, language]);
+
+  const [activeFilter, setActiveFilter] = useState<string>("__all__");
+
+  const filteredItems =
+    activeFilter === "__all__"
+      ? items
+      : items.filter((item) => categoryLabel(item?.category, language) === activeFilter);
 
   return (
-    <section
-      id={id}
-      className="section-padding bg-secondary/20 overflow-hidden relative"
-      ref={ref}
-    >
+    <section id={sectionId} className="section-padding bg-secondary/20 overflow-hidden relative" ref={ref}>
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
@@ -114,125 +87,129 @@ const ProductsCarouselSection = ({
           className="text-center mb-16"
         >
           <p className="text-sm tracking-[0.3em] uppercase text-accent font-body mb-4">
-            {t(subtitleKey)}
+            {language === "ar" ? "المنتجات" : "Products"}
           </p>
-          <h2 className="text-3xl md:text-5xl font-display font-light text-foreground mb-4">
-            {t(titleKey)}
-          </h2>
-          <p className="text-muted-foreground font-body max-w-2xl mx-auto">
-            {t(introKey)}
-          </p>
+          <h2 className="text-3xl md:text-5xl font-display font-light text-foreground mb-4">{title}</h2>
         </motion.div>
 
-        {/* Filters */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8, delay: 0.2 }}
           className="flex flex-wrap justify-center gap-3 mb-10"
         >
-          {filters.map((filter) => (
+          <button
+            onClick={() => setActiveFilter("__all__")}
+            className={`px-4 py-2 rounded-full text-sm font-body transition-all duration-300 border ${
+              activeFilter === "__all__"
+                ? "bg-gradient-gold text-primary-foreground border-transparent shadow-lg shadow-gold/20"
+                : "bg-background/60 text-foreground/80 border-border/50 hover:border-accent/30"
+            }`}
+          >
+            {language === "ar" ? "الكل" : "All"}
+          </button>
+          {categoryOptions.map((cat) => (
             <button
-              key={filter.key}
-              onClick={() => setActiveFilter(filter.key)}
+              key={cat}
+              onClick={() => setActiveFilter(cat)}
               className={`px-4 py-2 rounded-full text-sm font-body transition-all duration-300 border ${
-                activeFilter === filter.key
+                activeFilter === cat
                   ? "bg-gradient-gold text-primary-foreground border-transparent shadow-lg shadow-gold/20"
                   : "bg-background/60 text-foreground/80 border-border/50 hover:border-accent/30"
               }`}
             >
-              {filter.label}
+              {cat}
             </button>
           ))}
         </motion.div>
 
-        {/* Swiper */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8, delay: 0.3 }}
-          className="relative"
-        >
-          <Swiper
-            className="products-swiper"
-            modules={[Navigation, Pagination]}
-            loop={filteredProducts.length > 1}
-            grabCursor
-            centeredSlides
-            spaceBetween={32}
-            navigation
-            pagination={{ clickable: true, dynamicBullets: true }}
-            slidesPerView={3}
-            breakpoints={{
-              0: { slidesPerView: 1 },
-              640: { slidesPerView: 2 },
-              1024: { slidesPerView: 3 },
-            }}
+        {!filteredItems.length ? (
+          <div className="text-center text-muted-foreground font-body">
+            {language === "ar" ? "لا توجد منتجات ضمن هذا القسم حالياً." : "No products found in this section yet."}
+          </div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="relative"
           >
-            {filteredProducts.map((product) => {
-              const Icon = product.icon;
-              return (
-                <SwiperSlide key={product.key}>
-                  <div className="bg-background rounded-3xl border border-border/50 overflow-hidden h-full">
-                    <div className="relative aspect-square overflow-hidden">
-                      <img
-                        src={product.image}
-                        alt={t(`products.${product.key}.name`)}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
-                      <div className="absolute top-4 left-4">
-                        <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-gradient-gold">
-                          <Icon className="w-5 h-5 text-primary-foreground" />
+            <Swiper
+              className="products-swiper"
+              modules={[Navigation, Pagination]}
+              loop={filteredItems.length > 1}
+              grabCursor
+              centeredSlides
+              spaceBetween={32}
+              navigation
+              pagination={{ clickable: true, dynamicBullets: true }}
+              slidesPerView={3}
+              breakpoints={{
+                0: { slidesPerView: 1 },
+                640: { slidesPerView: 2 },
+                1024: { slidesPerView: 3 },
+              }}
+            >
+              {filteredItems.map((product, index) => {
+                const Icon = ICONS[index % ICONS.length];
+                const imageSrc = product?.image_url || product?.image_raw || productFallback;
+                const itemName = pickText(product?.name, language, language === "ar" ? "منتج" : "Product");
+                const itemDesc = pickText(product?.description, language, "");
+                const itemCategory = categoryLabel(product?.category, language);
+                return (
+                  <SwiperSlide key={`${product?.id || "item"}-${index}`}>
+                    <div className="bg-background rounded-3xl border border-border/50 overflow-hidden h-full">
+                      <div className="relative aspect-square overflow-hidden">
+                        <img src={imageSrc} alt={itemName} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+                        <div className="absolute top-4 left-4">
+                          <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-gradient-gold">
+                            <Icon className="w-5 h-5 text-primary-foreground" />
+                          </div>
+                        </div>
+                        <div className="absolute bottom-4 left-4">
+                          <span className="bg-gradient-gold text-primary-foreground text-xs font-body tracking-wider uppercase px-4 py-1.5 rounded-full">
+                            {itemCategory}
+                          </span>
                         </div>
                       </div>
-                      <div className="absolute bottom-4 left-4">
-                        <span className="bg-gradient-gold text-primary-foreground text-xs font-body tracking-wider uppercase px-4 py-1.5 rounded-full">
-                          {t("products.premium")}
-                        </span>
+
+                      <div className="p-4">
+                        <h3 className="text-lg md:text-xl font-display font-semibold text-foreground mb-2">{itemName}</h3>
+                        <p className="font-body text-muted-foreground leading-relaxed mb-3 line-clamp-2 text-sm">{itemDesc || "-"}</p>
+                        {!!product?.acidity && (
+                          <p className="font-body text-xs text-foreground/70">
+                            {language === "ar" ? "الحموضة:" : "Acidity:"} <span className="font-semibold">{product.acidity}</span>
+                          </p>
+                        )}
                       </div>
                     </div>
-
-                    <div className="p-4">
-                      <h3 className="text-lg md:text-xl font-display font-semibold text-foreground mb-2">
-                        {t(`products.${product.key}.name`)}
-                      </h3>
-                      <p className="font-body text-muted-foreground leading-relaxed mb-4 line-clamp-1 text-sm">
-                        {t(`products.${product.key}.desc`)}
-                      </p>
-                    </div>
-                  </div>
-                </SwiperSlide>
-              );
-            })}
-          </Swiper>
-        </motion.div>
+                  </SwiperSlide>
+                );
+              })}
+            </Swiper>
+          </motion.div>
+        )}
       </div>
     </section>
   );
-};
+}
 
 const ProductsSection = () => {
+  const { productSections } = useSiteBranding();
+  const sections = productSections as Record<string, ProductSection>;
+
   return (
     <>
-      <ProductsCarouselSection
-        id="products"
-        subtitleKey="products.subtitle"
-        titleKey="products.title"
-        introKey="products.intro"
-      />
-      <ProductsCarouselSection
-        id="products-oil"
-        subtitleKey="productsOil.subtitle"
-        titleKey="productsOil.title"
-        introKey="productsOil.intro"
-      />
-      <ProductsCarouselSection
-        id="products-crops"
-        subtitleKey="productsCrops.subtitle"
-        titleKey="productsCrops.title"
-        introKey="productsCrops.intro"
-      />
+      {sectionDefs.map((def) => (
+        <SectionCarousel
+          key={def.key}
+          section={sections?.[def.key] || {}}
+          sectionId={def.id}
+          fallbackTitleAr={def.fallbackAr}
+          fallbackTitleEn={def.fallbackEn}
+        />
+      ))}
     </>
   );
 };
