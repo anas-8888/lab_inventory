@@ -2,7 +2,6 @@ import { motion, useInView } from "framer-motion";
 import { useMemo, useRef, useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSiteBranding } from "@/contexts/useSiteBranding";
-import { Droplets, Leaf, Award, Star } from "lucide-react";
 import productFallback from "@/assets/product.jpg";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination } from "swiper/modules";
@@ -16,6 +15,15 @@ type ProductItem = {
   category?: Localized;
   name?: Localized;
   description?: Localized;
+  features?: Localized | Localized[] | string | string[];
+  category_ar?: string;
+  category_en?: string;
+  name_ar?: string;
+  name_en?: string;
+  description_ar?: string;
+  description_en?: string;
+  features_ar?: string | string[];
+  features_en?: string | string[];
   acidity?: string;
   image_url?: string;
   image_raw?: string;
@@ -27,8 +35,6 @@ type ProductSection = {
   items?: ProductItem[];
 };
 
-const ICONS = [Droplets, Leaf, Award, Star];
-
 const sectionDefs = [
   { key: "olive_products", fallbackAr: "منتجات الزيتون", fallbackEn: "Olive Products", id: "products" },
   { key: "olive_oil", fallbackAr: "زيت الزيتون", fallbackEn: "Olive Oil", id: "products-oil" },
@@ -38,8 +44,80 @@ const sectionDefs = [
 const pickText = (value: Localized | undefined, language: "ar" | "en", fallback = "") =>
   (language === "ar" ? value?.ar : value?.en) || (language === "ar" ? value?.en : value?.ar) || fallback;
 
-const categoryLabel = (category: Localized | undefined, language: "ar" | "en") =>
-  pickText(category, language, language === "ar" ? "غير مصنف" : "Uncategorized");
+const pickProductText = (
+  item: ProductItem | undefined,
+  baseKey: "category" | "name" | "description" | "features",
+  language: "ar" | "en",
+  fallback = "",
+) => {
+  if (!item) return fallback;
+  const localized = item[baseKey] as Localized | undefined;
+  const arKey = `${baseKey}_ar` as keyof ProductItem;
+  const enKey = `${baseKey}_en` as keyof ProductItem;
+  const arDirect = item[arKey] as string | undefined;
+  const enDirect = item[enKey] as string | undefined;
+
+  return (
+    (language === "ar" ? localized?.ar : localized?.en) ||
+    (language === "ar" ? arDirect : enDirect) ||
+    (language === "ar" ? localized?.en : localized?.ar) ||
+    (language === "ar" ? enDirect : arDirect) ||
+    fallback
+  );
+};
+
+const toFeatureList = (value: unknown) => {
+  if (Array.isArray(value)) return value.map((x) => String(x || "").trim()).filter(Boolean);
+  if (typeof value !== "string") return [];
+  return value
+    .split(/\r?\n|[|]/)
+    .map((x) => x.trim())
+    .filter(Boolean);
+};
+
+const productFeatures = (product: ProductItem | undefined, language: "ar" | "en") => {
+  if (!product) return [];
+  const fromLocalizedArray = Array.isArray(product.features)
+    ? product.features
+        .map((entry) => {
+          if (typeof entry === "string") return entry.trim();
+          if (!entry || typeof entry !== "object") return "";
+          const localized =
+            language === "ar"
+              ? entry.ar || entry.en || ""
+              : entry.en || entry.ar || "";
+          return String(localized).trim();
+        })
+        .filter(Boolean)
+    : [];
+
+  const fromLocalizedSingle =
+    product.features && !Array.isArray(product.features)
+      ? toFeatureList(
+          typeof product.features === "string"
+            ? product.features
+            : language === "ar"
+              ? product.features.ar || product.features.en || ""
+              : product.features.en || product.features.ar || "",
+        )
+      : [];
+
+  const directFeatures =
+    language === "ar"
+      ? product.features_ar ?? product.features_en
+      : product.features_en ?? product.features_ar;
+  const localizedText = pickProductText(product, "features", language, "");
+
+  return [
+    ...fromLocalizedArray,
+    ...fromLocalizedSingle,
+    ...toFeatureList(localizedText),
+    ...toFeatureList(directFeatures),
+  ].filter((item, idx, arr) => item && arr.indexOf(item) === idx);
+};
+
+const categoryLabel = (product: ProductItem | undefined, language: "ar" | "en") =>
+  pickProductText(product, "category", language, language === "ar" ? "غير مصنف" : "Uncategorized");
 
 function SectionCarousel({
   section,
@@ -62,7 +140,7 @@ function SectionCarousel({
   const categoryOptions = useMemo(() => {
     const allCategories = Array.isArray(section?.categories) ? section.categories : [];
     const fromItems = items
-      .map((item) => categoryLabel(item?.category, language))
+      .map((item) => categoryLabel(item, language))
       .filter(Boolean);
     const fromSection = allCategories
       .map((cat) => pickText(cat, language, ""))
@@ -75,7 +153,7 @@ function SectionCarousel({
   const filteredItems =
     activeFilter === "__all__"
       ? items
-      : items.filter((item) => categoryLabel(item?.category, language) === activeFilter);
+      : items.filter((item) => categoryLabel(item, language) === activeFilter);
 
   return (
     <section id={sectionId} className="section-padding bg-secondary/20 overflow-hidden relative" ref={ref}>
@@ -151,22 +229,17 @@ function SectionCarousel({
               }}
             >
               {filteredItems.map((product, index) => {
-                const Icon = ICONS[index % ICONS.length];
                 const imageSrc = product?.image_url || product?.image_raw || productFallback;
-                const itemName = pickText(product?.name, language, language === "ar" ? "منتج" : "Product");
-                const itemDesc = pickText(product?.description, language, "");
-                const itemCategory = categoryLabel(product?.category, language);
+                const itemName = pickProductText(product, "name", language, language === "ar" ? "منتج" : "Product");
+                const itemDesc = pickProductText(product, "description", language, "");
+                const itemCategory = categoryLabel(product, language);
+                const itemFeatures = productFeatures(product, language);
                 return (
                   <SwiperSlide key={`${product?.id || "item"}-${index}`}>
-                    <div className="bg-background rounded-3xl border border-border/50 overflow-hidden h-full">
+                    <div className="group relative bg-background rounded-3xl border border-border/50 overflow-hidden h-full">
                       <div className="relative aspect-square overflow-hidden">
                         <img src={imageSrc} alt={itemName} className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
-                        <div className="absolute top-4 left-4">
-                          <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-gradient-gold">
-                            <Icon className="w-5 h-5 text-primary-foreground" />
-                          </div>
-                        </div>
                         <div className="absolute bottom-4 left-4">
                           <span className="bg-gradient-gold text-primary-foreground text-xs font-body tracking-wider uppercase px-4 py-1.5 rounded-full">
                             {itemCategory}
@@ -176,11 +249,20 @@ function SectionCarousel({
 
                       <div className="p-4">
                         <h3 className="text-lg md:text-xl font-display font-semibold text-foreground mb-2">{itemName}</h3>
-                        <p className="font-body text-muted-foreground leading-relaxed mb-3 line-clamp-2 text-sm">{itemDesc || "-"}</p>
-                        {!!product?.acidity && (
-                          <p className="font-body text-xs text-foreground/70">
-                            {language === "ar" ? "الحموضة:" : "Acidity:"} <span className="font-semibold">{product.acidity}</span>
-                          </p>
+                      </div>
+
+                      <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/65 p-5 flex flex-col justify-end text-white">
+                        <h4 className="text-base md:text-lg font-display font-semibold mb-2">{itemName}</h4>
+                        <p className="font-body text-sm leading-relaxed mb-3 line-clamp-4">{itemDesc || (language === "ar" ? "لا يوجد وصف." : "No description available.")}</p>
+                        {itemFeatures.length > 0 && (
+                          <ul className="space-y-1 text-xs md:text-sm font-body">
+                            {itemFeatures.slice(0, 4).map((feature, featureIdx) => (
+                              <li key={`${feature}-${featureIdx}`} className="flex items-start gap-2">
+                                <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-gold" />
+                                <span>{feature}</span>
+                              </li>
+                            ))}
+                          </ul>
                         )}
                       </div>
                     </div>

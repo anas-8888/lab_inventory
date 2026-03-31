@@ -416,6 +416,14 @@ function buildPublicSections(req, contentObj) {
           ar: t(item?.description?.ar),
           en: t(item?.description?.en)
         },
+        features: Array.isArray(item?.features)
+          ? item.features
+              .map((feature) => ({
+                ar: t(feature?.ar),
+                en: t(feature?.en)
+              }))
+              .filter((feature) => feature.ar || feature.en)
+          : [],
         acidity: t(item?.acidity),
         image_url: toPublicAssetUrl(req, item?.image),
         image_raw: t(item?.image)
@@ -489,20 +497,48 @@ exports.createContactMessage = async (req, res) => {
     const senderName = t(req.body.sender_name).slice(0, 191);
     const senderPhone = t(req.body.sender_phone).slice(0, 100);
     const messageText = t(req.body.message_text).slice(0, 4000);
+    const messageSource = t(req.body.message_source).slice(0, 100);
+    const isSellProductsRequest = messageSource === 'sell_products_modal';
+    const files = Array.isArray(req.files) ? req.files : [];
+    const attachments = files
+      .filter((f) => (f.fieldname || '').startsWith('attachments'))
+      .map((f) => `/public/website_images/${f.filename}`);
 
-    if (!senderName || !senderPhone || !messageText) {
+    if (!senderName || !senderPhone) {
       return res.status(400).json({
         success: false,
-        message: 'الاسم والرقم ونص الرسالة مطلوبة'
+        message: 'الاسم والرقم مطلوبان'
       });
     }
 
-    if (messageText.length < 3) {
+    if (!isSellProductsRequest && !messageText) {
+      return res.status(400).json({
+        success: false,
+        message: 'نص الرسالة مطلوب'
+      });
+    }
+
+    if (messageText && messageText.length < 3) {
       return res.status(400).json({
         success: false,
         message: 'نص الرسالة قصير جدًا'
       });
     }
+
+    if (isSellProductsRequest && attachments.length < 1) {
+      return res.status(400).json({
+        success: false,
+        message: 'يجب إرفاق صورة واحدة على الأقل'
+      });
+    }
+
+    const normalizedMessageText = isSellProductsRequest
+      ? (
+          messageText
+            ? `[طلب بيع منتجات]\n${messageText}`
+            : '[طلب بيع منتجات] تم الإرسال من نافذة البيع في اللاندنغ بيج'
+        )
+      : messageText;
 
     const senderIp = extractClientIp(req);
     const userAgent = t(req.headers['user-agent']).slice(0, 1000);
@@ -511,14 +547,10 @@ exports.createContactMessage = async (req, res) => {
       `INSERT INTO website_contact_messages
        (sender_name, sender_phone, message_text, sender_ip, user_agent)
        VALUES (?, ?, ?, ?, ?)`,
-      [senderName, senderPhone, messageText, senderIp, userAgent]
+      [senderName, senderPhone, normalizedMessageText, senderIp, userAgent]
     );
 
     const messageId = insertResult.insertId;
-    const files = Array.isArray(req.files) ? req.files : [];
-    const attachments = files
-      .filter((f) => (f.fieldname || '').startsWith('attachments'))
-      .map((f) => `/public/website_images/${f.filename}`);
 
     if (attachments.length) {
       const values = attachments.map((fileUrl) => [messageId, fileUrl]);
@@ -536,8 +568,9 @@ exports.createContactMessage = async (req, res) => {
         id: messageId,
         sender_name: senderName,
         sender_phone: senderPhone,
-        message_text: messageText,
+        message_text: normalizedMessageText,
         sender_ip: senderIp,
+        message_source: isSellProductsRequest ? 'sell_products_modal' : 'contact_cta',
         attachments_count: attachments.length
       }
     });

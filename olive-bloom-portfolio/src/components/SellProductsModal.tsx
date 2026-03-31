@@ -9,6 +9,8 @@ import {
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 
+const apiBase = (import.meta.env.VITE_SITE_API_BASE_URL || "http://localhost:3000").replace(/\/+$/, "");
+
 type SellProductsModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -18,6 +20,7 @@ const SellProductsModal = ({ open, onOpenChange }: SellProductsModalProps) => {
   const { t } = useLanguage();
   const [form, setForm] = useState({ name: "", phone: "", message: "" });
   const [photos, setPhotos] = useState<File[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const syncInputFiles = (files: File[]) => {
@@ -27,15 +30,49 @@ const SellProductsModal = ({ open, onOpenChange }: SellProductsModalProps) => {
     fileInputRef.current.files = dataTransfer.files;
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    toast.success(t("sell.toast"));
-    setForm({ name: "", phone: "", message: "" });
-    setPhotos([]);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+    if (isSubmitting) return;
+    if (!photos.length) {
+      toast.error(t("sell.photo.hint"));
+      return;
     }
-    onOpenChange(false);
+
+    setIsSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append("sender_name", form.name.trim());
+      formData.append("sender_phone", form.phone.trim());
+      formData.append("message_text", form.message.trim());
+      formData.append("message_source", "sell_products_modal");
+      photos.forEach((photo) => {
+        formData.append("attachments", photo);
+      });
+
+      const response = await fetch(`${apiBase}/site-management/contact-messages`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload?.success === false) {
+        throw new Error(payload?.message || (response.status === 429 ? "Too many requests." : "Request failed."));
+      }
+
+      toast.success(payload?.message || t("sell.toast"));
+      setForm({ name: "", phone: "", message: "" });
+      setPhotos([]);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      onOpenChange(false);
+    } catch (error) {
+      const fallback = t("sell.submit");
+      const message = error instanceof Error && error.message ? error.message : fallback;
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -172,9 +209,10 @@ const SellProductsModal = ({ open, onOpenChange }: SellProductsModalProps) => {
 
             <button
               type="submit"
+              disabled={isSubmitting}
               className="w-full rounded-full bg-gradient-gold px-6 py-3 text-sm font-body uppercase tracking-wider text-primary-foreground transition-all duration-300 hover:shadow-lg hover:shadow-gold/30"
             >
-              {t("sell.submit")}
+              {isSubmitting ? "..." : t("sell.submit")}
             </button>
           </form>
         </div>

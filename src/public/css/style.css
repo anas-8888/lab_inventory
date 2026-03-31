@@ -1,8 +1,12 @@
 :root {
-  --primary-color: #218838;
-  --primary-light: #4CAF50;
-  --primary-dark: #1B5E20;
-  --secondary-color: #155724;
+  --primary-color: #1b7a33;
+  --primary-light: #43a047;
+  --primary-dark: #155724;
+  --secondary-color: #124a1f;
+  --bs-success: #157347;
+  --bs-success-rgb: 21, 115, 71;
+  --bs-primary: #1b7a33;
+  --bs-primary-rgb: 27, 122, 51;
   --accent-color: #e9f5e1;
   --background-light: #f8fdf5;
   --text-dark: #222;
@@ -13,7 +17,7 @@
   --white: #FFFFFF;
   --danger: #D32F2F;
   --warning: #FFA000;
-  --success: #388E3C;
+  --success: #2e7d32;
   --btn-soft-primary-bg: #e8f6ef;
   --btn-soft-primary-text: #166534;
   --btn-soft-primary-border: #bfe8d1;
@@ -43,8 +47,8 @@ body {
 
 /* Navbar (Modern RTL) */
 .app-navbar {
-  background: linear-gradient(130deg, #0f5132 0%, #198754 55%, #1f9d68 100%);
-  box-shadow: 0 10px 30px rgba(15, 81, 50, 0.25);
+  background: linear-gradient(130deg, #0d462b 0%, #157347 55%, #1b7a4d 100%);
+  box-shadow: 0 10px 30px rgba(13, 70, 43, 0.28);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);

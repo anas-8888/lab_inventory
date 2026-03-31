@@ -7,7 +7,7 @@ const securityConfig = {
             styleSrc: ["'self'", "'unsafe-inline'", "https:", "http:"],
             scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https:", "http:"],
             scriptSrcAttr: ["'unsafe-inline'"], // السماح بـ inline event handlers
-            imgSrc: ["'self'", "data:", "https:", "http:"],
+            imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
             connectSrc: ["'self'", "https:", "http:"],
             fontSrc: ["'self'", "https:", "http:", "data:"],
             objectSrc: ["'self'"],

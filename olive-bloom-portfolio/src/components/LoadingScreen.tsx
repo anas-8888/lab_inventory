@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useSiteBranding } from "@/contexts/useSiteBranding";
+import { useLanguage } from "@/contexts/LanguageContext";
 import logo from "@/assets/logo.png";
 import oliveBranch from "@/assets/olive.png";
 
@@ -9,6 +10,7 @@ interface LoadingScreenProps {
 
 const LoadingScreen = ({ isLoading }: LoadingScreenProps) => {
   const { logoUrl } = useSiteBranding();
+  const { t } = useLanguage();
   const brandLogo = logoUrl || logo;
 
   return (
@@ -90,7 +92,7 @@ const LoadingScreen = ({ isLoading }: LoadingScreenProps) => {
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.8, delay: 1 }}
             >
-              الزيتون و مشتقاته فخرنا و اهتمامنا
+              {t("loading.subtitle")}
             </motion.p>
           </motion.div>
 

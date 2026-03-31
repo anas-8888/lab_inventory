@@ -1,8 +1,9 @@
-﻿import {
+import {
   createContext,
   useContext,
   useState,
   useCallback,
+  useEffect,
   ReactNode,
 } from "react";
 
@@ -320,7 +321,7 @@ const translations: Record<string, Record<Language, string>> = {
   "sell.message.placeholder": { en: "Tell us more about your products", ar: "أخبرنا المزيد عن منتجاتك" },
   "sell.submit": { en: "Send Request", ar: "إرسال الطلب" },
   "sell.toast": { en: "Request sent. We will contact you soon.", ar: "تم إرسال الطلب. سنعاود التواصل معك قريباً." },
-  "sell.sticky": { en: "Sell Your Products", ar: "بيع منتجاتك" },
+  "sell.sticky": { en: "Sell Your Products", ar: "قم ببيع منتج معنا" },
 
   // Footer
   "footer.rights": { en: "All rights reserved.", ar: "جميع الحقوق محفوظة." },
@@ -341,6 +342,10 @@ const translations: Record<string, Record<Language, string>> = {
   },
 
   // Loading
+  "loading.subtitle": {
+    en: "Olives and Their Derivatives Are Our Pride and Focus",
+    ar: "الزيتون و مشتقاته فخرنا و اهتمامنا",
+  },
   "loading.tagline": { en: "Premium Olive Oil", ar: "زيت زيتون فاخر" },
 };
 
@@ -348,12 +353,29 @@ const LanguageContext = createContext<LanguageContextType | undefined>(
   undefined,
 );
 
+const LANGUAGE_STORAGE_KEY = "site_language";
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguage] = useState<Language>("ar");
+  const [language, setLanguage] = useState<Language>(() => {
+    if (typeof window === "undefined") return "ar";
+    const storedLanguage = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    return storedLanguage === "ar" || storedLanguage === "en"
+      ? storedLanguage
+      : "ar";
+  });
 
   const toggleLanguage = useCallback(() => {
-    setLanguage((prev) => (prev === "en" ? "ar" : "en"));
+    setLanguage((prev) => {
+      const nextLanguage = prev === "en" ? "ar" : "en";
+      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, nextLanguage);
+      window.location.reload();
+      return nextLanguage;
+    });
   }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+  }, [language]);
 
   const t = useCallback(
     (key: string) => translations[key]?.[language] || key,
@@ -375,3 +397,5 @@ export function useLanguage() {
     throw new Error("useLanguage must be used within LanguageProvider");
   return context;
 }
+
+

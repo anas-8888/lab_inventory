@@ -1,4 +1,4 @@
-﻿<%
+<%
   const productDefs = [
     { key: 'olive_products', label: 'منتجات الزيتون' },
     { key: 'olive_oil', label: 'زيت الزيتون' },
@@ -44,8 +44,34 @@
     .inbox-meta { font-size: 12px; color: #6b7280; }
     .inbox-attachment-img { width: 72px; height: 72px; object-fit: cover; border-radius: 8px; border: 1px solid #dee2e6; }
     .products-table .product-thumb { width: 64px; height: 64px; border-radius: 8px; }
-    .products-table td, .products-table th { vertical-align: middle; }
+    .products-table .js-card-image { cursor: zoom-in; transition: transform 0.15s ease; }
+    .products-table .js-card-image:hover { transform: scale(1.04); }
+    .products-table .drag-col { width: 56px; }
+    .drag-handle-btn { cursor: grab; }
+    .drag-handle-btn:active { cursor: grabbing; }
+    .product-row.product-row-dragging { opacity: 0.7; background: #eef9f1; }
+    .accordion-button.product-section-toggle:not(.collapsed) {
+      background-color: #f8fafc;
+      color: #212529;
+      box-shadow: none;
+    }
+    .accordion-button.product-section-toggle:focus {
+      border-color: #198754;
+      box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.15);
+    }
+    .product-modal-image-preview { width: 100%; max-width: 180px; height: 120px; object-fit: cover; border: 1px solid #dee2e6; border-radius: 10px; background: #f8f9fa; }
+    .products-table .product-long-cell {
+      max-width: 220px;
+      white-space: pre-line;
+      word-break: break-word;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .products-table td, .products-table th { vertical-align: middle; text-align: center; }
     .products-table thead th { text-align: center; }
+    .product-image-preview-modal .modal-content { border-radius: 14px; overflow: hidden; }
+    .product-image-preview-modal .modal-body { padding: 0.75rem; text-align: center; background: #f8f9fa; }
+    .product-image-preview-modal img { max-width: 100%; max-height: 78vh; width: auto; height: auto; border-radius: 8px; object-fit: contain; }
   </style>
 
   <div class="d-flex justify-content-between align-items-center mb-3">
@@ -141,36 +167,46 @@
                         <table class="table table-bordered table-hover products-table mb-0">
                           <thead class="table-light">
                             <tr>
+                              <th class="drag-col">سحب</th>
                               <th style="width:90px;">الصورة</th>
                               <th>الاسم عربي</th>
                               <th>الاسم EN</th>
                               <th>الفئة</th>
-                              <th style="width:220px;">تغيير الصورة</th>
+                              <th>الوصف عربي</th>
+                              <th>الوصف EN</th>
+                              <th>المميزات عربي</th>
+                              <th>المميزات EN</th>
                               <th style="width:170px;">الإجراءات</th>
                             </tr>
                           </thead>
                           <tbody id="<%= def.key %>_products_container">
                         <% items.forEach((p, idx) => { %>
-                          <tr class="product-row" data-section="<%= def.key %>">
+                          <tr class="product-row" data-section="<%= def.key %>" draggable="false">
+                            <td>
+                              <button type="button" class="btn btn-sm btn-light border drag-handle-btn" title="سحب لإعادة الترتيب" aria-label="سحب لإعادة الترتيب">
+                                <i class="bi bi-grip-vertical"></i>
+                              </button>
+                            </td>
                             <td><img class="product-thumb js-card-image" src="<%= p.current_image || '/public/img/placeholder-image.png' %>" alt="product-image"></td>
                             <td class="js-name-ar"><%= p.name_ar || 'منتج بدون اسم' %></td>
                             <td class="js-name-en"><%= p.name_en || '-' %></td>
                             <td class="js-category-ar"><%= p.category_ar || '-' %></td>
-                            <td>
-                              <input class="form-control form-control-sm section-product-image-input" type="file" name="<%= def.key %>_product_image_<%= idx %>" accept="image/*">
-                            </td>
+                            <td class="js-description-ar product-long-cell"><%= p.description_ar || '-' %></td>
+                            <td class="js-description-en product-long-cell"><%= p.description_en || '-' %></td>
+                            <td class="js-features-ar product-long-cell"><%= p.features_ar || '-' %></td>
+                            <td class="js-features-en product-long-cell"><%= p.features_en || '-' %></td>
                             <td>
                               <div class="d-flex gap-1">
-                                <button type="button" class="btn btn-sm btn-outline-primary js-edit-product"><i class="bi bi-pencil-square"></i> تعديل</button>
+                                <button type="button" class="btn btn-sm btn-outline-primary js-edit-product" title="تعديل المنتج" aria-label="تعديل المنتج"><i class="bi bi-pencil-square"></i></button>
                                 <button
                                   type="button"
                                   class="btn btn-sm btn-outline-secondary duplicate-product-btn"
                                   title="استنساخ المنتج"
                                   aria-label="استنساخ المنتج"
                                 >
-                                  <i class="bi bi-copy"></i>
+                                  <i class="bi bi-files"></i>
                                 </button>
-                                <button type="button" class="btn btn-sm btn-outline-danger product-delete-btn"><i class="bi bi-trash"></i> حذف</button>
+                                <button type="button" class="btn btn-sm btn-outline-danger product-delete-btn" title="حذف المنتج" aria-label="حذف المنتج"><i class="bi bi-trash"></i></button>
                               </div>
                               <input type="hidden" data-field="id" name="<%= def.key %>_product_id" value="<%= p.id || '' %>">
                               <input type="hidden" data-field="category_ar" name="<%= def.key %>_product_category_ar" value="<%= p.category_ar || '' %>">
@@ -181,6 +217,7 @@
                               <textarea class="d-none" data-field="description_en" name="<%= def.key %>_product_description_en"><%= p.description_en || '' %></textarea>
                               <textarea class="d-none" data-field="features_ar" name="<%= def.key %>_product_features_ar"><%= p.features_ar || '' %></textarea>
                               <textarea class="d-none" data-field="features_en" name="<%= def.key %>_product_features_en"><%= p.features_en || '' %></textarea>
+                              <input class="d-none section-product-image-input" type="file" name="<%= def.key %>_product_image_<%= idx %>" accept="image/*">
                               <input type="hidden" data-field="current_image" name="<%= def.key %>_current_product_image" value="<%= p.current_image || '' %>">
                             </td>
                           </tr>
@@ -234,7 +271,7 @@
                           <% if (mail.attachments && mail.attachments.length) { %>
                             <div class="d-flex flex-wrap gap-2">
                               <% mail.attachments.forEach((att) => { %>
-                                <a href="<%= att.file_url %>" target="_blank" rel="noreferrer">
+                                <a href="<%= att.file_url %>" class="js-inbox-attachment-link" data-image-url="<%= att.file_url %>" data-image-alt="attachment">
                                   <img src="<%= att.file_url %>" class="inbox-attachment-img" alt="attachment">
                                 </a>
                               <% }) %>
@@ -265,9 +302,6 @@
       </div>
     </div>
 
-    <div class="d-flex gap-2 mb-5">
-      <button id="saveChangesBtn" type="submit" class="btn btn-success d-none"><i class="bi bi-check2-circle me-1"></i> حفظ التعديلات</button>
-    </div>
   </form>
   <form id="deleteInboxMessageForm" method="POST" class="d-none"></form>
 </div>
@@ -284,15 +318,11 @@
           <div class="card-body">
             <h6 class="mb-3 text-success">البيانات الأساسية</h6>
             <div class="row g-3">
-              <div class="col-md-2">
-                <label class="form-label fw-semibold">المعرّف</label>
-                <input id="pm_id" class="form-control" placeholder="1">
-              </div>
-              <div class="col-md-5">
+              <div class="col-md-6">
                 <label class="form-label fw-semibold">اسم المنتج (عربي)</label>
                 <input id="pm_name_ar" class="form-control" placeholder="مثال: زيت زيتون بكر ممتاز">
               </div>
-              <div class="col-md-5">
+              <div class="col-md-6">
                 <label class="form-label fw-semibold">Product Name (EN)</label>
                 <input id="pm_name_en" class="form-control" placeholder="Example: Extra Virgin Olive Oil">
               </div>
@@ -303,12 +333,10 @@
                 </select>
               </div>
               <div class="col-md-6">
-                <label class="form-label fw-semibold">الفئة (عربي)</label>
-                <input id="pm_category_ar" class="form-control" readonly>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Category (EN)</label>
-                <input id="pm_category_en" class="form-control" readonly>
+                <label class="form-label fw-semibold">صورة المنتج</label>
+                <input id="pm_image_input" class="form-control" type="file" accept="image/*">
+                <img id="pm_image_preview" src="" class="product-modal-image-preview mt-2 d-none" alt="product-image-preview">
+                <div id="pm_image_hint" class="small text-muted mt-1">يمكنك تغيير الصورة من هنا.</div>
               </div>
             </div>
           </div>
@@ -338,7 +366,6 @@
         </div>
       </div>
       <div class="modal-footer d-flex justify-content-between">
-        <button type="button" class="btn btn-outline-danger" id="pm_delete_btn"><i class="bi bi-trash"></i> حذف المنتج</button>
         <div class="d-flex gap-2">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
           <button type="button" class="btn btn-primary" id="pm_save_btn"><i class="bi bi-check2"></i> حفظ</button>
@@ -390,7 +417,7 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
         <button type="button" class="btn btn-primary" id="confirmDuplicateProductBtn">
-          <i class="bi bi-copy"></i> استنساخ
+          <i class="bi bi-files"></i> استنساخ
         </button>
       </div>
     </div>
@@ -417,16 +444,43 @@
   </div>
 </div>
 
+<div class="modal fade product-image-preview-modal" id="productImagePreviewModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">معاينة صورة المنتج</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <img id="productImagePreviewTarget" src="" alt="product-preview">
+      </div>
+      <div class="modal-footer d-flex justify-content-end gap-2">
+        <a id="productImageDownloadBtn" class="btn btn-outline-primary" href="#" download>
+          <i class="bi bi-download"></i> تحميل الصورة
+        </a>
+        <button type="button" id="productImageCopyLinkBtn" class="btn btn-outline-secondary">
+          <i class="bi bi-link-45deg"></i> نسخ رابط الصورة
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 (() => {
   const addRow = (container, html) => container.insertAdjacentHTML('beforeend', html);
-  const placeholderSvg = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="90" height="90"><rect width="100%" height="100%" fill="%23f1f3f5"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%23777777" font-size="12">No Image</text></svg>';
+  const placeholderSvg = `data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="90" height="90"><rect width="100%" height="100%" fill="#f1f3f5"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#777777" font-size="12">No Image</text></svg>')}`;
   const siteTabsElement = document.getElementById('siteTabs');
+  const productsAccordionElement = document.getElementById('productsSectionsAccordion');
   const tabsStorageKey = 'siteManagementActiveTab';
+  const productsUiStateStorageKey = 'siteManagementProductsUiState';
   const productEditorModalElement = document.getElementById('productEditorModal');
   const productEditorModal = productEditorModalElement ? new bootstrap.Modal(productEditorModalElement) : null;
   const productEditorTitle = productEditorModalElement?.querySelector('.modal-title');
   const productEditorDeleteBtn = document.getElementById('pm_delete_btn');
+  const pmImageInput = document.getElementById('pm_image_input');
+  const pmImagePreview = document.getElementById('pm_image_preview');
+  const pmImageHint = document.getElementById('pm_image_hint');
   const pmCategorySelect = document.getElementById('pm_category_select');
   const categoriesModalElement = document.getElementById('categoriesModal');
   const categoriesModal = categoriesModalElement ? new bootstrap.Modal(categoriesModalElement) : null;
@@ -435,6 +489,11 @@
   const confirmDuplicateProductBtn = document.getElementById('confirmDuplicateProductBtn');
   const confirmDeleteModalElement = document.getElementById('confirmDeleteModal');
   const confirmDeleteModal = confirmDeleteModalElement ? new bootstrap.Modal(confirmDeleteModalElement) : null;
+  const productImagePreviewModalElement = document.getElementById('productImagePreviewModal');
+  const productImagePreviewModal = productImagePreviewModalElement ? new bootstrap.Modal(productImagePreviewModalElement) : null;
+  const productImagePreviewTarget = document.getElementById('productImagePreviewTarget');
+  const productImageDownloadBtn = document.getElementById('productImageDownloadBtn');
+  const productImageCopyLinkBtn = document.getElementById('productImageCopyLinkBtn');
   const confirmDeleteTitle = document.getElementById('confirmDeleteTitle');
   const confirmDeleteMessage = document.getElementById('confirmDeleteMessage');
   const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
@@ -444,51 +503,69 @@
   const saveCategoryBtn = document.getElementById('saveCategoryBtn');
   const siteManagementForm = document.getElementById('siteManagementForm');
   const deleteInboxMessageForm = document.getElementById('deleteInboxMessageForm');
-  const saveChangesBtn = document.getElementById('saveChangesBtn');
   let activeProductCard = null;
+  let activeDraggedProductRow = null;
   let pendingDuplicateProductCard = null;
   let pendingDeleteAction = null;
   let pendingNewSectionKey = null;
   let activeProductSectionKey = null;
   let activeCategorySectionKey = null;
   let activeCategoryIndex = null;
-  let initialFormSignature = '';
+  let formSubmitInProgress = false;
 
-  function formFieldSignature(el) {
-    if (!el || el.disabled || !el.name) return '';
-    const tag = (el.tagName || '').toUpperCase();
-    const type = String(el.type || '').toLowerCase();
-
-    if (tag === 'INPUT' && type === 'file') {
-      const files = Array.from(el.files || []);
-      if (!files.length) return `${el.name}=<empty-file>`;
-      const fileSig = files.map((f) => `${f.name}:${f.size}:${f.type || ''}`).join('|');
-      return `${el.name}=<file:${fileSig}>`;
+  function getProductsUiState() {
+    try {
+      const raw = localStorage.getItem(productsUiStateStorageKey);
+      if (!raw) return { openCollapseId: '', scrollY: 0 };
+      const parsed = JSON.parse(raw);
+      return {
+        openCollapseId: typeof parsed?.openCollapseId === 'string' ? parsed.openCollapseId : '',
+        scrollY: Number.isFinite(parsed?.scrollY) ? parsed.scrollY : 0
+      };
+    } catch (_) {
+      return { openCollapseId: '', scrollY: 0 };
     }
-
-    if ((tag === 'INPUT' && (type === 'checkbox' || type === 'radio'))) {
-      return `${el.name}=${el.checked ? '1' : '0'}:${el.value || ''}`;
-    }
-
-    return `${el.name}=${el.value || ''}`;
   }
 
-  function buildFormSignature() {
-    if (!siteManagementForm) return '';
-    const fields = Array.from(siteManagementForm.querySelectorAll('input[name], textarea[name], select[name]'));
-    const signatures = fields
-      .map(formFieldSignature)
-      .filter(Boolean)
-      .sort();
-    return signatures.join('||');
+  function saveProductsUiState(partial = {}) {
+    try {
+      const current = getProductsUiState();
+      const next = {
+        ...current,
+        ...partial
+      };
+      localStorage.setItem(productsUiStateStorageKey, JSON.stringify(next));
+    } catch (_) {}
+  }
+
+  function getActiveTabTarget() {
+    return siteTabsElement?.querySelector('.nav-link.active')?.getAttribute('data-bs-target') || '';
+  }
+
+  function restoreProductsUiState() {
+    const state = getProductsUiState();
+    if (state.openCollapseId) {
+      const collapseEl = document.querySelector(state.openCollapseId);
+      if (collapseEl) {
+        bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false }).show();
+      }
+    }
+
+    if (Number.isFinite(state.scrollY) && state.scrollY > 0) {
+      setTimeout(() => {
+        window.scrollTo({ top: state.scrollY, behavior: 'auto' });
+      }, 140);
+    }
   }
 
   function updateSaveButtonVisibility() {
-    if (!saveChangesBtn) return;
-    const currentSignature = buildFormSignature();
-    const isDirty = currentSignature !== initialFormSignature;
-    saveChangesBtn.classList.toggle('d-none', !isDirty);
-    saveChangesBtn.disabled = !isDirty;
+    // تم إلغاء زر الحفظ اليدوي، وأصبحت الصفحة تعتمد على الحفظ الفوري.
+  }
+
+  function submitSiteManagementForm() {
+    if (formSubmitInProgress || !siteManagementForm) return;
+    formSubmitInProgress = true;
+    siteManagementForm.requestSubmit();
   }
 
   function field(card, key) {
@@ -509,26 +586,37 @@
     const nameAr = readField(card, 'name_ar') || 'منتج بدون اسم';
     const nameEn = readField(card, 'name_en') || '-';
     const categoryAr = readField(card, 'category_ar') || '-';
+    const descriptionAr = readField(card, 'description_ar') || '-';
+    const descriptionEn = readField(card, 'description_en') || '-';
+    const featuresAr = readField(card, 'features_ar') || '-';
+    const featuresEn = readField(card, 'features_en') || '-';
     const image = readField(card, 'current_image') || placeholderSvg;
 
     const nameArEl = card.querySelector('.js-name-ar');
     const nameEnEl = card.querySelector('.js-name-en');
     const catArEl = card.querySelector('.js-category-ar');
+    const descArEl = card.querySelector('.js-description-ar');
+    const descEnEl = card.querySelector('.js-description-en');
+    const featuresArEl = card.querySelector('.js-features-ar');
+    const featuresEnEl = card.querySelector('.js-features-en');
     const imgEl = card.querySelector('.js-card-image');
 
     if (nameArEl) nameArEl.textContent = nameAr;
     if (nameEnEl) nameEnEl.textContent = nameEn;
     if (catArEl) catArEl.textContent = categoryAr;
+    if (descArEl) descArEl.textContent = descriptionAr;
+    if (descEnEl) descEnEl.textContent = descriptionEn;
+    if (featuresArEl) featuresArEl.textContent = featuresAr;
+    if (featuresEnEl) featuresEnEl.textContent = featuresEn;
     if (imgEl) imgEl.src = image;
   }
 
-  function syncProductCategoryInputsFromSelect() {
-    if (!pmCategorySelect) return;
+  function getSelectedProductCategory() {
+    if (!pmCategorySelect) return { ar: '', en: '' };
     const selectedOption = pmCategorySelect.options[pmCategorySelect.selectedIndex];
     const ar = selectedOption?.dataset?.ar || '';
     const en = selectedOption?.dataset?.en || '';
-    document.getElementById('pm_category_ar').value = ar;
-    document.getElementById('pm_category_en').value = en;
+    return { ar, en };
   }
 
   function populateProductCategoryOptions(sectionKey, currentAr = '', currentEn = '') {
@@ -557,7 +645,6 @@
       pmCategorySelect.selectedIndex = 0;
     }
 
-    syncProductCategoryInputsFromSelect();
   }
 
   function openProductEditor(card) {
@@ -568,7 +655,6 @@
     if (productEditorTitle) productEditorTitle.textContent = 'تعديل المنتج';
     if (productEditorDeleteBtn) productEditorDeleteBtn.classList.remove('d-none');
 
-    document.getElementById('pm_id').value = readField(card, 'id');
     document.getElementById('pm_name_ar').value = readField(card, 'name_ar');
     document.getElementById('pm_name_en').value = readField(card, 'name_en');
     const currentCategoryAr = readField(card, 'category_ar');
@@ -578,6 +664,19 @@
     document.getElementById('pm_description_en').value = readField(card, 'description_en');
     document.getElementById('pm_features_ar').value = readField(card, 'features_ar');
     document.getElementById('pm_features_en').value = readField(card, 'features_en');
+    if (pmImageInput) pmImageInput.value = '';
+    const currentImage = readField(card, 'current_image');
+    if (pmImagePreview) {
+      if (currentImage) {
+        pmImagePreview.src = currentImage;
+        pmImagePreview.classList.remove('d-none');
+        if (pmImageHint) pmImageHint.classList.add('d-none');
+      } else {
+        pmImagePreview.removeAttribute('src');
+        pmImagePreview.classList.add('d-none');
+        if (pmImageHint) pmImageHint.classList.remove('d-none');
+      }
+    }
 
     productEditorModal.show();
   }
@@ -590,7 +689,6 @@
     if (productEditorTitle) productEditorTitle.textContent = 'إضافة منتج جديد';
     if (productEditorDeleteBtn) productEditorDeleteBtn.classList.add('d-none');
 
-    document.getElementById('pm_id').value = '';
     document.getElementById('pm_name_ar').value = '';
     document.getElementById('pm_name_en').value = '';
     populateProductCategoryOptions(sectionKey, '', '');
@@ -598,6 +696,12 @@
     document.getElementById('pm_description_en').value = '';
     document.getElementById('pm_features_ar').value = '';
     document.getElementById('pm_features_en').value = '';
+    if (pmImageInput) pmImageInput.value = '';
+    if (pmImagePreview) {
+      pmImagePreview.removeAttribute('src');
+      pmImagePreview.classList.add('d-none');
+    }
+    if (pmImageHint) pmImageHint.classList.remove('d-none');
 
     productEditorModal.show();
   }
@@ -605,12 +709,14 @@
   function createProductCardFromValues(sectionKey, values) {
     const container = document.getElementById(`${sectionKey}_products_container`);
     if (!container) return null;
-    const html = `<tr class="product-row" data-section="${sectionKey}"><td><img class="product-thumb js-card-image" src="${placeholderSvg}" alt="product-image"></td><td class="js-name-ar">منتج جديد</td><td class="js-name-en">-</td><td class="js-category-ar">-</td><td><input class="form-control form-control-sm section-product-image-input" type="file" accept="image/*"></td><td><div class="d-flex gap-1"><button type="button" class="btn btn-sm btn-outline-primary js-edit-product"><i class="bi bi-pencil-square"></i> تعديل</button><button type="button" class="btn btn-sm btn-outline-secondary duplicate-product-btn" title="استنساخ المنتج" aria-label="استنساخ المنتج"><i class="bi bi-copy"></i></button><button type="button" class="btn btn-sm btn-outline-danger product-delete-btn"><i class="bi bi-trash"></i> حذف</button></div><input type="hidden" data-field="id" name="${sectionKey}_product_id" value=""><input type="hidden" data-field="category_ar" name="${sectionKey}_product_category_ar" value=""><input type="hidden" data-field="category_en" name="${sectionKey}_product_category_en" value=""><input type="hidden" data-field="name_ar" name="${sectionKey}_product_name_ar" value=""><input type="hidden" data-field="name_en" name="${sectionKey}_product_name_en" value=""><textarea class="d-none" data-field="description_ar" name="${sectionKey}_product_description_ar"></textarea><textarea class="d-none" data-field="description_en" name="${sectionKey}_product_description_en"></textarea><textarea class="d-none" data-field="features_ar" name="${sectionKey}_product_features_ar"></textarea><textarea class="d-none" data-field="features_en" name="${sectionKey}_product_features_en"></textarea><input type="hidden" data-field="current_image" name="${sectionKey}_current_product_image" value=""></td></tr>`;
+    const html = `<tr class="product-row" data-section="${sectionKey}" draggable="false"><td><button type="button" class="btn btn-sm btn-light border drag-handle-btn" title="سحب لإعادة الترتيب" aria-label="سحب لإعادة الترتيب"><i class="bi bi-grip-vertical"></i></button></td><td><img class="product-thumb js-card-image" src="${placeholderSvg}" alt="product-image"></td><td class="js-name-ar">منتج جديد</td><td class="js-name-en">-</td><td class="js-category-ar">-</td><td class="js-description-ar product-long-cell">-</td><td class="js-description-en product-long-cell">-</td><td class="js-features-ar product-long-cell">-</td><td class="js-features-en product-long-cell">-</td><td><div class="d-flex gap-1"><button type="button" class="btn btn-sm btn-outline-primary js-edit-product" title="تعديل المنتج" aria-label="تعديل المنتج"><i class="bi bi-pencil-square"></i></button><button type="button" class="btn btn-sm btn-outline-secondary duplicate-product-btn" title="استنساخ المنتج" aria-label="استنساخ المنتج"><i class="bi bi-files"></i></button><button type="button" class="btn btn-sm btn-outline-danger product-delete-btn" title="حذف المنتج" aria-label="حذف المنتج"><i class="bi bi-trash"></i></button></div><input type="hidden" data-field="id" name="${sectionKey}_product_id" value=""><input type="hidden" data-field="category_ar" name="${sectionKey}_product_category_ar" value=""><input type="hidden" data-field="category_en" name="${sectionKey}_product_category_en" value=""><input type="hidden" data-field="name_ar" name="${sectionKey}_product_name_ar" value=""><input type="hidden" data-field="name_en" name="${sectionKey}_product_name_en" value=""><textarea class="d-none" data-field="description_ar" name="${sectionKey}_product_description_ar"></textarea><textarea class="d-none" data-field="description_en" name="${sectionKey}_product_description_en"></textarea><textarea class="d-none" data-field="features_ar" name="${sectionKey}_product_features_ar"></textarea><textarea class="d-none" data-field="features_en" name="${sectionKey}_product_features_en"></textarea><input class="d-none section-product-image-input" type="file" accept="image/*"><input type="hidden" data-field="current_image" name="${sectionKey}_current_product_image" value=""></td></tr>`;
     addRow(container, html);
     const newCard = container.querySelector('tr.product-row:last-child');
     if (!newCard) return null;
 
-    writeField(newCard, 'id', values.id);
+    if (typeof values.id !== 'undefined') {
+      writeField(newCard, 'id', values.id);
+    }
     writeField(newCard, 'name_ar', values.name_ar);
     writeField(newCard, 'name_en', values.name_en);
     writeField(newCard, 'category_ar', values.category_ar);
@@ -625,6 +731,7 @@
   }
 
   function saveProductEditor() {
+    let selectedCategory = { ar: '', en: '' };
     if (pmCategorySelect) {
       if (pmCategorySelect.options.length <= 1) {
         alert('لا توجد فئات في هذا القسم. أضف فئة أولاً.');
@@ -634,15 +741,14 @@
         alert('يرجى اختيار فئة للمنتج.');
         return;
       }
-      syncProductCategoryInputsFromSelect();
+      selectedCategory = getSelectedProductCategory();
     }
 
     const values = {
-      id: document.getElementById('pm_id').value,
       name_ar: document.getElementById('pm_name_ar').value,
       name_en: document.getElementById('pm_name_en').value,
-      category_ar: document.getElementById('pm_category_ar').value,
-      category_en: document.getElementById('pm_category_en').value,
+      category_ar: selectedCategory.ar,
+      category_en: selectedCategory.en,
       description_ar: document.getElementById('pm_description_ar').value,
       description_en: document.getElementById('pm_description_en').value,
       features_ar: document.getElementById('pm_features_ar').value,
@@ -650,7 +756,6 @@
     };
 
     if (activeProductCard) {
-      writeField(activeProductCard, 'id', values.id);
       writeField(activeProductCard, 'name_ar', values.name_ar);
       writeField(activeProductCard, 'name_en', values.name_en);
       writeField(activeProductCard, 'category_ar', values.category_ar);
@@ -659,13 +764,35 @@
       writeField(activeProductCard, 'description_en', values.description_en);
       writeField(activeProductCard, 'features_ar', values.features_ar);
       writeField(activeProductCard, 'features_en', values.features_en);
+      if (pmImageInput?.files?.[0]) {
+        const rowImageInput = activeProductCard.querySelector('.section-product-image-input');
+        if (rowImageInput) {
+          const dt = new DataTransfer();
+          dt.items.add(pmImageInput.files[0]);
+          rowImageInput.files = dt.files;
+        }
+        const objectUrl = URL.createObjectURL(pmImageInput.files[0]);
+        writeField(activeProductCard, 'current_image', objectUrl);
+      }
       updateProductCardSummary(activeProductCard);
     } else if (pendingNewSectionKey) {
-      createProductCardFromValues(pendingNewSectionKey, values);
+      const newCard = createProductCardFromValues(pendingNewSectionKey, values);
+      if (newCard && pmImageInput?.files?.[0]) {
+        const rowImageInput = newCard.querySelector('.section-product-image-input');
+        if (rowImageInput) {
+          const dt = new DataTransfer();
+          dt.items.add(pmImageInput.files[0]);
+          rowImageInput.files = dt.files;
+        }
+        const objectUrl = URL.createObjectURL(pmImageInput.files[0]);
+        writeField(newCard, 'current_image', objectUrl);
+        updateProductCardSummary(newCard);
+      }
     }
 
     updateSaveButtonVisibility();
     productEditorModal.hide();
+    submitSiteManagementForm();
   }
 
   function deleteActiveProduct() {
@@ -725,6 +852,103 @@
     }
   }
 
+  function requestDuplicateProduct(row) {
+    if (!row) return;
+    if (!duplicateProductModal || !confirmDuplicateProductBtn) {
+      duplicateProductRow(row);
+      return;
+    }
+    pendingDuplicateProductCard = row;
+    duplicateProductModal.show();
+  }
+
+  function finalizeProductRowDrag() {
+    if (!activeDraggedProductRow) return;
+    const sectionKey = activeDraggedProductRow.dataset.section;
+    activeDraggedProductRow.classList.remove('product-row-dragging');
+    activeDraggedProductRow.setAttribute('draggable', 'false');
+    activeDraggedProductRow = null;
+    if (sectionKey) reindexProductFiles(sectionKey);
+    submitSiteManagementForm();
+  }
+
+  function setupProductRowDnD(container) {
+    if (!container || container.dataset.dndReady === '1') return;
+    container.dataset.dndReady = '1';
+
+    container.addEventListener('dragstart', (event) => {
+      const row = event.target.closest('.product-row');
+      if (!row || row.getAttribute('draggable') !== 'true') {
+        event.preventDefault();
+        return;
+      }
+      activeDraggedProductRow = row;
+      row.classList.add('product-row-dragging');
+      if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', row.dataset.section || 'product-row');
+      }
+    });
+
+    container.addEventListener('dragover', (event) => {
+      if (!activeDraggedProductRow) return;
+      event.preventDefault();
+      const targetRow = event.target.closest('.product-row');
+      if (!targetRow || targetRow === activeDraggedProductRow) return;
+      const rect = targetRow.getBoundingClientRect();
+      const shouldInsertAfter = event.clientY > rect.top + rect.height / 2;
+      if (shouldInsertAfter) {
+        targetRow.parentNode.insertBefore(activeDraggedProductRow, targetRow.nextSibling);
+      } else {
+        targetRow.parentNode.insertBefore(activeDraggedProductRow, targetRow);
+      }
+    });
+
+    container.addEventListener('drop', (event) => {
+      if (!activeDraggedProductRow) return;
+      event.preventDefault();
+      finalizeProductRowDrag();
+    });
+
+    container.addEventListener('dragend', () => {
+      finalizeProductRowDrag();
+    });
+  }
+
+  function openProductImagePreview(src, altText = 'product-image') {
+    if (!productImagePreviewModal || !productImagePreviewTarget || !src) return;
+    productImagePreviewTarget.src = src;
+    productImagePreviewTarget.alt = altText || 'product-image';
+    if (productImageDownloadBtn) {
+      productImageDownloadBtn.href = src;
+      productImageDownloadBtn.setAttribute('download', `image-${Date.now()}`);
+    }
+    productImagePreviewModal.show();
+  }
+
+  productImageCopyLinkBtn?.addEventListener('click', async () => {
+    const imageUrl = productImagePreviewTarget?.getAttribute('src') || '';
+    if (!imageUrl) return;
+    try {
+      await navigator.clipboard.writeText(imageUrl);
+      alert('تم نسخ رابط الصورة');
+    } catch (_) {
+      const tempInput = document.createElement('input');
+      tempInput.value = imageUrl;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+      alert('تم نسخ رابط الصورة');
+    }
+  });
+
+  productImagePreviewModalElement?.addEventListener('hidden.bs.modal', () => {
+    if (!productImagePreviewTarget) return;
+    productImagePreviewTarget.removeAttribute('src');
+    if (productImageDownloadBtn) productImageDownloadBtn.setAttribute('href', '#');
+  });
+
   function activateTabByTarget(target) {
     if (!siteTabsElement || !target) return;
     const tabBtn = siteTabsElement.querySelector(`[data-bs-target="${target}"]`);
@@ -783,11 +1007,11 @@
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 border rounded px-2 py-1 bg-white">
           <span class="category-chip mb-0">${row.ar || '-'} / ${row.en || '-'}</span>
           <div class="d-flex gap-1">
-            <button type="button" class="btn btn-sm btn-outline-primary edit-category-btn" data-section="${sectionKey}" data-index="${idx}">
-              <i class="bi bi-pencil-square"></i> تعديل
+            <button type="button" class="btn btn-sm btn-outline-primary edit-category-btn" data-section="${sectionKey}" data-index="${idx}" title="تعديل الفئة" aria-label="تعديل الفئة">
+              <i class="bi bi-pencil-square"></i>
             </button>
-            <button type="button" class="btn btn-sm btn-outline-danger delete-category-btn" data-section="${sectionKey}" data-index="${idx}">
-              <i class="bi bi-trash"></i> حذف
+            <button type="button" class="btn btn-sm btn-outline-danger delete-category-btn" data-section="${sectionKey}" data-index="${idx}" title="حذف الفئة" aria-label="حذف الفئة">
+              <i class="bi bi-trash"></i>
             </button>
           </div>
         </div>
@@ -833,6 +1057,7 @@
       img.src = objectUrl;
       img.classList.remove('d-none');
       if (hint) hint.classList.add('d-none');
+      submitSiteManagementForm();
     });
 
     window.addEventListener('beforeunload', () => {
@@ -874,12 +1099,14 @@
     writeSectionCategories(activeCategorySectionKey, rows);
     renderCategoriesPreview(activeCategorySectionKey);
     if (activeProductSectionKey && activeProductSectionKey === activeCategorySectionKey) {
-      const currentAr = document.getElementById('pm_category_ar').value;
-      const currentEn = document.getElementById('pm_category_en').value;
+      const currentCategory = getSelectedProductCategory();
+      const currentAr = currentCategory.ar;
+      const currentEn = currentCategory.en;
       populateProductCategoryOptions(activeProductSectionKey, currentAr, currentEn);
     }
     updateSaveButtonVisibility();
     categoriesModal.hide();
+    submitSiteManagementForm();
   }
 
   document.querySelectorAll('.add-product-btn').forEach((btn) => {
@@ -905,6 +1132,7 @@
     }
     pendingDuplicateProductCard = null;
     duplicateProductModal?.hide();
+    submitSiteManagementForm();
   });
   confirmDeleteBtn?.addEventListener('click', () => {
     if (pendingDeleteAction) pendingDeleteAction();
@@ -912,11 +1140,41 @@
     confirmDeleteModal?.hide();
   });
   pmCategorySelect?.addEventListener('change', () => {
-    syncProductCategoryInputsFromSelect();
     updateSaveButtonVisibility();
   });
 
+  pmImageInput?.addEventListener('change', () => {
+    const file = pmImageInput.files?.[0];
+    if (!pmImagePreview) return;
+    if (!file) {
+      pmImagePreview.removeAttribute('src');
+      pmImagePreview.classList.add('d-none');
+      if (pmImageHint) pmImageHint.classList.remove('d-none');
+      return;
+    }
+    const objectUrl = URL.createObjectURL(file);
+    pmImagePreview.src = objectUrl;
+    pmImagePreview.classList.remove('d-none');
+    if (pmImageHint) pmImageHint.classList.add('d-none');
+  });
+
   document.addEventListener('click', (e) => {
+    const imageEl = e.target.closest('.js-card-image');
+    if (imageEl) {
+      openProductImagePreview(imageEl.getAttribute('src') || '', imageEl.getAttribute('alt') || 'product-image');
+      return;
+    }
+
+    const inboxImageLink = e.target.closest('.js-inbox-attachment-link');
+    if (inboxImageLink) {
+      e.preventDefault();
+      openProductImagePreview(
+        inboxImageLink.getAttribute('data-image-url') || inboxImageLink.getAttribute('href') || '',
+        inboxImageLink.getAttribute('data-image-alt') || 'attachment'
+      );
+      return;
+    }
+
     const editBtn = e.target.closest('.js-edit-product');
     if (editBtn) {
       const row = editBtn.closest('.product-row');
@@ -936,6 +1194,7 @@
           row.remove();
           if (sectionKey) reindexProductFiles(sectionKey);
           updateSaveButtonVisibility();
+          submitSiteManagementForm();
         }
       });
       return;
@@ -945,8 +1204,7 @@
     if (duplicateProductBtn) {
       const row = duplicateProductBtn.closest('.product-row');
       if (!row) return;
-      pendingDuplicateProductCard = row;
-      duplicateProductModal?.show();
+      requestDuplicateProduct(row);
       return;
     }
 
@@ -996,28 +1254,59 @@
         writeSectionCategories(sectionKey, rows);
         renderCategoriesPreview(sectionKey);
         updateSaveButtonVisibility();
+        submitSiteManagementForm();
       }
+    });
+  });
+
+  document.addEventListener('mousedown', (event) => {
+    const handleBtn = event.target.closest('.drag-handle-btn');
+    if (!handleBtn) return;
+    const row = handleBtn.closest('.product-row');
+    if (!row) return;
+    row.setAttribute('draggable', 'true');
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (activeDraggedProductRow) return;
+    document.querySelectorAll('.product-row[draggable="true"]').forEach((row) => {
+      row.setAttribute('draggable', 'false');
     });
   });
 
   document.querySelectorAll('.product-row').forEach(updateProductCardSummary);
   ['olive_products', 'olive_oil', 'agri_crops'].forEach(reindexProductFiles);
+  ['olive_products', 'olive_oil', 'agri_crops'].forEach((sectionKey) => {
+    setupProductRowDnD(document.getElementById(`${sectionKey}_products_container`));
+  });
   ['olive_products', 'olive_oil', 'agri_crops'].forEach(renderCategoriesPreview);
   initSiteImagePreview('logoImageInput', 'logoPreviewImage', 'logoPreviewHint');
   initSiteImagePreview('iconImageInput', 'iconPreviewImage', 'iconPreviewHint');
 
-  if (siteManagementForm) {
-    siteManagementForm.addEventListener('input', updateSaveButtonVisibility);
-    siteManagementForm.addEventListener('change', updateSaveButtonVisibility);
-    siteManagementForm.addEventListener('submit', () => {
-      if (saveChangesBtn) {
-        saveChangesBtn.classList.remove('d-none');
-        saveChangesBtn.disabled = true;
+  productsAccordionElement?.querySelectorAll('.accordion-collapse').forEach((collapseEl) => {
+    collapseEl.addEventListener('shown.bs.collapse', (event) => {
+      const openCollapseId = event.target?.id ? `#${event.target.id}` : '';
+      saveProductsUiState({ openCollapseId, scrollY: window.scrollY });
+    });
+    collapseEl.addEventListener('hidden.bs.collapse', (event) => {
+      const openCollapseId = event.target?.id ? `#${event.target.id}` : '';
+      const state = getProductsUiState();
+      if (state.openCollapseId === openCollapseId) {
+        saveProductsUiState({ openCollapseId: '', scrollY: window.scrollY });
       }
     });
-  }
+  });
 
-  initialFormSignature = buildFormSignature();
+  window.addEventListener('scroll', () => {
+    if (getActiveTabTarget() !== '#tab-products') return;
+    saveProductsUiState({ scrollY: window.scrollY });
+  }, { passive: true });
+
+  window.addEventListener('beforeunload', () => {
+    if (getActiveTabTarget() !== '#tab-products') return;
+    saveProductsUiState({ scrollY: window.scrollY });
+  });
+
   updateSaveButtonVisibility();
 
   if (siteTabsElement) {
@@ -1044,7 +1333,12 @@
         if (cached.startsWith('#tab-')) rememberedTarget = cached;
       } catch (_) {}
     }
-    activateTabByTarget(hashTarget || rememberedTarget);
+    const activeTarget = hashTarget || rememberedTarget;
+    activateTabByTarget(activeTarget);
+    if (activeTarget === '#tab-products') {
+      restoreProductsUiState();
+    }
   }
 })();
 </script>
+
