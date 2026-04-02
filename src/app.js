@@ -187,6 +187,7 @@ app.use((req, res, next) => {
     res.locals.currentPath = req.path;
     res.locals.appName = 'نظام إدارة المختبر';
     res.locals.title = 'نظام إدارة المختبر'; // العنوان الافتراضي
+    res.locals.baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
     next();
 });
 

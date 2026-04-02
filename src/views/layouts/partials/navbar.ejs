@@ -8,20 +8,22 @@
 <nav class="navbar navbar-expand-lg app-navbar sticky-top no-print">
   <div class="container-fluid app-navbar-shell">
     <a class="navbar-brand app-brand" href="/home" aria-label="الرئيسية">
-      <img src="/public/images/nexa.png" alt="نظام إدارة المختبر Logo">
+      <img class="app-brand-logo" src="/public/images/nexa.png" alt="نظام إدارة المختبر Logo">
     </a>
 
-    <button
-      class="navbar-toggler app-navbar-toggler"
-      type="button"
-      data-bs-toggle="collapse"
-      data-bs-target="#mainNavbar"
-      aria-controls="mainNavbar"
-      aria-expanded="false"
-      aria-label="Toggle navigation"
-    >
-      <span class="navbar-toggler-icon"></span>
-    </button>
+    <% if (typeof user !== 'undefined' && user) { %>
+      <button
+        class="navbar-toggler app-navbar-toggler"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#mainNavbar"
+        aria-controls="mainNavbar"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+    <% } %>
 
     <div class="collapse navbar-collapse" id="mainNavbar">
       <% if (typeof user !== 'undefined' && user) { %>

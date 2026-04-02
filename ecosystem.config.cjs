@@ -7,7 +7,7 @@ module.exports = {
       script: "./src/app.js",
 
       // مسار المشروع
-      cwd: "/home/dashboard.ajajbrothers.com",
+      cwd: "/home/plus.ajajbrothers.com",
 
       // وضع التشغيل
       exec_mode: "fork",
@@ -29,8 +29,8 @@ module.exports = {
       max_memory_restart: "300M",
 
       // تسجيل اللوج
-      error_file: "/home/dashboard.ajajbrothers.com/logs/error.log",
-      out_file: "/home/dashboard.ajajbrothers.com/logs/out.log",
+      error_file: "/home/plus.ajajbrothers.com/logs/error.log",
+      out_file: "/home/plus.ajajbrothers.com/logs/out.log",
       log_date_format: "YYYY-MM-DD HH:mm:ss"
     }
   ]

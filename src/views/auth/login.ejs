@@ -1,43 +1,48 @@
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-5">
-        <div class="card shadow">
-            <div class="card-header bg-white py-3">
-                <h4 class="card-title mb-0 text-center">
-                    <i class="fas fa-sign-in-alt me-2"></i>
-                    تسجيل الدخول
-                </h4>
-            </div>
-            <div class="card-body p-4">
-                <form action="/auth/login" method="POST" class="needs-validation" novalidate>
-                    <div class="mb-3">
-                        <label for="username" class="form-label">اسم المستخدم</label>
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <i class="fas fa-user"></i>
-                            </span>
-                            <input type="text" class="form-control" id="username" name="username" required>
+<section class="auth-page auth-login-page">
+    <div class="container auth-container">
+        <div class="row justify-content-center">
+            <div class="col-12 col-sm-10 col-md-7 col-lg-5">
+                <div class="card auth-card shadow-sm border-0">
+                    <div class="card-header auth-card-header bg-white border-0">
+                        <div class="auth-card-icon">
+                            <i class="bi bi-box-arrow-in-right"></i>
                         </div>
+                        <h4 class="card-title mb-0 text-center">تسجيل الدخول</h4>
+                        <p class="auth-subtitle mb-0 text-center">مرحبًا بعودتك، أدخل بياناتك للمتابعة</p>
                     </div>
-                    <div class="mb-4">
-                        <label for="password" class="form-label">كلمة المرور</label>
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <i class="fas fa-lock"></i>
-                            </span>
-                            <input type="password" class="form-control" id="password" name="password" required>
-                        </div>
+                    <div class="card-body auth-card-body">
+                        <form action="/auth/login" method="POST" class="needs-validation" novalidate>
+                            <div class="mb-3">
+                                <label for="username" class="form-label">اسم المستخدم</label>
+                                <div class="input-group auth-input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-user"></i>
+                                    </span>
+                                    <input type="text" class="form-control" id="username" name="username" required autocomplete="username">
+                                </div>
+                            </div>
+                            <div class="mb-4">
+                                <label for="password" class="form-label">كلمة المرور</label>
+                                <div class="input-group auth-input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-lock"></i>
+                                    </span>
+                                    <input type="password" class="form-control" id="password" name="password" required autocomplete="current-password">
+                                </div>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary auth-submit-btn">
+                                    <i class="fas fa-sign-in-alt me-2"></i>
+                                    دخول
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-lg">
-                            <i class="fas fa-sign-in-alt me-2"></i>
-                            دخول
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
-</div>
+</section>
 
 <script>
 // Form validation

@@ -85,6 +85,15 @@ function toPublicAssetUrl(req, rawUrl) {
   return `${origin}/${value}`;
 }
 
+function normalizeLegacyImagePath(rawPath) {
+  const value = t(rawPath);
+  if (!value) return '';
+  if (value.startsWith('/img/')) {
+    return `/public/website_images/${value.slice('/img/'.length)}`;
+  }
+  return value;
+}
+
 function buildMinimalContent(rawContent, fallbackUpdatedBy = '') {
   const content = rawContent && typeof rawContent === 'object' ? rawContent : {};
   const sections = normalizeProductSections(content);
@@ -242,7 +251,7 @@ function buildFormData(contentObj, row = null) {
         features_ar: Array.isArray(p?.features) ? p.features.map((f) => f?.ar || '').filter(Boolean).join('\n') : '',
         features_en: Array.isArray(p?.features) ? p.features.map((f) => f?.en || '').filter(Boolean).join('\n') : '',
         acidity: p?.acidity || '',
-        current_image: p?.image || ''
+        current_image: normalizeLegacyImagePath(p?.image)
       }))
     };
   });
@@ -339,6 +348,20 @@ function buildContentFromFriendlyForm(body) {
 }
 
 function applyUploadedImages(contentObj, body, files) {
+  const removeOldWebsiteImage = (rawUrl) => {
+    const value = t(rawUrl);
+    if (!value || !value.startsWith('/public/website_images/')) return;
+    const normalized = path.normalize(value.replace(/^\/+/, ''));
+    const fullPath = path.join(__dirname, '..', normalized);
+    const websiteImagesRoot = path.join(__dirname, '../public/website_images');
+    if (!fullPath.startsWith(path.normalize(websiteImagesRoot))) return;
+    try {
+      if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+    } catch (_) {
+      // Ignore file cleanup errors.
+    }
+  };
+
   const setImage = (fieldName, apply) => {
     const file = findFile(files, fieldName);
     if (file) apply(`/public/website_images/${file.filename}`);
@@ -360,9 +383,26 @@ function applyUploadedImages(contentObj, body, files) {
       .forEach((f) => {
         const index = Number((f.fieldname || '').match(regex)?.[1]);
         if (!Number.isFinite(index) || !sectionItems[index]) return;
+        removeOldWebsiteImage(sectionItems[index].image);
         sectionItems[index].image = `/public/website_images/${f.filename}`;
       });
   });
+}
+
+function ensureSingleImagePerProduct(files) {
+  const productImageFieldRegex = /^(olive_products|olive_oil|agri_crops)_product_image_\d+$/;
+  const counters = new Map();
+
+  (Array.isArray(files) ? files : []).forEach((file) => {
+    const fieldName = t(file?.fieldname);
+    if (!productImageFieldRegex.test(fieldName)) return;
+    counters.set(fieldName, (counters.get(fieldName) || 0) + 1);
+  });
+
+  const violatedField = Array.from(counters.entries()).find(([, count]) => count > 1);
+  if (violatedField) {
+    throw new Error('يسمح برفع صورة واحدة فقط لكل منتج.');
+  }
 }
 
 async function loadPublicContentSnapshot(req) {
@@ -425,8 +465,8 @@ function buildPublicSections(req, contentObj) {
               .filter((feature) => feature.ar || feature.en)
           : [],
         acidity: t(item?.acidity),
-        image_url: toPublicAssetUrl(req, item?.image),
-        image_raw: t(item?.image)
+        image_url: toPublicAssetUrl(req, normalizeLegacyImagePath(item?.image)),
+        image_raw: normalizeLegacyImagePath(item?.image)
       }))
     };
   });
@@ -765,6 +805,7 @@ exports.updateSiteContent = async (req, res) => {
     });
     contentObj.products = { sections: newSections };
     contentObj.updatedBy = req.session.user?.email || req.session.user?.username || t(contentObj.updatedBy);
+    ensureSingleImagePerProduct(req.files || []);
     applyUploadedImages(contentObj, req.body, req.files || []);
 
     await req.db.query(
@@ -778,7 +819,7 @@ exports.updateSiteContent = async (req, res) => {
     res.redirect('/site-management');
   } catch (error) {
     console.error('خطأ في تحديث محتوى الموقع:', error);
-    req.flash('error_msg', 'تعذر تحديث السجل');
+    req.flash('error_msg', error?.message || 'تعذر تحديث السجل');
     res.redirect(`/site-management/${req.params.id}/edit`);
   }
 };

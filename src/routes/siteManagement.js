@@ -7,6 +7,7 @@ const { createRateLimiter } = require('../middleware/simpleRateLimiter');
 const controller = require('../controllers/siteManagementController');
 
 const router = express.Router();
+const MAX_CONTACT_ATTACHMENTS = 10;
 
 const uploadDir = path.join(__dirname, '../public/website_images');
 fs.mkdirSync(uploadDir, { recursive: true });
@@ -21,9 +22,9 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({
+const baseUploadConfig = {
   storage,
-  limits: { fileSize: 5 * 1024 * 1024, files: 30 },
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname || '').toLowerCase();
     const allowedExt = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg']);
@@ -39,6 +40,16 @@ const upload = multer({
     }
     return cb(new Error('يسمح فقط برفع الصور')); 
   }
+};
+
+const uploadContact = multer({
+  ...baseUploadConfig,
+  limits: { ...baseUploadConfig.limits, files: MAX_CONTACT_ATTACHMENTS }
+});
+
+const uploadSiteContent = multer({
+  ...baseUploadConfig,
+  limits: { ...baseUploadConfig.limits, files: 200 }
 });
 
 const publicContentLimiter = createRateLimiter({
@@ -58,7 +69,33 @@ const contactMessageLimiter = createRateLimiter({
 router.post(
   '/contact-messages',
   contactMessageLimiter,
-  upload.array('attachments', 5),
+  uploadContact.array('attachments', MAX_CONTACT_ATTACHMENTS),
+  (err, req, res, next) => {
+    if (!err) return next();
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_COUNT') {
+        return res.status(400).json({
+          success: false,
+          message: `يسمح برفع ${MAX_CONTACT_ATTACHMENTS} صور كحد أقصى.`
+        });
+      }
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({
+          success: false,
+          message: 'حجم الصورة كبير. الحد الأقصى 5MB لكل صورة.'
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: 'تعذر رفع الملفات. تحقق من الملفات المرفوعة وحاول مجددًا.'
+      });
+    }
+
+    return res.status(400).json({
+      success: false,
+      message: err?.message || 'تعذر رفع الملفات.'
+    });
+  },
   controller.createContactMessage
 );
 router.get('/public/logo', publicContentLimiter, controller.getPublicLogo);
@@ -70,6 +107,20 @@ router.post('/contact-messages/:id/delete', isAdmin, controller.deleteContactMes
 router.get('/', isAdmin, controller.getSiteContentIndex);
 router.get('/:id', isAdmin, controller.getSiteContentDetails);
 router.get('/:id/edit', isAdmin, controller.getEditSiteContent);
-router.post('/:id/update', isAdmin, upload.any(), controller.updateSiteContent);
+router.post(
+  '/:id/update',
+  isAdmin,
+  uploadSiteContent.any(),
+  (err, req, res, next) => {
+    if (!err) return next();
+    if (err instanceof multer.MulterError) {
+      req.flash('error_msg', 'عدد الملفات المرفوعة كبير جدًا. يرجى تقليل الملفات والمحاولة مجددًا.');
+      return res.redirect(`/site-management/${req.params.id}/edit`);
+    }
+    req.flash('error_msg', err?.message || 'تعذر رفع الملفات.');
+    return res.redirect(`/site-management/${req.params.id}/edit`);
+  },
+  controller.updateSiteContent
+);
 
 module.exports = router;

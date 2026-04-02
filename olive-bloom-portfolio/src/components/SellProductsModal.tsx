@@ -10,6 +10,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 
 const apiBase = (import.meta.env.VITE_SITE_API_BASE_URL || "http://localhost:3000").replace(/\/+$/, "");
+const MAX_ATTACHMENTS = 10;
 
 type SellProductsModalProps = {
   open: boolean;
@@ -148,6 +149,10 @@ const SellProductsModal = ({ open, onOpenChange }: SellProductsModalProps) => {
                       );
                       if (!exists) merged.push(file);
                     });
+                    if (merged.length > MAX_ATTACHMENTS) {
+                      merged.splice(MAX_ATTACHMENTS);
+                      toast.error(`يمكنك رفع ${MAX_ATTACHMENTS} صور كحد أقصى.`);
+                    }
                     syncInputFiles(merged);
                     return merged;
                   });

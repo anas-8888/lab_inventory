@@ -237,7 +237,7 @@ function SectionCarousel({
                 return (
                   <SwiperSlide key={`${product?.id || "item"}-${index}`}>
                     <div className="group relative bg-background rounded-3xl border border-border/50 overflow-hidden h-full">
-                      <div className="relative aspect-square overflow-hidden">
+                      <div className="relative aspect-[5/6] overflow-hidden">
                         <img src={imageSrc} alt={itemName} className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
                         <div className="absolute bottom-4 left-4">
