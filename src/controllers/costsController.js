@@ -1775,6 +1775,7 @@ const createOrder = async (req, res) => {
         
         const {
             client_name,
+            recipient_name,
             order_date,
             delivery_date,
             responsible_worker,
@@ -1838,12 +1839,12 @@ const createOrder = async (req, res) => {
 
         const [orderResult] = await req.db.query(`
             INSERT INTO orders (
-                order_number, client_name, order_date, delivery_date,
+                order_number, client_name, recipient_name, order_date, delivery_date,
                 responsible_worker, quality_controller, pallets_count, container_number,
                 packages_count, waybill_number, accreditation_number, notes, numeric_raw
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
-            orderNumber, client_name || null, orderDateSql, deliveryDateSql,
+            orderNumber, client_name || null, recipient_name || null, orderDateSql, deliveryDateSql,
             responsible_worker || null, quality_controller || null, pallets_count || null, container_number || null,
             packages_count || null, waybill_number || null, accreditation_number || null, notes || null, JSON.stringify(orderHeaderRawMap)
         ]);
@@ -2334,6 +2335,7 @@ const updateOrder = async (req, res) => {
         const { id } = req.params;
         const {
             client_name,
+            recipient_name,
             order_date,
             delivery_date,
             responsible_worker,
@@ -2384,12 +2386,12 @@ const updateOrder = async (req, res) => {
         
         await req.db.query(`
             UPDATE orders SET
-                client_name = ?, order_date = ?, delivery_date = ?,
+                client_name = ?, recipient_name = ?, order_date = ?, delivery_date = ?,
                 responsible_worker = ?, quality_controller = ?, pallets_count = ?, container_number = ?,
                 packages_count = ?, waybill_number = ?, accreditation_number = ?, notes = ?, numeric_raw = ?
             WHERE id = ?
         `, [
-            client_name || null, orderDateSql, deliveryDateSql,
+            client_name || null, recipient_name || null, orderDateSql, deliveryDateSql,
             responsible_worker || null, quality_controller || null, pallets_count || null, container_number || null,
             packages_count || null, waybill_number || null, accreditation_number || null, notes || null, JSON.stringify(orderHeaderRawMap), id
         ]);
@@ -2626,6 +2628,7 @@ const getOrderPrintPage = async (req, res) => {
         if (printLang === 'en') {
             await translateObjectFieldsToEnglish(displayOrder, [
                 'client_name',
+                'recipient_name',
                 'client_address',
                 'notes',
                 'responsible_worker',

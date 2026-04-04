@@ -154,6 +154,10 @@
                             <label class="form-label">هاتف العميل</label>
                             <input type="text" class="form-control" id="editClientPhone" name="client_phone">
                         </div>
+                        <div class="col-md-6">
+                            <label class="form-label">اسم المستلم</label>
+                            <input type="text" class="form-control" id="editRecipientName" name="recipient_name">
+                        </div>
                         <div class="col-md-12">
                             <label class="form-label">العنوان</label>
                             <textarea class="form-control" id="editClientAddress" name="client_address" rows="2"></textarea>
@@ -230,7 +234,7 @@
             </div>
             <div class="modal-footer" style="position: sticky; bottom: 0; background: white; border-top: 1px solid #dee2e6;">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                <button type="button" class="btn btn-primary" onclick="saveOrderEdit()">
+                <button type="button" class="btn btn-primary" id="saveOrderEditBtn" data-loading-text="جاري حفظ التعديلات..." onclick="saveOrderEdit()">
                   <i class="bi bi-save me-1"></i> حفظ التعديلات
                 </button>
             </div>
@@ -249,10 +253,14 @@
       <div class="modal-body" style="max-height: calc(100vh - 200px); overflow-y: auto;">
         <form id="orderForm" method="POST" action="/costs/orders">
           <div class="row g-3 mb-3">
-                         <div class="col-md-6">
+             <div class="col-md-6">
                <label class="form-label">اسم العميل *</label>
                <input type="text" class="form-control" name="client_name" required>
              </div>
+            <div class="col-md-6">
+              <label class="form-label">اسم المستلم</label>
+              <input type="text" class="form-control" name="recipient_name">
+            </div>
             <div class="col-md-3">
               <label class="form-label">تاريخ الطلبية</label>
               <div class="input-group">
@@ -329,7 +337,7 @@
       </div>
       <div class="modal-footer" style="position: sticky; bottom: 0; background: white; border-top: 1px solid #dee2e6;">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-        <button type="submit" form="orderForm" class="btn btn-primary">
+        <button type="submit" form="orderForm" class="btn btn-primary" data-loading-text="جاري حفظ الطلبية...">
           <i class="bi bi-save me-1"></i> حفظ الطلبية
         </button>
       </div>
@@ -667,6 +675,7 @@ function editOrder(orderId) {
             document.getElementById('editOrderId').value = order.id;
             document.getElementById('editClientName').value = order.client_name || '';
             document.getElementById('editClientPhone').value = order.client_phone || '';
+            document.getElementById('editRecipientName').value = order.recipient_name || '';
             document.getElementById('editClientAddress').value = order.client_address || '';
             document.getElementById('editOrderDate').value = formatDate(order.order_date);
             document.getElementById('editDeliveryDate').value = formatDate(order.delivery_date);
@@ -694,12 +703,17 @@ function editOrder(orderId) {
 
 // تعليق
 function saveOrderEdit() {
+    const saveBtn = document.getElementById('saveOrderEditBtn');
+    if (saveBtn?.disabled) return;
+    window.modalSubmitUi?.setLoading(saveBtn, saveBtn?.getAttribute('data-loading-text'));
+
     const formData = new FormData(document.getElementById('editOrderForm'));
     const orderId = document.getElementById('editOrderId').value;
     const clientName = formData.get('client_name')?.trim();
     
     // تعليق
     if (!clientName) {
+        window.modalSubmitUi?.resetLoading(saveBtn);
         showAlert('يرجى إدخال اسم العميل', 'error');
         return;
     }
@@ -713,6 +727,7 @@ function saveOrderEdit() {
         },
         body: JSON.stringify({
             client_name: clientName,
+            recipient_name: (formData.get('recipient_name') || '').trim() || null,
             order_date: formData.get('order_date'),
             client_phone: formData.get('client_phone'),
             client_address: formData.get('client_address'),
@@ -735,10 +750,12 @@ function saveOrderEdit() {
             showAlert('تم تحديث الطلبية بنجاح', 'success');
             setTimeout(() => window.location.reload(), 1500);
         } else {
+            window.modalSubmitUi?.resetLoading(saveBtn);
             showAlert(data.message || 'حدث خطأ في تحديث الطلبية', 'error');
         }
     })
     .catch(error => {
+        window.modalSubmitUi?.resetLoading(saveBtn);
         showAlert('حدث خطأ في تحديث الطلبية', 'error');
     });
 }
@@ -802,12 +819,14 @@ function deleteOrder(id) {
 // تعليق
 document.getElementById('orderForm').addEventListener('submit', function(e) {
     e.preventDefault();
+    const submitBtn = this.querySelector('button[type="submit"]');
     
     const formData = new FormData(this);
     const clientName = formData.get('client_name')?.trim();
     
     // تعليق
     if (!clientName) {
+        window.modalSubmitUi?.resetLoading(submitBtn);
         showAlert('يرجى إدخال اسم العميل', 'error');
         return;
     }
@@ -821,6 +840,7 @@ document.getElementById('orderForm').addEventListener('submit', function(e) {
         },
         body: JSON.stringify({
             client_name: clientName,
+            recipient_name: (formData.get('recipient_name') || '').trim() || null,
             order_date: formData.get('order_date'),
             delivery_date: formData.get('delivery_date'),
             responsible_worker: formData.get('responsible_worker'),
@@ -842,10 +862,12 @@ document.getElementById('orderForm').addEventListener('submit', function(e) {
             this.reset();
             setTimeout(() => window.location.reload(), 1500);
         } else {
+            window.modalSubmitUi?.resetLoading(submitBtn);
             showAlert(data.message || 'حدث خطأ في إنشاء الطلبية', 'error');
         }
     })
     .catch(error => {
+        window.modalSubmitUi?.resetLoading(submitBtn);
         showAlert('حدث خطأ في إنشاء الطلبية', 'error');
     });
 });

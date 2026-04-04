@@ -87,10 +87,22 @@ const hasDiscount = discountValue > 0;
       <h6 class="section-title"><%= t('بيانات الزبون', 'Customer Info') %></h6>
       <div class="grid-kv">
         <div class="kv"><span><%= t('الاسم:', 'Name:') %></span><span><%= order.client_name || '-' %></span></div>
+        <% if (order.recipient_name && String(order.recipient_name).trim()) { %>
+        <div class="kv"><span><%= t('اسم المستلم:', 'Recipient Name:') %></span><span><%= order.recipient_name %></span></div>
+        <% } %>
         <% if (order.client_phone) { %><div class="kv"><span><%= t('الهاتف:', 'Phone:') %></span><span><%= order.client_phone %></span></div><% } %>
         <% if (order.client_address) { %><div class="kv full"><span><%= t('العنوان:', 'Address:') %></span><span><%= order.client_address %></span></div><% } %>
       </div>
     </div>
+
+    <% if (typeof printType !== 'undefined' && printType === 'invoice') { %>
+    <div class="box-compact">
+      <h6 class="section-title"><%= t('بيانات الشحن', 'Shipping Info') %></h6>
+      <div class="grid-kv">
+        <div class="kv"><span><%= t('تاريخ التسليم:', 'Delivery Date:') %></span><span><%= fmtDate(order.delivery_date) %></span></div>
+      </div>
+    </div>
+    <% } %>
     
     <!-- إخفاء بيانات الطلبية عند الطباعة كطلبية شحن -->
     <% if (typeof printType === 'undefined' || printType !== 'invoice') { %>
@@ -111,7 +123,7 @@ const hasDiscount = discountValue > 0;
     </div>
     <% } %>
     
-    <% if (order.notes && (typeof printType === 'undefined' || printType !== 'invoice')) { %>
+    <% if ((typeof printType === 'undefined' || printType !== 'invoice') && order.notes && String(order.notes).trim()) { %>
       <div class="box-compact">
         <h6 class="section-title"><%= t('ملاحظات الطلبية', 'Order Notes') %></h6>
         <div class="notes"><%= order.notes %></div>

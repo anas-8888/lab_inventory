@@ -92,6 +92,10 @@ function formatTotalDisplay(value) {
                   <td><%= order.client_name || '-' %></td>
                 </tr>
                 <tr>
+                  <td><strong>اسم المستلم:</strong></td>
+                  <td><%= order.recipient_name || '-' %></td>
+                </tr>
+                <tr>
                   <td><strong>تاريخ الطلبية:</strong></td>
                   <td><%= formatDate(order.order_date) %></td>
                 </tr>

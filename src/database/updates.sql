@@ -132,3 +132,24 @@ CREATE TABLE IF NOT EXISTS website_contact_attachments (
     ON DELETE CASCADE
 );
 
+-- ------------------------------------------------------------
+-- Costs / Orders: add recipient name for shipping/order print
+-- ------------------------------------------------------------
+SET @orders_recipient_name_exists := (
+  SELECT COUNT(*)
+  FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'orders'
+    AND COLUMN_NAME = 'recipient_name'
+);
+
+SET @orders_recipient_name_sql := IF(
+  @orders_recipient_name_exists = 0,
+  'ALTER TABLE orders ADD COLUMN recipient_name VARCHAR(255) NULL AFTER client_name',
+  'SELECT 1'
+);
+
+PREPARE orders_recipient_name_stmt FROM @orders_recipient_name_sql;
+EXECUTE orders_recipient_name_stmt;
+DEALLOCATE PREPARE orders_recipient_name_stmt;
+

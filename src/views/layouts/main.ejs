@@ -65,6 +65,56 @@
     <script src="https://npmcdn.com/flatpickr/dist/l10n/ar.js"></script>
     <script>
     (function() {
+      function setLoading(button, loadingText) {
+        if (!button) return;
+        if (button.dataset.loadingActive === '1') return;
+        const text = String(loadingText || button.getAttribute('data-loading-text') || 'جاري الحفظ...').trim();
+        button.dataset.loadingActive = '1';
+        button.disabled = true;
+        if (button.tagName === 'INPUT') {
+          button.dataset.originalValue = button.value || '';
+          button.value = text;
+          return;
+        }
+        button.dataset.originalHtml = button.innerHTML;
+        button.innerHTML = `<span class="spinner-border spinner-border-sm ms-1" role="status" aria-hidden="true"></span>${text}`;
+      }
+
+      function resetLoading(button) {
+        if (!button) return;
+        button.disabled = false;
+        if (button.tagName === 'INPUT') {
+          if (button.dataset.originalValue !== undefined) button.value = button.dataset.originalValue;
+          delete button.dataset.originalValue;
+          delete button.dataset.loadingActive;
+          return;
+        }
+        if (button.dataset.originalHtml !== undefined) button.innerHTML = button.dataset.originalHtml;
+        delete button.dataset.originalHtml;
+        delete button.dataset.loadingActive;
+      }
+
+      window.modalSubmitUi = {
+        setLoading,
+        resetLoading
+      };
+
+      document.addEventListener('submit', function(event) {
+        const form = event.target;
+        if (!(form instanceof HTMLFormElement)) return;
+        if (!form.closest('.modal')) return;
+        const submitter = event.submitter || form.querySelector('button[type="submit"],input[type="submit"]');
+        if (!submitter) return;
+        const explicitLoadingText = submitter.getAttribute('data-loading-text');
+        const buttonLabel = String(submitter.value || submitter.textContent || '').trim();
+        const isSaveAction = /حفظ|إضافة|تعديل|إصدار|Save|Add|Update|Submit/i.test(buttonLabel);
+        if (!explicitLoadingText && !isSaveAction) return;
+        setLoading(submitter, explicitLoadingText || 'جاري الحفظ...');
+      }, true);
+    })();
+    </script>
+    <script>
+    (function() {
       function isNumericLikeText(text) {
         if (!text) return false;
         const normalized = String(text).replace(/\s+/g, ' ').trim();

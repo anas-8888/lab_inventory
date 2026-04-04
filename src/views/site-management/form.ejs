@@ -368,7 +368,7 @@
       <div class="modal-footer d-flex justify-content-between">
         <div class="d-flex gap-2">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
-          <button type="button" class="btn btn-primary" id="pm_save_btn"><i class="bi bi-check2"></i> حفظ</button>
+          <button type="button" class="btn btn-primary" id="pm_save_btn" data-loading-text="جاري الحفظ..."><i class="bi bi-check2"></i> حفظ</button>
         </div>
       </div>
     </div>
@@ -396,7 +396,7 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
-        <button type="button" class="btn btn-success" id="saveCategoryBtn">
+        <button type="button" class="btn btn-success" id="saveCategoryBtn" data-loading-text="جاري الحفظ...">
           <i class="bi bi-check2"></i> حفظ
         </button>
       </div>
@@ -732,13 +732,19 @@
   }
 
   function saveProductEditor() {
+    const saveBtn = document.getElementById('pm_save_btn');
+    if (saveBtn?.disabled) return;
+    window.modalSubmitUi?.setLoading(saveBtn, saveBtn?.getAttribute('data-loading-text'));
+
     let selectedCategory = { ar: '', en: '' };
     if (pmCategorySelect) {
       if (pmCategorySelect.options.length <= 1) {
+        window.modalSubmitUi?.resetLoading(saveBtn);
         alert('لا توجد فئات في هذا القسم. أضف فئة أولاً.');
         return;
       }
       if (pmCategorySelect.selectedIndex <= 0) {
+        window.modalSubmitUi?.resetLoading(saveBtn);
         alert('يرجى اختيار فئة للمنتج.');
         return;
       }
@@ -1094,10 +1100,20 @@
   }
 
   function saveCategoriesModal() {
-    if (!activeCategorySectionKey) return;
+    const saveBtn = document.getElementById('saveCategoryBtn');
+    if (saveBtn?.disabled) return;
+    window.modalSubmitUi?.setLoading(saveBtn, saveBtn?.getAttribute('data-loading-text'));
+
+    if (!activeCategorySectionKey) {
+      window.modalSubmitUi?.resetLoading(saveBtn);
+      return;
+    }
     const ar = categoryArInput?.value?.trim() || '';
     const en = categoryEnInput?.value?.trim() || '';
-    if (!ar && !en) return;
+    if (!ar && !en) {
+      window.modalSubmitUi?.resetLoading(saveBtn);
+      return;
+    }
 
     const rows = readSectionCategories(activeCategorySectionKey);
     if (activeCategoryIndex === null) {
