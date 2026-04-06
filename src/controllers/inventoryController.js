@@ -2,7 +2,7 @@ const { pool } = require('../database/db');
 const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
-const { buildRawNumericMap, parseRawNumericMap, rawOrValue } = require('../utils/rawNumbers');
+const { buildRawNumericMap, parseRawNumericMap, rawOrValue, normalizeRawNumeric } = require('../utils/rawNumbers');
 
 const INVENTORY_RAW_FIELDS = [
     'base_quantity',
@@ -230,25 +230,29 @@ exports.createInventory = async (req, res) => {
             return res.redirect('/inventory/create');
         }
 
-        if (!base_quantity || parseFloat(base_quantity) <= 0) {
+        const normalizedBaseQuantity = normalizeRawNumeric(base_quantity);
+        if (!normalizedBaseQuantity || parseFloat(normalizedBaseQuantity) <= 0) {
             req.flash('error_msg', 'الرجاء إدخال الكمية بشكل صحيح');
             return res.redirect('/inventory/create');
         }
 
         // معالجة current_quantity - إذا لم يتم إرسالها، استخدم base_quantity
-        const finalCurrentQuantity = current_quantity !== undefined && current_quantity !== '' ? current_quantity : base_quantity;
+        const normalizedCurrentQuantity = normalizeRawNumeric(current_quantity);
+        const finalCurrentQuantity = normalizedCurrentQuantity !== null ? normalizedCurrentQuantity : normalizedBaseQuantity;
 
         if (finalCurrentQuantity === '' || isNaN(parseFloat(finalCurrentQuantity)) || parseFloat(finalCurrentQuantity) < 0) {
             req.flash('error_msg', 'الكمية الحالية يجب أن تكون صفر أو أكثر');
             return res.redirect('/inventory/create');
         }
 
-        if (!net_weight_total || parseFloat(net_weight_total) <= 0) {
+        const normalizedNetWeightTotal = normalizeRawNumeric(net_weight_total);
+        if (!normalizedNetWeightTotal || parseFloat(normalizedNetWeightTotal) <= 0) {
             req.flash('error_msg', 'الرجاء إدخال الوزن الصافي بشكل صحيح');
             return res.redirect('/inventory/create');
         }
 
-        if (!ph || parseFloat(ph) <= 0) {
+        const normalizedPh = normalizeRawNumeric(ph);
+        if (!normalizedPh || parseFloat(normalizedPh) <= 0) {
             req.flash('error_msg', 'الرجاء إدخال درجة الحموضة بشكل صحيح');
             return res.redirect('/inventory/create');
         }
@@ -281,6 +285,9 @@ exports.createInventory = async (req, res) => {
 
         // Insert new inventory item
         const inventoryRawMap = buildRawNumericMap(req.body, INVENTORY_RAW_FIELDS);
+        const normalizedSigmaAbsorbance = normalizeRawNumeric(sigma_absorbance);
+        const normalizedPeroxideValue = normalizeRawNumeric(peroxide_value);
+        const normalizedSampleWeight = normalizeRawNumeric(sample_weight);
 
         await pool.query(
             `INSERT INTO inventory (
@@ -291,9 +298,9 @@ exports.createInventory = async (req, res) => {
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 isoDate, sample_number, supplier_or_sample_name,
-                base_quantity, finalCurrentQuantity, net_weight_total,
-                ph || null, peroxide_value || null, processedAbsorptionReadings,
-                sigma_absorbance || null, analyst, notes, sample_weight != null && sample_weight !== '' ? parseFloat(sample_weight).toFixed(3) : null, JSON.stringify(inventoryRawMap)
+                normalizedBaseQuantity, finalCurrentQuantity, normalizedNetWeightTotal,
+                normalizedPh, normalizedPeroxideValue, processedAbsorptionReadings,
+                normalizedSigmaAbsorbance, analyst, notes, normalizedSampleWeight != null ? parseFloat(normalizedSampleWeight).toFixed(3) : null, JSON.stringify(inventoryRawMap)
             ]
         );
 
@@ -387,25 +394,29 @@ exports.updateInventory = async (req, res) => {
             return res.redirect(`/inventory/${req.params.id}/edit`);
         }
 
-        if (!base_quantity || parseFloat(base_quantity) <= 0) {
+        const normalizedBaseQuantity = normalizeRawNumeric(base_quantity);
+        if (!normalizedBaseQuantity || parseFloat(normalizedBaseQuantity) <= 0) {
             req.flash('error_msg', 'الرجاء إدخال الكمية الأساسية بشكل صحيح');
             return res.redirect(`/inventory/${req.params.id}/edit`);
         }
 
         // معالجة current_quantity - إذا لم يتم إرسالها، استخدم base_quantity
-        const finalCurrentQuantity = current_quantity !== undefined && current_quantity !== '' ? current_quantity : base_quantity;
+        const normalizedCurrentQuantity = normalizeRawNumeric(current_quantity);
+        const finalCurrentQuantity = normalizedCurrentQuantity !== null ? normalizedCurrentQuantity : normalizedBaseQuantity;
 
         if (finalCurrentQuantity === '' || isNaN(parseFloat(finalCurrentQuantity)) || parseFloat(finalCurrentQuantity) < 0) {
             req.flash('error_msg', 'الكمية الحالية يجب أن تكون صفر أو أكثر');
             return res.redirect(`/inventory/${req.params.id}/edit`);
         }
 
-        if (!net_weight_total || parseFloat(net_weight_total) <= 0) {
+        const normalizedNetWeightTotal = normalizeRawNumeric(net_weight_total);
+        if (!normalizedNetWeightTotal || parseFloat(normalizedNetWeightTotal) <= 0) {
             req.flash('error_msg', 'الرجاء إدخال الوزن الصافي بشكل صحيح');
             return res.redirect(`/inventory/${req.params.id}/edit`);
         }
 
-        if (!ph || parseFloat(ph) <= 0) {
+        const normalizedPh = normalizeRawNumeric(ph);
+        if (!normalizedPh || parseFloat(normalizedPh) <= 0) {
             req.flash('error_msg', 'الرجاء إدخال درجة الحموضة بشكل صحيح');
             return res.redirect(`/inventory/${req.params.id}/edit`);
         }
@@ -438,6 +449,9 @@ exports.updateInventory = async (req, res) => {
 
         // Update inventory item
         const inventoryRawMap = buildRawNumericMap(req.body, INVENTORY_RAW_FIELDS);
+        const normalizedSigmaAbsorbance = normalizeRawNumeric(sigma_absorbance);
+        const normalizedPeroxideValue = normalizeRawNumeric(peroxide_value);
+        const normalizedSampleWeight = normalizeRawNumeric(sample_weight);
 
         await pool.query(
             `UPDATE inventory SET
@@ -460,16 +474,16 @@ exports.updateInventory = async (req, res) => {
                 isoDate,
                 sample_number,
                 supplier_or_sample_name,
-                base_quantity,
+                normalizedBaseQuantity,
                 finalCurrentQuantity,
-                net_weight_total,
-                ph || null,
-                peroxide_value || null,
+                normalizedNetWeightTotal,
+                normalizedPh,
+                normalizedPeroxideValue,
                 processedAbsorptionReadings,
-                sigma_absorbance || null,
+                normalizedSigmaAbsorbance,
                 analyst,
                 notes,
-                sample_weight != null && sample_weight !== '' ? parseFloat(sample_weight).toFixed(3) : null,
+                normalizedSampleWeight != null ? parseFloat(normalizedSampleWeight).toFixed(3) : null,
                 JSON.stringify(inventoryRawMap),
                 req.params.id
             ]

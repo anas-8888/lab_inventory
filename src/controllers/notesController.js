@@ -1,4 +1,4 @@
-ï»¿const { buildRawNumericMap, parseRawNumericMap, rawOrValue } = require('../utils/rawNumbers');
+const { buildRawNumericMap, parseRawNumericMap, rawOrValue, normalizeRawNumeric } = require('../utils/rawNumbers');
 
 const NOTE_RAW_FIELDS = ['price', 'weight'];
 
@@ -33,13 +33,13 @@ const listNotes = async (req, res) => {
     `);
 
     res.render('notes/index', {
-      title: 'Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª',
+      title: 'ÇáãáÇÍÙÇÊ',
       notes: rows.map(applyNoteRaw),
       materials
     });
   } catch (err) {
     console.error('listNotes error:', err);
-    req.flash('error_msg', 'Ø­Ø¯Ø« Ø®Ø·Ø£ ÙÙŠ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª');
+    req.flash('error_msg', 'ÍÏË ÎØÃ İí ÊÍãíá ÇáãáÇÍÙÇÊ');
     res.redirect('/');
   }
 };
@@ -62,17 +62,17 @@ const viewNote = async (req, res) => {
       WHERE n.id = ?
     `, [id]);
     if (!rows.length) {
-      req.flash('error_msg', 'Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø© ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯Ø©');
+      req.flash('error_msg', 'ÇáãáÇÍÙÉ ÛíÑ ãæÌæÏÉ');
       return res.redirect('/notes');
     }
     const note = applyNoteRaw(rows[0]);
     if (req.headers.accept && req.headers.accept.includes('application/json')) {
       return res.json({ success: true, note });
     }
-    res.render('notes/show', { title: 'Ø¹Ø±Ø¶ Ù…Ù„Ø§Ø­Ø¸Ø©', note });
+    res.render('notes/show', { title: 'ÚÑÖ ãáÇÍÙÉ', note });
   } catch (err) {
     console.error('viewNote error:', err);
-    req.flash('error_msg', 'Ø­Ø¯Ø« Ø®Ø·Ø£ ÙÙŠ Ø¹Ø±Ø¶ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©');
+    req.flash('error_msg', 'ÍÏË ÎØÃ İí ÚÑÖ ÇáãáÇÍÙÉ');
     res.redirect('/notes');
   }
 };
@@ -80,8 +80,10 @@ const viewNote = async (req, res) => {
 const createNote = async (req, res) => {
   try {
     const { material_id, material_name, price, weight, note_text } = req.body;
-    const parsedPrice = (price !== undefined && price !== '') ? parseFloat(price) : null;
-    const parsedWeight = (weight !== undefined && weight !== '') ? parseFloat(weight) : null;
+    const priceRaw = normalizeRawNumeric(price);
+    const weightRaw = normalizeRawNumeric(weight);
+    const parsedPrice = priceRaw !== null ? parseFloat(priceRaw) : null;
+    const parsedWeight = weightRaw !== null ? parseFloat(weightRaw) : null;
     const noteRawMap = buildRawNumericMap(req.body, NOTE_RAW_FIELDS);
 
     let materialIdForInsert = null;
@@ -108,7 +110,7 @@ const createNote = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('createNote error:', err);
-    res.status(500).json({ success: false, message: 'ÙØ´Ù„ Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©' });
+    res.status(500).json({ success: false, message: 'İÔá ÅäÔÇÁ ÇáãáÇÍÙÉ' });
   }
 };
 
@@ -116,8 +118,10 @@ const updateNote = async (req, res) => {
   try {
     const { id } = req.params;
     const { material_id, material_name, price, weight, note_text } = req.body;
-    const parsedPrice = (price !== undefined && price !== '') ? parseFloat(price) : null;
-    const parsedWeight = (weight !== undefined && weight !== '') ? parseFloat(weight) : null;
+    const priceRaw = normalizeRawNumeric(price);
+    const weightRaw = normalizeRawNumeric(weight);
+    const parsedPrice = priceRaw !== null ? parseFloat(priceRaw) : null;
+    const parsedWeight = weightRaw !== null ? parseFloat(weightRaw) : null;
     const noteRawMap = buildRawNumericMap(req.body, NOTE_RAW_FIELDS);
 
     let materialIdForUpdate = null;
@@ -146,7 +150,7 @@ const updateNote = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('updateNote error:', err);
-    res.status(500).json({ success: false, message: 'ÙØ´Ù„ ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©' });
+    res.status(500).json({ success: false, message: 'İÔá ÊÚÏíá ÇáãáÇÍÙÉ' });
   }
 };
 
@@ -157,7 +161,7 @@ const deleteNote = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('deleteNote error:', err);
-    res.status(500).json({ success: false, message: 'ÙØ´Ù„ Ø­Ø°Ù Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©' });
+    res.status(500).json({ success: false, message: 'İÔá ÍĞİ ÇáãáÇÍÙÉ' });
   }
 };
 
@@ -168,3 +172,5 @@ module.exports = {
   updateNote,
   deleteNote,
 };
+
+

@@ -184,7 +184,7 @@ function formatNumberDisplay(value) {
                   <td><%= item.analyst || '-' %></td>
                   <td><%= item.notes || '-' %></td>
                   <td class="d-print-none">
-                    <div class="btn-group">
+                    <div class="btn-group inventory-action-group">
                         <a href="/inventory/<%= item.id %>" class="btn btn-sm btn-info btn-xs me-1" title="معاينة">
                             <i class="bi bi-eye-fill"></i>
                         </a>
@@ -668,17 +668,20 @@ function formatNumberDisplay(value) {
     color: #fff;
   }
   .reject-btn {
-    background-color: #dc3545;
+    background-color: #dc3545 !important;
+    border-color: #dc3545 !important;
     color: white;
     cursor: pointer;
     transition: all 0.3s ease;
   }
   .reject-btn:hover {
-    background-color: #c82333;
+    background-color: #c82333 !important;
+    border-color: #c82333 !important;
     color: white;
   }
   .reject-btn.rejected {
-    background-color: #28a745;
+    background-color: #28a745 !important;
+    border-color: #28a745 !important;
     color: white;
   }
   

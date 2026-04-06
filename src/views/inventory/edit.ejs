@@ -240,7 +240,7 @@ function formatNumberDisplay(value) {
                             <div class="col-md-6 mb-3">
                                 <label for="sample_weight" class="form-label">وزن العينة (اختياري)</label>
                                 <input type="text" inputmode="decimal" step="0.001" class="form-control" id="sample_weight" name="sample_weight" 
-                                       value="<%= formatNumberDisplay(item.sample_weight) %>">
+                                       value="<%= (item.sample_weight !== null && item.sample_weight !== undefined && item.sample_weight !== '') ? item.sample_weight : '' %>">
                                 <small class="text-muted">يمكن تركه فارغاً</small>
                             </div>
                         </div>
@@ -257,17 +257,17 @@ function formatNumberDisplay(value) {
                             <div class="col-md-4">
                                 <label class="form-label">درجة الحموضة</label>
                                 <input type="text" inputmode="decimal" class="form-control" name="ph" 
-                                       value="<%= formatNumberDisplay(item.ph) %>" step="0.001" required>
+                                       value="<%= (item.ph !== null && item.ph !== undefined && item.ph !== '') ? item.ph : '' %>" step="0.001" required>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">رقم البيروكسيد</label>
                                 <input type="text" inputmode="decimal" class="form-control" name="peroxide_value"
-                                    value="<%= formatNumberDisplay(item.peroxide_value) %>" step="0.001">
+                                    value="<%= (item.peroxide_value !== null && item.peroxide_value !== undefined && item.peroxide_value !== '') ? item.peroxide_value : '' %>" step="0.001">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">ستيغما ستاديين</label>
                                 <input type="text" inputmode="decimal" class="form-control" name="sigma_absorbance"
-                                    value="<%= formatNumberDisplay(item.sigma_absorbance) %>" step="0.001">
+                                    value="<%= (item.sigma_absorbance !== null && item.sigma_absorbance !== undefined && item.sigma_absorbance !== '') ? item.sigma_absorbance : '' %>" step="0.001">
                             </div>
                         </div>
 

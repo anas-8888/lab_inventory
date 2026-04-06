@@ -11,33 +11,33 @@
   --background-light: #f8fdf5;
   --text-dark: #131313;
   --text-light: #fff;
-  --border-color: #C8E6C9;
+  --border-color: #c8e6c9;
   --text-color: #1c1b1b;
-  --light-bg: #F5F5F5;
-  --white: #FFFFFF;
-  --danger: #D32F2F;
-  --warning: #FFA000;
+  --light-bg: #f5f5f5;
+  --white: #ffffff;
+  --danger: #d32f2f;
+  --warning: #ffa000;
   --success: #2e7d32;
   --btn-soft-primary-bg: #e8f6ef;
   --btn-soft-primary-text: #166534;
   --btn-soft-primary-border: #bfe8d1;
   --btn-soft-success-bg: #e8f7ed;
-  --btn-soft-success-text: #14532d;
+  --btn-soft-success-text: #f8f9f8;
   --btn-soft-success-border: #bfe8cd;
   --btn-soft-danger-bg: #fdecec;
-  --btn-soft-danger-text: #9f1239;
+  --btn-soft-danger-text: #fffafc;
   --btn-soft-danger-border: #f7c9d3;
   --btn-soft-warning-bg: #fff8e7;
-  --btn-soft-warning-text: #92400e;
+  --btn-soft-warning-text: #000000;
   --btn-soft-warning-border: #f6e3b3;
   --btn-soft-secondary-bg: #f1f5f9;
-  --btn-soft-secondary-text: #334155;
+  --btn-soft-secondary-text: #e3eaf3;
   --btn-soft-secondary-border: #d9e2ec;
 }
 
 /* Base Styles */
 body {
-  font-family: 'Cairo', sans-serif;
+  font-family: "Cairo", sans-serif;
   background-color: var(--background-light);
   color: var(--text-dark);
   line-height: 1.6;
@@ -88,7 +88,7 @@ body {
 }
 
 .app-brand-title {
-  font-family: 'Tajawal', 'Cairo', sans-serif;
+  font-family: "Tajawal", "Cairo", sans-serif;
   font-weight: 700;
   font-size: 1.05rem;
   letter-spacing: 0.2px;
@@ -112,17 +112,21 @@ body {
   gap: 0.42rem;
   color: rgba(255, 255, 255, 0.92) !important;
   font-weight: 600;
+  font-size: 1.05rem;
   border-radius: 10px;
-  padding: 0.55rem 0.8rem !important;
-  transition: color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+  padding: 0.7rem 1rem !important;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .app-nav-link i {
-  font-size: 1rem;
+  font-size: 1.2rem;
 }
 
 .app-nav-link::after {
-  content: '';
+  content: "";
   position: absolute;
   inset-inline: 0.75rem;
   bottom: 0.28rem;
@@ -167,7 +171,9 @@ body {
   padding: 0.55rem 0.85rem !important;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .app-username {
@@ -211,6 +217,392 @@ body {
 
 .app-navbar-toggler:focus {
   box-shadow: 0 0 0 0.2rem rgba(209, 250, 229, 0.3);
+}
+
+/* Inventory action buttons (darker palette) */
+.inventory-topbar .btn,
+.inventory-top-actions .btn,
+#filterForm .btn,
+.inventory-header-actions .btn {
+  background-color: #2e7d32 !important;
+  border-color: #2e7d32 !important;
+  color: #ffffff !important;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 6px;
+  border-width: 0;
+  text-align: center;
+  direction: rtl;
+}
+
+/* Ensure header action buttons match filter buttons even with btn-sm */
+.inventory-header-actions .btn {
+  font-size: 16px !important;
+  padding: 10px 20px !important;
+  border-radius: 6px;
+}
+
+/* Inventory delete/trash buttons: solid red */
+#deleteSelectedBtn.btn,
+#trashSelectedBtn.btn {
+  background-color: #b91c1c !important;
+  border-color: #b91c1c !important;
+  color: #ffffff !important;
+}
+
+#deleteSelectedBtn.btn:hover,
+#trashSelectedBtn.btn:hover,
+#deleteSelectedBtn.btn:focus,
+#trashSelectedBtn.btn:focus {
+  background-color: #8f1515 !important;
+  border-color: #8f1515 !important;
+  color: #ffffff !important;
+}
+
+/* Top action buttons: match dark-green pill look */
+.inventory-top-actions .btn {
+  background-color: #2e7d32;
+  border-color: #2e7d32;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 16px;
+  padding: 10px 20px;
+  min-height: 40px;
+  box-shadow: none;
+  text-align: center;
+  direction: rtl;
+}
+
+.inventory-topbar .btn:hover,
+.inventory-top-actions .btn:hover,
+#filterForm .btn:hover,
+.inventory-header-actions .btn:hover,
+.inventory-topbar .btn:focus,
+.inventory-top-actions .btn:focus,
+#filterForm .btn:focus,
+.inventory-header-actions .btn:focus {
+  background-color: #1b5e20 !important;
+  border-color: #1b5e20 !important;
+  color: #ffffff !important;
+}
+
+/* Invoices top actions: darker button palette */
+.invoices-top-actions .btn.btn-success {
+  background-color: #1b5e20;
+  border-color: #1b5e20;
+  color: #ffffff;
+}
+
+.invoices-top-actions .btn.btn-success:hover,
+.invoices-top-actions .btn.btn-success:focus {
+  background-color: #1b5e20;
+  border-color: #1b5e20;
+  color: #ffffff;
+}
+
+.invoices-top-actions .btn.btn-danger {
+  background-color: #5b1212;
+  border-color: #5b1212;
+  color: #ffffff;
+}
+
+.invoices-top-actions .btn.btn-danger:hover,
+.invoices-top-actions .btn.btn-danger:focus {
+  background-color: #3f0c0c;
+  border-color: #3f0c0c;
+  color: #ffffff;
+}
+
+.invoices-top-actions .btn.btn-warning {
+  background-color: #5a4500;
+  border-color: #5a4500;
+  color: #ffffff;
+}
+
+.invoices-top-actions .btn.btn-warning:hover,
+.invoices-top-actions .btn.btn-warning:focus {
+  background-color: #3f3100;
+  border-color: #3f3100;
+  color: #ffffff;
+}
+
+.invoices-top-actions .btn.btn-primary {
+  background-color: #2e7d32;
+  border-color: #2e7d32;
+  color: #ffffff;
+}
+
+.invoices-top-actions .btn.btn-primary:hover,
+.invoices-top-actions .btn.btn-primary:focus {
+  background-color: #1b5e20;
+  border-color: #1b5e20;
+  color: #ffffff;
+}
+
+/* Invoices: make create/deleted buttons match green style */
+.invoices-top-actions a[href="/invoices/create"],
+.invoices-top-actions a[href="/invoices/deleted"] {
+  background-color: #2e7d32 !important;
+  border-color: #2e7d32 !important;
+  color: #ffffff !important;
+}
+
+/* Certificates top actions: match green button style */
+.certificates-top-actions .btn {
+  background-color: #2e7d32 !important;
+  border-color: #2e7d32 !important;
+  color: #ffffff !important;
+}
+
+.certificates-top-actions .btn:hover,
+.certificates-top-actions .btn:focus {
+  background-color: #1b5e20 !important;
+  border-color: #1b5e20 !important;
+  color: #ffffff !important;
+}
+
+/* Notes top actions: green button style */
+.notes-top-actions .btn {
+  background-color: #2e7d32 !important;
+  border-color: #2e7d32 !important;
+  color: #ffffff !important;
+}
+
+.notes-top-actions .btn:hover,
+.notes-top-actions .btn:focus {
+  background-color: #1b5e20 !important;
+  border-color: #1b5e20 !important;
+  color: #ffffff !important;
+}
+
+/* Inventory row action buttons: 36px square, colored icons */
+.inventory-action-group {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.inventory-action-group .btn {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border-radius: 6px;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inventory-action-group .btn.btn-danger {
+  background-color: #e53935;
+  border-color: #e53935;
+}
+
+.inventory-action-group .reject-btn {
+  background-color: #e53935;
+  border-color: #e53935;
+}
+
+.inventory-action-group .btn.btn-danger i {
+  color: #ffffff;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.inventory-action-group .btn.btn-danger:hover,
+.inventory-action-group .btn.btn-danger:focus {
+  filter: none;
+}
+
+.inventory-action-group .btn.btn-warning {
+  background-color: #ffc21b;
+  border-color: #ffc21b;
+}
+
+.inventory-action-group .btn.btn-warning i {
+  color: #000000;
+}
+
+.inventory-action-group .btn.btn-info {
+  background-color: #0e91a6;
+  border-color: #0e91a6;
+}
+
+.inventory-action-group .btn.btn-info i {
+  color: #000000;
+}
+
+.inventory-action-group .btn.btn-warning:hover,
+.inventory-action-group .btn.btn-warning:focus {
+  background-color: #9c7314;
+  border-color: #a87500;
+  filter: none;
+}
+
+.inventory-action-group .btn.btn-info:hover,
+.inventory-action-group .btn.btn-info:focus {
+  background-color: #0b7282;
+  border-color: #0b7282;
+  filter: none;
+}
+
+.invoices-top-actions a[href="/invoices/create"]:hover,
+.invoices-top-actions a[href="/invoices/deleted"]:hover,
+.invoices-top-actions a[href="/invoices/create"]:focus,
+.invoices-top-actions a[href="/invoices/deleted"]:focus {
+  background-color: #1b5e20 !important;
+  border-color: #1b5e20 !important;
+  color: #ffffff !important;
+}
+
+.inventory-top-actions .btn:hover,
+.inventory-top-actions .btn:focus {
+  background-color: #1b5e20;
+  border-color: #1b5e20;
+}
+
+.inventory-topbar .btn.btn-primary,
+.inventory-top-actions .btn.btn-primary,
+#filterForm .btn.btn-primary,
+.inventory-header-actions .btn.btn-primary {
+  background-color: #062213;
+  border-color: #062213;
+}
+
+.inventory-topbar .btn.btn-primary:hover,
+.inventory-top-actions .btn.btn-primary:hover,
+#filterForm .btn.btn-primary:hover,
+.inventory-header-actions .btn.btn-primary:hover,
+.inventory-topbar .btn.btn-primary:focus,
+.inventory-top-actions .btn.btn-primary:focus,
+#filterForm .btn.btn-primary:focus,
+.inventory-header-actions .btn.btn-primary:focus {
+  background-color: #04190f;
+  border-color: #04190f;
+}
+
+.inventory-topbar .btn.btn-success,
+.inventory-top-actions .btn.btn-success,
+#filterForm .btn.btn-success,
+.inventory-header-actions .btn.btn-success {
+  background-color: #073a22;
+  border-color: #073a22;
+}
+
+.inventory-topbar .btn.btn-success:hover,
+.inventory-top-actions .btn.btn-success:hover,
+#filterForm .btn.btn-success:hover,
+.inventory-header-actions .btn.btn-success:hover,
+.inventory-topbar .btn.btn-success:focus,
+.inventory-top-actions .btn.btn-success:focus,
+#filterForm .btn.btn-success:focus,
+.inventory-header-actions .btn.btn-success:focus {
+  background-color: #052a19;
+  border-color: #052a19;
+}
+
+.inventory-topbar .btn.btn-outline-success,
+.inventory-top-actions .btn.btn-outline-success,
+#filterForm .btn.btn-outline-success,
+.inventory-header-actions .btn.btn-outline-success {
+  color: #0a4a2b;
+  border-color: #0a4a2b;
+}
+
+.inventory-topbar .btn.btn-outline-success:hover,
+.inventory-top-actions .btn.btn-outline-success:hover,
+#filterForm .btn.btn-outline-success:hover,
+.inventory-header-actions .btn.btn-outline-success:hover,
+.inventory-topbar .btn.btn-outline-success:focus,
+.inventory-top-actions .btn.btn-outline-success:focus,
+#filterForm .btn.btn-outline-success:focus,
+.inventory-header-actions .btn.btn-outline-success:focus {
+  color: #ffffff;
+  background-color: #052a19;
+  border-color: #052a19;
+}
+
+.inventory-topbar .btn.btn-outline-danger,
+.inventory-top-actions .btn.btn-outline-danger,
+#filterForm .btn.btn-outline-danger,
+.inventory-header-actions .btn.btn-outline-danger {
+  color: #7a1313;
+  border-color: #7a1313;
+}
+
+.inventory-topbar .btn.btn-outline-danger:hover,
+.inventory-top-actions .btn.btn-outline-danger:hover,
+#filterForm .btn.btn-outline-danger:hover,
+.inventory-header-actions .btn.btn-outline-danger:hover,
+.inventory-topbar .btn.btn-outline-danger:focus,
+.inventory-top-actions .btn.btn-outline-danger:focus,
+#filterForm .btn.btn-outline-danger:focus,
+.inventory-header-actions .btn.btn-outline-danger:focus {
+  color: #ffffff;
+  background-color: #5f0e0e;
+  border-color: #5f0e0e;
+}
+
+/* Inventory header actions: much darker */
+.inventory-header-actions .btn.btn-primary {
+  background-color: #041a0f;
+  border-color: #041a0f;
+}
+
+.inventory-header-actions .btn.btn-primary:hover,
+.inventory-header-actions .btn.btn-primary:focus {
+  background-color: #03140c;
+  border-color: #03140c;
+}
+
+.inventory-header-actions .btn.btn-success {
+  background-color: #052515;
+  border-color: #052515;
+}
+
+.inventory-header-actions .btn.btn-success:hover,
+.inventory-header-actions .btn.btn-success:focus {
+  background-color: #041c10;
+  border-color: #041c10;
+}
+
+.inventory-header-actions .btn.btn-outline-success {
+  color: #083a22;
+  border-color: #083a22;
+}
+
+.inventory-header-actions .btn.btn-outline-success:hover,
+.inventory-header-actions .btn.btn-outline-success:focus {
+  color: #ffffff;
+  background-color: #041c10;
+  border-color: #041c10;
+}
+
+/* Darker single action: create invoice */
+#createInvoiceBtn.btn.btn-outline-success {
+  color: #062b1a;
+  border-color: #062b1a;
+}
+
+#createInvoiceBtn.btn.btn-outline-success:hover,
+#createInvoiceBtn.btn.btn-outline-success:focus {
+  color: #ffffff;
+  background-color: #03170d;
+  border-color: #03170d;
+}
+
+.inventory-header-actions .btn.btn-outline-danger {
+  color: #4f0c0c;
+  border-color: #4f0c0c;
+}
+
+.inventory-header-actions .btn.btn-outline-danger:hover,
+.inventory-header-actions .btn.btn-outline-danger:focus {
+  color: #ffffff;
+  background-color: #3f0909;
+  border-color: #3f0909;
 }
 
 /* Card Styles */
@@ -297,7 +689,8 @@ body {
   font-size: 1rem;
 }
 
-.table th, .table td {
+.table th,
+.table td {
   vertical-align: middle;
 }
 
@@ -313,11 +706,16 @@ body {
   font-weight: 600;
   padding: 0.5rem 1rem;
   border-radius: 10px;
-  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .btn::after {
-  content: '';
+  content: "";
   position: absolute;
   inset-inline: 0.7rem;
   bottom: 0.22rem;
@@ -352,26 +750,22 @@ body {
 }
 
 .btn-success {
-  background: var(--btn-soft-success-bg) !important;
   color: var(--btn-soft-success-text) !important;
   border: 1px solid var(--btn-soft-success-border) !important;
 }
 
 .btn-danger {
-  background: var(--btn-soft-danger-bg) !important;
   color: var(--btn-soft-danger-text) !important;
   border: 1px solid var(--btn-soft-danger-border) !important;
 }
 
 .btn-warning {
-  background: var(--btn-soft-warning-bg) !important;
   color: var(--btn-soft-warning-text) !important;
   border: 1px solid var(--btn-soft-warning-border) !important;
 }
 
 .btn-secondary,
 .btn-light {
-  background: var(--btn-soft-secondary-bg) !important;
   color: var(--btn-soft-secondary-text) !important;
   border: 1px solid var(--btn-soft-secondary-border) !important;
 }
@@ -453,16 +847,18 @@ body {
 .btn-outline-warning:focus,
 .btn-outline-secondary:hover,
 .btn-outline-secondary:focus {
-  filter: brightness(0.98);
+  filter: none;
 }
 
 /* Form Controls */
-.form-control, .form-select {
+.form-control,
+.form-select {
   border-radius: 0.5rem;
   border: 1px solid #d4e7c5;
 }
 
-.form-control:focus, .form-select:focus {
+.form-control:focus,
+.form-select:focus {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 0.2rem #e9f5e1;
 }
@@ -545,7 +941,8 @@ body {
     overflow: visible;
   }
 
-  .card, .table {
+  .card,
+  .table {
     font-size: 0.95em;
   }
 
@@ -582,6 +979,8 @@ body {
   .app-nav-link {
     width: 100%;
     border-radius: 9px;
+    font-size: 1.02rem;
+    padding: 0.7rem 0.9rem !important;
   }
 
   .app-user-nav {
@@ -679,8 +1078,8 @@ body {
   }
 
   .app-nav-link {
-    padding: 0.45rem 0.5rem !important;
-    font-size: 0.86rem;
+    padding: 0.6rem 0.75rem !important;
+    font-size: 0.98rem;
     white-space: nowrap;
   }
 
@@ -715,8 +1114,8 @@ body {
   }
 
   .app-nav-link {
-    font-size: clamp(0.74rem, 0.68vw, 0.9rem);
-    padding: 0.48rem 0.48rem !important;
+    font-size: clamp(0.9rem, 0.85vw, 1.05rem);
+    padding: 0.6rem 0.7rem !important;
     white-space: nowrap;
   }
 
@@ -768,7 +1167,7 @@ body {
   width: 100%; /* Full width */
   display: none; /* Hide by default */
   box-sizing: border-box; /* Include padding/border */
-  font-family: 'Cairo', sans-serif; /* Arabic font */
+  font-family: "Cairo", sans-serif; /* Arabic font */
   page-break-after: avoid; /* Avoid page break after header */
 }
 
@@ -784,20 +1183,32 @@ body {
   overflow: hidden;
 }
 
-.table th, .table td {
+.table th,
+.table td {
   vertical-align: middle;
 }
 
 /* Print Styles */
 @media print {
-  thead { display: table-header-group; }
-  tfoot { display: table-footer-group; }
+  thead {
+    display: table-header-group;
+  }
+  tfoot {
+    display: table-footer-group;
+  }
   body {
     padding-top: 0px !important;
     padding-bottom: 30px !important;
     margin: 0;
   }
-  .no-print, .d-print-none, .inventory-header-actions, .d-flex.gap-2, .navbar, .navbar * { display: none !important; }
+  .no-print,
+  .d-print-none,
+  .inventory-header-actions,
+  .d-flex.gap-2,
+  .navbar,
+  .navbar * {
+    display: none !important;
+  }
   .print-footer {
     position: fixed;
     bottom: 1cm;
@@ -814,7 +1225,7 @@ body {
   .no-print {
     display: none !important;
   }
-  
+
   .print-only {
     display: block !important;
   }
@@ -836,39 +1247,39 @@ body {
 
 /* General Styles */
 body {
-    font-family: 'Cairo', sans-serif;
+  font-family: "Cairo", sans-serif;
 }
 
 /* Utility Classes */
 .required:after {
-    content: " *";
-    color: red;
+  content: " *";
+  color: red;
 }
 
 /* Button Styles */
 .btn-xs {
-    padding: 0.1rem 0.3rem;
-    font-size: 0.75rem;
-    line-height: 1.2;
+  padding: 0.1rem 0.3rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
 }
 
 /* Table Styles */
 .table-responsive {
-    overflow-x: auto;
+  overflow-x: auto;
 }
 
 .table th,
 .table td {
-    vertical-align: middle;
+  vertical-align: middle;
 }
 
 /* Form Styles */
 .form-label {
-    font-weight: 500;
+  font-weight: 500;
 }
 
 /* Footer Styles */
 footer {
-    margin-top: auto;
-    font-size: 0.9rem;
-} 
+  margin-top: auto;
+  font-size: 0.9rem;
+}

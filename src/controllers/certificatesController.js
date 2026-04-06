@@ -195,7 +195,15 @@ exports.store = async (req, res) => {
     } = req.body;
 
     const formattedItems = normalizeCertificateItems(items);
-    const certificateRawMap = buildRawNumericMap(req.body, CERTIFICATE_TOTAL_RAW_FIELDS);
+    const totalQuantityRaw = normalizeRawNumeric(total_quantity);
+    const totalWeightRaw = normalizeRawNumeric(total_weight);
+    const certificateRawMap = buildRawNumericMap(
+      {
+        total_quantity: totalQuantityRaw !== null ? totalQuantityRaw : '0',
+        total_weight: totalWeightRaw !== null ? totalWeightRaw : '0'
+      },
+      CERTIFICATE_TOTAL_RAW_FIELDS
+    );
 
     // Generate public ID
     const public_id = crypto.randomBytes(4).toString('hex');
@@ -246,8 +254,8 @@ exports.store = async (req, res) => {
         analyst || null,
         notes || null,
         JSON.stringify(formattedItems),
-        total_quantity ? parseFloat(total_quantity) : 0,
-        total_weight ? parseFloat(total_weight) : 0,
+        totalQuantityRaw !== null ? parseFloat(totalQuantityRaw) : 0,
+        totalWeightRaw !== null ? parseFloat(totalWeightRaw) : 0,
         JSON.stringify(certificateRawMap),
         public_id,
         req.session.user.id

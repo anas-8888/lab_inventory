@@ -250,7 +250,11 @@ exports.createInvoice = async (req, res) => {
 
             const inventoryItem = item[0];
 
-            const requestedQuantity = parseFloat(quantity);
+            const quantityRaw = normalizeRawNumeric(quantity);
+            if (quantityRaw === null) {
+                throw new Error(`الكمية غير صالحة للعنصر: ${inventoryItem.sample_number}`);
+            }
+            const requestedQuantity = parseFloat(quantityRaw);
             const availableQuantity = parseFloat(inventoryItem.current_quantity);
 
             if (requestedQuantity > availableQuantity) {
@@ -362,13 +366,16 @@ exports.createInvoice = async (req, res) => {
                     console.error('Error parsing absorption readings for invoice item:', e);
                 }
 
-                const requestedQuantity = parseFloat(quantity);
+                const quantityRaw = normalizeRawNumeric(quantity);
+                if (quantityRaw === null) {
+                    throw new Error(`الكمية غير صالحة للعنصر: ${inventoryItem.sample_number}`);
+                }
+                const requestedQuantity = parseFloat(quantityRaw);
                 const ph = parseFloat(inventoryItem.ph) || 0;
                 const peroxide = parseFloat(inventoryItem.peroxide_value) || 0;
                 const netWeight = requestedQuantity * (inventoryItem.net_weight_total / inventoryItem.base_quantity);
                 const inventoryRawMap = parseRawNumericMap(inventoryItem.numeric_raw);
                 const invoiceItemRawMap = {};
-                const quantityRaw = normalizeRawNumeric(quantity);
                 if (quantityRaw !== null) invoiceItemRawMap.quantity = quantityRaw;
                 const phRaw = normalizeRawNumeric(rawOrValue(inventoryRawMap, 'ph', inventoryItem.ph));
                 if (phRaw !== null) invoiceItemRawMap.ph = phRaw;
@@ -804,7 +811,11 @@ exports.updateInvoice = async (req, res) => {
                 }
 
                 const inventoryItem = rows[0];
-                const requestedQuantity = parseFloat(quantity);
+                const quantityRaw = normalizeRawNumeric(quantity);
+                if (quantityRaw === null) {
+                    throw new Error(`الكمية غير صالحة للعنصر: ${inventoryItem.sample_number}`);
+                }
+                const requestedQuantity = parseFloat(quantityRaw);
                 const availableQuantity = parseFloat(inventoryItem.current_quantity);
 
                 if (requestedQuantity > availableQuantity) {
@@ -853,7 +864,6 @@ exports.updateInvoice = async (req, res) => {
                 const netWeight = requestedQuantity * netWeightPerUnit;
                 const inventoryRawMap = parseRawNumericMap(inventoryItem.numeric_raw);
                 const invoiceItemRawMap = {};
-                const quantityRaw = normalizeRawNumeric(quantity);
                 if (quantityRaw !== null) invoiceItemRawMap.quantity = quantityRaw;
                 const phRaw = normalizeRawNumeric(rawOrValue(inventoryRawMap, 'ph', inventoryItem.ph));
                 if (phRaw !== null) invoiceItemRawMap.ph = phRaw;
