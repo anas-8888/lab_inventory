@@ -1,6 +1,9 @@
 const Excel = require('exceljs');
 const { pool } = require('../database/db');
 const { parseRawNumericMap, rawOrValue } = require('../utils/rawNumbers');
+const fs = require('fs');
+const path = require('path');
+const { v4: uuidv4 } = require('uuid');
 
 function convertDateToISO(dateString) {
     if (!dateString) return null;
@@ -172,4 +175,176 @@ exports.exportInventoryToExcel = async (req, res) => {
             message: 'حدث خطأ أثناء تصدير البيانات'
         });
     }
-}; 
+};
+
+exports.exportNotesToExcel = async (req, res) => {
+    try {
+        const { ids } = req.query || {};
+        const selectedIds = parseIds(ids);
+
+        const workbook = new Excel.Workbook();
+        const worksheet = workbook.addWorksheet('الملاحظات');
+        worksheet.views = [{ rightToLeft: true }];
+
+        worksheet.columns = [
+            { header: 'رقم', key: 'id', width: 10 },
+            { header: 'اسم المادة', key: 'material_name', width: 30 },
+            { header: 'السعر', key: 'price', width: 12 },
+            { header: 'الوزن', key: 'weight', width: 12 },
+            { header: 'التاريخ', key: 'note_date', width: 15 },
+            { header: 'الملاحظات', key: 'note_text', width: 40 }
+        ];
+
+        worksheet.getRow(1).font = { bold: true, size: 12 };
+        worksheet.getRow(1).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFE0E0E0' }
+        };
+
+        let sql = `
+            SELECT 
+                n.id,
+                COALESCE(NULLIF(n.material_name, ''), m.material_name) AS material_name,
+                n.price,
+                n.weight,
+                n.note_text,
+                DATE_FORMAT(n.note_date, '%Y-%m-%d') AS note_date,
+                n.numeric_raw
+            FROM notes n
+            LEFT JOIN materials m ON m.id = n.material_id
+            WHERE 1 = 1
+        `;
+        const params = [];
+
+        if (selectedIds.length > 0) {
+            sql += ` AND n.id IN (?)`;
+            params.push(selectedIds);
+        }
+
+        sql += ` ORDER BY n.note_date DESC, n.id DESC`;
+
+        const [rows] = await pool.query(sql, params);
+        rows.forEach((row) => {
+            const rawMap = parseRawNumericMap(row.numeric_raw);
+            worksheet.addRow({
+                id: row.id,
+                material_name: row.material_name || '-',
+                price: rawOrValue(rawMap, 'price', row.price),
+                weight: rawOrValue(rawMap, 'weight', row.weight),
+                note_date: row.note_date || '-',
+                note_text: row.note_text || '-'
+            });
+        });
+
+        worksheet.eachRow((row) => {
+            row.eachCell((cell) => {
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+                cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            });
+        });
+
+        worksheet.columns.forEach(column => {
+            column.width = Math.max(column.width || 10, 10);
+        });
+
+        res.setHeader(
+            'Content-Type',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        );
+        res.setHeader(
+            'Content-Disposition',
+            'attachment; filename=notes-' + Date.now() + '.xlsx'
+        );
+
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (error) {
+        console.error('Error exporting notes:', error);
+        res.status(500).json({
+            success: false,
+            message: 'حدث خطأ أثناء تصدير الملاحظات'
+        });
+    }
+};
+
+exports.exportNotesToPdf = async (req, res) => {
+    try {
+        const ids = Array.isArray(req.body?.ids) ? req.body.ids : [];
+        const selectedIds = ids
+            .map((value) => parseInt(String(value).trim(), 10))
+            .filter((value) => Number.isFinite(value) && value > 0);
+        if (!selectedIds.length) {
+            return res.status(400).json({ success: false, message: 'يرجى تحديد ملاحظات للتصدير' });
+        }
+
+        let sql = `
+            SELECT 
+                n.id,
+                COALESCE(NULLIF(n.material_name, ''), m.material_name) AS material_name,
+                n.price,
+                n.weight,
+                n.note_text,
+                DATE_FORMAT(n.note_date, '%Y-%m-%d') AS note_date,
+                n.numeric_raw
+            FROM notes n
+            LEFT JOIN materials m ON m.id = n.material_id
+            WHERE n.id IN (?)
+            ORDER BY n.note_date DESC, n.id DESC
+        `;
+        const [rows] = await pool.query(sql, [selectedIds]);
+        if (!rows.length) {
+            return res.status(404).json({ success: false, message: 'لا توجد ملاحظات صالحة للتصدير' });
+        }
+
+        const notes = rows.map((row) => {
+            const rawMap = parseRawNumericMap(row.numeric_raw);
+            return {
+                id: row.id,
+                material_name: row.material_name || '-',
+                price: rawOrValue(rawMap, 'price', row.price),
+                weight: rawOrValue(rawMap, 'weight', row.weight),
+                note_date: row.note_date || '-',
+                note_text: row.note_text || '-'
+            };
+        });
+
+        const pdf = require('html-pdf-node');
+        const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+        req.app.render('notes/notes-print-list', {
+            title: 'قائمة الملاحظات',
+            notes,
+            baseUrl,
+            layout: false
+        }, async (err, html) => {
+            if (err) {
+                console.error('Render notes PDF failed:', err);
+                return res.status(500).json({ success: false, message: 'تعذر إنشاء ملف PDF' });
+            }
+            const options = {
+                format: 'A4',
+                preferCSSPageSize: true,
+                printBackground: true,
+                margin: { top: '14mm', right: '14mm', bottom: '14mm', left: '14mm' }
+            };
+            const pdfBuffer = await pdf.generatePdf({ content: html }, options);
+            const fileName = `${uuidv4()}.pdf`;
+            const savePath = path.join(__dirname, '../public/notes_list_pdf', fileName);
+            fs.mkdirSync(path.dirname(savePath), { recursive: true });
+            fs.writeFileSync(savePath, pdfBuffer);
+
+            return res.json({
+                success: true,
+                url: `${baseUrl}/public/notes_list_pdf/${fileName}`
+            });
+        });
+    } catch (error) {
+        console.error('Error exporting notes to PDF:', error);
+        res.status(500).json({ success: false, message: 'حدث خطأ أثناء تصدير ملف PDF' });
+    }
+};

@@ -1,0 +1,105 @@
+<% function fmtDate(d){ if(!d) return '-'; const dt=new Date(d); const dd=String(dt.getDate()).padStart(2,'0'); const mm=String(dt.getMonth()+1).padStart(2,'0'); const yy=dt.getFullYear(); return `${dd}/${mm}/${yy}`; }
+function num(v, d=2){
+  if (typeof v === 'string' && /^-?\d+(\.\d+)?$/.test(v.trim())) return v.trim();
+  const n = (typeof v === 'number') ? v : parseFloat(v);
+  if(!Number.isFinite(n)) return '-';
+  if (n === 0 || Object.is(n, -0)) return '0';
+  const safe = Number(n.toFixed(12));
+  let out = Number.isInteger(safe) ? String(safe) : safe.toString();
+  out = out.replace(/(\.\d*?[1-9])0+$/,'$1').replace(/\.0+$/,'');
+  if (out === '-0') out = '0';
+  return safe < 0 ? ('\u200E' + out) : out;
+}
+%>
+<div class="container-fluid" style="direction: rtl; font-family: 'Cairo','Amiri',sans-serif;">
+  <%
+    const pageSize = 18;
+    const indexedNotes = (notes || []).map((n, idx) => ({ note: n, rowNumber: idx + 1 }));
+    const pagesData = [];
+    for (let i = 0; i < indexedNotes.length; i += pageSize) {
+      pagesData.push(indexedNotes.slice(i, i + pageSize));
+    }
+  %>
+  <% for (let p = 0; p < pagesData.length; p++) { const pageRows = pagesData[p]; %>
+    <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+      <tr>
+        <td style="text-align: right; font-weight: bold; line-height: 1.4; width: 37%; font-size: 9pt;">
+          <div>مؤسسة عجاج أخوان التجارية</div>
+          <div>لإنتاج وتعبئة المواد الغذائية</div>
+          <div>وتجارة زيت الزيتون البكر</div>
+          <div style="font-size: 11px;">س.ت 10369 – س.ص 10</div>
+        </td>
+        <td style="text-align: center; width: 26%;">
+          <img src="<%= (typeof baseUrl!== 'undefined' && baseUrl) ? (baseUrl + '/public/images/nexa.png') : '/public/images/nexa.png' %>" alt="شعار" style="width: 85px; height: 85px;">
+        </td>
+        <td style="text-align: left; font-weight: bold; line-height: 1.4; width: 37%; font-size: 9pt;">
+          <div>Ajaj Brothers Commercial Foundation</div>
+          <div>For Food Production and Packaging</div>
+          <div>And Virgin Olive Oil Trade</div>
+          <div style="font-size: 11px;">C.R. 10369 – I.R. 10</div>
+        </td>
+      </tr>
+    </table>
+    <hr>
+
+    <div style="text-align:center; margin: 10px 0;">
+      <div style="font-size: 11pt; font-weight: 700;">قائمة الملاحظات</div>
+    </div>
+    <div class="table-responsive" style="margin-top: 8px;">
+      <table class="table-custom table-bordered text-center align-middle" style="font-size: 9pt; width: 100%;">
+        <thead>
+          <tr>
+            <th style="padding: 5pt 4pt;">#</th>
+            <th style="padding: 5pt 4pt;">اسم المادة</th>
+            <th style="padding: 5pt 4pt;">السعر</th>
+            <th style="padding: 5pt 4pt;">الوزن</th>
+            <th style="padding: 5pt 4pt;">التاريخ</th>
+            <th style="padding: 5pt 4pt;">الملاحظات</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% pageRows.forEach((item) => { const n = item.note; %>
+          <tr>
+            <td style="padding: 6pt 4pt; text-align:center;"><%= num(item.rowNumber,0) %></td>
+            <td style="padding: 6pt 4pt; text-align:right;"><%= n.material_name || '-' %></td>
+            <td style="padding: 6pt 4pt;"><%= num(n.price, 2) %></td>
+            <td style="padding: 6pt 4pt;"><%= num(n.weight, 3) %></td>
+            <td style="padding: 6pt 4pt;"><%= fmtDate(n.note_date) %></td>
+            <td style="padding: 6pt 4pt; text-align:right;"><%= n.note_text || '-' %></td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <% if (p < pagesData.length - 1) { %>
+      <div class="page-break"></div>
+    <% } %>
+  <% } %>
+
+  <div class="print-footer" id="fixed-print-footer" style="text-align:center; font-size: 9pt; margin-top: 10px;">
+    <hr style="margin: 4px 0; border: 0.5px solid #bbb;">
+    سوريا، حماة، أوتستراد دمشق-حلب الدولي، س.ت 10369 – س.ص 10<br>
+    0940500511 – 0988111127 | ajajbrothers@gmail.com<br>
+    جميع الحقوق محفوظة © <%= new Date().getFullYear() %> نظام إدارة المختبر | تم التطوير بواسطة شركة NEXA GROUP
+  </div>
+</div>
+
+<script>
+  window.addEventListener('load', function(){ setTimeout(function(){ window.print(); }, 200); });
+</script>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Amiri:wght@400;500;600;700&display=swap');
+  @page { size: A4; margin: 1cm; }
+  html, body { background: #fff !important; margin:0; padding:0; direction: rtl; text-align: right; font-family: 'Cairo','Amiri','Noto Naskh Arabic',sans-serif !important; font-size: 9pt; }
+  .table-custom { width: 100%; border-collapse: separate; border-spacing: 0; }
+  .table-custom th, .table-custom td { border: 1px solid #444; padding: 5pt 4pt; }
+  .table-custom th { background: #f5f5f5; font-weight: 700; }
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
+  tr { page-break-inside: avoid; }
+  .table-responsive { overflow-x: visible; }
+  .container-fluid { padding-bottom: 50px; }
+  .print-footer { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; }
+  .page-break { page-break-after: always; }
+</style>

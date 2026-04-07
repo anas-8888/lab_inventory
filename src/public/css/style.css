@@ -17,7 +17,7 @@
   --white: #ffffff;
   --danger: #d32f2f;
   --warning: #ffa000;
-  --success: #2e7d32;
+  --success: #cee0ce;
   --btn-soft-primary-bg: #e8f6ef;
   --btn-soft-primary-text: #166534;
   --btn-soft-primary-border: #bfe8d1;
@@ -395,6 +395,17 @@ body {
   justify-content: center;
 }
 
+/* Inventory preview (details) buttons: larger size for back/print */
+.inventory-action-group .btn.btn-secondary,
+.inventory-action-group .btn.btn-primary {
+  min-width: 110px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
 .inventory-action-group .btn.btn-danger {
   background-color: #e53935;
   border-color: #e53935;
@@ -694,6 +705,165 @@ body {
   vertical-align: middle;
 }
 
+.notes-table .form-check-input {
+  cursor: pointer;
+}
+
+.notes-row-selected {
+  background-color: #eaf7ef;
+}
+
+.notes-export-btn {
+  min-width: 110px;
+  height: 32px;
+  padding-top: 0;
+  padding-bottom: 0;
+  line-height: 1;
+  background-color: #2e7d32;
+  border-color: #2e7d32;
+  color: #ffffff !important;
+}
+
+.notes-export-btn:hover,
+.notes-export-btn:focus {
+  color: #ffffff !important;
+  background-color: #1b5e20;
+  border-color: #1b5e20;
+}
+
+/* Back buttons: unify with inventory back style */
+a.btn.btn-outline-secondary {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+  color: #ffffff !important;
+}
+
+a.btn.btn-outline-secondary:hover,
+a.btn.btn-outline-secondary:focus {
+  background-color: #5c636a !important;
+  border-color: #5c636a !important;
+  color: #ffffff !important;
+}
+
+/* Print buttons: unify with inventory preview print color */
+.btn:has(i.fas.fa-print),
+.btn:has(i.bi-printer) {
+  background-color: #2e7d32 !important;
+  border-color: #2e7d32 !important;
+  color: #ffffff !important;
+}
+
+.btn:has(i.fas.fa-print):hover,
+.btn:has(i.fas.fa-print):focus,
+.btn:has(i.bi-printer):hover,
+.btn:has(i.bi-printer):focus {
+  background-color: #1b5e20 !important;
+  border-color: #1b5e20 !important;
+  color: #ffffff !important;
+}
+
+/* PDF export buttons: match export styling */
+.btn:has(i.fas.fa-file-pdf),
+.btn:has(i.bi-file-earmark-pdf) {
+  background-color: #2e7d32 !important;
+  border-color: #2e7d32 !important;
+  color: #ffffff !important;
+}
+
+.btn:has(i.fas.fa-file-pdf):hover,
+.btn:has(i.fas.fa-file-pdf):focus,
+.btn:has(i.bi-file-earmark-pdf):hover,
+.btn:has(i.bi-file-earmark-pdf):focus {
+  background-color: #1b5e20 !important;
+  border-color: #1b5e20 !important;
+  color: #ffffff !important;
+}
+
+/* WhatsApp share buttons: match export styling */
+.btn:has(i.bi-whatsapp),
+.btn:has(i.fab.fa-whatsapp) {
+  background-color: #2e7d32 !important;
+  border-color: #2e7d32 !important;
+  color: #ffffff !important;
+}
+
+.btn:has(i.bi-whatsapp):hover,
+.btn:has(i.bi-whatsapp):focus,
+.btn:has(i.fab.fa-whatsapp):hover,
+.btn:has(i.fab.fa-whatsapp):focus {
+  background-color: #1b5e20 !important;
+  border-color: #1b5e20 !important;
+  color: #ffffff !important;
+}
+
+/* Certificates add-row button: match export styling */
+#addEditItemRowBtn {
+  background-color: #2e7d32 !important;
+  border-color: #2e7d32 !important;
+  color: #ffffff !important;
+}
+
+#addEditItemRowBtn:hover,
+#addEditItemRowBtn:focus {
+  background-color: #1b5e20 !important;
+  border-color: #1b5e20 !important;
+  color: #ffffff !important;
+}
+
+/* Cost statement add material button: match export styling */
+button[data-bs-target="#addMaterialModal"] {
+  background-color: #2e7d32 !important;
+  border-color: #2e7d32 !important;
+  color: #ffffff !important;
+}
+
+button[data-bs-target="#addMaterialModal"]:hover,
+button[data-bs-target="#addMaterialModal"]:focus {
+  background-color: #1b5e20 !important;
+  border-color: #1b5e20 !important;
+  color: #ffffff !important;
+}
+
+/* Costs landing: manage materials button matches export styling */
+a.btn.btn-primary[href="/costs/cost-statement"] {
+  background-color: #2e7d32 !important;
+  border-color: #2e7d32 !important;
+  color: #ffffff !important;
+}
+
+a.btn.btn-primary[href="/costs/cost-statement"]:hover,
+a.btn.btn-primary[href="/costs/cost-statement"]:focus {
+  background-color: #1b5e20 !important;
+  border-color: #1b5e20 !important;
+  color: #ffffff !important;
+}
+
+#whatsappNotesListShareBtn {
+  background-color: #2e7d32;
+  border-color: #2e7d32;
+  color: #ffffff !important;
+}
+
+#whatsappNotesListShareBtn:hover,
+#whatsappNotesListShareBtn:focus {
+  background-color: #1b5e20;
+  border-color: #1b5e20;
+  color: #ffffff !important;
+}
+
+#exportSelectedExcelFromModalBtn {
+  background-color: #2e7d32;
+  border-color: #2e7d32;
+  color: #ffffff !important;
+}
+
+#exportSelectedExcelFromModalBtn:hover,
+#exportSelectedExcelFromModalBtn:focus {
+  background-color: #1b5e20;
+  border-color: #1b5e20;
+  color: #ffffff !important;
+}
+
 .table-success {
   background: var(--accent-color) !important;
   color: var(--primary-color) !important;
@@ -814,13 +984,11 @@ body {
 }
 
 .btn-outline-success {
-  color: var(--btn-soft-success-text) !important;
   border-color: var(--btn-soft-success-border) !important;
-  background: #f7fcf8 !important;
+  background: #1b5e20 !important;
 }
 
 .btn-outline-danger {
-  color: var(--btn-soft-danger-text) !important;
   border-color: var(--btn-soft-danger-border) !important;
   background: #fff9fa !important;
 }

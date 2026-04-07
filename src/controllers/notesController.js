@@ -32,14 +32,14 @@ const listNotes = async (req, res) => {
       SELECT id, material_name FROM materials ORDER BY material_name
     `);
 
-    res.render('notes/index', {
-      title: 'ÇáãáÇÍÙÇÊ',
+    res.render("notes/index", {
+      title: "Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª",
       notes: rows.map(applyNoteRaw),
-      materials
+      materials,
     });
   } catch (err) {
     console.error('listNotes error:', err);
-    req.flash('error_msg', 'ÍÏË ÎØÃ İí ÊÍãíá ÇáãáÇÍÙÇÊ');
+    req.flash('error_msg', 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø¬Ù„Ø¨ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª');
     res.redirect('/');
   }
 };
@@ -62,17 +62,17 @@ const viewNote = async (req, res) => {
       WHERE n.id = ?
     `, [id]);
     if (!rows.length) {
-      req.flash('error_msg', 'ÇáãáÇÍÙÉ ÛíÑ ãæÌæÏÉ');
+      req.flash('error_msg', 'Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø© Ø§Ù„Ù…Ø·Ù„ÙˆØ¨Ø©');
       return res.redirect('/notes');
     }
     const note = applyNoteRaw(rows[0]);
     if (req.headers.accept && req.headers.accept.includes('application/json')) {
       return res.json({ success: true, note });
     }
-    res.render('notes/show', { title: 'ÚÑÖ ãáÇÍÙÉ', note });
+    res.render('notes/show', { title: 'Ø¹Ø±Ø¶ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©', note });
   } catch (err) {
     console.error('viewNote error:', err);
-    req.flash('error_msg', 'ÍÏË ÎØÃ İí ÚÑÖ ÇáãáÇÍÙÉ');
+    req.flash('error_msg', 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø¬Ù„Ø¨ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©');
     res.redirect('/notes');
   }
 };
@@ -110,7 +110,7 @@ const createNote = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('createNote error:', err);
-    res.status(500).json({ success: false, message: 'İÔá ÅäÔÇÁ ÇáãáÇÍÙÉ' });
+    res.status(500).json({ success: false, message: 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©' });
   }
 };
 
@@ -150,7 +150,7 @@ const updateNote = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('updateNote error:', err);
-    res.status(500).json({ success: false, message: 'İÔá ÊÚÏíá ÇáãáÇÍÙÉ' });
+    res.status(500).json({ success: false, message: 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ ØªØ­Ø¯ÙŠØ« Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©' });
   }
 };
 
@@ -161,7 +161,7 @@ const deleteNote = async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('deleteNote error:', err);
-    res.status(500).json({ success: false, message: 'İÔá ÍĞİ ÇáãáÇÍÙÉ' });
+    res.status(500).json({ success: false, message: 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø­Ø°Ù Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø©' });
   }
 };
 

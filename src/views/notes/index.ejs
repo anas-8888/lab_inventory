@@ -1,4 +1,4 @@
-<div class="container mt-4">
+﻿<div class="container mt-4">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="mb-0"><i class="bi bi-journal-text"></i> الملاحظات</h2>
     <div class="notes-top-actions">
@@ -12,13 +12,24 @@
   <% if (notes && notes.length) { %>
   <div class="card shadow">
     <div class="card-header">
-      <h5 class="mb-0">جدول الملاحظات</h5>
+      <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
+        <h5 class="mb-0">جدول الملاحظات</h5>
+        <div class="d-flex gap-2 align-items-center">
+          <button type="button" id="notesExportSelectedBtn" class="btn btn-sm btn-outline-success d-none notes-export-btn"><span class="d-block">تصدير</span></button>
+          <div class="input-group" style="max-width: 360px;">
+            <input type="text" id="notesSearchInput" class="form-control" placeholder="بحث">
+          </div>
+        </div>
+      </div>
     </div>
     <div class="card-body">
       <div class="table-responsive">
-        <table class="table table-bordered table-hover align-middle">
+        <table class="table table-bordered table-hover align-middle notes-table">
           <thead>
             <tr>
+              <th class="text-center" style="width: 38px;">
+                <input type="checkbox" class="form-check-input" id="notesSelectAll" aria-label="تحديد الكل">
+              </th>
               <th>#</th>
               <th>اسم المادة</th>
               <th>السعر</th>
@@ -28,9 +39,12 @@
               <th>الإجراءات</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="notesTableBody">
             <% notes.forEach((n, idx) => { %>
               <tr>
+                <td class="text-center">
+                  <input type="checkbox" class="form-check-input note-checkbox" data-id="<%= n.id %>">
+                </td>
                 <td><%= idx + 1 %></td>
                 <td><%= n.material_name || ('#' + (n.material_id || '-')) %></td>
                 <td><%= (n.price != null) ? n.price : '-' %></td>
@@ -48,6 +62,7 @@
             <% }) %>
           </tbody>
         </table>
+        <div id="notesNoResults" class="text-center text-muted py-3 d-none">لا توجد نتائج مطابقة</div>
       </div>
     </div>
   </div>
@@ -183,7 +198,148 @@ document.addEventListener('click', (event) => {
     if (Number.isFinite(id)) deleteNote(id);
   }
 });
+
+function applyNotesSearch() {
+  const input = document.getElementById('notesSearchInput');
+  const body = document.getElementById('notesTableBody');
+  if (!input || !body) return;
+  const query = input.value.trim().toLowerCase();
+  const rows = Array.from(body.querySelectorAll('tr'));
+  let anyVisible = false;
+  rows.forEach(row => {
+    const cells = row.querySelectorAll('td');
+    const haystack = [
+      cells[2]?.textContent || '',
+      cells[3]?.textContent || '',
+      cells[4]?.textContent || '',
+      cells[5]?.textContent || '',
+      cells[6]?.textContent || ''
+    ].join(' ').toLowerCase();
+    const show = query === '' || haystack.includes(query);
+    row.classList.toggle('d-none', !show);
+    if (show) anyVisible = true;
+  });
+  const empty = document.getElementById('notesNoResults');
+  if (empty) empty.classList.toggle('d-none', anyVisible);
+}
+
+const notesSearchInput = document.getElementById('notesSearchInput');
+if (notesSearchInput) {
+  notesSearchInput.addEventListener('input', applyNotesSearch);
+}
+
+function updateNotesSelectionUi() {
+  const checkboxes = Array.from(document.querySelectorAll('.note-checkbox'));
+  const checked = checkboxes.filter(cb => cb.checked);
+  const selectAll = document.getElementById('notesSelectAll');
+  if (selectAll) {
+    const allChecked = checkboxes.length > 0 && checked.length === checkboxes.length;
+    selectAll.checked = allChecked;
+    selectAll.indeterminate = checked.length > 0 && !allChecked;
+  }
+  checkboxes.forEach(cb => {
+    const row = cb.closest('tr');
+    if (row) row.classList.toggle('notes-row-selected', cb.checked);
+  });
+  const exportBtn = document.getElementById('notesExportSelectedBtn');
+  if (exportBtn) {
+    if (checked.length > 0) {
+      exportBtn.classList.remove('d-none');
+      exportBtn.disabled = false;
+      exportBtn.innerHTML = '<span class="d-block">تصدير</span>';
+    } else {
+      exportBtn.classList.add('d-none');
+      exportBtn.disabled = true;
+      exportBtn.innerHTML = '<span class="d-block">تصدير</span>';
+    }
+  }
+}
+
+const notesSelectAll = document.getElementById('notesSelectAll');
+if (notesSelectAll) {
+  notesSelectAll.addEventListener('change', () => {
+    const checkboxes = document.querySelectorAll('.note-checkbox');
+    checkboxes.forEach(cb => { cb.checked = notesSelectAll.checked; });
+    updateNotesSelectionUi();
+  });
+}
+
+document.querySelectorAll('.note-checkbox').forEach(cb => {
+  cb.addEventListener('change', updateNotesSelectionUi);
+});
+
+const notesExportSelectedBtn = document.getElementById('notesExportSelectedBtn');
+if (notesExportSelectedBtn) {
+  notesExportSelectedBtn.addEventListener('click', async () => {
+    const checked = Array.from(document.querySelectorAll('.note-checkbox:checked'));
+    if (checked.length === 0) {
+      alert('يرجى تحديد ملاحظات للتصدير');
+      return;
+    }
+    notesExportSelectedBtn.disabled = true;
+    notesExportSelectedBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    try {
+      const res = await fetch('/exports/notes/pdf-selected', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: checked.map(cb => Number(cb.dataset.id)).filter(Boolean) })
+      });
+      const data = await res.json();
+      if (data.success && data.url) {
+        const linkInput = document.getElementById('notesListPdfLinkInput');
+        const openBtn = document.getElementById('openNotesListPdfLinkBtn');
+        const waBtn = document.getElementById('whatsappNotesListShareBtn');
+        if (linkInput) linkInput.value = data.url;
+        if (openBtn) openBtn.href = data.url;
+        if (waBtn) waBtn.href = `https://wa.me/?text=${encodeURIComponent(data.url)}`;
+        const modal = new bootstrap.Modal(document.getElementById('notesListPdfExportModal'));
+        modal.show();
+      } else {
+        alert(data.message || 'حدث خطأ أثناء إنشاء ملف PDF');
+      }
+    } catch (e) {
+      alert('حدث خطأ في الاتصال بالخادم');
+    } finally {
+      notesExportSelectedBtn.disabled = false;
+      notesExportSelectedBtn.innerHTML = '<span class="d-block">تصدير</span>';
+    }
+  });
+}
+
+const copyNotesPdfBtn = document.getElementById('copyNotesListPdfLinkBtn');
+const notesPdfInput = document.getElementById('notesListPdfLinkInput');
+if (copyNotesPdfBtn && notesPdfInput) {
+  copyNotesPdfBtn.addEventListener('click', function () {
+    notesPdfInput.select();
+    document.execCommand('copy');
+  });
+}
+
+updateNotesSelectionUi();
 </script>
+
+<!-- Export PDF Modal -->
+<div id="notesListPdfExportModal" class="modal fade" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-file-earmark-pdf me-2 text-success"></i> تم إنشاء ملف PDF</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+      </div>
+      <div class="modal-body text-center">
+        <div class="mb-3">
+          <input type="text" id="notesListPdfLinkInput" class="form-control text-center" readonly style="direction:ltr; font-size:0.95em;" />
+        </div>
+        <div class="d-flex justify-content-center gap-2 mb-2">
+          <button id="copyNotesListPdfLinkBtn" class="btn btn-outline-primary btn-sm"><i class="bi bi-clipboard me-1"></i> نسخ الرابط</button>
+          <a id="openNotesListPdfLinkBtn" class="btn btn-outline-info btn-sm" target="_blank"><i class="bi bi-box-arrow-up-right me-1"></i> فتح الرابط</a>
+          <a id="whatsappNotesListShareBtn" class="btn btn-outline-success btn-sm" target="_blank"><i class="bi bi-whatsapp me-1"></i> إرسال عبر واتساب</a>
+        </div>
+        <div class="alert alert-success py-2 mb-0">يمكنك مشاركة الرابط مع أي شخص لتحميل الملف مباشرة</div>
+      </div>
+    </div>
+  </div>
+</div>
 
 
 
