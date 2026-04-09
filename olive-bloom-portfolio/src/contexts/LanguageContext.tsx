@@ -303,18 +303,17 @@ const translations: Record<string, Record<Language, string>> = {
   // Sell Products Modal
   "sell.title": {
     en: "Sell Your Products With Us",
-    ar: "هل ترغب ببيع منتجاتك معنا؟",
+    ar: "بيع منتجاتك معنا؟",
   },
   "sell.description": {
     en: "Send your details and at least one photo. Our team will review and contact you.",
-    ar: "أرسل بياناتك وصورة واحدة على الأقل، وسيتواصل معك فريقنا بعد المراجعة.",
+    ar: "أرسل بياناتك وصورة واحدة، وسنراجعها ونتواصل معك.",
   },
   "sell.name.label": { en: "Full Name", ar: "الاسم الكامل" },
   "sell.name.placeholder": { en: "Enter your name", ar: "أدخل اسمك" },
   "sell.phone.label": { en: "Phone Number", ar: "رقم الهاتف" },
-  "sell.phone.placeholder": { en: "e.g. 09xx xxx xxx", ar: "مثال: 09xx xxx xxx" },
+  "sell.phone.placeholder": { en: "e.g. 0930257984", ar: " 0930257984" },
   "sell.photo.label": { en: "Product Photos (at least one)", ar: "صور المنتجات (صورة واحدة على الأقل)" },
-  "sell.photo.hint": { en: "You can upload multiple images.", ar: "يمكنك رفع عدة صور." },
   "sell.photo.selected": { en: "Selected Photos", ar: "الصور المختارة" },
   "sell.photo.remove": { en: "Remove photo", ar: "حذف الصورة" },
   "sell.message.label": { en: "Optional Message", ar: "رسالة اختيارية" },

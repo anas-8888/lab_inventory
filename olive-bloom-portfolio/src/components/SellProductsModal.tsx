@@ -18,7 +18,7 @@ type SellProductsModalProps = {
 };
 
 const SellProductsModal = ({ open, onOpenChange }: SellProductsModalProps) => {
-  const { t } = useLanguage();
+  const { t, dir } = useLanguage();
   const [form, setForm] = useState({ name: "", phone: "", message: "" });
   const [photos, setPhotos] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -78,9 +78,9 @@ const SellProductsModal = ({ open, onOpenChange }: SellProductsModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[92vw] sm:max-w-md max-h-[72vh] overflow-y-auto rounded-2xl p-0">
+      <DialogContent className="max-w-[94vw] sm:max-w-lg max-h-[78vh] overflow-y-auto rounded-2xl p-0">
         <div className="px-6 py-6">
-          <DialogHeader className="text-right sm:text-right">
+          <DialogHeader className={dir === "ltr" ? "text-left sm:text-left" : "text-right sm:text-right"}>
             <DialogTitle className="text-2xl font-display">
               {t("sell.title")}
             </DialogTitle>
@@ -89,8 +89,8 @@ const SellProductsModal = ({ open, onOpenChange }: SellProductsModalProps) => {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="space-y-1">
               <label className="text-sm font-body" htmlFor="sell-name">
                 {t("sell.name.label")}
               </label>
@@ -107,7 +107,7 @@ const SellProductsModal = ({ open, onOpenChange }: SellProductsModalProps) => {
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               <label className="text-sm font-body" htmlFor="sell-phone">
                 {t("sell.phone.label")}
               </label>
@@ -125,7 +125,7 @@ const SellProductsModal = ({ open, onOpenChange }: SellProductsModalProps) => {
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               <label className="text-sm font-body" htmlFor="sell-photos">
                 {t("sell.photo.label")}
               </label>
@@ -157,11 +157,9 @@ const SellProductsModal = ({ open, onOpenChange }: SellProductsModalProps) => {
                     return merged;
                   });
                 }}
-                className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm file:mr-4 file:rounded-full file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-foreground hover:file:bg-primary/90"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs file:mr-3 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-primary-foreground hover:file:bg-primary/90"
               />
-              <p className="text-xs text-muted-foreground">
-                {t("sell.photo.hint")}
-              </p>
+             
             </div>
 
             {photos.length > 0 && (
@@ -196,19 +194,19 @@ const SellProductsModal = ({ open, onOpenChange }: SellProductsModalProps) => {
               </div>
             )}
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               <label className="text-sm font-body" htmlFor="sell-message">
                 {t("sell.message.label")}
               </label>
               <textarea
                 id="sell-message"
-                rows={4}
+                rows={2}
                 value={form.message}
                 onChange={(event) =>
                   setForm({ ...form, message: event.target.value })
                 }
                 placeholder={t("sell.message.placeholder")}
-                className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-gold/60"
+                className="w-full resize-y rounded-lg border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-gold/60"
               />
             </div>
 

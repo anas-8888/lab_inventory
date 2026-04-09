@@ -38,22 +38,38 @@ app.use((req, res, next) => {
 });
 
 // CORS للمسارات العامة الخاصة بالموقع الخارجي (Landing Page)
-const publicSiteAllowedOrigins = (process.env.PUBLIC_SITE_ALLOWED_ORIGINS || 'http://localhost:8081')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean);
+function normalizeOrigin(origin) {
+    if (!origin || typeof origin !== 'string') return '';
+    return origin.trim().replace(/\/+$/, '');
+}
+
+function parseAllowedOrigins(rawValue) {
+    if (!rawValue || typeof rawValue !== 'string') return [];
+    return rawValue
+        .split(',')
+        .map((origin) => normalizeOrigin(origin))
+        .filter(Boolean);
+}
+
+const publicSiteAllowedOrigins = (() => {
+    const defaults = [
+        'https://ajajbrothers.com',
+        'https://www.ajajbrothers.com',
+        'https://plus.ajajbrothers.com',
+        'http://localhost:8081',
+        'http://localhost:3000'
+    ];
+
+    const envList = parseAllowedOrigins(process.env.PUBLIC_SITE_ALLOWED_ORIGINS);
+    const legacyList = parseAllowedOrigins(process.env.PUBLIC_SITE_ALLOWED_ORIGIN);
+
+    // Merge env values with safe defaults (don't let misconfigured env break production CORS)
+    return Array.from(new Set([...defaults, ...envList, ...legacyList]));
+})();
 
 function applyPublicSiteCors(req, res) {
-    const requestOrigin = req.headers.origin;
-    if (!requestOrigin) return;
-
-    if (publicSiteAllowedOrigins.includes(requestOrigin)) {
-        res.setHeader('Access-Control-Allow-Origin', requestOrigin);
-        res.setHeader('Vary', 'Origin');
-    } else {
-        return;
-    }
-
+    // Public landing-site APIs are intentionally open for read access
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 }

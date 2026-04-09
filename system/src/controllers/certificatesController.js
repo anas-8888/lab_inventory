@@ -8,7 +8,6 @@ const { normalizeRawNumeric, buildRawNumericMap, parseRawNumericMap, rawOrValue 
 
 const INVENTORY_RAW_FIELDS = [
   'base_quantity',
-  'current_quantity',
   'sample_weight',
   'net_weight_total',
   'ph',

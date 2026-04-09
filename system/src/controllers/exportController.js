@@ -127,7 +127,7 @@ exports.exportInventoryToExcel = async (req, res) => {
             worksheet.addRow({
                 ...row,
                 base_quantity: rawOrValue(rawMap, 'base_quantity', row.base_quantity),
-                current_quantity: rawOrValue(rawMap, 'current_quantity', row.current_quantity),
+                current_quantity: row.current_quantity,
                 net_weight_total: rawOrValue(rawMap, 'net_weight_total', row.net_weight_total),
                 sample_weight: rawOrValue(rawMap, 'sample_weight', row.sample_weight),
                 ph: rawOrValue(rawMap, 'ph', row.ph),

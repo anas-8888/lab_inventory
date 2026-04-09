@@ -34,7 +34,7 @@ function formatNumberDisplay(value) {
                         <input type="text" id="quotationDateFilter" class="form-control" placeholder="يوم/شهر/سنة" style="min-width: 220px;">
                     </div>
                     <div class="col-12 col-md-auto">
-                        <button type="button" class="btn btn-primary w-100 w-md-auto" data-bs-toggle="modal" data-bs-target="#createQuotationModal">
+                        <button type="button" class="btn btn-outline-success w-100 w-md-auto" data-bs-toggle="modal" data-bs-target="#createQuotationModal">
                             <i class="bi bi-plus-circle me-1"></i> إضافة عرض سعر
                         </button>
                     </div>
@@ -170,7 +170,7 @@ function formatNumberDisplay(value) {
                                             <a href="/costs/quotations/<%= quotation.id %>" class="btn btn-sm btn-info" title="معاينة">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <button type="button" class="btn btn-sm btn-primary" data-quotation-id="<%= quotation.id %>" onclick="openEditQuotationModal(Number(this.dataset.quotationId))" title="تعديل">
+                                            <button type="button" class="btn btn-sm btn-outline-success" data-quotation-id="<%= quotation.id %>" onclick="openEditQuotationModal(Number(this.dataset.quotationId))" title="تعديل">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
                                             <button type="button" class="btn btn-sm btn-danger" data-quotation-id="<%= quotation.id %>" onclick="deleteQuotation(Number(this.dataset.quotationId))">
@@ -191,7 +191,7 @@ function formatNumberDisplay(value) {
                 <i class="bi bi-file-earmark-text fs-1 text-muted mb-3"></i>
                 <h5 class="mb-2">لا توجد عروض أسعار حتى الآن</h5>
                 <p class="text-muted">ابدأ بإنشاء أول عرض سعر من خلال الزر أدناه.</p>
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createQuotationModal">
+                <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#createQuotationModal">
                   <i class="bi bi-plus-circle me-1"></i> إضافة عرض سعر
                 </button>
                 </div>
@@ -275,7 +275,7 @@ function formatNumberDisplay(value) {
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-        <button type="button" class="btn btn-primary" onclick="saveEditQuotation()">حفظ التعديلات</button>
+        <button type="button" class="btn btn-outline-success" onclick="saveEditQuotation()">حفظ التعديلات</button>
       </div>
         </div>
     </div>

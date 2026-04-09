@@ -6,7 +6,6 @@ const { buildRawNumericMap, parseRawNumericMap, rawOrValue, normalizeRawNumeric 
 
 const INVENTORY_RAW_FIELDS = [
     'base_quantity',
-    'current_quantity',
     'sample_weight',
     'net_weight_total',
     'ph',
@@ -141,10 +140,14 @@ exports.getInventoryItem = async (req, res) => {
         `, [req.params.id]);
         const normalizedSales = sales.map((sale) => {
             const rawMap = parseRawNumericMap(sale.numeric_raw);
+            const hasQuantityRaw = Object.prototype.hasOwnProperty.call(rawMap, 'quantity');
+            const hasNetWeightRaw = Object.prototype.hasOwnProperty.call(rawMap, 'net_weight');
             return {
                 ...sale,
                 quantity: rawOrValue(rawMap, 'quantity', sale.quantity),
-                net_weight: rawOrValue(rawMap, 'net_weight', sale.net_weight)
+                quantity_is_raw: hasQuantityRaw,
+                net_weight: rawOrValue(rawMap, 'net_weight', sale.net_weight),
+                net_weight_is_raw: hasNetWeightRaw
             };
         });
 

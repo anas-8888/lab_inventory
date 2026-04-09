@@ -23,13 +23,13 @@
   --btn-soft-primary-border: #bfe8d1;
   --btn-soft-success-bg: #e8f7ed;
   --btn-soft-success-text: #f8f9f8;
-  --btn-soft-success-border: #bfe8cd;
+  --btn-soft-success-border: #000000;
   --btn-soft-danger-bg: #fdecec;
   --btn-soft-danger-text: #fffafc;
   --btn-soft-danger-border: #f7c9d3;
   --btn-soft-warning-bg: #fff8e7;
   --btn-soft-warning-text: #000000;
-  --btn-soft-warning-border: #f6e3b3;
+  --btn-soft-warning-border: #000000;
   --btn-soft-secondary-bg: #f1f5f9;
   --btn-soft-secondary-text: #e3eaf3;
   --btn-soft-secondary-border: #d9e2ec;
@@ -404,6 +404,21 @@ body {
   border-radius: 8px;
   font-size: 15px;
   font-weight: 600;
+}
+
+/* Inventory preview: make trash-transfer button match edit button size */
+.inventory-action-group .btn.btn-warning.delete-btn,
+.inventory-action-group .btn.btn-warning.trash-btn-fit {
+  min-width: 110px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
 }
 
 .inventory-action-group .btn.btn-danger {
@@ -838,6 +853,33 @@ a.btn.btn-primary[href="/costs/cost-statement"]:focus {
   color: #ffffff !important;
 }
 
+/* Costs deleted basket button: keep same color on hover/focus */
+a.btn.btn-outline-danger[href="/costs/cost-statement/deleted"],
+a.btn.btn-outline-danger[href="/costs/cost-statement/deleted"]:hover,
+a.btn.btn-outline-danger[href="/costs/cost-statement/deleted"]:focus {
+  color: #7a1313 !important;
+  background-color: #fff9fa !important;
+  border-color: #7a1313 !important;
+}
+
+/* Empty trash button: keep same color on hover/focus */
+#emptyTrashBtn.btn.btn-outline-danger,
+#emptyTrashBtn.btn.btn-outline-danger:hover,
+#emptyTrashBtn.btn.btn-outline-danger:focus {
+  color: #7a1313 !important;
+  background-color: #fff9fa !important;
+  border-color: #7a1313 !important;
+}
+
+/* Users delete button: keep same color on hover/focus */
+.users-delete-btn.btn.btn-outline-danger,
+.users-delete-btn.btn.btn-outline-danger:hover,
+.users-delete-btn.btn.btn-outline-danger:focus {
+  color: #7a1313 !important;
+  background-color: #fff9fa !important;
+  border-color: #7a1313 !important;
+}
+
 #whatsappNotesListShareBtn {
   background-color: #2e7d32;
   border-color: #2e7d32;
@@ -862,6 +904,78 @@ a.btn.btn-primary[href="/costs/cost-statement"]:focus {
   background-color: #1b5e20;
   border-color: #1b5e20;
   color: #ffffff !important;
+}
+
+/* Invoices create page: match export button color */
+.invoice-create-export-btn {
+  background-color: #2e7d32 !important;
+  border-color: #2e7d32 !important;
+  color: #ffffff !important;
+}
+
+.invoice-create-export-btn:hover,
+.invoice-create-export-btn:focus {
+  background-color: #1b5e20 !important;
+  border-color: #1b5e20 !important;
+  color: #ffffff !important;
+}
+
+/* Costs orders page: add-order button matches export styling */
+.costs-orders-export-btn {
+  background-color: #2e7d32 !important;
+  border-color: #2e7d32 !important;
+  color: #ffffff !important;
+}
+
+.costs-orders-export-btn:hover,
+.costs-orders-export-btn:focus {
+  background-color: #1b5e20 !important;
+  border-color: #1b5e20 !important;
+  color: #ffffff !important;
+}
+
+/* Costs order form buttons: keep title/icon white with outline-success */
+.order-form-success-btn,
+.order-form-success-btn i,
+.order-form-success-btn:hover,
+.order-form-success-btn:focus,
+.order-form-success-btn:hover i,
+.order-form-success-btn:focus i {
+  color: #ffffff !important;
+}
+
+/* Cost statement save button: force white title/icon */
+.material-save-btn,
+.material-save-btn i,
+.material-save-btn:hover,
+.material-save-btn:focus,
+.material-save-btn:hover i,
+.material-save-btn:focus i {
+  color: #ffffff !important;
+}
+
+/* Cost statement: keep "add additional expense" button color unchanged on hover */
+#addAdditionalExpenseBtn.btn.btn-outline-secondary,
+#addAdditionalExpenseBtn.btn.btn-outline-secondary:hover,
+#addAdditionalExpenseBtn.btn.btn-outline-secondary:focus,
+#editAddAdditionalExpenseBtn.btn.btn-outline-secondary,
+#editAddAdditionalExpenseBtn.btn.btn-outline-secondary:hover,
+#editAddAdditionalExpenseBtn.btn.btn-outline-secondary:focus {
+  color: #6c757d !important;
+  background-color: #ffffff !important;
+  border-color: #6c757d !important;
+}
+
+/* Cost statement: keep "add extra weight" button color unchanged on hover */
+#addExtraWeightBtn.btn.btn-outline-secondary,
+#addExtraWeightBtn.btn.btn-outline-secondary:hover,
+#addExtraWeightBtn.btn.btn-outline-secondary:focus,
+#editAddExtraWeightBtn.btn.btn-outline-secondary,
+#editAddExtraWeightBtn.btn.btn-outline-secondary:hover,
+#editAddExtraWeightBtn.btn.btn-outline-secondary:focus {
+  color: #6c757d !important;
+  background-color: #ffffff !important;
+  border-color: #6c757d !important;
 }
 
 .table-success {
@@ -984,8 +1098,13 @@ a.btn.btn-primary[href="/costs/cost-statement"]:focus {
 }
 
 .btn-outline-success {
+  color: #ffffff !important;
   border-color: var(--btn-soft-success-border) !important;
   background: #1b5e20 !important;
+}
+
+.btn-outline-success i {
+  color: #ffffff !important;
 }
 
 .btn-outline-danger {
@@ -1000,7 +1119,6 @@ a.btn.btn-primary[href="/costs/cost-statement"]:focus {
 }
 
 .btn-outline-secondary {
-  color: var(--btn-soft-secondary-text) !important;
   border-color: var(--btn-soft-secondary-border) !important;
   background: #ffffff !important;
 }
@@ -1016,6 +1134,13 @@ a.btn.btn-primary[href="/costs/cost-statement"]:focus {
 .btn-outline-secondary:hover,
 .btn-outline-secondary:focus {
   filter: none;
+}
+
+.btn-outline-success:hover,
+.btn-outline-success:focus,
+.btn-outline-success:hover i,
+.btn-outline-success:focus i {
+  color: #ffffff !important;
 }
 
 /* Form Controls */

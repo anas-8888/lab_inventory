@@ -5,7 +5,7 @@ const { v4: uuidv4 } = require('uuid');
 const moment = require('moment');
 const { normalizeRawNumeric, parseRawNumericMap, rawOrValue } = require('../utils/rawNumbers');
 
-const INVENTORY_RAW_FIELDS = ['base_quantity', 'current_quantity', 'sample_weight', 'net_weight_total', 'ph', 'peroxide_value', 'sigma_absorbance'];
+const INVENTORY_RAW_FIELDS = ['base_quantity', 'sample_weight', 'net_weight_total', 'ph', 'peroxide_value', 'sigma_absorbance'];
 const INVOICE_ITEM_RAW_FIELDS = ['quantity', 'price', 'net_weight', 'ph', 'peroxide_value', 'absorption_232', 'absorption_266', 'absorption_270', 'absorption_274', 'delta_k'];
 const INVOICE_RAW_FIELDS = ['total_amount', 'avg_ph', 'avg_peroxide', 'avg_232', 'avg_270', 'avg_delta_k', 'total_quantity_tanks', 'total_quantity_liters'];
 
@@ -377,6 +377,8 @@ exports.createInvoice = async (req, res) => {
                 const inventoryRawMap = parseRawNumericMap(inventoryItem.numeric_raw);
                 const invoiceItemRawMap = {};
                 if (quantityRaw !== null) invoiceItemRawMap.quantity = quantityRaw;
+                const netWeightRaw = normalizeRawNumeric(String(netWeight));
+                if (netWeightRaw !== null) invoiceItemRawMap.net_weight = netWeightRaw;
                 const phRaw = normalizeRawNumeric(rawOrValue(inventoryRawMap, 'ph', inventoryItem.ph));
                 if (phRaw !== null) invoiceItemRawMap.ph = phRaw;
                 const peroxideRaw = normalizeRawNumeric(rawOrValue(inventoryRawMap, 'peroxide_value', inventoryItem.peroxide_value));
@@ -677,7 +679,7 @@ exports.getEditForm = async (req, res) => {
             const invRawMap = parseRawNumericMap(item.inventory_numeric_raw);
             return {
                 ...withRaw,
-                available_quantity: rawOrValue(invRawMap, 'current_quantity', withRaw.available_quantity)
+                available_quantity: withRaw.available_quantity
             };
         });
 
@@ -865,6 +867,8 @@ exports.updateInvoice = async (req, res) => {
                 const inventoryRawMap = parseRawNumericMap(inventoryItem.numeric_raw);
                 const invoiceItemRawMap = {};
                 if (quantityRaw !== null) invoiceItemRawMap.quantity = quantityRaw;
+                const netWeightRaw = normalizeRawNumeric(String(netWeight));
+                if (netWeightRaw !== null) invoiceItemRawMap.net_weight = netWeightRaw;
                 const phRaw = normalizeRawNumeric(rawOrValue(inventoryRawMap, 'ph', inventoryItem.ph));
                 if (phRaw !== null) invoiceItemRawMap.ph = phRaw;
                 const peroxideRaw = normalizeRawNumeric(rawOrValue(inventoryRawMap, 'peroxide_value', inventoryItem.peroxide_value));

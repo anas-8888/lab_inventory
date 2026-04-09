@@ -24,6 +24,17 @@ function formatTotalDisplay(value) {
     const out = grouped + (fracPart ? `.${fracPart}` : '');
     return neg ? ('\u200E-' + out) : out;
 }
+function formatFixed3Display(value) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return '0.000';
+    const fixed = num.toFixed(3);
+    const neg = fixed.startsWith('-');
+    const clean = neg ? fixed.slice(1) : fixed;
+    const [intPart, fracPart] = clean.split('.');
+    const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const out = `${grouped}.${fracPart}`;
+    return neg ? ('\u200E-' + out) : out;
+}
 
 // دالة لتنسيق التاريخ باللغة الإنجليزية
 function formatDateEnglish(dateString) {
@@ -46,6 +57,12 @@ function convertToArabicNumbers(num) {
     const arabicNumbers = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
     return num.toString().split('').map(d => arabicNumbers[parseInt(d)] || d).join('');
 }
+
+const netWeightTotalNumeric = Number(item.net_weight_total) || 0;
+const baseQuantityNumeric = Number(item.base_quantity) || 0;
+const currentQuantityNumeric = Number(item.current_quantity) || 0;
+const unitNetWeight = netWeightTotalNumeric / (baseQuantityNumeric || 1);
+const currentNetWeight = unitNetWeight * currentQuantityNumeric;
 %>
 
 
@@ -59,7 +76,7 @@ function convertToArabicNumbers(num) {
                          <a href="/inventory" class="btn btn-sm btn-secondary" title="العودة للمخزون">
                             <i class="fas fa-arrow-left"></i> العودة
                         </a>
-                        <% if (user && user.role === 'editor' && !item.deleted_at) { %>
+                        <% if (user && (user.role === 'editor' || user.role === 'admin') && !item.deleted_at) { %>
                             <a href="/inventory/<%= item.id %>/edit" class="btn btn-sm btn-secondary" title="تعديل">
                                 <i class="fas fa-edit"></i> تعديل
                             </a>
@@ -67,15 +84,15 @@ function convertToArabicNumbers(num) {
                         <button type="button" class="btn btn-sm btn-primary" id="printBtn" title="طباعة">
                             <i class="fas fa-print"></i> طباعة
                         </button>
-                        <% if (item.deleted_at && user && user.role === 'editor') { %>
+                        <% if (item.deleted_at && user && (user.role === 'editor' || user.role === 'admin')) { %>
                             <button class="btn btn-sm btn-danger delete-btn" id="restoreBtn"><i class="fas fa-undo"></i> استعادة العينة</button>
                         <% } %>
-                        <% if (user && user.role === 'editor') { %>
-                            <button type="button" class="btn btn-sm btn-warning delete-btn" 
+                        <% if (user && (user.role === 'editor' || user.role === 'admin')) { %>
+                            <button type="button" class="btn btn-sm btn-warning delete-btn trash-btn-fit" 
                                     data-id="<%= item.id %>" 
                                     data-sample="<%= item.sample_number %>"
-                                    title="نقل إلى سلة المحذوفات">
-                                <i class="fas fa-archive"></i> نقل إلى سلة المحذوفات
+                                    title="حذف">
+                                <i class="fas fa-archive"></i> حذف
                             </button>
                         <% } %>
                     </div>
@@ -122,7 +139,7 @@ function convertToArabicNumbers(num) {
                                     </div>
                                     <div class="mb-3">
                                         <label class="text-muted small">الوزن الصافي الأساسي</label>
-                                        <p class="mb-2 fw-bold"><%= formatNumberDisplay(item.net_weight_total) %></p>
+                                        <p class="mb-2 fw-bold"><%= formatTotalDisplay(netWeightTotalNumeric) %></p>
                                     </div>
                                     <div class="mb-3">
                                         <label class="text-muted small">الكمية الحالية (تنكة)</label>
@@ -130,7 +147,7 @@ function convertToArabicNumbers(num) {
                                     </div>
                                     <div class="mb-3">
                                         <label class="text-muted small">الوزن الصافي الحالي</label>
-                                        <p class="mb-2 fw-bold"><%= formatNumberDisplay((item.net_weight_total/(item.base_quantity ? item.base_quantity : 1))*item.current_quantity) %></p>
+                                        <p class="mb-2 fw-bold"><%= formatTotalDisplay(currentNetWeight) %></p>
                                     </div>
                                 </div>
                             </div>
@@ -245,7 +262,7 @@ function convertToArabicNumbers(num) {
                                             <td><%= formatDateEnglish(sale.date) %></td>
                                             <td><%= sale.customer_name %></td>
                                             <td><%= formatNumberDisplay(sale.quantity) %></td>
-                                            <td><%= formatNumberDisplay((item.net_weight_total/(item.base_quantity ? item.base_quantity : 1))*sale.quantity) %></td>
+                                            <td><%= formatFixed3Display(sale.net_weight) %></td>
                                             <td><%= sale.driver_name || '-' %></td>
                                             <td>
                                                 <a href="/invoices/<%= sale.invoice_id %>" 
@@ -262,7 +279,7 @@ function convertToArabicNumbers(num) {
                                     <tr>
                                         <td colspan="3" class="text-start"><strong>المجموع:</strong></td>
                                         <td><strong><%= formatTotalDisplay(sales.reduce((sum, sale) => sum + parseFloat(sale.quantity), 0)) %></strong></td>
-                                        <td><strong><%= formatTotalDisplay(sales.reduce((sum, sale) => sum + parseFloat((item.net_weight_total/(item.base_quantity ? item.base_quantity : 1))*sale.quantity), 0)) %></strong></td>
+                                        <td><strong><%= formatFixed3Display(sales.reduce((sum, sale) => sum + (Number(sale.net_weight) || 0), 0)) %></strong></td>
                                         <td colspan="2"></td>
                                     </tr>
                                 </tfoot>
@@ -352,11 +369,11 @@ function convertToArabicNumbers(num) {
                 <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">وزن العينة</td>
                 <td style="padding: 8px; border: 1px solid #ddd;"><%= formatNumberDisplay(item.sample_weight) %></td>
                 <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">الوزن الصافي الأساسي</td>
-                <td style="padding: 8px; border: 1px solid #ddd;"><%= formatNumberDisplay(item.net_weight_total) %></td>
+                <td style="padding: 8px; border: 1px solid #ddd;"><%= formatTotalDisplay(netWeightTotalNumeric) %></td>
             </tr>
             <tr>
                 <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">الوزن الصافي الحالي</td>
-                <td style="padding: 8px; border: 1px solid #ddd;" colspan="3"><%= formatNumberDisplay((item.net_weight_total/(item.base_quantity ? item.base_quantity : 1))*item.current_quantity) %></td>
+                <td style="padding: 8px; border: 1px solid #ddd;" colspan="3"><%= formatTotalDisplay(currentNetWeight) %></td>
             </tr>
         </table>
 
@@ -448,7 +465,6 @@ function convertToArabicNumbers(num) {
     .reject-btn.rejected {
         color: #28a745;
     }
-    
     /* Print Styles */
     @media print {
         .d-print-none {
@@ -621,7 +637,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Re-enable button
                     this.disabled = false;
-                    this.innerHTML = '<i class="fas fa-archive"></i> نقل إلى سلة المحذوفات';
+                    this.innerHTML = '<i class="fas fa-archive"></i> حذف';
                 });
             }
         });
