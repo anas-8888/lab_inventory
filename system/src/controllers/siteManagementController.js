@@ -94,6 +94,12 @@ function normalizeLegacyImagePath(rawPath) {
   return value;
 }
 
+function isSameAssetPath(a, b) {
+  const left = t(a).replace(/\/+$/, '');
+  const right = t(b).replace(/\/+$/, '');
+  return Boolean(left) && Boolean(right) && left === right;
+}
+
 function buildMinimalContent(rawContent, fallbackUpdatedBy = '') {
   const content = rawContent && typeof rawContent === 'object' ? rawContent : {};
   const sections = normalizeProductSections(content);
@@ -348,20 +354,6 @@ function buildContentFromFriendlyForm(body) {
 }
 
 function applyUploadedImages(contentObj, body, files) {
-  const removeOldWebsiteImage = (rawUrl) => {
-    const value = t(rawUrl);
-    if (!value || !value.startsWith('/public/website_images/')) return;
-    const normalized = path.normalize(value.replace(/^\/+/, ''));
-    const fullPath = path.join(__dirname, '..', normalized);
-    const websiteImagesRoot = path.join(__dirname, '../public/website_images');
-    if (!fullPath.startsWith(path.normalize(websiteImagesRoot))) return;
-    try {
-      if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
-    } catch (_) {
-      // Ignore file cleanup errors.
-    }
-  };
-
   const setImage = (fieldName, apply) => {
     const file = findFile(files, fieldName);
     if (file) apply(`/public/website_images/${file.filename}`);
@@ -386,6 +378,45 @@ function applyUploadedImages(contentObj, body, files) {
         removeOldWebsiteImage(sectionItems[index].image);
         sectionItems[index].image = `/public/website_images/${f.filename}`;
       });
+  });
+}
+
+function removeOldWebsiteImage(rawUrl) {
+  const value = t(rawUrl);
+  if (!value || !value.startsWith('/public/website_images/')) return;
+  const normalized = path.normalize(value.replace(/^\/+/, ''));
+  const fullPath = path.join(__dirname, '..', normalized);
+  const websiteImagesRoot = path.join(__dirname, '../public/website_images');
+  if (!fullPath.startsWith(path.normalize(websiteImagesRoot))) return;
+  try {
+    if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+  } catch (_) {
+    // Ignore file cleanup errors.
+  }
+}
+
+function collectProductWebsiteImages(contentObj) {
+  const sections = normalizeProductSections(contentObj);
+  const images = new Set();
+  PRODUCT_SECTION_DEFS.forEach((def) => {
+    const sectionItems = Array.isArray(sections?.[def.key]?.items) ? sections[def.key].items : [];
+    sectionItems.forEach((item) => {
+      const image = t(item?.image);
+      if (image && image.startsWith('/public/website_images/')) {
+        images.add(image);
+      }
+    });
+  });
+  return images;
+}
+
+function cleanupRemovedProductImages(oldContentObj, nextContentObj) {
+  const oldImages = collectProductWebsiteImages(oldContentObj);
+  const nextImages = collectProductWebsiteImages(nextContentObj);
+  oldImages.forEach((imagePath) => {
+    if (!nextImages.has(imagePath)) {
+      removeOldWebsiteImage(imagePath);
+    }
   });
 }
 
@@ -426,6 +457,8 @@ async function loadPublicContentSnapshot(req) {
 function buildPublicSections(req, contentObj) {
   const rawSections = normalizeProductSections(contentObj);
   const sections = {};
+  const defaultProductImageRaw = '/public/images/defult.png';
+  const logoRaw = normalizeLegacyImagePath(contentObj?.branding?.logo?.url);
 
   PRODUCT_SECTION_DEFS.forEach((def) => {
     const section = rawSections?.[def.key] || {};
@@ -442,32 +475,38 @@ function buildPublicSections(req, contentObj) {
         ar: typeof cat === 'string' ? t(cat) : t(cat?.ar),
         en: typeof cat === 'string' ? '' : t(cat?.en)
       })),
-      items: items.map((item, index) => ({
-        id: t(item?.id) || String(index + 1),
-        category: {
-          ar: t(item?.category?.ar || item?.category),
-          en: t(item?.category?.en)
-        },
-        name: {
-          ar: t(item?.name?.ar),
-          en: t(item?.name?.en)
-        },
-        description: {
-          ar: t(item?.description?.ar),
-          en: t(item?.description?.en)
-        },
-        features: Array.isArray(item?.features)
-          ? item.features
-              .map((feature) => ({
-                ar: t(feature?.ar),
-                en: t(feature?.en)
-              }))
-              .filter((feature) => feature.ar || feature.en)
-          : [],
-        acidity: t(item?.acidity),
-        image_url: toPublicAssetUrl(req, normalizeLegacyImagePath(item?.image)),
-        image_raw: normalizeLegacyImagePath(item?.image)
-      }))
+      items: items.map((item, index) => {
+        const explicitImageCandidate = normalizeLegacyImagePath(item?.image);
+        const explicitImageRaw = isSameAssetPath(explicitImageCandidate, logoRaw) ? '' : explicitImageCandidate;
+        const imageRaw = explicitImageRaw || defaultProductImageRaw;
+        return {
+          id: t(item?.id) || String(index + 1),
+          category: {
+            ar: t(item?.category?.ar || item?.category),
+            en: t(item?.category?.en)
+          },
+          name: {
+            ar: t(item?.name?.ar),
+            en: t(item?.name?.en)
+          },
+          description: {
+            ar: t(item?.description?.ar),
+            en: t(item?.description?.en)
+          },
+          features: Array.isArray(item?.features)
+            ? item.features
+                .map((feature) => ({
+                  ar: t(feature?.ar),
+                  en: t(feature?.en)
+                }))
+                .filter((feature) => feature.ar || feature.en)
+            : [],
+          acidity: t(item?.acidity),
+          image_url: toPublicAssetUrl(req, imageRaw),
+          image_raw: imageRaw,
+          image_is_default_fallback: !explicitImageRaw
+        };
+      })
     };
   });
 
@@ -807,6 +846,7 @@ exports.updateSiteContent = async (req, res) => {
     contentObj.updatedBy = req.session.user?.email || req.session.user?.username || t(contentObj.updatedBy);
     ensureSingleImagePerProduct(req.files || []);
     applyUploadedImages(contentObj, req.body, req.files || []);
+    cleanupRemovedProductImages(existingContentObj, contentObj);
 
     await req.db.query(
       `UPDATE website_content

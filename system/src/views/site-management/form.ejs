@@ -5,10 +5,11 @@
     { key: 'agri_crops', label: 'المحاصيل الزراعية' }
   ];
   const productSections = formData.productSections || {};
+  const defaultProductImage = '/public/images/defult.png';
   const inboxMessages = Array.isArray(locals.inboxMessages) ? locals.inboxMessages : [];
 %>
 
-<div class="container mt-4">
+<div id="siteManagementRoot" class="container mt-4" data-base-url="<%= baseUrl || '' %>">
   <style>
     .site-image-preview { width: 100%; max-width: 200px; height: 130px; object-fit: cover; border: 1px solid #dee2e6; border-radius: 8px; margin-top: 8px; background: #f8f9fa; }
     .product-row-card { border: 1px solid #e9ecef; border-radius: 10px; padding: 14px; margin-bottom: 10px; background: #fff; }
@@ -33,6 +34,12 @@
     .product-card-item { border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
     .product-card-click { cursor: pointer; background: #fff; }
     .product-thumb { width: 90px; height: 90px; object-fit: cover; border-radius: 10px; border: 1px solid #e5e7eb; background: #f8f9fa; }
+    .product-thumb.logo-fallback {
+      object-fit: contain;
+      padding: 8px;
+      background: linear-gradient(135deg, #f5f7f8 0%, #e9f5ee 100%);
+      border-color: #cfe8d9;
+    }
     .product-card-title { font-weight: 700; margin-bottom: 2px; }
     .product-card-sub { color: #6c757d; font-size: 13px; margin-bottom: 2px; }
     .product-card-foot { background: #f8fafc; border-top: 1px solid #e5e7eb; }
@@ -72,6 +79,15 @@
     .product-image-preview-modal .modal-content { border-radius: 14px; overflow: hidden; }
     .product-image-preview-modal .modal-body { padding: 0.75rem; text-align: center; background: #f8f9fa; }
     .product-image-preview-modal img { max-width: 100%; max-height: 78vh; width: auto; height: auto; border-radius: 8px; object-fit: contain; }
+    #pm_remove_image_btn,
+    #pm_remove_image_btn:hover,
+    #pm_remove_image_btn:focus,
+    #pm_remove_image_btn:active {
+      color: var(--bs-danger);
+      background-color: transparent;
+      border-color: var(--bs-danger);
+      box-shadow: none;
+    }
   </style>
 
   <div class="d-flex justify-content-between align-items-center mb-3">
@@ -180,14 +196,14 @@
                             </tr>
                           </thead>
                           <tbody id="<%= def.key %>_products_container">
-                        <% items.forEach((p, idx) => { %>
+                        <% items.forEach((p, idx) => { const productImageSrc = p.current_image || defaultProductImage; const isDefaultFallback = !p.current_image; %>
                           <tr class="product-row" data-section="<%= def.key %>" draggable="false">
                             <td>
                               <button type="button" class="btn btn-sm btn-light border drag-handle-btn" title="سحب لإعادة الترتيب" aria-label="سحب لإعادة الترتيب">
                                 <i class="bi bi-grip-vertical"></i>
                               </button>
                             </td>
-                            <td><img class="product-thumb js-card-image" src="<%= p.current_image || '/public/img/placeholder-image.png' %>" alt="product-image"></td>
+                            <td><img class="product-thumb js-card-image <%= isDefaultFallback ? 'logo-fallback' : '' %>" src="<%= productImageSrc %>" alt="product-image"></td>
                             <td class="js-name-ar"><%= p.name_ar || 'منتج بدون اسم' %></td>
                             <td class="js-name-en"><%= p.name_en || '-' %></td>
                             <td class="js-category-ar"><%= p.category_ar || '-' %></td>
@@ -333,10 +349,13 @@
                 </select>
               </div>
               <div class="col-md-6">
-                <label class="form-label fw-semibold">صورة المنتج</label>
+                <label class="form-label fw-semibold">صورة المنتج (اختياري)</label>
                 <input id="pm_image_input" class="form-control" type="file" accept="image/*">
                 <img id="pm_image_preview" src="" class="product-modal-image-preview mt-2 d-none" alt="product-image-preview">
-                <div id="pm_image_hint" class="small text-muted mt-1">يمكنك تغيير الصورة من هنا.</div>
+                <div id="pm_image_hint" class="small text-muted mt-1">اختياري: يمكنك رفع صورة للمنتج أو تركه بدون صورة.</div>
+                <button type="button" id="pm_remove_image_btn" class="btn btn-sm btn-outline-danger mt-2 d-none">
+                  <i class="bi bi-trash"></i> حذف الصورة
+                </button>
               </div>
             </div>
           </div>
@@ -468,7 +487,7 @@
 
 <script>
 (() => {
-  const appBaseUrl = <%- JSON.stringify(baseUrl || '') %>;
+  const appBaseUrl = document.getElementById('siteManagementRoot')?.dataset?.baseUrl || '';
   const addRow = (container, html) => container.insertAdjacentHTML('beforeend', html);
   const placeholderSvg = `data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="90" height="90"><rect width="100%" height="100%" fill="#f1f3f5"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#777777" font-size="12">No Image</text></svg>')}`;
   const siteTabsElement = document.getElementById('siteTabs');
@@ -482,6 +501,7 @@
   const pmImageInput = document.getElementById('pm_image_input');
   const pmImagePreview = document.getElementById('pm_image_preview');
   const pmImageHint = document.getElementById('pm_image_hint');
+  const pmRemoveImageBtn = document.getElementById('pm_remove_image_btn');
   const pmCategorySelect = document.getElementById('pm_category_select');
   const categoriesModalElement = document.getElementById('categoriesModal');
   const categoriesModal = categoriesModalElement ? new bootstrap.Modal(categoriesModalElement) : null;
@@ -498,6 +518,7 @@
   const confirmDeleteTitle = document.getElementById('confirmDeleteTitle');
   const confirmDeleteMessage = document.getElementById('confirmDeleteMessage');
   const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+  const defaultProductImagePath = '/public/images/defult.png';
   const categoriesModalTitle = document.getElementById('categoriesModalTitle');
   const categoryArInput = document.getElementById('categoryArInput');
   const categoryEnInput = document.getElementById('categoryEnInput');
@@ -513,6 +534,7 @@
   let activeCategorySectionKey = null;
   let activeCategoryIndex = null;
   let formSubmitInProgress = false;
+  let removeCurrentProductImage = false;
 
   function getProductsUiState() {
     try {
@@ -583,6 +605,33 @@
     if (input) input.value = value || '';
   }
 
+  function getDefaultProductImage() {
+    return defaultProductImagePath;
+  }
+
+  function setProductThumbImage(imgEl, imageSrc, isLogoFallback = false) {
+    if (!imgEl) return;
+    imgEl.src = imageSrc || placeholderSvg;
+    imgEl.classList.toggle('logo-fallback', Boolean(isLogoFallback));
+  }
+
+  function setProductEditorImagePreview(imageSrc, options = {}) {
+    const { allowRemove = false, isLogoFallback = false } = options;
+    if (!pmImagePreview) return;
+    if (imageSrc) {
+      pmImagePreview.src = imageSrc;
+      pmImagePreview.classList.remove('d-none');
+      pmImagePreview.classList.toggle('logo-fallback', Boolean(isLogoFallback));
+      if (pmImageHint) pmImageHint.classList.add('d-none');
+    } else {
+      pmImagePreview.removeAttribute('src');
+      pmImagePreview.classList.add('d-none');
+      pmImagePreview.classList.remove('logo-fallback');
+      if (pmImageHint) pmImageHint.classList.remove('d-none');
+    }
+    pmRemoveImageBtn?.classList.toggle('d-none', !allowRemove);
+  }
+
   function updateProductCardSummary(card) {
     const nameAr = readField(card, 'name_ar') || 'منتج بدون اسم';
     const nameEn = readField(card, 'name_en') || '-';
@@ -591,7 +640,9 @@
     const descriptionEn = readField(card, 'description_en') || '-';
     const featuresAr = readField(card, 'features_ar') || '-';
     const featuresEn = readField(card, 'features_en') || '-';
-    const image = readField(card, 'current_image') || placeholderSvg;
+    const rawCurrentImage = readField(card, 'current_image');
+    const hasRealImage = Boolean(rawCurrentImage);
+    const image = hasRealImage ? rawCurrentImage : getDefaultProductImage();
 
     const nameArEl = card.querySelector('.js-name-ar');
     const nameEnEl = card.querySelector('.js-name-en');
@@ -609,7 +660,7 @@
     if (descEnEl) descEnEl.textContent = descriptionEn;
     if (featuresArEl) featuresArEl.textContent = featuresAr;
     if (featuresEnEl) featuresEnEl.textContent = featuresEn;
-    if (imgEl) imgEl.src = image;
+    setProductThumbImage(imgEl, image, !hasRealImage);
   }
 
   function getSelectedProductCategory() {
@@ -665,18 +716,13 @@
     document.getElementById('pm_description_en').value = readField(card, 'description_en');
     document.getElementById('pm_features_ar').value = readField(card, 'features_ar');
     document.getElementById('pm_features_en').value = readField(card, 'features_en');
+    removeCurrentProductImage = false;
     if (pmImageInput) pmImageInput.value = '';
     const currentImage = readField(card, 'current_image');
-    if (pmImagePreview) {
-      if (currentImage) {
-        pmImagePreview.src = currentImage;
-        pmImagePreview.classList.remove('d-none');
-        if (pmImageHint) pmImageHint.classList.add('d-none');
-      } else {
-        pmImagePreview.removeAttribute('src');
-        pmImagePreview.classList.add('d-none');
-        if (pmImageHint) pmImageHint.classList.remove('d-none');
-      }
+    if (currentImage) {
+      setProductEditorImagePreview(currentImage, { allowRemove: true, isLogoFallback: false });
+    } else {
+      setProductEditorImagePreview('', { allowRemove: false, isLogoFallback: false });
     }
 
     productEditorModal.show();
@@ -697,12 +743,9 @@
     document.getElementById('pm_description_en').value = '';
     document.getElementById('pm_features_ar').value = '';
     document.getElementById('pm_features_en').value = '';
+    removeCurrentProductImage = false;
     if (pmImageInput) pmImageInput.value = '';
-    if (pmImagePreview) {
-      pmImagePreview.removeAttribute('src');
-      pmImagePreview.classList.add('d-none');
-    }
-    if (pmImageHint) pmImageHint.classList.remove('d-none');
+    setProductEditorImagePreview('', { allowRemove: false, isLogoFallback: false });
 
     productEditorModal.show();
   }
@@ -710,7 +753,9 @@
   function createProductCardFromValues(sectionKey, values) {
     const container = document.getElementById(`${sectionKey}_products_container`);
     if (!container) return null;
-    const html = `<tr class="product-row" data-section="${sectionKey}" draggable="false"><td><button type="button" class="btn btn-sm btn-light border drag-handle-btn" title="سحب لإعادة الترتيب" aria-label="سحب لإعادة الترتيب"><i class="bi bi-grip-vertical"></i></button></td><td><img class="product-thumb js-card-image" src="${placeholderSvg}" alt="product-image"></td><td class="js-name-ar">منتج جديد</td><td class="js-name-en">-</td><td class="js-category-ar">-</td><td class="js-description-ar product-long-cell">-</td><td class="js-description-en product-long-cell">-</td><td class="js-features-ar product-long-cell">-</td><td class="js-features-en product-long-cell">-</td><td><div class="d-flex gap-1"><button type="button" class="btn btn-sm btn-outline-primary js-edit-product" title="تعديل المنتج" aria-label="تعديل المنتج"><i class="bi bi-pencil-square"></i></button><button type="button" class="btn btn-sm btn-outline-secondary duplicate-product-btn" title="استنساخ المنتج" aria-label="استنساخ المنتج"><i class="bi bi-files"></i></button><button type="button" class="btn btn-sm btn-outline-danger product-delete-btn" title="حذف المنتج" aria-label="حذف المنتج"><i class="bi bi-trash"></i></button></div><input type="hidden" data-field="id" name="${sectionKey}_product_id" value=""><input type="hidden" data-field="category_ar" name="${sectionKey}_product_category_ar" value=""><input type="hidden" data-field="category_en" name="${sectionKey}_product_category_en" value=""><input type="hidden" data-field="name_ar" name="${sectionKey}_product_name_ar" value=""><input type="hidden" data-field="name_en" name="${sectionKey}_product_name_en" value=""><textarea class="d-none" data-field="description_ar" name="${sectionKey}_product_description_ar"></textarea><textarea class="d-none" data-field="description_en" name="${sectionKey}_product_description_en"></textarea><textarea class="d-none" data-field="features_ar" name="${sectionKey}_product_features_ar"></textarea><textarea class="d-none" data-field="features_en" name="${sectionKey}_product_features_en"></textarea><input class="d-none section-product-image-input" type="file" accept="image/*"><input type="hidden" data-field="current_image" name="${sectionKey}_current_product_image" value=""></td></tr>`;
+    const defaultImageSrc = getDefaultProductImage();
+    const thumbClass = 'product-thumb js-card-image logo-fallback';
+    const html = `<tr class="product-row" data-section="${sectionKey}" draggable="false"><td><button type="button" class="btn btn-sm btn-light border drag-handle-btn" title="سحب لإعادة الترتيب" aria-label="سحب لإعادة الترتيب"><i class="bi bi-grip-vertical"></i></button></td><td><img class="${thumbClass}" src="${defaultImageSrc}" alt="product-image"></td><td class="js-name-ar">منتج جديد</td><td class="js-name-en">-</td><td class="js-category-ar">-</td><td class="js-description-ar product-long-cell">-</td><td class="js-description-en product-long-cell">-</td><td class="js-features-ar product-long-cell">-</td><td class="js-features-en product-long-cell">-</td><td><div class="d-flex gap-1"><button type="button" class="btn btn-sm btn-outline-primary js-edit-product" title="تعديل المنتج" aria-label="تعديل المنتج"><i class="bi bi-pencil-square"></i></button><button type="button" class="btn btn-sm btn-outline-secondary duplicate-product-btn" title="استنساخ المنتج" aria-label="استنساخ المنتج"><i class="bi bi-files"></i></button><button type="button" class="btn btn-sm btn-outline-danger product-delete-btn" title="حذف المنتج" aria-label="حذف المنتج"><i class="bi bi-trash"></i></button></div><input type="hidden" data-field="id" name="${sectionKey}_product_id" value=""><input type="hidden" data-field="category_ar" name="${sectionKey}_product_category_ar" value=""><input type="hidden" data-field="category_en" name="${sectionKey}_product_category_en" value=""><input type="hidden" data-field="name_ar" name="${sectionKey}_product_name_ar" value=""><input type="hidden" data-field="name_en" name="${sectionKey}_product_name_en" value=""><textarea class="d-none" data-field="description_ar" name="${sectionKey}_product_description_ar"></textarea><textarea class="d-none" data-field="description_en" name="${sectionKey}_product_description_en"></textarea><textarea class="d-none" data-field="features_ar" name="${sectionKey}_product_features_ar"></textarea><textarea class="d-none" data-field="features_en" name="${sectionKey}_product_features_en"></textarea><input class="d-none section-product-image-input" type="file" accept="image/*"><input type="hidden" data-field="current_image" name="${sectionKey}_current_product_image" value=""></td></tr>`;
     addRow(container, html);
     const newCard = container.querySelector('tr.product-row:last-child');
     if (!newCard) return null;
@@ -771,6 +816,11 @@
       writeField(activeProductCard, 'description_en', values.description_en);
       writeField(activeProductCard, 'features_ar', values.features_ar);
       writeField(activeProductCard, 'features_en', values.features_en);
+      if (removeCurrentProductImage) {
+        const rowImageInput = activeProductCard.querySelector('.section-product-image-input');
+        if (rowImageInput) rowImageInput.value = '';
+        writeField(activeProductCard, 'current_image', '');
+      }
       if (pmImageInput?.files?.[0]) {
         const rowImageInput = activeProductCard.querySelector('.section-product-image-input');
         if (rowImageInput) {
@@ -1171,17 +1221,28 @@
 
   pmImageInput?.addEventListener('change', () => {
     const file = pmImageInput.files?.[0];
-    if (!pmImagePreview) return;
     if (!file) {
-      pmImagePreview.removeAttribute('src');
-      pmImagePreview.classList.add('d-none');
-      if (pmImageHint) pmImageHint.classList.remove('d-none');
+      if (activeProductCard) {
+        const existingImage = readField(activeProductCard, 'current_image');
+        if (existingImage) {
+          setProductEditorImagePreview(existingImage, { allowRemove: true, isLogoFallback: false });
+        } else {
+          setProductEditorImagePreview('', { allowRemove: false, isLogoFallback: false });
+        }
+      } else {
+        setProductEditorImagePreview('', { allowRemove: false, isLogoFallback: false });
+      }
       return;
     }
+    removeCurrentProductImage = false;
     const objectUrl = URL.createObjectURL(file);
-    pmImagePreview.src = objectUrl;
-    pmImagePreview.classList.remove('d-none');
-    if (pmImageHint) pmImageHint.classList.add('d-none');
+    setProductEditorImagePreview(objectUrl, { allowRemove: true, isLogoFallback: false });
+  });
+
+  pmRemoveImageBtn?.addEventListener('click', () => {
+    removeCurrentProductImage = true;
+    if (pmImageInput) pmImageInput.value = '';
+    setProductEditorImagePreview('', { allowRemove: false, isLogoFallback: false });
   });
 
   document.addEventListener('click', (e) => {
