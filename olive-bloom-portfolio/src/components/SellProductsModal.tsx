@@ -34,10 +34,6 @@ const SellProductsModal = ({ open, onOpenChange }: SellProductsModalProps) => {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isSubmitting) return;
-    if (!photos.length) {
-      toast.error(t("sell.photo.hint"));
-      return;
-    }
 
     setIsSubmitting(true);
     try {
@@ -133,7 +129,6 @@ const SellProductsModal = ({ open, onOpenChange }: SellProductsModalProps) => {
                 id="sell-photos"
                 ref={fileInputRef}
                 type="file"
-                required
                 multiple
                 accept="image/*"
                 onChange={(event) => {

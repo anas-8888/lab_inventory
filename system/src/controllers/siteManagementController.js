@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { pool } = require('../database/db');
 
 const TEMPLATE_PATH = path.join(__dirname, '../../site-content-body.example.json');
 const PRODUCT_SECTION_DEFS = [
@@ -436,6 +437,132 @@ function ensureSingleImagePerProduct(files) {
   }
 }
 
+async function ensureContactInboxTables(db) {
+  await db.query(
+    `CREATE TABLE IF NOT EXISTS website_contact_messages (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      sender_name VARCHAR(191) NOT NULL,
+      sender_phone VARCHAR(100) NOT NULL,
+      message_text TEXT NOT NULL,
+      sender_ip VARCHAR(45) NULL,
+      user_agent TEXT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_wcm_created_at (created_at),
+      INDEX idx_wcm_sender_phone (sender_phone)
+    )`
+  );
+
+  await db.query(
+    `CREATE TABLE IF NOT EXISTS website_contact_attachments (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      message_id INT NOT NULL,
+      file_url VARCHAR(500) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_wca_message_id (message_id),
+      CONSTRAINT fk_wca_message_id
+        FOREIGN KEY (message_id) REFERENCES website_contact_messages(id)
+        ON DELETE CASCADE
+    )`
+  );
+}
+
+async function insertContactMessage(db, payload) {
+  const { senderName, senderPhone, normalizedMessageText, senderIp, userAgent } = payload;
+  const safeName = t(senderName).slice(0, 191) || 'غير محدد';
+  const safeMessage = t(normalizedMessageText).slice(0, 4000) || '-';
+  const safePhoneDigits = t(senderPhone).replace(/[^\d]/g, '').slice(0, 100) || '0';
+  const isLegacyCompatibleError = (error) => (
+    error &&
+    ['ER_BAD_FIELD_ERROR', 'ER_TRUNCATED_WRONG_VALUE_FOR_FIELD'].includes(error.code)
+  );
+
+  const insertModern = async () => db.query(
+    `INSERT INTO website_contact_messages
+     (sender_name, sender_phone, message_text, sender_ip, user_agent)
+     VALUES (?, ?, ?, ?, ?)`,
+    [senderName, senderPhone, normalizedMessageText, senderIp, userAgent]
+  );
+
+  const insertLegacy = async () => db.query(
+    `INSERT INTO website_contact_messages
+     (sender_name, sender_phone, message_text)
+     VALUES (?, ?, ?)`,
+    [senderName, senderPhone, normalizedMessageText]
+  );
+
+  const insertSuperLegacy = async () => db.query(
+    `INSERT INTO website_contact_messages
+     (sender_name, sender_phone, message_text)
+     VALUES (?, ?, ?)`,
+    [safeName, safePhoneDigits, safeMessage]
+  );
+
+  const insertUltraLegacy = async () => db.query(
+    `INSERT INTO website_contact_messages
+     (sender_name, sender_phone, message_text)
+     VALUES (?, ?, ?)`,
+    ['0', safePhoneDigits || '0', '0']
+  );
+
+  try {
+    const [modernResult] = await insertModern();
+    return modernResult;
+  } catch (firstError) {
+    if (isLegacyCompatibleError(firstError)) {
+      try {
+        const [legacyResult] = await insertLegacy();
+        return legacyResult;
+      } catch (legacyError) {
+        if (isLegacyCompatibleError(legacyError)) {
+          try {
+            const [superLegacyResult] = await insertSuperLegacy();
+            return superLegacyResult;
+          } catch (superLegacyError) {
+            if (isLegacyCompatibleError(superLegacyError)) {
+              const [ultraLegacyResult] = await insertUltraLegacy();
+              return ultraLegacyResult;
+            }
+            throw superLegacyError;
+          }
+        }
+        throw legacyError;
+      }
+    }
+
+    if (firstError && firstError.code === 'ER_NO_SUCH_TABLE') {
+      await ensureContactInboxTables(db);
+      try {
+        const [modernAfterCreate] = await insertModern();
+        return modernAfterCreate;
+      } catch (secondError) {
+        if (isLegacyCompatibleError(secondError)) {
+          try {
+            const [legacyAfterCreate] = await insertLegacy();
+            return legacyAfterCreate;
+          } catch (legacyAfterCreateError) {
+            if (isLegacyCompatibleError(legacyAfterCreateError)) {
+              try {
+                const [superLegacyAfterCreate] = await insertSuperLegacy();
+                return superLegacyAfterCreate;
+              } catch (superLegacyAfterCreateError) {
+                if (isLegacyCompatibleError(superLegacyAfterCreateError)) {
+                  const [ultraLegacyAfterCreate] = await insertUltraLegacy();
+                  return ultraLegacyAfterCreate;
+                }
+                throw superLegacyAfterCreateError;
+              }
+            }
+            throw legacyAfterCreateError;
+          }
+        }
+        throw secondError;
+      }
+    }
+
+    throw firstError;
+  }
+}
+
 async function loadPublicContentSnapshot(req) {
   const [rows] = await req.db.query(
     `SELECT id, site_id, content_json, updated_at
@@ -573,10 +700,12 @@ exports.getEditSiteContent = async (req, res) => {
 
 exports.createContactMessage = async (req, res) => {
   try {
-    const senderName = t(req.body.sender_name).slice(0, 191);
-    const senderPhone = t(req.body.sender_phone).slice(0, 100);
-    const messageText = t(req.body.message_text).slice(0, 4000);
-    const messageSource = t(req.body.message_source).slice(0, 100);
+    const db = req.db && typeof req.db.query === 'function' ? req.db : pool;
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const senderName = t(body.sender_name).slice(0, 191);
+    const senderPhone = t(body.sender_phone).slice(0, 100);
+    const messageText = t(body.message_text).slice(0, 4000);
+    const messageSource = t(body.message_source).slice(0, 100);
     const isSellProductsRequest = messageSource === 'sell_products_modal';
     const files = Array.isArray(req.files) ? req.files : [];
     const attachments = files
@@ -604,13 +733,6 @@ exports.createContactMessage = async (req, res) => {
       });
     }
 
-    if (isSellProductsRequest && attachments.length < 1) {
-      return res.status(400).json({
-        success: false,
-        message: 'يجب إرفاق صورة واحدة على الأقل'
-      });
-    }
-
     const normalizedMessageText = isSellProductsRequest
       ? (
           messageText
@@ -622,22 +744,30 @@ exports.createContactMessage = async (req, res) => {
     const senderIp = extractClientIp(req);
     const userAgent = t(req.headers['user-agent']).slice(0, 1000);
 
-    const [insertResult] = await req.db.query(
-      `INSERT INTO website_contact_messages
-       (sender_name, sender_phone, message_text, sender_ip, user_agent)
-       VALUES (?, ?, ?, ?, ?)`,
-      [senderName, senderPhone, normalizedMessageText, senderIp, userAgent]
-    );
+    const insertResult = await insertContactMessage(db, {
+      senderName,
+      senderPhone,
+      normalizedMessageText,
+      senderIp,
+      userAgent
+    });
 
     const messageId = insertResult.insertId;
 
     if (attachments.length) {
       const values = attachments.map((fileUrl) => [messageId, fileUrl]);
-      await req.db.query(
-        `INSERT INTO website_contact_attachments (message_id, file_url)
-         VALUES ?`,
-        [values]
-      );
+      try {
+        await db.query(
+          `INSERT INTO website_contact_attachments (message_id, file_url)
+           VALUES ?`,
+          [values]
+        );
+      } catch (attachmentError) {
+        // Keep the message saved even if old schemas do not have attachments table.
+        if (!(attachmentError && attachmentError.code === 'ER_NO_SUCH_TABLE')) {
+          throw attachmentError;
+        }
+      }
     }
 
     return res.status(201).json({
@@ -655,9 +785,21 @@ exports.createContactMessage = async (req, res) => {
     });
   } catch (error) {
     console.error('خطأ في استقبال رسالة التواصل:', error);
+    if (error && ['ER_TABLEACCESS_DENIED_ERROR', 'ER_DBACCESS_DENIED_ERROR', 'ER_ACCESS_DENIED_ERROR'].includes(error.code)) {
+      return res.status(500).json({
+        success: false,
+        message: 'تعذر حفظ الرسالة: صلاحيات قاعدة البيانات غير كافية.'
+      });
+    }
+    if (error && error.code === 'ER_NO_SUCH_TABLE') {
+      return res.status(500).json({
+        success: false,
+        message: 'تعذر حفظ الرسالة: جداول الرسائل غير مهيأة على الخادم.'
+      });
+    }
     return res.status(500).json({
       success: false,
-      message: 'تعذر حفظ الرسالة'
+      message: `تعذر حفظ الرسالة${error?.code ? `: ${error.code}` : ''}`
     });
   }
 };
