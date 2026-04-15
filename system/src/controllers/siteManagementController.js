@@ -466,6 +466,50 @@ async function ensureContactInboxTables(db) {
   );
 }
 
+async function ensureContactInboxSchema(db) {
+  await ensureContactInboxTables(db);
+
+  const [columns] = await db.query('SHOW COLUMNS FROM website_contact_messages');
+  const columnMap = new Map(
+    (Array.isArray(columns) ? columns : []).map((col) => [
+      t(col?.Field).toLowerCase(),
+      t(col?.Type).toLowerCase()
+    ])
+  );
+
+  const hasTextLikeType = (type) => /(char|text)/i.test(t(type));
+
+  if (!hasTextLikeType(columnMap.get('sender_name'))) {
+    await db.query(
+      'ALTER TABLE website_contact_messages MODIFY COLUMN sender_name VARCHAR(191) NOT NULL'
+    );
+  }
+
+  if (!hasTextLikeType(columnMap.get('sender_phone'))) {
+    await db.query(
+      'ALTER TABLE website_contact_messages MODIFY COLUMN sender_phone VARCHAR(100) NOT NULL'
+    );
+  }
+
+  if (!hasTextLikeType(columnMap.get('message_text'))) {
+    await db.query(
+      'ALTER TABLE website_contact_messages MODIFY COLUMN message_text TEXT NOT NULL'
+    );
+  }
+
+  if (!columnMap.has('sender_ip')) {
+    await db.query(
+      'ALTER TABLE website_contact_messages ADD COLUMN sender_ip VARCHAR(45) NULL AFTER message_text'
+    );
+  }
+
+  if (!columnMap.has('user_agent')) {
+    await db.query(
+      'ALTER TABLE website_contact_messages ADD COLUMN user_agent TEXT NULL AFTER sender_ip'
+    );
+  }
+}
+
 async function insertContactMessage(db, payload) {
   const { senderName, senderPhone, normalizedMessageText, senderIp, userAgent } = payload;
   const safeName = t(senderName).slice(0, 191) || 'غير محدد';
@@ -497,13 +541,6 @@ async function insertContactMessage(db, payload) {
     [safeName, safePhoneDigits, safeMessage]
   );
 
-  const insertUltraLegacy = async () => db.query(
-    `INSERT INTO website_contact_messages
-     (sender_name, sender_phone, message_text)
-     VALUES (?, ?, ?)`,
-    ['0', safePhoneDigits || '0', '0']
-  );
-
   try {
     const [modernResult] = await insertModern();
     return modernResult;
@@ -519,8 +556,9 @@ async function insertContactMessage(db, payload) {
             return superLegacyResult;
           } catch (superLegacyError) {
             if (isLegacyCompatibleError(superLegacyError)) {
-              const [ultraLegacyResult] = await insertUltraLegacy();
-              return ultraLegacyResult;
+              const schemaError = new Error('CONTACT_INBOX_SCHEMA_INCOMPATIBLE');
+              schemaError.code = 'CONTACT_INBOX_SCHEMA_INCOMPATIBLE';
+              throw schemaError;
             }
             throw superLegacyError;
           }
@@ -546,8 +584,9 @@ async function insertContactMessage(db, payload) {
                 return superLegacyAfterCreate;
               } catch (superLegacyAfterCreateError) {
                 if (isLegacyCompatibleError(superLegacyAfterCreateError)) {
-                  const [ultraLegacyAfterCreate] = await insertUltraLegacy();
-                  return ultraLegacyAfterCreate;
+                  const schemaError = new Error('CONTACT_INBOX_SCHEMA_INCOMPATIBLE');
+                  schemaError.code = 'CONTACT_INBOX_SCHEMA_INCOMPATIBLE';
+                  throw schemaError;
                 }
                 throw superLegacyAfterCreateError;
               }
@@ -701,6 +740,7 @@ exports.getEditSiteContent = async (req, res) => {
 exports.createContactMessage = async (req, res) => {
   try {
     const db = req.db && typeof req.db.query === 'function' ? req.db : pool;
+    await ensureContactInboxSchema(db);
     const body = req.body && typeof req.body === 'object' ? req.body : {};
     const senderName = t(body.sender_name).slice(0, 191);
     const senderPhone = t(body.sender_phone).slice(0, 100);
@@ -789,6 +829,12 @@ exports.createContactMessage = async (req, res) => {
       return res.status(500).json({
         success: false,
         message: 'تعذر حفظ الرسالة: صلاحيات قاعدة البيانات غير كافية.'
+      });
+    }
+    if (error && error.code === 'CONTACT_INBOX_SCHEMA_INCOMPATIBLE') {
+      return res.status(500).json({
+        success: false,
+        message: 'تعذر حفظ الرسالة: هيكل جدول الرسائل غير متوافق مع الحقول النصية.'
       });
     }
     if (error && error.code === 'ER_NO_SUCH_TABLE') {
