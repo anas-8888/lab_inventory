@@ -73,6 +73,19 @@
                   </div>
                 </div>
               </div>
+
+              <div class="col-md-6 col-lg-3">
+                <div class="card h-100">
+                  <div class="card-body text-center">
+                    <i class="bi bi-database-down fs-1 text-primary mb-3"></i>
+                    <h5 class="card-title">نسخة قاعدة البيانات</h5>
+                    <p class="card-text">تنزيل نسخة SQL كاملة (هيكل + بيانات)</p>
+                    <form method="POST" action="/admin/settings/database-backup" class="d-inline">
+                      <button type="submit" class="btn btn-success" data-loading-text="جاري إنشاء النسخة...">تنزيل النسخة</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
             <% } %>
           </div>
         </div>

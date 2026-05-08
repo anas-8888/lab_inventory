@@ -17,10 +17,18 @@ const { addCurrencyToRequest } = require('./middleware/currency');
 const { trackUserActivity } = require('./middleware/presenceMiddleware');
 const morgan = require('morgan');
 const securityConfig = require('./config/security');
+const os = require('os');
 
 // إنشاء تطبيق Express وخادم HTTP
 const app = express();
 const server = http.createServer(app);
+const REQUEST_TIMEOUT_MS = Number(process.env.REQUEST_TIMEOUT_MS || 180000);
+const KEEP_ALIVE_TIMEOUT_MS = Number(process.env.KEEP_ALIVE_TIMEOUT_MS || 65000);
+const HEADERS_TIMEOUT_MS = Number(process.env.HEADERS_TIMEOUT_MS || 66000);
+const MEMORY_LOG_INTERVAL_MS = Number(process.env.MEMORY_LOG_INTERVAL_MS || 300000);
+const ENABLE_MEMORY_LOG = process.env.ENABLE_MEMORY_LOG !== 'false';
+const HEAVY_REQUEST_THRESHOLD_MS = Number(process.env.HEAVY_REQUEST_THRESHOLD_MS || 3000);
+const DB_ACQUIRE_TIMEOUT_MS = Number(process.env.DB_ACQUIRE_TIMEOUT_MS || 15000);
 
 // إعداد ترويسة الأمان باستخدام helmet
 app.use(helmet(securityConfig.helmet));
@@ -110,6 +118,8 @@ app.use('/public', express.static(path.join(__dirname, 'public'), {
 // إعداد الجلسة (Session)
 const sessionStore = new MySQLStore({
     expiration: 24 * 60 * 60 * 1000, // 24 ساعة
+    clearExpired: true,
+    checkExpirationInterval: 15 * 60 * 1000,
     createDatabaseTable: true,
     schema: {
         tableName: 'sessions',
@@ -139,6 +149,34 @@ app.use(session({
 // إعداد رسائل الفلاش
 app.use(flash());
 
+// حارس timeout للطلبات الطويلة (مثل PDF) لتفادي التعليق غير المنتهي
+app.use((req, res, next) => {
+    req.setTimeout(REQUEST_TIMEOUT_MS);
+    res.setTimeout(REQUEST_TIMEOUT_MS);
+    next();
+});
+
+// تسجيل مدة الطلبات الثقيلة فقط (بدون إغراق اللوج)
+app.use((req, res, next) => {
+    const trackHeavy =
+        req.path.includes('/pdf') ||
+        req.path.includes('/print-pdf-raw') ||
+        req.path.startsWith('/exports/');
+
+    if (!trackHeavy) return next();
+
+    const startedAt = Date.now();
+    res.on('finish', () => {
+        const durationMs = Date.now() - startedAt;
+        if (durationMs >= HEAVY_REQUEST_THRESHOLD_MS) {
+            console.log(
+                `[REQ] ${req.method} ${req.originalUrl} status=${res.statusCode} duration=${durationMs}ms`
+            );
+        }
+    });
+    next();
+});
+
 // إضافة اتصال قاعدة البيانات إلى كل طلب
 app.use(async (req, res, next) => {
     try {
@@ -154,7 +192,36 @@ app.use(async (req, res, next) => {
             return next();
         }
 
-        const connection = await pool.getConnection();
+        // افتح req.db فقط للمسارات التي تعتمد عليه فعليًا لتخفيف ضغط الاتصالات.
+        const needsRequestConnection =
+            req.path.startsWith('/costs') ||
+            req.path.startsWith('/certificates') ||
+            req.path.startsWith('/notes') ||
+            req.path.startsWith('/site-management');
+
+        if (!needsRequestConnection) {
+            return next();
+        }
+
+        let timedOut = false;
+        const acquirePromise = pool.getConnection();
+        const timeoutPromise = new Promise((_, reject) => {
+            const timer = setTimeout(() => {
+                timedOut = true;
+                reject(new Error(`DB acquire timeout after ${DB_ACQUIRE_TIMEOUT_MS}ms`));
+            }, DB_ACQUIRE_TIMEOUT_MS);
+            timer.unref?.();
+        });
+
+        const connection = await Promise.race([acquirePromise, timeoutPromise]);
+        acquirePromise
+            .then((lateConnection) => {
+                if (timedOut) {
+                    lateConnection.release();
+                }
+            })
+            .catch(() => {});
+
         req.db = connection;
 
         let released = false;
@@ -170,13 +237,14 @@ app.use(async (req, res, next) => {
 
         next();
     } catch (error) {
+        console.error('[DB] request connection acquire failed:', error.message || error);
         next(error);
     }
 });
 
 // وسيط المصادقة
 app.use((req, res, next) => {
-    const publicPaths = [
+    const publicPrefixes = [
         '/site-management/public/',
         '/site-management/public-content',
         '/site-management/contact-messages',
@@ -185,9 +253,13 @@ app.use((req, res, next) => {
         '/costs/cost-statement/print-list',
         '/costs/cost-statement/print-list-pdf-raw',
         '/costs/cost-statement/export/pdf',
-        '/costs/cost-statement/', // for single material print and print-pdf-raw
     ];
-    if (publicPaths.some(path => req.path.startsWith(path))) {
+    const isPublicCostStatementItemPrint =
+        /^\/costs\/cost-statement\/\d+\/print$/.test(req.path) ||
+        /^\/costs\/cost-statement\/\d+\/print-pdf-raw$/.test(req.path) ||
+        /^\/costs\/cost-statement\/\d+\/pdf$/.test(req.path);
+
+    if (publicPrefixes.some(path => req.path.startsWith(path)) || isPublicCostStatementItemPrint) {
         return next();
     }
     return authMiddleware(req, res, next);
@@ -259,6 +331,7 @@ app.use('/costs', require('./routes/costs'));
 app.use('/notes', require('./routes/notes'));
 app.use('/activity-logs', require('./routes/activity'));
 app.use('/site-management', require('./routes/siteManagement'));
+app.use('/admin', require('./routes/admin'));
 
 // معالجة خطأ 404
 app.use((req, res, next) => {
@@ -281,14 +354,15 @@ app.use((err, req, res, next) => {
 
 // Cron Job لحذف السجلات المحذوفة ناعماً (كل يوم عند منتصف الليل)
 cron.schedule('0 0 * * *', async () => {
-    const conn = await pool.getConnection();
+    let conn;
     try {        
+        conn = await pool.getConnection();
         // حذف السجلات المحذوفة ناعماً التي يزيد عمرها عن شهر واحد
-        const [certificatesResult] = await conn.query(`
+        await conn.query(`
             DELETE FROM certificates WHERE deleted_at < NOW() - INTERVAL 1 MONTH
         `);
         
-        const [inventoryResult] = await conn.query(`
+        await conn.query(`
             DELETE i
             FROM inventory i
             WHERE i.deleted_at < NOW() - INTERVAL 1 MONTH
@@ -299,14 +373,16 @@ cron.schedule('0 0 * * *', async () => {
               )
         `);
         
-        const [invoicesResult] = await conn.query(`
+        await conn.query(`
             DELETE FROM invoices WHERE deleted_at < NOW() - INTERVAL 1 MONTH
         `);
         
     } catch (error) {
         console.error('خطأ في عملية حذف السجلات المحذوفة ناعماً:', error);
     } finally {
-        conn.release();
+        if (conn) {
+            conn.release();
+        }
     }
 }, {
     scheduled: true,
@@ -323,6 +399,38 @@ const io = new Server(server, {
 
 // إعداد نظام Presence
 const presenceSystem = require('./services/presenceService')(io, pool);
+
+// إعداد timeouts على مستوى HTTP server
+server.requestTimeout = REQUEST_TIMEOUT_MS;
+server.keepAliveTimeout = KEEP_ALIVE_TIMEOUT_MS;
+server.headersTimeout = HEADERS_TIMEOUT_MS;
+
+// مراقبة دورية للذاكرة لتشخيص التسربات قبل الوصول لإعادة التشغيل
+if (ENABLE_MEMORY_LOG) {
+    const memoryTimer = setInterval(() => {
+        const memoryUsage = process.memoryUsage();
+        const rssMb = (memoryUsage.rss / 1024 / 1024).toFixed(1);
+        const heapUsedMb = (memoryUsage.heapUsed / 1024 / 1024).toFixed(1);
+        const heapTotalMb = (memoryUsage.heapTotal / 1024 / 1024).toFixed(1);
+        const extMb = (memoryUsage.external / 1024 / 1024).toFixed(1);
+        const load = os.loadavg ? os.loadavg().map((value) => value.toFixed(2)).join(',') : 'n/a';
+
+        console.log(
+            `[MEMORY] rss=${rssMb}MB heapUsed=${heapUsedMb}MB heapTotal=${heapTotalMb}MB external=${extMb}MB load=${load}`
+        );
+    }, MEMORY_LOG_INTERVAL_MS);
+
+    memoryTimer.unref();
+}
+
+// تسجيل واضح للأخطاء غير المعالجة التي قد تؤدي للحاجة لإعادة تشغيل PM2
+process.on('unhandledRejection', (reason) => {
+    console.error('[FATAL][unhandledRejection]', reason);
+});
+
+process.on('uncaughtException', (error) => {
+    console.error('[FATAL][uncaughtException]', error);
+});
 
 // تشغيل الخادم
 const PORT = process.env.PORT || 3000;

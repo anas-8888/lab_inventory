@@ -26,7 +26,7 @@ module.exports = {
       },
 
       // تحسين الأداء
-      max_memory_restart: "300M",
+      max_memory_restart: "500M",
 
       // تسجيل اللوج
       error_file: "/home/plus.ajajbrothers.com/logs/error.log",

@@ -13,9 +13,20 @@ async function initializeDatabase() {
       password: process.env.DB_PASSWORD || ''
     });
 
-    // Read and execute schema.sql
+    // Read and execute schema file.
+    // Prefer schema.sql, and fallback to lab_inventory.sql to match current repository structure.
     const schemaPath = path.join(__dirname, 'schema.sql');
-    const schema = await fs.readFile(schemaPath, 'utf8');
+    const fallbackSchemaPath = path.join(__dirname, 'lab_inventory.sql');
+    let schema;
+
+    try {
+      schema = await fs.readFile(schemaPath, 'utf8');
+      console.log('Using schema.sql');
+    } catch (err) {
+      if (err.code !== 'ENOENT') throw err;
+      schema = await fs.readFile(fallbackSchemaPath, 'utf8');
+      console.log('schema.sql not found, using lab_inventory.sql');
+    }
     
     // Split and execute each statement
     const statements = schema.split(';').filter(stmt => stmt.trim());

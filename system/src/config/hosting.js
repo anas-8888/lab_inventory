@@ -7,7 +7,7 @@ module.exports = {
         timeout: 60000,
         // إعدادات الاتصال المتعدد
         connectionLimit: 10,
-        queueLimit: 0,
+        queueLimit: 100,
         // إعادة المحاولة عند فشل الاتصال
         acquireTimeoutMillis: 60000,
         createTimeoutMillis: 30000,

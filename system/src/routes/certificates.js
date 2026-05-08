@@ -4,6 +4,14 @@ const certificatesController = require('../controllers/certificatesController');
 const { isAuthenticated, isEditor } = require('../middleware/auth');
 const { validateCertificate, validate } = require('../middleware/validators');
 const { connectDb } = require('../middleware/database');
+const { createRateLimiter } = require('../middleware/simpleRateLimiter');
+
+const publicPdfLimiter = createRateLimiter({
+  keyPrefix: 'certificates-public-pdf',
+  windowMs: 60 * 1000,
+  max: 20,
+  message: 'عدد كبير من طلبات PDF، يرجى المحاولة بعد دقيقة.'
+});
 
 // عرض الشهادة للعامة برقم public_id
 router.get('/public/:public_id', connectDb, certificatesController.showPublic);
@@ -57,8 +65,8 @@ router.post('/:id/status', isAuthenticated, isEditor, async (req, res) => {
 // مسارات عرض وحذف الشهادات - يجب أن تكون في النهاية
 router.get('/:id', isAuthenticated, certificatesController.show);
 router.get('/:id/print', isAuthenticated, certificatesController.show);
-router.get('/:id/pdf', certificatesController.exportCertificatePDF);
-router.get('/:id/print-pdf-raw', certificatesController.printCertificate);
+router.get('/:id/pdf', publicPdfLimiter, certificatesController.exportCertificatePDF);
+router.get('/:id/print-pdf-raw', publicPdfLimiter, certificatesController.printCertificate);
 router.post('/:id/restore', isAuthenticated, isEditor, certificatesController.restore);
 router.delete('/:id', isAuthenticated, isEditor, certificatesController.delete);
 

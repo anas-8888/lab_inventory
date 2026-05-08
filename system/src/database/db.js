@@ -1,5 +1,9 @@
 const mysql = require('mysql2/promise');
 const hostingConfig = require('../config/hosting');
+const SLOW_CONNECTION_ACQUIRE_MS = Number(process.env.DB_SLOW_ACQUIRE_MS || 2000);
+const SLOW_QUERY_MS = Number(process.env.DB_SLOW_QUERY_MS || 1500);
+const DB_QUEUE_LIMIT = Number(process.env.DB_QUEUE_LIMIT || hostingConfig.database.queueLimit || 0);
+let activeConnections = 0;
 
 // إنشاء pool للاتصال بقاعدة البيانات مع إعدادات محسنة للاستضافة
 const pool = mysql.createPool({
@@ -10,9 +14,10 @@ const pool = mysql.createPool({
     charset: 'utf8mb4',
     
     // إعدادات محسنة للاستضافة - MySQL2 valid options only
-    acquireTimeout: hostingConfig.database.acquireTimeout,
+    waitForConnections: true,
+    connectTimeout: hostingConfig.database.acquireTimeout,
     connectionLimit: hostingConfig.database.connectionLimit,
-    queueLimit: hostingConfig.database.queueLimit,
+    queueLimit: DB_QUEUE_LIMIT,
     
     // إعدادات إضافية للتعامل مع الأرقام الكبيرة
     supportBigNumbers: true,
@@ -28,6 +33,40 @@ const pool = mysql.createPool({
     enableKeepAlive: true,
     keepAliveInitialDelay: 0
 });
+
+// قياس زمن الحصول على اتصال وعدد الاتصالات النشطة
+const originalGetConnection = pool.getConnection.bind(pool);
+pool.getConnection = async (...args) => {
+    const startedAt = Date.now();
+    const connection = await originalGetConnection(...args);
+    const waitedMs = Date.now() - startedAt;
+    activeConnections += 1;
+
+    if (waitedMs >= SLOW_CONNECTION_ACQUIRE_MS) {
+        console.warn(
+            `[DB] slow connection acquire: waited=${waitedMs}ms active=${activeConnections}`
+        );
+    }
+
+    const originalRelease = connection.release.bind(connection);
+    const originalConnectionQuery = connection.query.bind(connection);
+    const originalConnectionExecute = connection.execute.bind(connection);
+    connection.query = (...queryArgs) =>
+        runWithSlowLog('connection.query', queryArgs[0], () => originalConnectionQuery(...queryArgs));
+    connection.execute = (...executeArgs) =>
+        runWithSlowLog('connection.execute', executeArgs[0], () => originalConnectionExecute(...executeArgs));
+
+    let released = false;
+    connection.release = () => {
+        if (!released) {
+            released = true;
+            activeConnections = Math.max(0, activeConnections - 1);
+        }
+        return originalRelease();
+    };
+
+    return connection;
+};
 
 // اختبار الاتصال
 pool.getConnection()
@@ -52,6 +91,37 @@ pool.on('error', (err) => {
         console.log('Database connection was refused.');
     }
 });
+
+pool.on('enqueue', () => {
+    console.warn('[DB] waiting for available connection (pool enqueue)');
+});
+
+if (DB_QUEUE_LIMIT === 0) {
+    console.warn('[DB] queueLimit=0 (unbounded wait queue). Consider setting DB_QUEUE_LIMIT to prevent long hanging queues under load.');
+}
+
+function shortenSql(sql) {
+    const text = typeof sql === 'string' ? sql : (sql && sql.sql) ? sql.sql : '';
+    return text.replace(/\s+/g, ' ').trim().slice(0, 180);
+}
+
+async function runWithSlowLog(label, sql, run) {
+    const startedAt = Date.now();
+    try {
+        return await run();
+    } finally {
+        const durationMs = Date.now() - startedAt;
+        if (durationMs >= SLOW_QUERY_MS) {
+            console.warn(`[DB] slow ${label}: ${durationMs}ms sql="${shortenSql(sql)}"`);
+        }
+    }
+}
+
+const originalPoolQuery = pool.query.bind(pool);
+pool.query = (...args) => runWithSlowLog('pool.query', args[0], () => originalPoolQuery(...args));
+
+const originalPoolExecute = pool.execute.bind(pool);
+pool.execute = (...args) => runWithSlowLog('pool.execute', args[0], () => originalPoolExecute(...args));
 
 // دالة مساعدة للتعامل مع الأرقام الكبيرة
 const safeParseFloat = (value) => {

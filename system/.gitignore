@@ -3,6 +3,11 @@
 *.zip
 
 src/.env
+src/.env.production
+src/.env.local
+src/.env.*.local
+src/.env.*
+!src/.env.example
 src/*.zip
 src/*.rar
 src/public/certificates_pdf

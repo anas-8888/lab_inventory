@@ -225,7 +225,7 @@ function formatNumberDisplay(value) {
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">الكمية الحالية <span class="text-danger">*</span></label>
-                                <input type="text" inputmode="decimal" step="0.001" class="form-control" name="current_quantity" 
+                                <input type="text" inputmode="decimal" step="0.001" class="form-control" id="current_quantity" name="current_quantity" 
                                        value="<%= formatNumberDisplay(item.current_quantity) %>" min="0" required>
                                 <div class="invalid-feedback">يرجى إدخال الكمية الحالية</div>
                             </div>
@@ -395,6 +395,8 @@ function formatNumberDisplay(value) {
     const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
     document.addEventListener('DOMContentLoaded', function() {
+        setupQuantityFields();
+
         // تهيئة التاريخ المحدد من القيمة الحالية
         const dateInput = document.querySelector('input[name="date"]');
         if (dateInput && dateInput.value) {
@@ -453,6 +455,36 @@ function formatNumberDisplay(value) {
             modal.hide();
         });
     });
+
+    function setupQuantityFields() {
+        const baseInput = document.getElementById('base_quantity');
+        const currentInput = document.getElementById('current_quantity');
+        if (!baseInput || !currentInput) return;
+
+        const syncCurrentFromBase = () => {
+            currentInput.value = baseInput.value;
+            validateCurrentAgainstBase();
+        };
+
+        const validateCurrentAgainstBase = () => {
+            const base = parseFloat(baseInput.value);
+            const current = parseFloat(currentInput.value);
+            currentInput.removeAttribute('max');
+            currentInput.setCustomValidity('');
+
+            if (Number.isFinite(base)) {
+                currentInput.setAttribute('max', String(base));
+            }
+
+            if (Number.isFinite(base) && Number.isFinite(current) && current > base) {
+                currentInput.setCustomValidity('الكمية الحالية يجب أن تكون أصغر أو تساوي الكمية الأساسية');
+            }
+        };
+
+        baseInput.addEventListener('input', syncCurrentFromBase);
+        currentInput.addEventListener('input', validateCurrentAgainstBase);
+        validateCurrentAgainstBase();
+    }
 
     // دالة تهيئة التقويم
     function initializeCalendar() {

@@ -18,7 +18,7 @@ function formatNumberDisplay(value) {
 <div class="container-fluid mt-4">
   <div class="d-flex justify-content-between align-items-center mb-3 inventory-topbar">
     <h2 class="mb-0 no-print">
-      <i class="fas fa-vial"></i> المخزون
+      <i class="fas fa-vial"></i> <%= (locals.filters && locals.filters.positive_quantity === '1') ? 'المخزون (العينات المتوفرة فقط)' : 'المخزون' %>
     </h2>
     <div class="d-flex gap-2 no-print inventory-top-actions">
       <button type="button" class="btn btn-success" id="filterTodayBtn">
@@ -29,7 +29,7 @@ function formatNumberDisplay(value) {
           <i class="fas fa-plus"></i> إضافة عينة جديدة
         </a>
       <% } %>
-      <a href="/exports/inventory/excel" class="btn btn-success" id="exportExcelBtn">
+      <a href="/exports/inventory/excel" class="btn btn-success d-none" id="exportExcelBtn" aria-disabled="true">
         <i class="fas fa-plus"></i>تصدير إلى Excel 
       </a>
     </div>
@@ -805,13 +805,18 @@ document.addEventListener('DOMContentLoaded', function() {
         clearFiltersBtn.addEventListener('click', clearFilters);
     }
 
-    // تصدير Excel: إذا يوجد تحديد => صدّر المحدد فقط، وإلا صدّر حسب فلاتر الصفحة الحالية
+    // تصدير Excel: صدّر المحدد فقط
     const exportExcelBtn = document.getElementById('exportExcelBtn');
     if (exportExcelBtn) {
         exportExcelBtn.addEventListener('click', function(event) {
             event.preventDefault();
 
             const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+            if (!checkedBoxes.length) {
+                alert('يرجى تحديد عينة واحدة على الأقل للتصدير');
+                return;
+            }
+
             const exportUrl = new URL('/exports/inventory/excel', window.location.origin);
             const currentUrl = new URL(window.location.href);
 
@@ -825,13 +830,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (sampleNumber) exportUrl.searchParams.set('sample_number', sampleNumber);
             if (positiveQuantity) exportUrl.searchParams.set('positive_quantity', positiveQuantity);
 
-            if (checkedBoxes.length > 0) {
-                const selectedIds = Array.from(checkedBoxes)
-                    .map((cb) => cb.dataset.id)
-                    .filter(Boolean);
-                if (selectedIds.length > 0) {
-                    exportUrl.searchParams.set('ids', selectedIds.join(','));
-                }
+            const selectedIds = Array.from(checkedBoxes)
+                .map((cb) => cb.dataset.id)
+                .filter(Boolean);
+            if (selectedIds.length > 0) {
+                exportUrl.searchParams.set('ids', selectedIds.join(','));
             }
 
             window.location.href = exportUrl.toString();
@@ -1016,15 +1019,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.disabled = false;
                 this.innerHTML = '<i class="fas fa-trash me-1"></i> حذف المحدد';
             });
-        });
-    }
-
-    // Initialize print button
-    const printBtn = document.getElementById('printBtn');
-    
-    if (printBtn) {
-        printBtn.addEventListener('click', function() {
-            doPrint();
         });
     }
 
@@ -1386,9 +1380,11 @@ document.addEventListener('DOMContentLoaded', function() {
         exportBtn.disabled = true;
         exportBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري التصدير...';
         try {
-            const params = new URLSearchParams();
-            selectedIds.forEach((id) => params.append('ids', id));
-            const res = await fetch(`/inventory/export/pdf?${params}`);
+            const res = await fetch('/inventory/export/pdf-selected', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: selectedIds })
+            });
             const data = await res.json();
             if (data.success && data.url) {
                 pdfLinkInput.value = data.url;
@@ -1470,6 +1466,7 @@ function updateCreateInvoiceButton() {
     const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
     const trashSelectedBtn = document.getElementById('trashSelectedBtn');
     const exportPdfBtn = document.getElementById('exportPdfBtn');
+    const exportExcelBtn = document.getElementById('exportExcelBtn');
     
     if (createInvoiceBtn) {
         if (checkedBoxes.length > 0) {
@@ -1514,6 +1511,16 @@ function updateCreateInvoiceButton() {
         } else {
             exportPdfBtn.classList.add('d-none');
             exportPdfBtn.disabled = true;
+        }
+    }
+
+    if (exportExcelBtn) {
+        if (checkedBoxes.length > 0) {
+            exportExcelBtn.classList.remove('d-none');
+            exportExcelBtn.setAttribute('aria-disabled', 'false');
+        } else {
+            exportExcelBtn.classList.add('d-none');
+            exportExcelBtn.setAttribute('aria-disabled', 'true');
         }
     }
 }

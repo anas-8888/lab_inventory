@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const { normalizeRawNumeric, buildRawNumericMap, parseRawNumericMap, rawOrValue } = require('../utils/rawNumbers');
+const { generatePdfWithMetrics } = require('../utils/pdf');
 
 const INVENTORY_RAW_FIELDS = [
   'base_quantity',
@@ -745,9 +746,10 @@ exports.exportCertificatePDF = async (req, res) => {
 
     const fileName = uuidv4() + '.pdf';
     const savePath = path.join(__dirname, '../public/certificates_pdf', fileName);
+    fs.mkdirSync(path.dirname(savePath), { recursive: true });
 
-    const pdfBuffer = await pdf.generatePdf(file, options);
-    fs.writeFileSync(savePath, pdfBuffer);
+    const pdfBuffer = await generatePdfWithMetrics(pdf, file, options, `certificate:${req.params.id}`);
+    await fs.promises.writeFile(savePath, pdfBuffer);
 
     const fileUrl = `${process.env.BASE_URL}/public/certificates_pdf/${fileName}`;
 

@@ -2,6 +2,15 @@ const express = require('express');
 const router = express.Router();
 const { isAuthenticated, isAdmin } = require('../middleware/auth');
 const costsController = require('../controllers/costsController');
+const { createRateLimiter } = require('../middleware/simpleRateLimiter');
+const { generatePdfWithMetrics } = require('../utils/pdf');
+
+const publicPdfLimiter = createRateLimiter({
+  keyPrefix: 'costs-public-pdf',
+  windowMs: 60 * 1000,
+  max: 20,
+  message: 'عدد كبير من طلبات PDF، يرجى المحاولة بعد دقيقة.'
+});
 
 // الصفحة الرئيسية للتكاليف
 router.get('/', isAuthenticated, isAdmin, costsController.getCosts);
@@ -18,57 +27,13 @@ router.post('/cost-statement/empty-trash', isAuthenticated, isAdmin, costsContro
 router.delete('/cost-statement/delete-multiple', isAuthenticated, isAdmin, costsController.deleteMaterialsMultiple);
 router.post('/cost-statement/export/excel-selected', isAuthenticated, isAdmin, costsController.exportSelectedMaterialsExcel);
 router.post('/cost-statement/export/pdf-selected', isAuthenticated, isAdmin, costsController.exportSelectedMaterialsPdf);
-// تصدير PDF لقائمة المواد (رندر محلي)
-router.get('/cost-statement/export/pdf', async (req, res) => {
-  try {
-    const pdf = require('html-pdf-node');
-    const path = require('path');
-    const fs = require('fs');
-    const { v4: uuidv4 } = require('uuid');
-
-    const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
-    const file = { url: `${baseUrl}/costs/cost-statement/print-list-pdf-raw` };
-
-    const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROME_PATH || undefined;
-    const options = {
-      format: 'A4',
-      preferCSSPageSize: true,
-      printBackground: true,
-      margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
-      timeout: 120000,
-      puppeteerArgs: {
-        args: ['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-zygote'],
-        executablePath
-      }
-    };
-
-    let pdfBuffer;
-    try {
-      pdfBuffer = await pdf.generatePdf(file, options);
-    } catch (e) {
-      console.error('PDF generation failed (list):', e);
-      const fallbackUrl = `${baseUrl}/costs/cost-statement/print-list`;
-      return res.json({ success: true, url: fallbackUrl, fallback: true });
-    }
-
-    const fileName = `${uuidv4()}.pdf`;
-    const savePath = path.join(__dirname, '../public/materials_list_pdf', fileName);
-    fs.mkdirSync(path.dirname(savePath), { recursive: true });
-    fs.writeFileSync(savePath, pdfBuffer);
-    const fileUrl = `${baseUrl}/public/materials_list_pdf/${fileName}`;
-    res.json({ success: true, url: fileUrl });
-  } catch (error) {
-    console.error('Error exporting materials list PDF:', error);
-    res.status(500).json({ success: false, message: 'حدث خطأ أثناء تصدير قائمة المواد كـ PDF' });
-  }
-});
 router.get('/cost-statement/:id', isAuthenticated, isAdmin, costsController.getMaterial);
 router.get('/cost-statement/:id/components', isAuthenticated, isAdmin, costsController.getMaterialComponents);
 router.get('/cost-statement/:id/logs', isAuthenticated, isAdmin, costsController.getMaterialCostLogs);
 router.get('/cost-statement/:id/preview', isAuthenticated, isAdmin, costsController.getMaterialPreview);
 router.get('/cost-statement/:id/print', costsController.getMaterialPrintPage);
 router.get('/cost-statement/:id/print-pdf-raw', costsController.getMaterialPrintPage);
-router.get('/cost-statement/:id/pdf', async (req, res) => {
+router.get('/cost-statement/:id/pdf', publicPdfLimiter, async (req, res) => {
   try {
     const pdf = require('html-pdf-node');
     const path = require('path');
@@ -93,7 +58,12 @@ router.get('/cost-statement/:id/pdf', async (req, res) => {
 
     let pdfBuffer;
     try {
-      pdfBuffer = await pdf.generatePdf(file, options);
+      pdfBuffer = await generatePdfWithMetrics(
+        pdf,
+        file,
+        options,
+        `cost-statement-item:${req.params.id}`
+      );
     } catch (e) {
       console.error('PDF generation failed (material):', e);
       const fallbackUrl = `${baseUrl}/costs/cost-statement/${req.params.id}/print`;
@@ -103,7 +73,7 @@ router.get('/cost-statement/:id/pdf', async (req, res) => {
     const fileName = `${uuidv4()}.pdf`;
     const savePath = path.join(__dirname, '../public/materials_list_pdf', fileName);
     fs.mkdirSync(path.dirname(savePath), { recursive: true });
-    fs.writeFileSync(savePath, pdfBuffer);
+    await fs.promises.writeFile(savePath, pdfBuffer);
     const fileUrl = `${baseUrl}/public/materials_list_pdf/${fileName}`;
     res.json({ success: true, url: fileUrl });
   } catch (error) {
@@ -112,10 +82,8 @@ router.get('/cost-statement/:id/pdf', async (req, res) => {
   }
 });
 // طباعة قائمة كل المواد (عرض وطباعة)
-router.get('/cost-statement/print-list', costsController.getMaterialsListPrintPage);
-router.get('/cost-statement/print-list-pdf-raw', costsController.getMaterialsListPrintPage);
 // تصدير PDF لقائمة المواد
-router.get('/cost-statement/export/pdf', async (req, res) => {
+router.get('/cost-statement/export/pdf', publicPdfLimiter, async (req, res) => {
   try {
     const pdf = require('html-pdf-node');
     const path = require('path');
@@ -135,14 +103,34 @@ router.get('/cost-statement/export/pdf', async (req, res) => {
         console.error('Render materials list failed:', err);
         return res.status(500).json({ success: false, message: 'تعذر إنشاء الملف' });
       }
-      const options = { format: 'A4', preferCSSPageSize: true };
-      const pdfBuffer = await pdf.generatePdf({ content: html }, options);
-      const fileName = `${uuidv4()}.pdf`;
-      const savePath = path.join(__dirname, '../public/materials_list_pdf', fileName);
-      fs.mkdirSync(path.dirname(savePath), { recursive: true });
-      fs.writeFileSync(savePath, pdfBuffer);
-      const fileUrl = `${process.env.BASE_URL}/public/materials_list_pdf/${fileName}`;
-      res.json({ success: true, url: fileUrl });
+      try {
+        const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROME_PATH || undefined;
+        const options = {
+          format: 'A4',
+          preferCSSPageSize: true,
+          printBackground: true,
+          timeout: 120000,
+          puppeteerArgs: {
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--no-zygote'],
+            executablePath
+          }
+        };
+        const pdfBuffer = await generatePdfWithMetrics(
+          pdf,
+          { content: html },
+          options,
+          'cost-statement-list'
+        );
+        const fileName = `${uuidv4()}.pdf`;
+        const savePath = path.join(__dirname, '../public/materials_list_pdf', fileName);
+        fs.mkdirSync(path.dirname(savePath), { recursive: true });
+        await fs.promises.writeFile(savePath, pdfBuffer);
+        const fileUrl = `${process.env.BASE_URL}/public/materials_list_pdf/${fileName}`;
+        res.json({ success: true, url: fileUrl });
+      } catch (pdfError) {
+        console.error('PDF generation failed (materials list render):', pdfError);
+        return res.status(500).json({ success: false, message: 'حدث خطأ أثناء إنشاء ملف PDF' });
+      }
     });
   } catch (error) {
     console.error('Error exporting materials list PDF:', error);

@@ -406,6 +406,8 @@ const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأر�
 
 // Set default date to today
 document.addEventListener('DOMContentLoaded', function() {
+    setupQuantityFields();
+
     const dateInput = document.getElementById('date');
     if (dateInput) {
         const today = new Date();
@@ -486,6 +488,37 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+function setupQuantityFields() {
+    const baseInput = document.getElementById('base_quantity');
+    const currentInput = document.getElementById('current_quantity');
+    if (!baseInput || !currentInput) return;
+
+    const syncCurrentFromBase = () => {
+        currentInput.value = baseInput.value;
+        validateCurrentAgainstBase();
+    };
+
+    const validateCurrentAgainstBase = () => {
+        const base = parseFloat(baseInput.value);
+        const current = parseFloat(currentInput.value);
+
+        currentInput.removeAttribute('max');
+        currentInput.setCustomValidity('');
+
+        if (Number.isFinite(base)) {
+            currentInput.setAttribute('max', String(base));
+        }
+
+        if (Number.isFinite(base) && Number.isFinite(current) && current > base) {
+            currentInput.setCustomValidity('الكمية الحالية يجب أن تكون أصغر أو تساوي الكمية الأساسية');
+        }
+    };
+
+    baseInput.addEventListener('input', syncCurrentFromBase);
+    currentInput.addEventListener('input', validateCurrentAgainstBase);
+    validateCurrentAgainstBase();
+}
 
 // دالة تهيئة التقويم
 function initializeCalendar() {

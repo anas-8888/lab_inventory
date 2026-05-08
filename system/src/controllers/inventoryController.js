@@ -242,9 +242,16 @@ exports.createInventory = async (req, res) => {
         // معالجة current_quantity - إذا لم يتم إرسالها، استخدم base_quantity
         const normalizedCurrentQuantity = normalizeRawNumeric(current_quantity);
         const finalCurrentQuantity = normalizedCurrentQuantity !== null ? normalizedCurrentQuantity : normalizedBaseQuantity;
+        const parsedBaseQuantity = parseFloat(normalizedBaseQuantity);
+        const parsedCurrentQuantity = parseFloat(finalCurrentQuantity);
 
-        if (finalCurrentQuantity === '' || isNaN(parseFloat(finalCurrentQuantity)) || parseFloat(finalCurrentQuantity) < 0) {
+        if (finalCurrentQuantity === '' || isNaN(parsedCurrentQuantity) || parsedCurrentQuantity < 0) {
             req.flash('error_msg', 'الكمية الحالية يجب أن تكون صفر أو أكثر');
+            return res.redirect('/inventory/create');
+        }
+
+        if (parsedCurrentQuantity > parsedBaseQuantity) {
+            req.flash('error_msg', 'الكمية الحالية يجب أن تكون أصغر أو تساوي الكمية الأساسية');
             return res.redirect('/inventory/create');
         }
 
@@ -406,9 +413,16 @@ exports.updateInventory = async (req, res) => {
         // معالجة current_quantity - إذا لم يتم إرسالها، استخدم base_quantity
         const normalizedCurrentQuantity = normalizeRawNumeric(current_quantity);
         const finalCurrentQuantity = normalizedCurrentQuantity !== null ? normalizedCurrentQuantity : normalizedBaseQuantity;
+        const parsedBaseQuantity = parseFloat(normalizedBaseQuantity);
+        const parsedCurrentQuantity = parseFloat(finalCurrentQuantity);
 
-        if (finalCurrentQuantity === '' || isNaN(parseFloat(finalCurrentQuantity)) || parseFloat(finalCurrentQuantity) < 0) {
+        if (finalCurrentQuantity === '' || isNaN(parsedCurrentQuantity) || parsedCurrentQuantity < 0) {
             req.flash('error_msg', 'الكمية الحالية يجب أن تكون صفر أو أكثر');
+            return res.redirect(`/inventory/${req.params.id}/edit`);
+        }
+
+        if (parsedCurrentQuantity > parsedBaseQuantity) {
+            req.flash('error_msg', 'الكمية الحالية يجب أن تكون أصغر أو تساوي الكمية الأساسية');
             return res.redirect(`/inventory/${req.params.id}/edit`);
         }
 
@@ -618,10 +632,9 @@ exports.toggleReject = async (req, res) => {
 exports.exportInventoryPDF = async (req, res) => {
     const pdf = require('html-pdf-node');
     try {
-        const params = new URLSearchParams(req.query).toString();
-        const inventoryUrl = `${process.env.BASE_URL}/inventory/print-pdf-raw${params ? '?' + params : ''}`;
-
         const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+        const params = new URLSearchParams(req.query).toString();
+        const inventoryUrl = `${baseUrl}/inventory/print-pdf-raw${params ? '?' + params : ''}`;
         const options = {
             format: 'A4',
             printBackground: true,
@@ -646,12 +659,73 @@ exports.exportInventoryPDF = async (req, res) => {
 
         fs.writeFileSync(savePath, pdfBuffer);
 
-        const fileUrl = `${process.env.BASE_URL}/public/inventory_pdf/${fileName}`;
+        const fileUrl = `${baseUrl}/public/inventory_pdf/${fileName}`;
 
         res.json({ success: true, url: fileUrl });
     } catch (error) {
         console.error('Error exporting inventory PDF:', error);
         res.status(500).json({ success: false, message: 'حدث خطأ أثناء تصدير المخزون كـ PDF' });
+    }
+};
+
+// تصدير PDF للعناصر المحددة فقط عبر POST (لتجنب مشاكل طول URL عند تحديد عدد كبير)
+exports.exportInventoryPDFSelected = async (req, res) => {
+    const pdf = require('html-pdf-node');
+    try {
+        const rawIds = Array.isArray(req.body?.ids) ? req.body.ids : [];
+        const selectedIds = rawIds
+            .map((value) => parseInt(String(value).trim(), 10))
+            .filter((value) => Number.isFinite(value) && value > 0);
+
+        if (!selectedIds.length) {
+            return res.status(400).json({ success: false, message: 'يرجى تحديد عينات للتصدير' });
+        }
+
+        const inventory = await exports.fetchInventoryData({ ids: selectedIds });
+        if (!inventory.length) {
+            return res.status(404).json({ success: false, message: 'لا توجد عينات صالحة للتصدير' });
+        }
+
+        const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+        const html = await new Promise((resolve, reject) => {
+            req.app.render('inventory/print', { inventory, baseUrl, layout: false }, (err, rendered) => {
+                if (err) return reject(err);
+                return resolve(rendered);
+            });
+        });
+
+        const options = {
+            format: 'A4',
+            landscape: true,
+            preferCSSPageSize: true,
+            printBackground: true,
+            margin: {
+                top: '3mm',
+                right: '3mm',
+                bottom: '3mm',
+                left: '3mm'
+            },
+            timeout: 120000,
+            puppeteerArgs: {
+                args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--no-zygote'],
+                executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROME_PATH || undefined
+            }
+        };
+
+        const pdfBuffer = await pdf.generatePdf({ content: html }, options);
+        const fileName = `${uuidv4()}.pdf`;
+        const dir = path.join(__dirname, '../public/inventory_pdf');
+        const savePath = path.join(dir, fileName);
+
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+        fs.writeFileSync(savePath, pdfBuffer);
+
+        return res.json({ success: true, url: `${baseUrl}/public/inventory_pdf/${fileName}` });
+    } catch (error) {
+        console.error('Error exporting selected inventory PDF:', error);
+        return res.status(500).json({ success: false, message: 'حدث خطأ أثناء تصدير PDF المحدد' });
     }
 };
 

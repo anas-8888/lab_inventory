@@ -4,6 +4,7 @@ const Excel = require('exceljs');
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const { generatePdfWithMetrics } = require('../utils/pdf');
 
 // دالة لتقريب الأرقام العشرية بشكل صحيح
 const roundToDecimal = (value, decimals = 2) => {
@@ -1554,9 +1555,9 @@ const exportQuotationPDF = async (req, res) => {
         const file = { url };
         const fileName = `${uuidv4()}.pdf`;
         const savePath = path.join(__dirname, '../public/quotations_pdf', fileName);
-        const pdfBuffer = await pdf.generatePdf(file, options);
+        const pdfBuffer = await generatePdfWithMetrics(pdf, file, options, `quotation:${id}`);
         fs.mkdirSync(path.dirname(savePath), { recursive: true });
-        fs.writeFileSync(savePath, pdfBuffer);
+        await fs.promises.writeFile(savePath, pdfBuffer);
         const fileUrl = `${process.env.BASE_URL}/public/quotations_pdf/${fileName}`;
         res.json({ success: true, url: fileUrl });
     } catch (error) {
@@ -2247,11 +2248,11 @@ const exportSelectedMaterialsPdf = async (req, res) => {
                     left: '14mm'
                 }
             };
-            const pdfBuffer = await pdf.generatePdf({ content: html }, options);
+            const pdfBuffer = await generatePdfWithMetrics(pdf, { content: html }, options, 'materials-list-render');
             const fileName = `${uuidv4()}.pdf`;
             const savePath = path.join(__dirname, '../public/materials_list_pdf', fileName);
             fs.mkdirSync(path.dirname(savePath), { recursive: true });
-            fs.writeFileSync(savePath, pdfBuffer);
+            await fs.promises.writeFile(savePath, pdfBuffer);
 
             return res.json({
                 success: true,
@@ -2679,9 +2680,9 @@ const exportOrderPDF = async (req, res) => {
         const file = { url };
         const fileName = `${uuidv4()}.pdf`;
         const savePath = path.join(__dirname, '../public/orders_pdf', fileName);
-        const pdfBuffer = await pdf.generatePdf(file, options);
+        const pdfBuffer = await generatePdfWithMetrics(pdf, file, options, `order:${id}`);
         fs.mkdirSync(path.dirname(savePath), { recursive: true });
-        fs.writeFileSync(savePath, pdfBuffer);
+        await fs.promises.writeFile(savePath, pdfBuffer);
         const fileUrl = `${process.env.BASE_URL}/public/orders_pdf/${fileName}`;
         res.json({ success: true, url: fileUrl });
     } catch (error) {

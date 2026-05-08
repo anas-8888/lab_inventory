@@ -2,16 +2,24 @@ const express = require('express');
 const router = express.Router();
 const inventoryController = require('../controllers/inventoryController');
 const { isAuthenticated, isEditor } = require('../middleware/auth');
+const { createRateLimiter } = require('../middleware/simpleRateLimiter');
 
+const publicPdfLimiter = createRateLimiter({
+    keyPrefix: 'inventory-public-pdf',
+    windowMs: 60 * 1000,
+    max: 30,
+    message: 'عدد كبير من طلبات التصدير، يرجى المحاولة بعد دقيقة.'
+});
 
 // المسارات العامة (بدون حماية) - يجب أن تكون في البداية
 router.get('/print-pdf-raw', (req, res, next) => {
     next();
 }, inventoryController.printInventoryRaw);
 
-router.get('/export/pdf', (req, res, next) => {
+router.get('/export/pdf', publicPdfLimiter, (req, res, next) => {
     next();
 }, inventoryController.exportInventoryPDF);
+router.post('/export/pdf-selected', publicPdfLimiter, inventoryController.exportInventoryPDFSelected);
 
 // المسارات المحمية (مع المصادقة)
 router.get('/', isAuthenticated, inventoryController.getInventory);

@@ -5,6 +5,7 @@ const notesController = require('../controllers/notesController');
 
 // جميع مسارات الملاحظات للمسؤول فقط
 router.get('/', isAdmin, notesController.listNotes);
+router.get('/export/pdf', isAdmin, notesController.exportNotesPDF);
 router.get('/:id', isAdmin, notesController.viewNote);
 router.post('/', isAdmin, notesController.createNote);
 router.put('/:id', isAdmin, notesController.updateNote);

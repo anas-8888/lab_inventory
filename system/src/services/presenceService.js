@@ -4,8 +4,8 @@ const moment = require('moment');
 const userConnections = new Map(); // userId -> Set of socketIds
 const socketUsers = new Map(); // socketId -> userId
 const heartbeatTimers = new Map(); // socketId -> timer
+const pingIntervals = new Map(); // socketId -> timer
 
-const HEARTBEAT_INTERVAL = 10000; // 10 ثواني
 const OFFLINE_TIMEOUT = 20000; // 20 ثانية
 const mapRoleIdToName = (roleId) => {
     if (roleId === 2) return 'editor';
@@ -18,7 +18,7 @@ const mapRoleIdToName = (roleId) => {
 module.exports = (io, pool) => {
     
     // تنظيف دوري للاتصالات المعلقة (كل 30 ثانية)
-    setInterval(async () => {
+    const cleanupInterval = setInterval(async () => {
         try {
             // تحديد المستخدمين الذين لم يرسلوا heartbeat لفترة طويلة
             const [affectedRows] = await pool.query(`
@@ -48,6 +48,7 @@ module.exports = (io, pool) => {
             console.error('خطأ في تنظيف الاتصالات المعلقة:', error);
         }
     }, 30000); // كل 30 ثانية
+    cleanupInterval.unref?.();
     
     // تحديث حالة المستخدم في قاعدة البيانات
     async function updateUserStatus(userId, status, lastSeenAt = null) {
@@ -137,9 +138,9 @@ module.exports = (io, pool) => {
         }
         
         // إلغاء ping interval
-        const socket = io.sockets.sockets.get(socketId);
-        if (socket && socket.pingInterval) {
-            clearInterval(socket.pingInterval);
+        if (pingIntervals.has(socketId)) {
+            clearInterval(pingIntervals.get(socketId));
+            pingIntervals.delete(socketId);
         }
     }
     
@@ -149,6 +150,7 @@ module.exports = (io, pool) => {
             // قطع الاتصال فوراً
             socket.disconnect(true);
         }, OFFLINE_TIMEOUT);
+        timer.unref?.();
         
         heartbeatTimers.set(socket.id, timer);
     }
@@ -167,6 +169,11 @@ module.exports = (io, pool) => {
     
     // بدء ping من الخادم للتأكد من الاتصال
     function startServerPing(socket) {
+        if (pingIntervals.has(socket.id)) {
+            clearInterval(pingIntervals.get(socket.id));
+            pingIntervals.delete(socket.id);
+        }
+
         const pingInterval = setInterval(() => {
             if (socket.connected) {
                 const pingTime = Date.now();
@@ -186,11 +193,13 @@ module.exports = (io, pool) => {
                 socket.once('client_pong', pongHandler);
             } else {
                 clearInterval(pingInterval);
+                pingIntervals.delete(socket.id);
             }
         }, 15000); // ping كل 15 ثانية
-        
+        pingInterval.unref?.();
+
         // حفظ مرجع لإلغاء الـ interval عند قطع الاتصال
-        socket.pingInterval = pingInterval;
+        pingIntervals.set(socket.id, pingInterval);
     }
     
     // معالج اتصال Socket.IO
@@ -225,6 +234,14 @@ module.exports = (io, pool) => {
                 socket.userId = user.id;
                 socket.username = user.username;
                 socket.userRole = roleName;
+
+                // تأكد من تنظيف أي مؤقتات قديمة عند إعادة المصادقة على نفس السوكيت
+                removeUserConnection(socket.id);
+                resetHeartbeat(socket.id);
+                if (pingIntervals.has(socket.id)) {
+                    clearInterval(pingIntervals.get(socket.id));
+                    pingIntervals.delete(socket.id);
+                }
                 
                 // إضافة الاتصال
                 addUserConnection(user.id, socket.id);

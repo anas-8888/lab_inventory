@@ -4,6 +4,7 @@ const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const moment = require('moment');
 const { normalizeRawNumeric, parseRawNumericMap, rawOrValue } = require('../utils/rawNumbers');
+const { generatePdfWithMetrics } = require('../utils/pdf');
 
 const INVENTORY_RAW_FIELDS = ['base_quantity', 'sample_weight', 'net_weight_total', 'ph', 'peroxide_value', 'sigma_absorbance'];
 const INVOICE_ITEM_RAW_FIELDS = ['quantity', 'price', 'net_weight', 'ph', 'peroxide_value', 'absorption_232', 'absorption_266', 'absorption_270', 'absorption_274', 'delta_k'];
@@ -54,9 +55,12 @@ exports.getInvoices = async (req, res) => {
                    i.total_quantity_tanks,
                    i.total_quantity_liters,
                    u.username as created_by_name,
-                   DATE_FORMAT(i.date, '%Y-%m-%d') as formatted_date
+                   DATE_FORMAT(i.date, '%Y-%m-%d') as formatted_date,
+                   COALESCE(SUM((ii.quantity * inv.net_weight_total) / NULLIF(inv.base_quantity, 0)), 0) AS recalculated_total_liters
             FROM invoices i
             LEFT JOIN users u ON i.created_by = u.id
+            LEFT JOIN invoice_items ii ON ii.invoice_id = i.id
+            LEFT JOIN inventory inv ON inv.id = ii.inventory_id
             WHERE i.deleted_at IS NULL
         `;
         const params = [];
@@ -74,34 +78,13 @@ exports.getInvoices = async (req, res) => {
             params.push(`%${invoice_number}%`);
         }
 
-        query += ` ORDER BY i.date DESC, i.id DESC`;
+        query += ` GROUP BY i.id ORDER BY i.date DESC, i.id DESC`;
 
         const [invoiceRows] = await pool.query(query, params);
         const invoices = invoiceRows.map(applyInvoiceRaw);
-        
-        // إعادة حساب الوزن الإجمالي لكل طلبية شحن باستخدام الصيغة المطلوبة
-        for (let invoice of invoices) {
-            // جلب عناصر طلب الشحن مع بيانات المخزون
-            const [items] = await pool.query(`
-                SELECT ii.quantity, inv.net_weight_total, inv.base_quantity
-                FROM invoice_items ii
-                JOIN inventory inv ON ii.inventory_id = inv.id
-                WHERE ii.invoice_id = ?
-            `, [invoice.id]);
-            
-            // إعادة حساب الوزن الإجمالي
-            let recalculatedWeight = 0;
-            items.forEach(item => {
-                const quantity = Number(item.quantity) || 0;
-                const netWeightTotal = Number(item.net_weight_total) || 0;
-                const baseQuantity = Number(item.base_quantity) || 1;
-                const weight = (netWeightTotal / baseQuantity) * quantity;
-                recalculatedWeight += weight;
-            });
-            
-            // تحديث الوزن في الكائن
-            invoice.total_quantity_liters = roundTo3(recalculatedWeight);
-        }
+        invoices.forEach((invoice) => {
+            invoice.total_quantity_liters = roundTo3(invoice.recalculated_total_liters);
+        });
         
         res.render('invoices/index', {
             title: 'طلبات  الشحن',
@@ -630,8 +613,8 @@ exports.exportInvoicePDF = async (req, res) => {
             fs.mkdirSync(dir, { recursive: true });
         }
 
-        const pdfBuffer = await pdf.generatePdf(file, options);
-        fs.writeFileSync(savePath, pdfBuffer);
+        const pdfBuffer = await generatePdfWithMetrics(pdf, file, options, `invoice:${req.params.id}`);
+        await fs.promises.writeFile(savePath, pdfBuffer);
 
         const fileUrl = `${req.protocol}://${req.get('host')}/public/invoices_pdf/${fileName}`;
 
@@ -1082,32 +1065,20 @@ exports.trashMultiple = async (req, res) => {
 // جلب طلبات  الشحن المحذوفة
 exports.getDeletedInvoices = async (req, res) => {
     try {
-        const [deletedRows] = await pool.query('SELECT * FROM invoices WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC');
+        const [deletedRows] = await pool.query(`
+            SELECT i.*,
+                   COALESCE(SUM((ii.quantity * inv.net_weight_total) / NULLIF(inv.base_quantity, 0)), 0) AS recalculated_total_liters
+            FROM invoices i
+            LEFT JOIN invoice_items ii ON ii.invoice_id = i.id
+            LEFT JOIN inventory inv ON inv.id = ii.inventory_id
+            WHERE i.deleted_at IS NOT NULL
+            GROUP BY i.id
+            ORDER BY i.deleted_at DESC
+        `);
         const deletedInvoices = deletedRows.map(applyInvoiceRaw);
-        
-        // إعادة حساب الوزن الإجمالي لكل طلبية شحن محذوفة باستخدام الصيغة المطلوبة
-        for (let invoice of deletedInvoices) {
-            // جلب عناصر طلب الشحن مع بيانات المخزون
-            const [items] = await pool.query(`
-                SELECT ii.quantity, inv.net_weight_total, inv.base_quantity
-                FROM invoice_items ii
-                JOIN inventory inv ON ii.inventory_id = inv.id
-                WHERE ii.invoice_id = ?
-            `, [invoice.id]);
-            
-            // إعادة حساب الوزن الإجمالي
-            let recalculatedWeight = 0;
-            items.forEach(item => {
-                const quantity = Number(item.quantity) || 0;
-                const netWeightTotal = Number(item.net_weight_total) || 0;
-                const baseQuantity = Number(item.base_quantity) || 1;
-                const weight = (netWeightTotal / baseQuantity) * quantity;
-                recalculatedWeight += weight;
-            });
-            
-            // تحديث الوزن في الكائن
-            invoice.total_quantity_liters = roundTo3(recalculatedWeight);
-        }
+        deletedInvoices.forEach((invoice) => {
+            invoice.total_quantity_liters = roundTo3(invoice.recalculated_total_liters);
+        });
         
         res.render('invoices/deleted', { deletedInvoices, user: req.session.user });
     } catch (error) {

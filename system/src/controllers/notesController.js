@@ -1,4 +1,8 @@
 const { buildRawNumericMap, parseRawNumericMap, rawOrValue, normalizeRawNumeric } = require('../utils/rawNumbers');
+const path = require('path');
+const fs = require('fs');
+const { v4: uuidv4 } = require('uuid');
+const { generatePdfWithMetrics } = require('../utils/pdf');
 
 const NOTE_RAW_FIELDS = ['price', 'weight'];
 
@@ -165,12 +169,73 @@ const deleteNote = async (req, res) => {
   }
 };
 
+const exportNotesPDF = async (req, res) => {
+  const pdf = require('html-pdf-node');
+  try {
+    const [rows] = await req.db.query(`
+      SELECT 
+        n.id,
+        n.material_id,
+        COALESCE(NULLIF(n.material_name, ''), m.material_name) AS material_name,
+        n.price,
+        n.weight,
+        n.note_text,
+        n.note_date,
+        n.numeric_raw
+      FROM notes n
+      LEFT JOIN materials m ON m.id = n.material_id
+      ORDER BY n.note_date DESC, n.id DESC
+    `);
+
+    const notes = rows.map(applyNoteRaw);
+    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+
+    req.app.render('notes/print', { notes, baseUrl, layout: false }, async (err, html) => {
+      if (err) {
+        console.error('Render notes print failed:', err);
+        return res.status(500).json({ success: false, message: 'تعذر إنشاء ملف الطباعة.' });
+      }
+
+      try {
+        const options = {
+          format: 'A4',
+          preferCSSPageSize: true,
+          printBackground: true,
+          timeout: 120000,
+          puppeteerArgs: {
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--no-zygote'],
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROME_PATH || undefined
+          }
+        };
+
+        const pdfBuffer = await generatePdfWithMetrics(pdf, { content: html }, options, 'notes-list');
+        const fileName = `${uuidv4()}.pdf`;
+        const savePath = path.join(__dirname, '../public/notes_pdf', fileName);
+        fs.mkdirSync(path.dirname(savePath), { recursive: true });
+        await fs.promises.writeFile(savePath, pdfBuffer);
+
+        return res.json({
+          success: true,
+          url: `${baseUrl}/public/notes_pdf/${fileName}`
+        });
+      } catch (pdfError) {
+        console.error('Notes PDF generation failed:', pdfError);
+        return res.status(500).json({ success: false, message: 'حدث خطأ أثناء إنشاء ملف PDF.' });
+      }
+    });
+  } catch (err) {
+    console.error('exportNotesPDF error:', err);
+    return res.status(500).json({ success: false, message: 'حدث خطأ أثناء تصدير الملاحظات.' });
+  }
+};
+
 module.exports = {
   listNotes,
   viewNote,
   createNote,
   updateNote,
   deleteNote,
+  exportNotesPDF,
 };
 
 
