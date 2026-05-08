@@ -20,14 +20,16 @@ exports.exportDatabaseBackup = async (req, res) => {
     const startedAt = Date.now();
     const fileName = buildBackupFilename();
 
-    const host = process.env.DB_HOST || 'localhost';
-    const user = process.env.DB_USER || 'root';
-    const password = process.env.DB_PASSWORD || '';
-    const database = process.env.DB_NAME || 'lab_inventory';
+    const host = process.env.BACKUP_DB_HOST || process.env.DB_HOST || '127.0.0.1';
+    const user = process.env.BACKUP_DB_USER || process.env.DB_USER || 'root';
+    const password = process.env.BACKUP_DB_PASSWORD || process.env.DB_PASSWORD || '';
+    const database = process.env.BACKUP_DB_NAME || process.env.DB_NAME || 'lab_inventory';
     const mysqldumpPath = process.env.MYSQLDUMP_PATH || 'mysqldump';
 
     const args = [
+        '--no-defaults',
         `--host=${host}`,
+        '--protocol=TCP',
         `--user=${user}`,
         '--default-character-set=utf8mb4',
         '--single-transaction',
