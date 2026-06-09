@@ -167,6 +167,9 @@ const ORDER_ITEM_RAW_FIELDS = [
 ];
 const COMPONENT_RAW_FIELDS = ['weight_grams', 'price_per_kg', 'price_per_kg_syp'];
 const COST_LOG_RAW_FIELDS = ['unit_cost', 'unit_cost_syp', 'package_cost', 'package_cost_syp'];
+const VALID_COST_INPUT_BASES = new Set(['per_kg', 'total']);
+
+const normalizeCostInputBasis = (value) => (VALID_COST_INPUT_BASES.has(value) ? value : null);
 
 const applyMaterialRaw = (material) => {
     if (!material || typeof material !== 'object') return material;
@@ -185,8 +188,90 @@ const applyMaterialRaw = (material) => {
     mapped.packaging_weight = rawOrValue(rawMap, 'external_net_weight', mapped.packaging_weight);
     mapped.gross_weight = rawOrValue(rawMap, 'external_net_weight', mapped.gross_weight);
     mapped.gross_package_weight = rawOrValue(rawMap, 'external_net_weight', mapped.gross_package_weight);
+    mapped.cost_input_basis = normalizeCostInputBasis(rawMap.cost_input_basis) || mapped.cost_input_basis;
 
     return mapped;
+};
+
+const inferMaterialCostInputBasis = (material) => {
+    if (!material || typeof material !== 'object' || material.material_origin === 'external') {
+        return null;
+    }
+
+    const rawMap = parseRawNumericMap(material.numeric_raw);
+    const explicitBasis = normalizeCostInputBasis(rawMap.cost_input_basis);
+    if (explicitBasis) {
+        return explicitBasis;
+    }
+
+    const grossWeight = parseFloat(rawOrValue(rawMap, 'gross_weight', material.gross_weight)) || 0;
+    const packagingWeight = parseFloat(rawOrValue(rawMap, 'packaging_weight', material.packaging_weight)) || 0;
+    const priceBeforeWaste = parseFloat(rawOrValue(rawMap, 'price_before_waste', material.price_before_waste)) || 0;
+    const wastePercentage = parseFloat(rawOrValue(rawMap, 'waste_percentage', material.waste_percentage)) || 0;
+    const emptyPackagePrice = parseFloat(rawOrValue(rawMap, 'empty_package_price', material.empty_package_price)) || 0;
+    const stickerPrice = parseFloat(rawOrValue(rawMap, 'sticker_price', material.sticker_price)) || 0;
+    const additionalExpenses = parseFloat(rawOrValue(rawMap, 'additional_expenses', material.additional_expenses)) || 0;
+    const laborCost = parseFloat(rawOrValue(rawMap, 'labor_cost', material.labor_cost)) || 0;
+    const preservativesCost = parseFloat(rawOrValue(rawMap, 'preservatives_cost', material.preservatives_cost)) || 0;
+    const cartonPrice = parseFloat(rawOrValue(rawMap, 'carton_price', material.carton_price)) || 0;
+    const palletPrice = parseFloat(rawOrValue(rawMap, 'pallet_price', material.pallet_price)) || 0;
+    const piecesPerPackage = parseFloat(rawOrValue(rawMap, 'pieces_per_package', material.pieces_per_package)) || 0;
+    const packagesPerPallet = parseFloat(rawOrValue(rawMap, 'packages_per_pallet', material.packages_per_pallet)) || 0;
+    const storedUnitCost = parseFloat(material.unit_cost) || 0;
+    const storedPackageCost = parseFloat(material.package_cost) || 0;
+
+    if (grossWeight <= 0 || packagingWeight <= 0) {
+        return null;
+    }
+
+    const evaluateBasis = (basis) => {
+        const normalized = normalizeAuxiliaryCostsByBasis({
+            basis,
+            usd: {
+                sticker_price: stickerPrice,
+                additional_expenses: additionalExpenses,
+                labor_cost: laborCost,
+                preservatives_cost: preservativesCost,
+                carton_price: cartonPrice,
+                pallet_price: palletPrice
+            },
+            syp: {
+                sticker_price: stickerPrice,
+                additional_expenses: additionalExpenses,
+                labor_cost: laborCost,
+                preservatives_cost: preservativesCost,
+                carton_price: cartonPrice,
+                pallet_price: palletPrice
+            },
+            grossWeight,
+            packagingWeight
+        }).usd;
+
+        const denominator = 1 - (wastePercentage / 100);
+        const pricePerKgBeforeWaste = grossWeight > 0 ? (priceBeforeWaste / grossWeight) : 0;
+        const pricePerKgAfterWaste = denominator > 0 ? (pricePerKgBeforeWaste / denominator) : 0;
+        const materialCostInUnit = pricePerKgAfterWaste * packagingWeight;
+        const unitCost = materialCostInUnit + emptyPackagePrice + normalized.sticker_price + normalized.additional_expenses + normalized.labor_cost + normalized.preservatives_cost;
+        const palletShare = packagesPerPallet > 0 ? (normalized.pallet_price / packagesPerPallet) : 0;
+        const packageCost = (unitCost * piecesPerPackage) + normalized.carton_price + palletShare;
+
+        return { unitCost, packageCost };
+    };
+
+    const perKgCandidate = evaluateBasis('per_kg');
+    const totalCandidate = evaluateBasis('total');
+    const perKgScore = Math.abs(perKgCandidate.unitCost - storedUnitCost) + Math.abs(perKgCandidate.packageCost - storedPackageCost);
+    const totalScore = Math.abs(totalCandidate.unitCost - storedUnitCost) + Math.abs(totalCandidate.packageCost - storedPackageCost);
+
+    if (!Number.isFinite(perKgScore) || !Number.isFinite(totalScore)) {
+        return null;
+    }
+
+    if (Math.abs(perKgScore - totalScore) < 0.01) {
+        return null;
+    }
+
+    return perKgScore < totalScore ? 'per_kg' : 'total';
 };
 
 const applyQuotationRaw = (quotation) => {
@@ -508,7 +593,7 @@ const createMaterial = async (req, res) => {
         const packaging_unit_weight_num = parseFloat(packaging_unit_weight) || 0;
         const pieces_per_package_num = parseInt(pieces_per_package) || 0;
         const packages_per_pallet_num = parseInt(packages_per_pallet) || 0;
-        const costInputBasis = (cost_input_basis === 'per_kg' || cost_input_basis === 'total') ? cost_input_basis : 'total';
+        const costInputBasis = normalizeCostInputBasis(cost_input_basis) || 'total';
 
 
         // تجهيز الحقول المرتبطة بالعملة
@@ -596,6 +681,7 @@ const createMaterial = async (req, res) => {
         const package_cost = (unit_cost * pieces_per_package_num) + (usd.carton_price || 0) + pallet_share;
         const package_cost_syp = (unit_cost_syp * pieces_per_package_num) + (syp.carton_price || 0) + pallet_share_syp;
         const internalRawMap = buildRawNumericMap(req.body, MATERIAL_RAW_FIELDS);
+        internalRawMap.cost_input_basis = costInputBasis;
 
 
         // حفظ المادة
@@ -732,11 +818,12 @@ const updateMaterial = async (req, res) => {
             components
         } = req.body;
 
-        const [materialRows] = await req.db.query(`SELECT id, material_origin FROM materials WHERE id = ?`, [id]);
+        const [materialRows] = await req.db.query(`SELECT id, material_origin, numeric_raw FROM materials WHERE id = ?`, [id]);
         if (materialRows.length === 0) {
             return res.status(404).json({ success: false, message: 'المادة غير موجودة' });
         }
         const existingOrigin = materialRows[0].material_origin === 'external' ? 'external' : 'internal';
+        const existingRawMap = parseRawNumericMap(materialRows[0].numeric_raw);
 
         if (existingOrigin === 'external') {
             const externalMaterialType = (material_type || '').trim();
@@ -855,9 +942,9 @@ const updateMaterial = async (req, res) => {
         const waste_percentage_num = parseFloat(waste_percentage) || 0;
         const pieces_per_package_num = parseInt(pieces_per_package) || 1;
         const packages_per_pallet_num = parseInt(packages_per_pallet) || 1;
-        const costInputBasis = (cost_input_basis === 'per_kg' || cost_input_basis === 'total' || cost_input_basis === 'normalized')
-            ? cost_input_basis
-            : 'normalized';
+        const requestedCostInputBasis = normalizeCostInputBasis(cost_input_basis);
+        const existingCostInputBasis = normalizeCostInputBasis(existingRawMap.cost_input_basis);
+        const costInputBasis = requestedCostInputBasis || existingCostInputBasis || 'normalized';
         // نحفظ packaging_weight كما هو (نص) للحفاظ على الدقة
         const packaging_weight_for_calc = parseFloat(packaging_weight) || 0;
         const packaging_unit_weight_num = parseFloat(packaging_unit_weight) || 0;
@@ -920,6 +1007,11 @@ const updateMaterial = async (req, res) => {
             'pallet_price',
             'packages_per_pallet'
         ]);
+        if (requestedCostInputBasis || existingCostInputBasis) {
+            internalRawMap.cost_input_basis = costInputBasis;
+        } else {
+            delete internalRawMap.cost_input_basis;
+        }
 
         // تحديث المادة
         await req.db.query(`
@@ -1936,7 +2028,9 @@ const getMaterial = async (req, res) => {
             return res.status(404).json({ success: false, message: 'المادة غير موجودة' });
         }
         
-        res.json({ success: true, material: applyMaterialRaw(materials[0]) });
+        const material = applyMaterialRaw(materials[0]);
+        material.cost_input_basis = inferMaterialCostInputBasis(material) || material.cost_input_basis || null;
+        res.json({ success: true, material });
     } catch (error) {
         console.error('خطأ في جلب بيانات المادة:', error);
         res.status(500).json({ success: false, message: 'حدث خطأ في جلب بيانات المادة' });

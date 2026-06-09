@@ -169,13 +169,13 @@ function formatNumberDisplay(value) {
 
 <!-- Modal إضافة مادة جديدة -->
 <div class="modal fade" id="addMaterialModal" tabindex="-1">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
+    <div class="modal-dialog modal-xl" style="max-height: 85vh;">
+        <div class="modal-content" style="max-height: 85vh; display: flex; flex-direction: column; overflow: hidden;">
             <div class="modal-header">
                 <h5 class="modal-title"><i class="bi bi-plus-circle"></i> إضافة مادة جديدة</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body" style="flex: 1 1 auto; min-height: 0; overflow-y: auto;">
                 <form id="materialForm" method="POST" action="/costs/cost-statement">
                     <div class="row g-3">
                         <div class="col-12">
@@ -514,13 +514,13 @@ function formatNumberDisplay(value) {
 
 <!-- Modal تعديل المادة -->
 <div class="modal fade" id="editMaterialModal" tabindex="-1">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
+    <div class="modal-dialog modal-xl" style="max-height: 85vh;">
+        <div class="modal-content" style="max-height: 85vh; display: flex; flex-direction: column; overflow: hidden;">
             <div class="modal-header">
                 <h5 class="modal-title">تعديل المادة</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body" style="flex: 1 1 auto; min-height: 0; overflow-y: auto;">
                 <form id="editMaterialForm">
                     <input type="hidden" id="editMaterialId" name="material_id">
                     <input type="hidden" id="editMaterialOrigin" name="material_origin" value="internal">
@@ -725,6 +725,7 @@ function formatNumberDisplay(value) {
                                 <small class="text-muted d-block mt-2">في حال عدم الاختيار، سيتم اعتماد القيم الحالية كما هي دون إعادة تحويل.</small>
                             </div>
                         </div>
+                        <input type="hidden" id="editCurrentCostInputBasis" value="">
 
                         <!-- ثمن اللصاقة -->
                         <div class="col-md-4">
@@ -1137,6 +1138,7 @@ function editMaterial(materialId) {
                 
                 // تحديد طريقة الحساب
                 const calculationMethod = material.calculation_method || 'traditional';
+                const resolvedCostInputBasis = material.cost_input_basis || '';
                 if (calculationMethod === 'components') {
                     document.getElementById('editComponentsMethod').checked = true;
                     document.getElementById('editTraditionalMethod').checked = false;
@@ -1144,8 +1146,9 @@ function editMaterial(materialId) {
                     document.getElementById('editTraditionalMethod').checked = true;
                     document.getElementById('editComponentsMethod').checked = false;
                 }
-                document.getElementById('editCostBasisPerKg').checked = false;
-                document.getElementById('editCostBasisTotal').checked = false;
+                document.getElementById('editCurrentCostInputBasis').value = resolvedCostInputBasis;
+                document.getElementById('editCostBasisPerKg').checked = resolvedCostInputBasis === 'per_kg';
+                document.getElementById('editCostBasisTotal').checked = resolvedCostInputBasis === 'total';
                 
                 // تبديل العرض حسب طريقة الحساب
                 toggleEditCalculationMethod();
@@ -2501,7 +2504,9 @@ function calculateEditCosts() {
     const piecesPerPackage = parseInt(document.getElementById('editPiecesPerPackage').value) || 1;
     const palletPrice = parseFloat(document.getElementById('editPalletPrice').value) || 0;
     const packagesPerPallet = parseInt(document.getElementById('editPackagesPerPallet').value) || 1;
-    const costInputBasis = document.querySelector('input[name="edit_cost_input_basis"]:checked')?.value || 'normalized';
+    const costInputBasis = document.querySelector('input[name="edit_cost_input_basis"]:checked')?.value
+        || document.getElementById('editCurrentCostInputBasis')?.value
+        || 'normalized';
 
     // حساب كلفة القطعة الواحدة
     const netWeight = grossWeight * (1 - wastePercentage / 100);
@@ -2631,7 +2636,9 @@ function saveMaterialEdit() {
     // تحديد طريقة الحساب
     const calculationMethod = document.querySelector('input[name="edit_calculation_method"]:checked').value;
     const isComponentsMethod = calculationMethod === 'components';
-    const costInputBasis = document.querySelector('input[name="edit_cost_input_basis"]:checked')?.value || 'normalized';
+    const costInputBasis = document.querySelector('input[name="edit_cost_input_basis"]:checked')?.value
+        || document.getElementById('editCurrentCostInputBasis')?.value
+        || 'normalized';
     
     // جمع القيم مع تحويل العملة
     const formData = {

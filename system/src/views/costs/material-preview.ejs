@@ -2,6 +2,11 @@
 <%
 const __isSyp = (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.code === 'SYP');
 const __exchangeRate = (typeof exchangeRate !== 'undefined' && exchangeRate) ? parseFloat(exchangeRate) : 13000;
+const __costInputBasisLabel = (value) => {
+  if (value === 'per_kg') return 'لكل كيلو';
+  if (value === 'total') return 'إجمالي';
+  return 'غير محدد';
+};
 const __currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '$';
 function formatNumberDisplay(value) {
   if (value === null || value === undefined || value === '') return '-';
@@ -112,6 +117,10 @@ const __isExternalMaterial = material.material_origin === 'external';
                                             <%= material.calculation_method === 'components' ? 'العناصر الفرعية' : 'التقليدية' %>
                                         </span>
                                     </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>أساس إدخال التكاليف:</strong></td>
+                                    <td><%= __costInputBasisLabel(material.cost_input_basis) %></td>
                                 </tr>
                             </table>
                         </div>
@@ -562,6 +571,7 @@ function printMaterialDetails() {
                 <table>
                     <tr><th>اسم المادة</th><td>${materialName}</td></tr>
                     <tr><th>نوع المادة</th><td><%= material.material_type %></td></tr>
+                    <tr><th>أساس إدخال التكاليف</th><td><%= __costInputBasisLabel(material.cost_input_basis) %></td></tr>
                     <tr><th>تاريخ الإضافة</th><td><%= formatDate(material.created_at) %></td></tr>
                     <tr><th>آخر تحديث</th><td><%= formatDate(material.updated_at) %></td></tr>
                 </table>

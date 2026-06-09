@@ -28,6 +28,11 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
 const __isSyp = (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.code === 'SYP');
 const __isExternalMaterial = material.material_origin === 'external';
 const __exchangeRate = (typeof exchangeRate !== 'undefined' && exchangeRate) ? parseFloat(exchangeRate) : 13000;
+const __costInputBasisLabel = (value) => {
+  if (value === 'per_kg') return 'لكل كيلو';
+  if (value === 'total') return 'إجمالي';
+  return 'غير محدد';
+};
 let __additionalExpenseItems = [];
 try {
   if (typeof material.additional_expense_items === 'string') __additionalExpenseItems = JSON.parse(material.additional_expense_items || '[]');
@@ -99,6 +104,7 @@ if (!Array.isArray(__extraWeights)) __extraWeights = [];
         <div class="kv"><span>الاسم:</span><span><%= material.material_name %></span></div>
         <div class="kv"><span>النوع:</span><span><%= material.material_type || '-' %></span></div>
         <div class="kv"><span>طريقة الحساب:</span><span><%= material.calculation_method === 'components' ? 'العناصر الفرعية' : 'التقليدية' %></span></div>
+        <div class="kv"><span>أساس إدخال التكاليف:</span><span><%= __costInputBasisLabel(material.cost_input_basis) %></span></div>
         <div class="kv"><span>تاريخ الإضافة:</span><span><%= fmtDate(material.created_at) %></span></div>
         <div class="kv"><span>آخر تحديث:</span><span><%= fmtDate(material.updated_at) %></span></div>
       </div>
