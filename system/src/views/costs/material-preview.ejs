@@ -506,15 +506,24 @@ function formatDate(dateString) {
     return `${day}/${month}/${year}`;
 }
 
-            // دالة جلب سجل التكاليف
+// دالة جلب سجل التكاليف
             const currencySymbol = '<%= defaultCurrency ? defaultCurrency.symbol : "$" %>';
 function loadCostLogs() {
-    const formatInlineNumber = (value) => {
+    const formatCostLogNumber = (value, decimals = 3) => {
         if (value === null || value === undefined || value === '') return '-';
-        if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
-        const num = Number(value);
+        const num = (typeof value === 'number') ? value : parseFloat(value);
         if (!Number.isFinite(num)) return '-';
-        return String(num);
+        const rounded = Math.round(num * Math.pow(10, decimals)) / Math.pow(10, decimals);
+        if (rounded === 0 || Object.is(rounded, -0)) return '0.00';
+        let out = rounded.toFixed(decimals);
+        if (out.includes('.')) {
+            out = out.replace(/0+$/, '');
+            if (out.endsWith('.')) out = out.slice(0, -1);
+            const fractionLength = out.includes('.') ? out.split('.')[1].length : 0;
+            if (fractionLength === 0) out += '.00';
+            else if (fractionLength === 1) out += '0';
+        }
+        return out;
     };
     fetch(`/costs/cost-statement/<%= material.id %>/logs`)
         .then(response => response.json())
@@ -527,8 +536,8 @@ function loadCostLogs() {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${formatDate(log.calculation_date)}</td>
-                                <td>${formatInlineNumber(log.unit_cost)} ${currencySymbol}</td>
-                                <td>${formatInlineNumber(log.package_cost)} ${currencySymbol}</td>
+                                <td>${formatCostLogNumber(log.unit_cost)} ${currencySymbol}</td>
+                                <td>${formatCostLogNumber(log.package_cost)} ${currencySymbol}</td>
                     `;
                     tbody.appendChild(row);
                 });

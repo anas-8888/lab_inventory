@@ -468,7 +468,7 @@ function formatNumberDisplay(value) {
                             </div>
                         </div>
                         <div class="col-md-6 d-flex align-items-end">
-                            <button type="submit" class="btn btn-outline-success w-100 material-save-btn">
+                            <button type="submit" id="addSaveMaterialBtn" class="btn btn-outline-success w-100 material-save-btn">
                                 <i class="bi bi-save me-1"></i> حفظ المادة
                             </button>
                         </div>
@@ -810,7 +810,7 @@ function formatNumberDisplay(value) {
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                <button type="button" class="btn btn-primary" onclick="saveMaterialEdit()">حفظ التعديلات</button>
+                <button type="button" id="editSaveMaterialBtn" class="btn btn-primary" onclick="saveMaterialEdit()">حفظ التعديلات</button>
             </div>
         </div>
     </div>
@@ -1977,9 +1977,12 @@ function calculateCosts() {
   if (grossEl) grossEl.textContent = `${rawNumDisplay(Math.round(grossPackageWeight * 1000) / 1000)} كجم`;
 }
 
+let addMaterialSubmissionInProgress = false;
+
 // معالجة نموذج إضافة المادة
 document.getElementById('materialForm').addEventListener('submit', function(e) {
     e.preventDefault();
+    if (addMaterialSubmissionInProgress) return;
     
     const formData = new FormData(this);
     const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
@@ -2025,6 +2028,9 @@ document.getElementById('materialForm').addEventListener('submit', function(e) {
             payload.external_cost_per_kg_syp = extCostPerKgInput;
         }
 
+        const addSaveBtn = document.getElementById('addSaveMaterialBtn');
+        addMaterialSubmissionInProgress = true;
+        setButtonLoading(addSaveBtn, true, 'جاري الحفظ...');
         fetch('/costs/cost-statement', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -2038,10 +2044,16 @@ document.getElementById('materialForm').addEventListener('submit', function(e) {
                 if (modal) modal.hide();
                 setTimeout(() => window.location.reload(), 1200);
             } else {
+                addMaterialSubmissionInProgress = false;
+                setButtonLoading(addSaveBtn, false);
                 showAlert(data.message || 'حدث خطأ في حفظ المادة', 'error');
             }
         })
-        .catch(() => showAlert('حدث خطأ في حفظ المادة', 'error'));
+        .catch(() => {
+            addMaterialSubmissionInProgress = false;
+            setButtonLoading(addSaveBtn, false);
+            showAlert('حدث خطأ في حفظ المادة', 'error');
+        });
         return;
     }
 
@@ -2142,6 +2154,9 @@ document.getElementById('materialForm').addEventListener('submit', function(e) {
         bodyPayload.additional_expenses_syp = String(addAdditionalItemsTotal);
     }
 
+    const addSaveBtn = document.getElementById('addSaveMaterialBtn');
+    addMaterialSubmissionInProgress = true;
+    setButtonLoading(addSaveBtn, true, 'جاري الحفظ...');
     fetch('/costs/cost-statement', {
         method: 'POST',
         headers: {
@@ -2160,10 +2175,14 @@ document.getElementById('materialForm').addEventListener('submit', function(e) {
             }
             setTimeout(() => window.location.reload(), 1500);
         } else {
+            addMaterialSubmissionInProgress = false;
+            setButtonLoading(addSaveBtn, false);
             showAlert(data.message || 'حدث خطأ في حفظ المادة', 'error');
         }
     })
     .catch(error => {
+        addMaterialSubmissionInProgress = false;
+        setButtonLoading(addSaveBtn, false);
         showAlert('حدث خطأ في حفظ المادة', 'error');
     });
 });
@@ -2386,6 +2405,27 @@ function removeStuckBackdrop() {
     document.body.classList.remove('modal-open');
     document.body.style.overflow = '';
     document.body.style.paddingRight = '';
+}
+
+function setButtonLoading(button, isLoading, loadingText) {
+    if (!button) return;
+    if (isLoading) {
+        if (!button.dataset.originalHtml) {
+            button.dataset.originalHtml = button.innerHTML;
+        }
+        button.disabled = true;
+        button.innerHTML = `
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            ${loadingText}
+        `;
+        return;
+    }
+
+    button.disabled = false;
+    if (button.dataset.originalHtml) {
+        button.innerHTML = button.dataset.originalHtml;
+        delete button.dataset.originalHtml;
+    }
 }
 
 // دالة عرض التنبيهات
@@ -2612,6 +2652,8 @@ function saveMaterialEdit() {
             external_notes: extNotes || null
         };
 
+        const editSaveBtn = document.getElementById('editSaveMaterialBtn');
+        setButtonLoading(editSaveBtn, true, 'جاري التحديث...');
         fetch(`/costs/cost-statement/${materialId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -2626,10 +2668,14 @@ function saveMaterialEdit() {
                 removeStuckBackdrop();
                 setTimeout(() => window.location.reload(), 1200);
             } else {
+                setButtonLoading(editSaveBtn, false);
                 showAlert(data.message || 'حدث خطأ في تحديث المادة', 'error');
             }
         })
-        .catch(() => showAlert('حدث خطأ في تحديث المادة', 'error'));
+        .catch(() => {
+            setButtonLoading(editSaveBtn, false);
+            showAlert('حدث خطأ في تحديث المادة', 'error');
+        });
         return;
     }
     
@@ -2736,6 +2782,8 @@ function saveMaterialEdit() {
     });
     if (editExtras.length) formData.extra_weights = editExtras;
     
+    const editSaveBtn = document.getElementById('editSaveMaterialBtn');
+    setButtonLoading(editSaveBtn, true, 'جاري التحديث...');
     fetch(`/costs/cost-statement/${materialId}`, {
         method: 'PUT',
         headers: {
@@ -2756,10 +2804,12 @@ function saveMaterialEdit() {
             removeStuckBackdrop();
             setTimeout(() => window.location.reload(), 1500);
         } else {
+            setButtonLoading(editSaveBtn, false);
             showAlert(data.message || 'حدث خطأ في تحديث المادة', 'error');
         }
     })
     .catch(error => {
+        setButtonLoading(editSaveBtn, false);
         showAlert('حدث خطأ في تحديث المادة', 'error');
     });
 }
@@ -2785,6 +2835,22 @@ function rawNumDisplay(value) {
     out = out.replace(/(\.\d*?[1-9])0+$/,'$1').replace(/\.0+$/,'');
     if (out === '-0') out = '0';
     return safe < 0 ? ('\u200E' + out) : out;
+}
+function formatCostLogNumber(value, decimals = 3) {
+    if (value === null || value === undefined || value === '') return '-';
+    const n = (typeof value === 'number') ? value : parseFloat(value);
+    if (!Number.isFinite(n)) return '-';
+    const rounded = Math.round(n * Math.pow(10, decimals)) / Math.pow(10, decimals);
+    if (rounded === 0 || Object.is(rounded, -0)) return '0.00';
+    let out = rounded.toFixed(decimals);
+    if (out.includes('.')) {
+        out = out.replace(/0+$/, '');
+        if (out.endsWith('.')) out = out.slice(0, -1);
+        const fractionLength = out.includes('.') ? out.split('.')[1].length : 0;
+        if (fractionLength === 0) out += '.00';
+        else if (fractionLength === 1) out += '0';
+    }
+    return out;
 }
 function formatAggregateDisplay(value) {
     const n = parseFloat(value);
@@ -2901,8 +2967,8 @@ function loadCostLogs(materialId) {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${formatDate(log.calculation_date)}</td>
-                        <td>${rawNumDisplay(log.unit_cost)} ${currencySymbol}</td>
-                        <td>${rawNumDisplay(log.package_cost)} ${currencySymbol}</td>
+                        <td>${formatCostLogNumber(log.unit_cost)} ${currencySymbol}</td>
+                        <td>${formatCostLogNumber(log.package_cost)} ${currencySymbol}</td>
                     `;
                     tbody.appendChild(row);
                 });
