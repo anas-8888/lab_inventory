@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { isAuthenticated, isAdmin } = require('../middleware/auth');
 const costsController = require('../controllers/costsController');
+const packagingUnitsController = require('../controllers/packagingUnitsController');
 const { createRateLimiter } = require('../middleware/simpleRateLimiter');
 const { generatePdfWithMetrics } = require('../utils/pdf');
 
@@ -14,6 +15,11 @@ const publicPdfLimiter = createRateLimiter({
 
 // الصفحة الرئيسية للتكاليف
 router.get('/', isAuthenticated, isAdmin, costsController.getCosts);
+
+router.get('/packaging-units', isAuthenticated, isAdmin, packagingUnitsController.list);
+router.post('/packaging-units', isAuthenticated, isAdmin, packagingUnitsController.create);
+router.put('/packaging-units/:id', isAuthenticated, isAdmin, packagingUnitsController.update);
+router.put('/packaging-units/:id/status', isAuthenticated, isAdmin, packagingUnitsController.setActive);
 
 // المرحلة الأولى: بيان الكلفة
 router.get('/cost-statement', isAuthenticated, isAdmin, costsController.getCostStatement);
@@ -90,7 +96,17 @@ router.get('/cost-statement/export/pdf', publicPdfLimiter, async (req, res) => {
     const fs = require('fs');
     const { v4: uuidv4 } = require('uuid');
     // بدلاً من جلب HTML عبر HTTP (قد يصطدم بالمصادقة)، قم بالرندر محلياً
-    const [materials] = await req.db.query(`SELECT * FROM materials WHERE deleted_at IS NULL ORDER BY created_at DESC`);
+    const [materials] = await req.db.query(`
+      SELECT m.*,
+             ppu.name AS primary_unit_name, ppu.kilograms_per_unit AS primary_unit_kg,
+             spu.name AS secondary_unit_name, spu.kilograms_per_unit AS secondary_unit_kg
+      FROM materials m
+      LEFT JOIN material_packaging_units pmp ON pmp.material_id = m.id AND pmp.unit_role = 'primary'
+      LEFT JOIN packaging_units ppu ON ppu.id = pmp.packaging_unit_id
+      LEFT JOIN material_packaging_units smp ON smp.material_id = m.id AND smp.unit_role = 'secondary'
+      LEFT JOIN packaging_units spu ON spu.id = smp.packaging_unit_id
+      WHERE m.deleted_at IS NULL ORDER BY m.created_at DESC
+    `);
     const isSyp = req.defaultCurrency && req.defaultCurrency.code === 'SYP';
     const displayMaterials = materials.map(m => ({
       ...m,
@@ -148,6 +164,7 @@ router.get('/quotations/:id', isAuthenticated, isAdmin, costsController.getQuota
 router.get('/quotations/:id/print', isAuthenticated, isAdmin, costsController.getQuotationPrintPage);
 router.get('/quotations/:id/print-pdf-raw', costsController.getQuotationPrintRaw);
 router.get('/quotations/:id/pdf', isAuthenticated, isAdmin, costsController.exportQuotationPDF);
+router.get('/quotations/:id/excel', isAuthenticated, isAdmin, costsController.exportQuotationExcel);
 router.get('/quotations/:id/json', isAuthenticated, isAdmin, costsController.getQuotationJson);
 router.put('/quotations/:id', isAuthenticated, isAdmin, costsController.updateQuotation);
 router.delete('/quotations/:id', isAuthenticated, isAdmin, costsController.deleteQuotation);
@@ -159,6 +176,7 @@ router.get('/orders/:id/details', isAuthenticated, isAdmin, costsController.getO
 router.get('/orders/:id/print', isAuthenticated, isAdmin, costsController.getOrderPrintPage);
 router.get('/orders/:id/print-pdf-raw', costsController.getOrderPrintRaw);
 router.get('/orders/:id/pdf', isAuthenticated, isAdmin, costsController.exportOrderPDF);
+router.get('/orders/:id/excel', isAuthenticated, isAdmin, costsController.exportOrderExcel);
 router.post('/orders', isAuthenticated, isAdmin, costsController.createOrder);
 router.put('/orders/:id', isAuthenticated, isAdmin, costsController.updateOrder);
 router.put('/orders/:id/status', isAuthenticated, isAdmin, costsController.updateOrderStatus);

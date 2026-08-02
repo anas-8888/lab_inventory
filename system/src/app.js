@@ -12,6 +12,7 @@ const cron = require('node-cron');
 const http = require('http');
 const { Server } = require('socket.io');
 const { pool } = require('./database/db');
+const { runMigrations } = require('./database/migrations');
 const { authMiddleware } = require('./middleware/auth');
 const { addCurrencyToRequest } = require('./middleware/currency');
 const { trackUserActivity } = require('./middleware/presenceMiddleware');
@@ -432,8 +433,15 @@ process.on('uncaughtException', (error) => {
     console.error('[FATAL][uncaughtException]', error);
 });
 
-// تشغيل الخادم
+// تشغيل الخادم بعد تطبيق المايغريشن المرقمة على قاعدة البيانات الحالية.
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
-});
+runMigrations(pool)
+    .then(() => {
+        server.listen(PORT, '0.0.0.0', () => {
+            console.log(`Server running on port ${PORT}`);
+        });
+    })
+    .catch((error) => {
+        console.error('[FATAL] Database migrations failed:', error);
+        process.exitCode = 1;
+    });

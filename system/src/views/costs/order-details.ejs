@@ -45,6 +45,9 @@ function formatTotalDisplay(value) {
           <button id="exportOrderBtn" class="btn btn-success me-2 no-print" data-bs-toggle="modal" data-bs-target="#exportTypeModal">
             <i class="bi bi-file-earmark-pdf"></i> تصدير PDF
           </button>
+          <button id="exportOrderExcelBtn" class="btn btn-outline-success me-2 no-print" data-bs-toggle="modal" data-bs-target="#exportTypeModal">
+            <i class="bi bi-file-earmark-excel"></i> تصدير Excel
+          </button>
           <a href="/costs/orders" class="btn btn-outline-secondary no-print">
             <i class="bi bi-arrow-right me-1"></i> العودة للطلبيات
           </a>
@@ -57,7 +60,7 @@ function formatTotalDisplay(value) {
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title"><i class="bi bi-file-earmark-pdf me-2 text-success"></i> تم إنشاء ملف PDF</h5>
+              <h5 class="modal-title"><i class="bi bi-file-earmark-arrow-down me-2 text-success"></i> تم إنشاء الملف</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
             </div>
             <div class="modal-body text-center">
@@ -168,12 +171,12 @@ function formatTotalDisplay(value) {
                 <tr>
                   <th>رقم المادة</th>
                   <th>اسم المادة</th>
-                  <th>التعبئة</th>
-                  <th>الكمية المطلوبة</th>
-                  <th>وزن التعبئة</th>
+                  <th>وحدة التعبئة</th>
+                  <th>الوزن</th>
                   <th>شد الكرتون</th>
                   <th>وزن الطرد القائم</th>
-                  <th>سعر الطرد</th>
+                  <th>الكمية</th>
+                  <th>السعر الإفرادي</th>
                   <th>السعر الإجمالي</th>
                   <th>ملاحظات</th>
                 </tr>
@@ -191,15 +194,15 @@ function formatTotalDisplay(value) {
                 <% groupedOrderItems.forEach((group) => { %>
                 <% group.forEach((item, indexInGroup) => { %>
                   <tr>
-                    <td><%= item.material_id || '-' %></td>
+                    <td><%= item.material_number || item.material_id || '-' %></td>
                     <% if (indexInGroup === 0) { %>
                     <td rowspan="<%= group.length %>"><%= item.material_name || '-' %></td>
                     <% } %>
                     <td><%= item.unit || '-' %></td>
-                    <td><%= item.requested_quantity != null ? formatNumberDisplay(item.requested_quantity) : '-' %></td>
                     <td><%= item.packaging_weight != null ? formatNumberDisplay(item.packaging_weight) : '-' %></td>
                     <td><%= item.pieces_per_package != null ? formatNumberDisplay(item.pieces_per_package) : '-' %></td>
                     <td><%= item.gross_weight != null ? formatNumberDisplay(item.gross_weight) : '-' %></td>
+                    <td><%= item.requested_quantity != null ? formatNumberDisplay(item.requested_quantity) : '-' %></td>
                     <td><%= (typeof item.unit_price !== 'undefined') ? formatNumberDisplay(item.unit_price) : '-' %> <%= (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '' %></td>
                     <td><%= (typeof item.total_price !== 'undefined') ? formatNumberDisplay(item.total_price) : '-' %> <%= (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '' %></td>
                     <td><%= item.notes || '-' %></td>
@@ -210,10 +213,10 @@ function formatTotalDisplay(value) {
               <tfoot>
                 <tr class="table-info">
                   <td colspan="3" class="text-center"><strong>الإجماليات</strong></td>
-                  <td><strong><%= typeof totals !== 'undefined' && totals ? formatTotalDisplay(totals.totalRequestedQuantity) : '0' %></strong></td>
                   <td><strong><%= typeof totals !== 'undefined' && totals ? formatTotalDisplay(totals.totalPackagingWeight) : '0' %></strong></td>
                   <td></td>
                   <td><strong><%= typeof totals !== 'undefined' && totals ? formatTotalDisplay(totals.totalGrossWeight || 0) : '0' %></strong></td>
+                  <td><strong><%= typeof totals !== 'undefined' && totals ? formatTotalDisplay(totals.totalRequestedQuantity) : '0' %></strong></td>
                   <td></td>
                   <td><strong><%= typeof totals !== 'undefined' && totals ? formatTotalDisplay(totals.grandTotal) : '0' %> <%= (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '' %></strong></td>
                   <td></td>
@@ -274,15 +277,9 @@ function printAsOrder() {
   const discountedTotalValue = getValidatedOrderDiscountedTotal('printDiscountedTotalInput', 'printDiscountType');
   if (discountedTotalValue === null) return;
   const lang = document.getElementById('printLanguageSelect')?.value || 'ar';
-  window.open(`/costs/orders/<%= order.id %>/print?discounted_total=${encodeURIComponent(discountedTotalValue)}&lang=${encodeURIComponent(lang)}`, '_blank');
-  bootstrap.Modal.getInstance(document.getElementById('printTypeModal')).hide();
-}
-
-function printAsInvoice() {
-  const discountedTotalValue = getValidatedOrderDiscountedTotal('printDiscountedTotalInput', 'printDiscountType');
-  if (discountedTotalValue === null) return;
-  const lang = document.getElementById('printLanguageSelect')?.value || 'ar';
-  window.open(`/costs/orders/<%= order.id %>/print?type=invoice&discounted_total=${encodeURIComponent(discountedTotalValue)}&lang=${encodeURIComponent(lang)}`, '_blank');
+  const fields = Array.from(document.querySelectorAll('.print-output-field:checked')).map(el => el.value);
+  if (!fields.length) return alert('اختر حقلاً واحداً على الأقل.');
+  window.open(`/costs/orders/<%= order.id %>/print?fields=${encodeURIComponent(fields.join(','))}&discounted_total=${encodeURIComponent(discountedTotalValue)}&lang=${encodeURIComponent(lang)}`, '_blank');
   bootstrap.Modal.getInstance(document.getElementById('printTypeModal')).hide();
 }
 
@@ -290,16 +287,11 @@ async function exportAsOrder() {
   const discountedTotalValue = getValidatedOrderDiscountedTotal('exportDiscountedTotalInput', 'exportDiscountType');
   if (discountedTotalValue === null) return;
   const lang = document.getElementById('exportLanguageSelect')?.value || 'ar';
+  const fields = Array.from(document.querySelectorAll('.export-output-field:checked')).map(el => el.value);
+  if (!fields.length) return alert('اختر حقلاً واحداً على الأقل.');
   bootstrap.Modal.getInstance(document.getElementById('exportTypeModal')).hide();
-  await exportPDF(`/costs/orders/<%= order.id %>/pdf?discounted_total=${encodeURIComponent(discountedTotalValue)}&lang=${encodeURIComponent(lang)}`);
-}
-
-async function exportAsInvoice() {
-  const discountedTotalValue = getValidatedOrderDiscountedTotal('exportDiscountedTotalInput', 'exportDiscountType');
-  if (discountedTotalValue === null) return;
-  const lang = document.getElementById('exportLanguageSelect')?.value || 'ar';
-  bootstrap.Modal.getInstance(document.getElementById('exportTypeModal')).hide();
-  await exportPDF(`/costs/orders/<%= order.id %>/pdf?type=invoice&discounted_total=${encodeURIComponent(discountedTotalValue)}&lang=${encodeURIComponent(lang)}`);
+  const kind = window.orderExportKind || 'pdf';
+  await exportPDF(`/costs/orders/<%= order.id %>/${kind}?fields=${encodeURIComponent(fields.join(','))}&discounted_total=${encodeURIComponent(discountedTotalValue)}&lang=${encodeURIComponent(lang)}`, kind);
 }
 
 function getValidatedOrderDiscountedTotal(inputId, typeId) {
@@ -413,6 +405,8 @@ document.addEventListener('DOMContentLoaded', function () {
   const exportInput = document.getElementById('exportDiscountedTotalInput');
   const printType = document.getElementById('printDiscountType');
   const exportType = document.getElementById('exportDiscountType');
+  document.getElementById('exportOrderBtn')?.addEventListener('click', () => { window.orderExportKind = 'pdf'; document.getElementById('orderExportSelectedBtn').textContent = 'تصدير PDF بالحقول المحددة'; });
+  document.getElementById('exportOrderExcelBtn')?.addEventListener('click', () => { window.orderExportKind = 'excel'; document.getElementById('orderExportSelectedBtn').textContent = 'تصدير Excel بالحقول المحددة'; });
   if (printModalEl) printModalEl.addEventListener('show.bs.modal', initializeOrderDiscountInputs);
   if (exportModalEl) exportModalEl.addEventListener('show.bs.modal', initializeOrderDiscountInputs);
   if (printInput) printInput.addEventListener('input', () => updateOrderDiscountHelper('printDiscountedTotalInput', 'printDiscountType', 'printDiscountHelper'));
@@ -437,8 +431,8 @@ document.addEventListener('DOMContentLoaded', function () {
   if (exportInput && exportType && exportType.value === 'percent') exportInput.setAttribute('max', '100');
 });
 
-async function exportPDF(url) {
-  const exportBtn = document.getElementById('exportOrderBtn');
+async function exportPDF(url, kind = 'pdf') {
+  const exportBtn = kind === 'excel' ? document.getElementById('exportOrderExcelBtn') : document.getElementById('exportOrderBtn');
   exportBtn.disabled = true;
   exportBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري التصدير...';
   
@@ -463,7 +457,7 @@ async function exportPDF(url) {
   }
   
   exportBtn.disabled = false;
-  exportBtn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> تصدير PDF';
+  exportBtn.innerHTML = kind === 'excel' ? '<i class="bi bi-file-earmark-excel"></i> تصدير Excel' : '<i class="bi bi-file-earmark-pdf"></i> تصدير PDF';
 }
 </script>
 
@@ -473,7 +467,7 @@ async function exportPDF(url) {
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="printTypeModalLabel">
-          <i class="bi bi-printer me-2"></i> اختر نوع الطباعة
+          <i class="bi bi-printer me-2"></i> اختيار حقول الطباعة
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
@@ -490,26 +484,7 @@ async function exportPDF(url) {
           <input id="printDiscountedTotalInput" type="text" inputmode="decimal" min="0" step="0.01" class="form-control" />
           <small id="printDiscountHelper" class="text-muted d-block mt-1">عند اختيار "قيمة ثابتة": الرقم هو مبلغ خصم مباشر من الإجمالي الحالي.</small>
         </div>
-        <div class="row g-3">
-          <div class="col-md-6">
-            <div class="card h-100 border-primary" style="cursor: pointer;" onclick="printAsOrder()">
-              <div class="card-body text-center">
-                <i class="bi bi-file-earmark-text text-primary" style="font-size: 2rem;"></i>
-                <h6 class="card-title mt-2">طباعة كطلبية</h6>
-                <p class="card-text text-muted small">طباعة الطلبية مع جميع بيانات الطلبية</p>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="card h-100 border-success" style="cursor: pointer;" onclick="printAsInvoice()">
-              <div class="card-body text-center">
-                <i class="bi bi-receipt text-success" style="font-size: 2rem;"></i>
-                <h6 class="card-title mt-2">طباعة كطلبية شحن</h6>
-                <p class="card-text text-muted small">طباعة كطلبية شحن بدون بيانات الطلبية</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <%- include('partials/order-output-fields', { fieldClass: 'print-output-field' }) %>
         <div class="mt-3">
           <label for="printLanguageSelect" class="form-label">لغة الطباعة</label>
           <select id="printLanguageSelect" class="form-select">
@@ -518,6 +493,7 @@ async function exportPDF(url) {
           </select>
           <small class="text-muted d-block mt-1">عند اختيار الإنكليزية سيتم ترجمة المحتوى العربي باستثناء الهيدر والفوتر.</small>
         </div>
+        <button type="button" class="btn btn-primary w-100 mt-3" onclick="printAsOrder()">طباعة الحقول المحددة</button>
       </div>
     </div>
   </div>
@@ -529,7 +505,7 @@ async function exportPDF(url) {
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="exportTypeModalLabel">
-          <i class="bi bi-file-earmark-pdf me-2"></i> اختر نوع التصدير
+          <i class="bi bi-file-earmark-arrow-down me-2"></i> اختيار حقول التصدير
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
@@ -546,26 +522,7 @@ async function exportPDF(url) {
           <input id="exportDiscountedTotalInput" type="text" inputmode="decimal" min="0" step="0.01" class="form-control" />
           <small id="exportDiscountHelper" class="text-muted d-block mt-1">عند اختيار "قيمة ثابتة": الرقم هو مبلغ خصم مباشر من الإجمالي الحالي.</small>
         </div>
-        <div class="row g-3">
-          <div class="col-md-6">
-            <div class="card h-100 border-primary" style="cursor: pointer;" onclick="exportAsOrder()">
-              <div class="card-body text-center">
-                <i class="bi bi-file-earmark-text text-primary" style="font-size: 2rem;"></i>
-                <h6 class="card-title mt-2">تصدير كطلبية</h6>
-                <p class="card-text text-muted small">تصدير الطلبية مع جميع بيانات الطلبية</p>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="card h-100 border-success" style="cursor: pointer;" onclick="exportAsInvoice()">
-              <div class="card-body text-center">
-                <i class="bi bi-receipt text-success" style="font-size: 2rem;"></i>
-                <h6 class="card-title mt-2">تصدير كطلبية شحن</h6>
-                <p class="card-text text-muted small">تصدير كطلبية شحن بدون بيانات الطلبية</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <%- include('partials/order-output-fields', { fieldClass: 'export-output-field' }) %>
         <div class="mt-3">
           <label for="exportLanguageSelect" class="form-label">لغة التصدير</label>
           <select id="exportLanguageSelect" class="form-select">
@@ -574,6 +531,7 @@ async function exportPDF(url) {
           </select>
           <small class="text-muted d-block mt-1">عند اختيار الإنكليزية سيتم ترجمة المحتوى العربي باستثناء الهيدر والفوتر.</small>
         </div>
+        <button id="orderExportSelectedBtn" type="button" class="btn btn-success w-100 mt-3" onclick="exportAsOrder()">تصدير الحقول المحددة</button>
       </div>
     </div>
   </div>

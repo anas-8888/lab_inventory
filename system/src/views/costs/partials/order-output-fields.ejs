@@ -1,0 +1,8 @@
+<div class="border rounded p-3 mb-3">
+  <strong class="d-block mb-2">اختر الحقول التي تريد إظهارها</strong>
+  <div class="row g-2">
+    <% [['client_info','بيانات العميل'],['recipient_name','اسم المستلم'],['dates','التواريخ والحالة'],['preparation_info','بيانات التجهيز'],['shipping_info','بيانات الشحن'],['order_notes','ملاحظات الطلبية'],['material_number','رقم المادة'],['material_name','اسم المادة'],['packaging_unit','وحدة التعبئة'],['packaging_weight','الوزن'],['pieces_per_package','شد الكرتون'],['gross_weight','وزن الطرد القائم'],['requested_quantity','الكمية'],['unit_price','السعر الإفرادي'],['total_price','السعر الإجمالي'],['item_notes','الملاحظات'],['totals','سطر الإجماليات']].forEach(([value,label]) => { %>
+      <div class="col-md-4 col-6"><label class="form-check border rounded px-2 py-2 w-100 m-0"><input class="form-check-input <%= fieldClass %>" type="checkbox" value="<%= value %>" checked> <span class="form-check-label"><%= label %></span></label></div>
+    <% }) %>
+  </div>
+</div>

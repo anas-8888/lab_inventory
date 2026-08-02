@@ -40,6 +40,8 @@ function formatNumberDisplay(value) {
           <thead>
             <tr>
               <th class="text-center"><input type="checkbox" id="selectAllDeletedMaterials"></th>
+              <th>رقم المادة</th>
+              <th>الرقم الجمركي</th>
               <th>اسم المادة</th>
               <th>نوع المادة</th>
               <th>وحدة التعبئة</th>
@@ -55,9 +57,11 @@ function formatNumberDisplay(value) {
                   <td class="text-center">
                     <input type="checkbox" class="deleted-material-checkbox" value="<%= material.id %>">
                   </td>
+                  <td><%= material.material_number || '-' %></td>
+                  <td><%= material.customs_number || '-' %></td>
                   <td><%= material.material_name || '-' %></td>
                   <td><%= material.material_type || '-' %></td>
-                  <td><%= material.packaging_unit || '-' %></td>
+                  <td><%= material.primary_packaging_unit ? material.primary_packaging_unit.name : (material.packaging_unit || '-') %><% if (material.secondary_packaging_unit) { %><br><small><%= material.secondary_packaging_unit.name %></small><% } %></td>
                   <td><%= formatNumberDisplay(material.unit_cost) %> $</td>
                   <td><%= formatNumberDisplay(material.package_cost) %> $</td>
                   <td><%= formatDate(material.deleted_at) %></td>
@@ -65,7 +69,7 @@ function formatNumberDisplay(value) {
               <% }) %>
             <% } else { %>
               <tr>
-                <td colspan="7" class="text-center text-muted py-4">سلة المحذوفات فارغة</td>
+                <td colspan="9" class="text-center text-muted py-4">سلة المحذوفات فارغة</td>
               </tr>
             <% } %>
           </tbody>

@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node --no-deprecation src/app.js",
     "dev": "nodemon --no-deprecation src/app.js",
-    "init-db": "node src/database/init.js"
+    "init-db": "node src/database/init.js",
+    "test": "node --test"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

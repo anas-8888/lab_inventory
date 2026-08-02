@@ -71,6 +71,8 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
         <thead>
           <tr>
             <th style="padding: 5pt 4pt;">#</th>
+            <th style="padding: 5pt 4pt;">رقم المادة</th>
+            <th style="padding: 5pt 4pt;">الرقم الجمركي</th>
             <th style="padding: 5pt 4pt;">اسم المادة</th>
             <th style="padding: 5pt 4pt;">وحدة التعبئة</th>
             <th style="padding: 5pt 4pt;">كلفة القطعة</th>
@@ -87,10 +89,15 @@ const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrenc
             <% group.forEach((item, idxInGroup) => { const m = item.material; const netW = parseFloat(m.packaging_weight); const unitCost = parseFloat(m.unit_cost)||0; const computedCostPerKg = (!isNaN(netW) && netW>0) ? (unitCost/netW) : null; const storedCostSource = (currencySymbol === 'SYP') ? m.price_before_waste_syp : m.price_before_waste; const storedCostPerKg = (storedCostSource !== null && storedCostSource !== undefined && String(storedCostSource).trim() !== '') ? storedCostSource : null; const costPerKg = storedCostPerKg !== null ? storedCostPerKg : computedCostPerKg; %>
             <tr>
               <td style="padding: 6pt 4pt; text-align:center;"><%= num(item.rowNumber,0) %></td>
+              <td style="padding: 6pt 4pt;"><%= m.material_number || '-' %></td>
+              <td style="padding: 6pt 4pt;"><%= m.customs_number || '-' %></td>
               <% if (idxInGroup === 0) { %>
               <td style="padding: 6pt 4pt; text-align:right;" rowspan="<%= group.length %>"><%= m.material_name %></td>
               <% } %>
-              <td style="padding: 6pt 4pt;"><%= m.packaging_unit || '-' %></td>
+              <td style="padding: 6pt 4pt;">
+                <div><%= m.primary_packaging_unit ? m.primary_packaging_unit.name : (m.primary_unit_name || m.packaging_unit || '-') %></div>
+                <% if (m.secondary_packaging_unit || m.secondary_unit_name) { %><div style="font-size:8pt;color:#666"><%= m.secondary_packaging_unit ? m.secondary_packaging_unit.name : m.secondary_unit_name %></div><% } %>
+              </td>
               <td class="nowrap-value" style="padding: 6pt 4pt;"><%= num(m.unit_cost, (currencySymbol==='SYP'?0:2)) %> <%= currencySymbol %></td>
               <td class="nowrap-value" style="padding: 6pt 4pt;"><%= num(m.package_cost, (currencySymbol==='SYP'?0:2)) %> <%= currencySymbol %></td>
               <td class="nowrap-value" style="padding: 6pt 4pt;"><%= (m.gross_package_weight!=null)? num(m.gross_package_weight, 3): '-' %> كجم</td>

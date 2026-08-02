@@ -212,19 +212,19 @@
                           <i class="bi bi-plus-circle me-1"></i> إضافة مادة
                         </button>
                     </div>
-                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                        <table class="table table-bordered" id="editOrderItemsTable">
+                    <div class="table-responsive order-items-shell">
+                        <table class="table table-bordered order-items-entry-table" id="editOrderItemsTable">
                             <thead>
                                 <tr>
                                     <th>المادة</th>
-                                    <th>التعبئة</th>
-                                    <th>الكمية المطلوبة</th>
-                                    <th>وزن التعبئة</th>
+                                    <th>وحدة التعبئة</th>
+                                    <th>الكمية</th>
+                                    <th>الوزن</th>
                                     <th>وزن الطرد القائم</th>
-                                    <th>سعر الوحدة</th>
+                                    <th>السعر الإفرادي</th>
                                     <th>السعر الإجمالي</th>
                                     <th>ملاحظات</th>
-                                    <th>الإجراءات</th>
+                                    <th>الإجراء</th>
                                 </tr>
                             </thead>
                             <tbody id="editOrderItemsBody"></tbody>
@@ -315,19 +315,19 @@
               <i class="bi bi-plus-circle me-1"></i> إضافة مادة
             </button>
           </div>
-          <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-            <table class="table table-bordered" id="orderItemsTable">
+          <div class="table-responsive order-items-shell">
+            <table class="table table-bordered order-items-entry-table" id="orderItemsTable">
               <thead>
                 <tr>
                   <th>المادة</th>
-                  <th>التعبئة</th>
-                  <th>الكمية المطلوبة</th>
-                  <th>وزن التعبئة</th>
+                  <th>وحدة التعبئة</th>
+                  <th>الكمية</th>
+                  <th>الوزن</th>
                   <th>وزن الطرد القائم</th>
-                  <th>سعر الوحدة</th>
+                  <th>السعر الإفرادي</th>
                   <th>السعر الإجمالي</th>
                   <th>ملاحظات</th>
-                  <th>الإجراءات</th>
+                  <th>الإجراء</th>
                 </tr>
               </thead>
               <tbody id="orderItemsBody"></tbody>
@@ -464,6 +464,30 @@ const roundToDecimal = (value, decimals = 2) => {
   return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
 };
 let nextOrderRowId = 0;
+let nextEditOrderRowId = 0;
+function orderMaterialUnits(material, selectedId) {
+  const units = Array.isArray(material?.packaging_units) && material.packaging_units.length
+    ? material.packaging_units
+    : [{ id: '', name: material?.packaging_unit || '', kilograms_per_unit: material?.packaging_weight || 0, unit_role: 'primary' }];
+  return units.map(unit => `<option value="${unit.id}" data-name="${unit.name}" data-kg="${unit.kilograms_per_unit}" ${String(unit.id) === String(selectedId ?? '') || (!selectedId && unit.unit_role === 'primary') ? 'selected' : ''}>${unit.name}</option>`).join('');
+}
+function orderSelectedUnit(material, unitId) {
+  const units = Array.isArray(material?.packaging_units) ? material.packaging_units : [];
+  return units.find(unit => String(unit.id) === String(unitId)) || units.find(unit => unit.unit_role === 'primary') || { id: null, name: material?.packaging_unit || '', kilograms_per_unit: Number(material?.packaging_weight) || 0 };
+}
+function orderMaterialUnitsSummary(material) {
+  const units = Array.isArray(material?.packaging_units) ? material.packaging_units : [];
+  const primary = units.find(unit => unit.unit_role === 'primary') || material?.primary_packaging_unit;
+  const secondary = units.find(unit => unit.unit_role === 'secondary') || material?.secondary_packaging_unit;
+  const primaryName = primary?.name || material?.packaging_unit || '-';
+  return `<div><span class="text-muted small">الأساسية:</span> ${primaryName}</div>${secondary?.name ? `<div><span class="text-muted small">الثانوية:</span> ${secondary.name}</div>` : ''}`;
+}
+function orderScaledValue(material, unit, field) {
+  const primaryKg = Number(material?.primary_packaging_unit?.kilograms_per_unit || material?.packaging_weight) || 0;
+  const selectedKg = Number(unit?.kilograms_per_unit) || primaryKg;
+  const base = Number(material?.[field]) || 0;
+  return primaryKg > 0 ? roundToDecimal(base * selectedKg / primaryKg, defaultCurrencyCode === 'SYP' ? 0 : 2) : base;
+}
 let currentDateInput = null;
 let selectedDate = null;
 let currentMonth = new Date().getMonth();
@@ -906,15 +930,15 @@ function addOrderItemRow(){
   tr.innerHTML = `
     <td>
       <div class="d-flex align-items-center gap-2">
-        <input type="text" class="form-control order-material-name" placeholder="اختر مادة مسجلة" readonly>
+        <textarea class="form-control order-material-name order-material-name-display" rows="2" placeholder="اختر مادة مسجلة" readonly></textarea>
         <input type="hidden" class="order-material-id">
         <button type="button" class="btn btn-outline-primary btn-sm" onclick="openOrderMaterialPicker(${rowId})"><i class="bi bi-search"></i> اختيار</button>
       </div>
     </td>
-    <td><input type="text" class="form-control order-unit" readonly></td>
+    <td><select class="form-select order-unit" onchange="onOrderUnitChange(this)" disabled><option>اختر المادة أولاً</option></select></td>
     <td><input type="text" inputmode="decimal" class="form-control order-qty" step="0.001" min="0" value="1" oninput="onOrderCalcRow(this)"></td>
     <td><input type="text" inputmode="decimal" class="form-control order-net-weight" step="0.001" min="0" placeholder="وزن التعبئة (اختياري)"></td>
-    <td><input type="text" inputmode="decimal" class="form-control order-gross-weight" step="0.001" min="0" placeholder="وزن الطرد القائم"></td>
+    <td><input type="text" inputmode="decimal" class="form-control order-gross-weight" step="0.001" min="0" placeholder="قابل للتعديل" title="يمكنك تعديل وزن الطرد القائم بحرية؛ ويُستخدم في إجمالي الوزن والطباعة والتصدير"></td>
     <td>
       <div class="input-group">
         <input type="text" inputmode="decimal" class="form-control order-unit-price" step="0.01" min="0" placeholder="سعر الوحدة" oninput="onOrderCalcRow(this)">
@@ -938,7 +962,11 @@ function setOrderRowMaterial(tr, material){
   if (!tr || !material) return;
   tr.querySelector('.order-material-id').value = material.id;
   tr.querySelector('.order-material-name').value = material.material_name || '';
-  tr.querySelector('.order-unit').value = material.packaging_unit || '';
+  const unitSelect = tr.querySelector('.order-unit');
+  const selectedUnit = orderSelectedUnit(material, material.primary_packaging_unit_id);
+  unitSelect.innerHTML = orderMaterialUnits(material, selectedUnit.id);
+  unitSelect.disabled = false;
+  tr.querySelector('.order-net-weight').value = selectedUnit.kilograms_per_unit || '';
   // تعليق
   tr.querySelector('.order-gross-weight').value = material.gross_package_weight != null ? String(material.gross_package_weight) : '';
   // تعليق
@@ -946,10 +974,23 @@ function setOrderRowMaterial(tr, material){
   if (qtyEl && (!qtyEl.value || parseFloat(qtyEl.value) <= 0)) qtyEl.value = '1';
   const displayElement = tr.querySelector('.package-cost-display');
   if (displayElement) {
-    const pkg = parseFloat(material.package_cost) || 0;
+    const pkg = orderScaledValue(material, selectedUnit, 'package_cost');
     displayElement.textContent = `كلفة الطرد: ${displayMoney(pkg)} ${currencySymbol}`;
   }
   onOrderCalcRow(qtyEl);
+}
+function onOrderUnitChange(selectEl) {
+  const tr = selectEl.closest('tr');
+  const materialId = tr.querySelector('.order-material-id')?.value;
+  const material = (window.materials || []).find(m => m.id == materialId);
+  if (!material) return;
+  const unit = orderSelectedUnit(material, selectEl.value);
+  tr.querySelector('.order-net-weight').value = unit.kilograms_per_unit || '';
+  const primaryKg = Number(material.primary_packaging_unit?.kilograms_per_unit || material.packaging_weight) || 0;
+  const ratio = primaryKg > 0 ? Number(unit.kilograms_per_unit) / primaryKg : 1;
+  tr.querySelector('.order-gross-weight').value = material.gross_package_weight ? String(roundToDecimal(Number(material.gross_package_weight) * ratio, 3)) : '';
+  const pkg = orderScaledValue(material, unit, 'package_cost');
+  tr.querySelector('.package-cost-display').textContent = `كلفة الطرد: ${displayMoney(pkg)} ${currencySymbol}`;
 }
 
 function collectOrderItems(){
@@ -961,7 +1002,9 @@ function collectOrderItems(){
   document.querySelectorAll('#orderItemsBody tr').forEach(tr =>{
     const materialId = tr.querySelector('.order-material-id')?.value ? parseInt(tr.querySelector('.order-material-id').value) : null;
     const materialName = tr.querySelector('.order-material-name')?.value || '';
-    const unit = tr.querySelector('.order-unit')?.value || null;
+    const unitSelect = tr.querySelector('.order-unit');
+    const unit = unitSelect?.selectedOptions?.[0]?.dataset?.name || null;
+    const packagingUnitId = unitSelect?.value || null;
     const qtyRaw = tr.querySelector('.order-qty')?.value || '';
     const netWeightRaw = tr.querySelector('.order-net-weight')?.value || '';
     const grossWeightRaw = tr.querySelector('.order-gross-weight')?.value || '';
@@ -982,6 +1025,7 @@ function collectOrderItems(){
         material_id: materialId,
         material_name: materialName,
         unit,
+        packaging_unit_id: packagingUnitId,
         requested_quantity: asRawNumeric(qtyRaw),
         net_weight: asRawNumeric(netWeightRaw),
         gross_weight: asRawNumeric(grossWeightRaw),
@@ -1015,6 +1059,8 @@ function onOrderCalcRow(el){
 function addEditOrderItemRow(item){
   const tbody = document.getElementById('editOrderItemsBody');
   const tr = document.createElement('tr');
+  const rowId = nextEditOrderRowId++;
+  tr.setAttribute('data-row-id', rowId);
   const materialOptions = groupedMaterials.map(m => {
     const packageCost = defaultCurrencyCode === 'SYP' 
       ? (m.package_cost_syp || m.package_cost || 0) 
@@ -1027,15 +1073,16 @@ function addEditOrderItemRow(item){
 
   tr.innerHTML = `
     <td>
-      <select class="form-select edit-order-material" onchange="onEditOrderMaterialChange(this)">
-        <option value="">اختر مادة</option>
-        ${materialOptions}
-      </select>
+      <div class="d-flex align-items-start gap-2">
+        <textarea class="form-control edit-order-material-name order-material-name-display" rows="2" placeholder="اختر مادة مسجلة" readonly>${selectedName}</textarea>
+        <input type="hidden" class="edit-order-material" value="${selectedId}">
+        <button type="button" class="btn btn-outline-primary btn-sm" onclick="openOrderMaterialPicker(${rowId}, 'edit')"><i class="bi bi-search"></i> اختيار</button>
+      </div>
     </td>
-    <td><input type="text" class="form-control edit-order-unit" value="${selectedUnit}" readonly></td>
+    <td><select class="form-select edit-order-unit" onchange="onEditOrderUnitChange(this)" disabled><option>${selectedUnit || 'اختر المادة أولاً'}</option></select></td>
     <td><input type="text" inputmode="decimal" class="form-control edit-order-qty" value="${item && item.requested_quantity != null ? item.requested_quantity : ''}"></td>
     <td><input type="text" inputmode="decimal" class="form-control edit-order-net-weight" value="${item && item.net_weight != null ? item.net_weight : ''}" placeholder="وزن التعبئة (اختياري)"></td>
-    <td><input type="text" inputmode="decimal" class="form-control edit-order-gross-weight" value="${item && item.gross_weight != null ? item.gross_weight : ''}" placeholder="وزن الطرد القائم"></td>
+    <td><input type="text" inputmode="decimal" class="form-control edit-order-gross-weight" min="0" value="${item && item.gross_weight != null ? item.gross_weight : ''}" placeholder="قابل للتعديل" title="يمكنك تعديل وزن الطرد القائم بحرية؛ ويُستخدم في إجمالي الوزن والطباعة والتصدير"></td>
     <td>
       <div class="input-group">
         <input type="text" inputmode="decimal" class="form-control edit-order-unit-price" value="${item && item.unit_price != null ? item.unit_price : ''}" oninput="onEditOrderCalcRow(this)">
@@ -1056,34 +1103,35 @@ function addEditOrderItemRow(item){
   tbody.appendChild(tr);
 
   const selectEl = tr.querySelector('.edit-order-material');
-  if (selectedId && Array.from(selectEl.options).some(o => o.value === selectedId)){
-    selectEl.value = selectedId;
-    const unit = selectEl.selectedOptions[0]?.getAttribute('data-unit')||'';
-    tr.querySelector('.edit-order-unit').value = unit || selectedUnit;
+  if (selectedId){
+    const material = groupedMaterials.find(m => String(m.id) === selectedId);
+    const unitSelect = tr.querySelector('.edit-order-unit');
+    if (material) {
+      unitSelect.innerHTML = orderMaterialUnits(material, item?.packaging_unit_id);
+      unitSelect.disabled = false;
+    }
     
          // تعليق
-     const packageCost = selectEl.selectedOptions[0]?.getAttribute('data-package-cost');
+     const packageCost = material ? orderScaledValue(material, orderSelectedUnit(material, item?.packaging_unit_id), 'package_cost') : null;
      const displayElement = tr.querySelector('.edit-package-cost-display');
      if (displayElement && packageCost) {
        const cost = parseFloat(packageCost);
        displayElement.textContent = `كلفة الطرد: ${displayMoney(cost)} ${currencySymbol}`;
      }
   } else if (selectedName){
-    // تعليق
-    const opt = document.createElement('option');
-    opt.value = '';
-    opt.textContent = selectedName;
-    opt.selected = true;
-    selectEl.appendChild(opt);
-    tr.querySelector('.edit-order-unit').value = selectedUnit;
+    tr.querySelector('.edit-order-unit').innerHTML = `<option>${selectedUnit}</option>`;
   }
 }
 
 function onEditOrderMaterialChange(selectEl){
   const tr = selectEl.closest('tr');
   const opt = selectEl.selectedOptions[0];
-  const unit = opt?.getAttribute('data-unit')||'';
-  tr.querySelector('.edit-order-unit').value = unit;
+  selectEl.title = opt?.textContent?.trim() || '';
+  const material = groupedMaterials.find(m => m.id == opt?.value);
+  const unitSelect = tr.querySelector('.edit-order-unit');
+  const primaryUnit = orderSelectedUnit(material, material?.primary_packaging_unit_id);
+  unitSelect.innerHTML = orderMaterialUnits(material, primaryUnit.id);
+  unitSelect.disabled = !material;
   
   // تعليق
   if (opt && opt.value) {
@@ -1120,6 +1168,34 @@ function onEditOrderMaterialChange(selectEl){
   onEditOrderCalcRow(tr.querySelector('.edit-order-qty'));
 }
 
+function setEditOrderRowMaterial(tr, material) {
+  if (!tr || !material) return;
+  tr.querySelector('.edit-order-material').value = material.id;
+  tr.querySelector('.edit-order-material-name').value = material.material_name || '';
+  const unitSelect = tr.querySelector('.edit-order-unit');
+  const primaryUnit = orderSelectedUnit(material, material.primary_packaging_unit_id);
+  unitSelect.innerHTML = orderMaterialUnits(material, primaryUnit.id);
+  unitSelect.disabled = false;
+  tr.querySelector('.edit-order-net-weight').value = primaryUnit.kilograms_per_unit || '';
+  tr.querySelector('.edit-order-gross-weight').value = material.gross_package_weight != null ? String(material.gross_package_weight) : '';
+  const packageCost = orderScaledValue(material, primaryUnit, 'package_cost');
+  tr.querySelector('.edit-package-cost-display').textContent = `كلفة الطرد: ${displayMoney(packageCost)} ${currencySymbol}`;
+  onEditOrderCalcRow(tr.querySelector('.edit-order-qty'));
+}
+function onEditOrderUnitChange(selectEl) {
+  const tr = selectEl.closest('tr');
+  const materialId = tr.querySelector('.edit-order-material')?.value;
+  const material = groupedMaterials.find(m => m.id == materialId);
+  if (!material) return;
+  const unit = orderSelectedUnit(material, selectEl.value);
+  tr.querySelector('.edit-order-net-weight').value = unit.kilograms_per_unit || '';
+  const primaryKg = Number(material.primary_packaging_unit?.kilograms_per_unit || material.packaging_weight) || 0;
+  const ratio = primaryKg > 0 ? Number(unit.kilograms_per_unit) / primaryKg : 1;
+  tr.querySelector('.edit-order-gross-weight').value = material.gross_package_weight ? String(roundToDecimal(Number(material.gross_package_weight) * ratio, 3)) : '';
+  const pkg = orderScaledValue(material, unit, 'package_cost');
+  tr.querySelector('.edit-package-cost-display').textContent = `كلفة الطرد: ${displayMoney(pkg)} ${currencySymbol}`;
+}
+
 function collectEditOrderItems(){
   const items = [];
   const asRawNumeric = (value) => {
@@ -1129,8 +1205,10 @@ function collectEditOrderItems(){
   document.querySelectorAll('#editOrderItemsBody tr').forEach(tr =>{
     const sel = tr.querySelector('.edit-order-material');
     const materialId = sel && sel.value ? parseInt(sel.value) : null;
-    const materialName = sel && sel.selectedOptions[0] ? sel.selectedOptions[0].textContent.trim() : '';
-    const unit = tr.querySelector('.edit-order-unit')?.value || null;
+    const materialName = tr.querySelector('.edit-order-material-name')?.value || '';
+    const unitSelect = tr.querySelector('.edit-order-unit');
+    const unit = unitSelect?.selectedOptions?.[0]?.dataset?.name || unitSelect?.selectedOptions?.[0]?.textContent?.split(' — ')[0] || null;
+    const packagingUnitId = unitSelect?.value || null;
     const qtyRaw = tr.querySelector('.edit-order-qty')?.value || '';
     const netWeightRaw = tr.querySelector('.edit-order-net-weight')?.value || '';
     const grossWeightRaw = tr.querySelector('.edit-order-gross-weight')?.value || '';
@@ -1144,10 +1222,14 @@ function collectEditOrderItems(){
     const notes = tr.querySelector('.edit-order-notes')?.value || null;
     
     // تعليق
+    // حقل المادة مخفي وليس select، لذلك لا يملك selectedOptions.
+    // نقرأ كلفة الوحدة من المادة المختارة مع مراعاة وحدة التعبئة الحالية.
     let packageCostSYP = 0, packageCostUSD = 0;
-    if (sel && sel.selectedOptions[0]) {
-      packageCostSYP = parseFloat(sel.selectedOptions[0].getAttribute('data-package-cost-syp') || 0);
-      packageCostUSD = parseFloat(sel.selectedOptions[0].getAttribute('data-package-cost-usd') || 0);
+    const selectedMaterial = groupedMaterials.find(material => String(material.id) === String(materialId));
+    if (selectedMaterial) {
+      const selectedPackagingUnit = orderSelectedUnit(selectedMaterial, packagingUnitId);
+      packageCostSYP = Number(orderScaledValue(selectedMaterial, selectedPackagingUnit, 'package_cost_syp')) || 0;
+      packageCostUSD = Number(orderScaledValue(selectedMaterial, selectedPackagingUnit, 'package_cost')) || 0;
     }
     
     if (materialId || materialName){
@@ -1155,6 +1237,7 @@ function collectEditOrderItems(){
         material_id: materialId,
         material_name: materialName,
         unit,
+        packaging_unit_id: packagingUnitId,
         requested_quantity: asRawNumeric(qtyRaw),
         net_weight: asRawNumeric(netWeightRaw),
         gross_weight: asRawNumeric(grossWeightRaw),
@@ -1197,7 +1280,7 @@ function onEditOrderCalcRow(el){
         <div class="search-container mb-3">
           <div class="input-group">
             <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
-            <input type="text" class="form-control border-start-0 ps-0" id="orderMaterialSearchInput" placeholder="ابحث باسم المادة أو النوع..." autocomplete="off">
+            <input type="text" class="form-control border-start-0 ps-0" id="orderMaterialSearchInput" placeholder="ابحث برقم المادة أو الرقم الجمركي أو الاسم..." autocomplete="off">
             <button type="button" class="btn btn-outline-secondary border-start-0" id="clearOrderMaterialSearchBtn" style="display: none;"><i class="bi bi-x-lg"></i></button>
           </div>
         </div>
@@ -1205,9 +1288,10 @@ function onEditOrderCalcRow(el){
           <table class="table table-hover">
             <thead class="table-light">
               <tr>
+                <th>رقم المادة</th>
                 <th>المادة</th>
                 <th>النوع</th>
-                <th>التعبئة</th>
+                <th>الوحدة الأساسية / الثانوية</th>
                 <th>كلفة الطرد</th>
                 <th>اختيار</th>
               </tr>
@@ -1221,8 +1305,10 @@ function onEditOrderCalcRow(el){
 </div>
 
 <script>
-function openOrderMaterialPicker(rowId){
+let currentOrderPickerMode = 'create';
+function openOrderMaterialPicker(rowId, mode = 'create'){
   currentOrderPickerRowId = rowId;
+  currentOrderPickerMode = mode === 'edit' ? 'edit' : 'create';
   buildOrderMaterialsPickerTable();
   const modal = new bootstrap.Modal(document.getElementById('selectOrderMaterialModal'));
   modal.show();
@@ -1251,9 +1337,10 @@ function renderOrderMaterialsPickerRows(sourceRows){
       const pkg = displayMoney(m.package_cost || 0);
       rowsHtml += `
         <tr>
+          <td>${m.material_number || '-'}</td>
           ${indexInGroup === 0 ? `<td class="pick-name" rowspan="${group.length}">${m.material_name || '-'}</td>` : ''}
           <td class="pick-type">${m.material_type || ''}</td>
-          <td>${m.packaging_unit || ''}</td>
+          <td>${orderMaterialUnitsSummary(m)}</td>
           <td>${pkg} ${currencySymbol}</td>
           <td><button type="button" class="btn btn-sm btn-success" onclick="selectOrderMaterial(${m.id})"><i class="bi bi-plus-circle"></i></button></td>
         </tr>`;
@@ -1274,7 +1361,9 @@ function wireOrderMaterialSearch(){
       : source.filter((m) => {
           const name = (m?.material_name || '').toLowerCase();
           const type = (m?.material_type || '').toLowerCase();
-          return name.includes(q) || type.includes(q);
+          const number = String(m?.material_number || '').toLowerCase();
+          const customsNumber = String(m?.customs_number || '').toLowerCase();
+          return number.includes(q) || customsNumber.includes(q) || name.includes(q) || type.includes(q);
         });
     renderOrderMaterialsPickerRows(filtered);
     if (clearBtn) clearBtn.style.display = q ? '' : 'none';
@@ -1288,11 +1377,13 @@ function wireOrderMaterialSearch(){
 
 function selectOrderMaterial(materialId){
   if (currentOrderPickerRowId == null) return;
-  const tr = document.querySelector(`#orderItemsBody tr[data-row-id="${currentOrderPickerRowId}"]`);
   const mats = Array.isArray(window.materials) ? window.materials : [];
   const mat = mats.find(m => m.id == materialId);
+  const bodyId = currentOrderPickerMode === 'edit' ? 'editOrderItemsBody' : 'orderItemsBody';
+  const tr = document.querySelector(`#${bodyId} tr[data-row-id="${currentOrderPickerRowId}"]`);
   if (tr && mat){
-    setOrderRowMaterial(tr, mat);
+    if (currentOrderPickerMode === 'edit') setEditOrderRowMaterial(tr, mat);
+    else setOrderRowMaterial(tr, mat);
   }
   const modalEl = document.getElementById('selectOrderMaterialModal');
   const modal = bootstrap.Modal.getInstance(modalEl);
@@ -1396,6 +1487,88 @@ window.selectOrderMaterial = selectOrderMaterial;
 /* تعليق */
 .modal:not(.show) {
     display: none !important;
+}
+
+/* مساحة عمل منظمة لجداول إنشاء وتعديل الطلبية */
+#createOrderModal .modal-body,
+#editOrderModal .modal-body {
+    padding: 1.5rem;
+}
+
+.order-items-shell {
+    min-height: 0;
+    max-height: 50vh;
+    overflow: auto;
+    border: 1px solid #dee2e6;
+    border-radius: .5rem;
+    background: #fff;
+}
+
+.order-items-entry-table {
+    width: 100%;
+    min-width: 1640px;
+    margin: 0;
+    table-layout: fixed;
+}
+
+.order-items-entry-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: .75rem .55rem;
+    background: #f1f5f9;
+    color: #334155;
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.order-items-entry-table td {
+    padding: .65rem .5rem;
+    vertical-align: top;
+    background: #fff;
+}
+
+.order-items-entry-table th:nth-child(1), .order-items-entry-table td:nth-child(1) { width: 360px; }
+.order-items-entry-table th:nth-child(2), .order-items-entry-table td:nth-child(2) { width: 150px; }
+.order-items-entry-table th:nth-child(3), .order-items-entry-table td:nth-child(3) { width: 135px; }
+.order-items-entry-table th:nth-child(4), .order-items-entry-table td:nth-child(4) { width: 145px; }
+.order-items-entry-table th:nth-child(5), .order-items-entry-table td:nth-child(5) { width: 155px; }
+.order-items-entry-table th:nth-child(6), .order-items-entry-table td:nth-child(6) { width: 185px; }
+.order-items-entry-table th:nth-child(7), .order-items-entry-table td:nth-child(7) { width: 185px; }
+.order-items-entry-table th:nth-child(8), .order-items-entry-table td:nth-child(8) { width: 230px; }
+.order-items-entry-table th:nth-child(9), .order-items-entry-table td:nth-child(9) { width: 75px; text-align: center; }
+
+.order-items-entry-table .form-control,
+.order-items-entry-table .form-select {
+    min-width: 0;
+    font-size: .9rem;
+}
+
+.order-material-name-display {
+    min-height: 58px;
+    resize: none;
+    overflow-y: auto;
+    line-height: 1.35;
+    white-space: normal;
+}
+
+.order-items-entry-table .edit-order-material {
+    min-height: 42px;
+}
+
+.order-items-entry-table .package-cost-display,
+.order-items-entry-table .edit-package-cost-display {
+    display: block;
+    margin-top: .35rem;
+    line-height: 1.35;
+    white-space: normal;
+}
+
+@media (max-width: 767.98px) {
+    #createOrderModal .modal-body,
+    #editOrderModal .modal-body { padding: 1rem; }
+    .order-items-entry-table { min-width: 1560px; }
 }
 
 /* إبقاء رقم الطلبية في سطر واحد داخل جدول الطلبيات */

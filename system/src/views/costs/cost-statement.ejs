@@ -24,7 +24,7 @@ function formatNumberDisplay(value) {
                     </a>
                     <div class="input-group cost-search-group">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input type="text" id="materialKeywordSearch" class="form-control" placeholder="ابحث بالاسم أو النوع">
+                        <input type="text" id="materialKeywordSearch" class="form-control" placeholder="ابحث برقم المادة أو الجمركي أو الاسم">
                     </div>
                     <input type="text" id="materialDateSearch" class="form-control datepicker cost-date-filter" placeholder="يوم/شهر/سنة">
                     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMaterialModal">
@@ -59,6 +59,7 @@ function formatNumberDisplay(value) {
                                     <th class="text-center">
                                         <input type="checkbox" id="selectAllMaterials">
                                     </th>
+                                    <th>رقم المادة</th>
                                     <th>اسم المادة</th>
                                     <th>وحدة التعبئة</th>
                                     <th class="text-center">كلفة القطعة</th>
@@ -85,14 +86,20 @@ function formatNumberDisplay(value) {
                                 %>
                                 <% groupedMaterials.forEach((group, groupIndex) => { %>
                                 <% group.forEach((material, indexInGroup) => { %>
-                                <tr data-group-key="g-<%= groupIndex %>" data-material-name="<%= material.material_name || '' %>" data-material-type="<%= material.material_type || '' %>">
+                                <tr data-group-key="g-<%= groupIndex %>" data-material-number="<%= material.material_number || '' %>" data-customs-number="<%= material.customs_number || '' %>" data-material-name="<%= material.material_name || '' %>" data-material-type="<%= material.material_type || '' %>">
                                     <td class="text-center">
                                         <input type="checkbox" class="material-row-checkbox" value="<%= material.id %>">
                                     </td>
+                                    <td class="text-nowrap"><%= material.material_number || '-' %></td>
                                     <% if (indexInGroup === 0) { %>
                                     <td class="material-name" data-group-key="g-<%= groupIndex %>" rowspan="<%= group.length %>"><%= material.material_name %><span class="material-type" style="display:none"><%= material.material_type %></span></td>
                                     <% } %>
-                                    <td><%= material.packaging_unit || '-' %></td>
+                                    <td class="small fw-normal">
+                                        <% if (material.primary_packaging_unit) { %>
+                                            <div><%= material.primary_packaging_unit.name %></div>
+                                            <% if (material.secondary_packaging_unit) { %><div class="text-muted"><%= material.secondary_packaging_unit.name %></div><% } %>
+                                        <% } else { %><%= material.packaging_unit || '-' %><% } %>
+                                    </td>
                                     <td>
                                         <%= (defaultCurrency && defaultCurrency.code === 'SYP')
                                             ? String(Math.round(parseFloat(material.unit_cost) || 0))
@@ -192,6 +199,37 @@ function formatNumberDisplay(value) {
                             </div>
                         </div>
 
+                        <div class="col-md-6">
+                            <label class="form-label">رقم المادة *</label>
+                            <input type="text" class="form-control" id="addMaterialNumber" name="material_number" maxlength="255" required autocomplete="off">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">الرقم الجمركي (اختياري)</label>
+                            <input type="text" class="form-control" id="addCustomsNumber" name="customs_number" maxlength="255" autocomplete="off">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">وحدة التعبئة الأساسية *</label>
+                            <select class="form-select" id="addPrimaryPackagingUnit" name="primary_packaging_unit_id" required onchange="handleAddPackagingUnitChange()">
+                                <option value="">اختر الوحدة</option>
+                                <% packagingUnits.forEach(unit => { %>
+                                    <option value="<%= unit.id %>" data-kg="<%= unit.kilograms_per_unit %>"><%= unit.name %></option>
+                                <% }) %>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">وحدة التعبئة الثانوية (اختياري)</label>
+                            <select class="form-select" id="addSecondaryPackagingUnit" name="secondary_packaging_unit_id" onchange="handleAddPackagingUnitChange()">
+                                <option value="">بدون وحدة ثانوية</option>
+                                <% packagingUnits.forEach(unit => { %>
+                                    <option value="<%= unit.id %>"><%= unit.name %></option>
+                                <% }) %>
+                            </select>
+                        </div>
+                        <input type="hidden" name="packaging_unit" id="addPackagingUnitName">
+                        <input type="hidden" name="packaging_weight" id="addPackagingWeight">
+
                         <div id="addExternalSimpleFields" class="col-12" style="display:none;">
                             <div class="row g-3">
                                 <div class="col-md-6">
@@ -201,10 +239,6 @@ function formatNumberDisplay(value) {
                                 <div class="col-md-6">
                                     <label class="form-label">اسم المادة *</label>
                                     <input type="text" class="form-control" id="externalMaterialName" placeholder="اسم المادة الخارجية">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">وحدة التعبئة *</label>
-                                    <input type="text" class="form-control" id="externalPackagingUnit" placeholder="مثال: كرتون، عبوة، كيس">
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">كلفة القطعة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
@@ -343,17 +377,11 @@ function formatNumberDisplay(value) {
                             <input type="text" inputmode="decimal" class="form-control" name="waste_percentage" step="0.01" required>
                         </div>
 
-                        <!-- وحدة التعبئة -->
-                        <div class="col-md-4">
-                            <label class="form-label">وحدة التعبئة *</label>
-                            <input type="text" class="form-control" name="packaging_unit" value="سطل" required>
-                        </div>
-
-                        <!-- وزن المادة (داخل العبوة) -->
+                        <!-- وزن المادة مشتق من وحدة التعبئة الأساسية -->
                         <div class="col-md-4">
                             <label class="form-label">وزن المادة (كجم) *</label>
-                            <input type="text" inputmode="decimal" class="form-control" name="packaging_weight" step="0.001" required>
-                            <small class="text-muted">هذا وزن المادة داخل العبوة</small>
+                            <input type="text" class="form-control" id="addPackagingWeightDisplay" readonly>
+                            <small class="text-muted">يُحدد تلقائيًا من وحدة التعبئة الأساسية</small>
                         </div>
 
                         <!-- وزن وحدة التعبئة (وزن العبوة الفارغة) -->
@@ -531,6 +559,37 @@ function formatNumberDisplay(value) {
                             </div>
                         </div>
 
+                        <div class="col-md-6">
+                            <label class="form-label">رقم المادة *</label>
+                            <input type="text" class="form-control" id="editMaterialNumber" name="material_number" maxlength="255" required autocomplete="off">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">الرقم الجمركي (اختياري)</label>
+                            <input type="text" class="form-control" id="editCustomsNumber" name="customs_number" maxlength="255" autocomplete="off">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">وحدة التعبئة الأساسية *</label>
+                            <select class="form-select" id="editPrimaryPackagingUnit" name="primary_packaging_unit_id" required onchange="handleEditPackagingUnitChange()">
+                                <option value="">اختر الوحدة</option>
+                                <% packagingUnits.forEach(unit => { %>
+                                    <option value="<%= unit.id %>" data-kg="<%= unit.kilograms_per_unit %>"><%= unit.name %></option>
+                                <% }) %>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">وحدة التعبئة الثانوية (اختياري)</label>
+                            <select class="form-select" id="editSecondaryPackagingUnit" name="secondary_packaging_unit_id" onchange="handleEditPackagingUnitChange()">
+                                <option value="">بدون وحدة ثانوية</option>
+                                <% packagingUnits.forEach(unit => { %>
+                                    <option value="<%= unit.id %>"><%= unit.name %></option>
+                                <% }) %>
+                            </select>
+                        </div>
+                        <input type="hidden" id="editPackagingUnit" name="packaging_unit">
+                        <input type="hidden" id="editPackagingWeight" name="packaging_weight">
+
                         <div id="editExternalSimpleFields" class="col-12" style="display:none;">
                             <div class="row g-3">
                                 <div class="col-md-6">
@@ -540,10 +599,6 @@ function formatNumberDisplay(value) {
                                 <div class="col-md-6">
                                     <label class="form-label">اسم المادة *</label>
                                     <input type="text" class="form-control" id="editExternalMaterialName">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">وحدة التعبئة *</label>
-                                    <input type="text" class="form-control" id="editExternalPackagingUnit">
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">كلفة القطعة (<%= defaultCurrency ? defaultCurrency.symbol : '$' %>) *</label>
@@ -682,16 +737,10 @@ function formatNumberDisplay(value) {
                             <input type="text" inputmode="decimal" class="form-control" id="editWastePercentage" name="waste_percentage" step="0.01" required>
                         </div>
 
-                        <!-- وحدة التعبئة -->
-                        <div class="col-md-4">
-                            <label class="form-label">وحدة التعبئة *</label>
-                            <input type="text" class="form-control" id="editPackagingUnit" name="packaging_unit" required>
-                        </div>
-
-                        <!-- وزن المادة (داخل العبوة) -->
+                        <!-- وزن المادة مشتق من وحدة التعبئة الأساسية -->
                         <div class="col-md-4">
                             <label class="form-label">وزن المادة (كجم) *</label>
-                            <input type="text" inputmode="decimal" class="form-control" id="editPackagingWeight" name="packaging_weight" step="0.001" required>
+                            <input type="text" class="form-control" id="editPackagingWeightDisplay" readonly>
                         </div>
                         <!-- وزن وحدة التعبئة (العبوة الفارغة) -->
                         <div class="col-md-4">
@@ -829,6 +878,14 @@ function formatNumberDisplay(value) {
                     <div class="col-md-6">
                         <h6 class="text-primary mb-3">المعلومات الأساسية</h6>
                         <table class="table table-borderless">
+                            <tr>
+                                <td><strong>رقم المادة:</strong></td>
+                                <td id="viewMaterialNumber">-</td>
+                            </tr>
+                            <tr>
+                                <td><strong>الرقم الجمركي:</strong></td>
+                                <td id="viewCustomsNumber">-</td>
+                            </tr>
                             <tr>
                                 <td><strong>اسم المادة:</strong></td>
                                 <td id="viewMaterialName">-</td>
@@ -1014,6 +1071,41 @@ function formatNumberDisplay(value) {
 </div>
 
 <script>
+function applyWasteMarkup(costBeforeWaste, wastePercentage) {
+    const cost = Number(costBeforeWaste);
+    const percentage = Number(wastePercentage);
+    if (!Number.isFinite(cost) || !Number.isFinite(percentage)) return 0;
+    return cost * (1 + percentage / 100);
+}
+
+function syncPackagingSelection(primarySelectId, secondarySelectId, nameInputId, weightInputId, displayInputId) {
+    const primary = document.getElementById(primarySelectId);
+    const secondary = document.getElementById(secondarySelectId);
+    const option = primary?.selectedOptions?.[0];
+    if (secondary && primary?.value && secondary.value === primary.value) secondary.value = '';
+    const kg = option?.dataset?.kg || '';
+    const name = option && option.value ? option.textContent.split(' — ')[0].trim() : '';
+    const nameInput = document.getElementById(nameInputId);
+    const weightInput = document.getElementById(weightInputId);
+    const displayInput = document.getElementById(displayInputId);
+    if (nameInput) nameInput.value = name;
+    if (weightInput) weightInput.value = kg;
+    if (displayInput) displayInput.value = kg ? `${kg} كجم` : '';
+    return { id: primary?.value || '', secondaryId: secondary?.value || '', name, kg };
+}
+function handleAddPackagingUnitChange() {
+    const selection = syncPackagingSelection('addPrimaryPackagingUnit', 'addSecondaryPackagingUnit', 'addPackagingUnitName', 'addPackagingWeight', 'addPackagingWeightDisplay');
+    const externalNetWeight = document.getElementById('externalNetWeight');
+    if (externalNetWeight && selection.kg) externalNetWeight.value = selection.kg;
+    calculateCosts();
+}
+function handleEditPackagingUnitChange() {
+    const selection = syncPackagingSelection('editPrimaryPackagingUnit', 'editSecondaryPackagingUnit', 'editPackagingUnit', 'editPackagingWeight', 'editPackagingWeightDisplay');
+    const externalNetWeight = document.getElementById('editExternalNetWeight');
+    if (externalNetWeight && selection.kg) externalNetWeight.value = selection.kg;
+    calculateEditCosts();
+}
+
 // تحسين إمكانية الوصول للمودالات
 document.addEventListener('DOMContentLoaded', function() {
     const modals = document.querySelectorAll('.modal');
@@ -1110,15 +1202,17 @@ function editMaterial(materialId) {
                 document.getElementById('editMaterialOrigin').value = materialOrigin;
                 document.getElementById('editMaterialType').value = material.material_type;
                 document.getElementById('editMaterialName').value = material.material_name;
+                document.getElementById('editMaterialNumber').value = material.material_number || '';
+                document.getElementById('editCustomsNumber').value = material.customs_number || '';
                 document.getElementById('editGrossWeight').value = material.gross_weight;
                 document.getElementById('editWastePercentage').value = material.waste_percentage;
-                document.getElementById('editPackagingUnit').value = material.packaging_unit;
-                document.getElementById('editPackagingWeight').value = material.packaging_weight;
+                document.getElementById('editPrimaryPackagingUnit').value = material.primary_packaging_unit_id || '';
+                document.getElementById('editSecondaryPackagingUnit').value = material.secondary_packaging_unit_id || '';
+                handleEditPackagingUnitChange();
                 document.getElementById('editPiecesPerPackage').value = material.pieces_per_package;
                 document.getElementById('editPackagesPerPallet').value = material.packages_per_pallet;
                 document.getElementById('editExternalMaterialType').value = material.material_type || '';
                 document.getElementById('editExternalMaterialName').value = material.material_name || '';
-                document.getElementById('editExternalPackagingUnit').value = material.packaging_unit || '';
                 document.getElementById('editExternalNetWeight').value = material.packaging_weight || material.gross_weight || '';
                 document.getElementById('editExternalNotes').value = material.external_notes || '';
                 const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
@@ -1347,14 +1441,12 @@ function toggleAddMaterialOrigin() {
     setRequiredInContainer(internalWrap, !isExternal);
     const extName = document.getElementById('externalMaterialName');
     const extType = document.getElementById('externalMaterialType');
-    const extPackagingUnit = document.getElementById('externalPackagingUnit');
     const extUnitCost = document.getElementById('externalUnitCost');
     const extPackageCost = document.getElementById('externalPackageCost');
     const extNetWeight = document.getElementById('externalNetWeight');
     const extCostPerKg = document.getElementById('externalCostPerKg');
     if (extType) extType.required = isExternal;
     if (extName) extName.required = isExternal;
-    if (extPackagingUnit) extPackagingUnit.required = isExternal;
     if (extUnitCost) extUnitCost.required = isExternal;
     if (extPackageCost) extPackageCost.required = isExternal;
     if (extNetWeight) extNetWeight.required = isExternal;
@@ -1372,14 +1464,12 @@ function toggleEditMaterialOrigin(origin) {
     setRequiredInContainer(internalWrap, !isExternal);
     const extName = document.getElementById('editExternalMaterialName');
     const extType = document.getElementById('editExternalMaterialType');
-    const extPackagingUnit = document.getElementById('editExternalPackagingUnit');
     const extUnitCost = document.getElementById('editExternalUnitCost');
     const extPackageCost = document.getElementById('editExternalPackageCost');
     const extNetWeight = document.getElementById('editExternalNetWeight');
     const extCostPerKg = document.getElementById('editExternalCostPerKg');
     if (extType) extType.required = isExternal;
     if (extName) extName.required = isExternal;
-    if (extPackagingUnit) extPackagingUnit.required = isExternal;
     if (extUnitCost) extUnitCost.required = isExternal;
     if (extPackageCost) extPackageCost.required = isExternal;
     if (extNetWeight) extNetWeight.required = isExternal;
@@ -1922,7 +2012,7 @@ function calculateCosts() {
     // حساب كلفة القطعة الواحدة
     const netWeight = grossWeight * (1 - wastePercentage / 100);
     const pricePerKgBeforeWaste = grossWeight > 0 ? (priceBeforeWaste / grossWeight) : 0;
-    const pricePerKgAfterWaste = pricePerKgBeforeWaste / (1 - wastePercentage / 100 || 1);
+    const pricePerKgAfterWaste = applyWasteMarkup(pricePerKgBeforeWaste, wastePercentage);
   const packagingWeight = parseFloat(document.querySelector('input[name="packaging_weight"]').value) || 0; // وزن المادة
     const materialCostInUnit = pricePerKgAfterWaste * packagingWeight;
     const normalizedCosts = normalizeAuxiliaryCostsByBasis({
@@ -1992,7 +2082,8 @@ document.getElementById('materialForm').addEventListener('submit', function(e) {
     if (materialOrigin === 'external') {
         const extType = (document.getElementById('externalMaterialType')?.value || '').trim();
         const extName = (document.getElementById('externalMaterialName')?.value || '').trim();
-        const extPackagingUnit = (document.getElementById('externalPackagingUnit')?.value || '').trim();
+        const primaryPackagingUnitId = formData.get('primary_packaging_unit_id');
+        const secondaryPackagingUnitId = formData.get('secondary_packaging_unit_id');
         const extUnitCostInput = normalizeNumericInput(document.getElementById('externalUnitCost')?.value, '0');
         const extPackageCostInput = normalizeNumericInput(document.getElementById('externalPackageCost')?.value, '0');
         const extNetWeightInput = normalizeNumericInput(document.getElementById('externalNetWeight')?.value, '0');
@@ -2003,7 +2094,7 @@ document.getElementById('materialForm').addEventListener('submit', function(e) {
         const extCostPerKgRaw = parseFloat(extCostPerKgInput) || 0;
         const extNotes = (document.getElementById('externalNotes')?.value || '').trim();
 
-        if (!extType || !extName || !extPackagingUnit || extUnitCostRaw <= 0 || extPackageCostRaw <= 0 || extNetWeight <= 0 || extCostPerKgRaw <= 0) {
+        if (!extType || !extName || !primaryPackagingUnitId || extUnitCostRaw <= 0 || extPackageCostRaw <= 0 || extNetWeight <= 0 || extCostPerKgRaw <= 0) {
             showAlert('يرجى إدخال كل حقول المادة الخارجية المطلوبة', 'error');
             return;
         }
@@ -2013,9 +2104,12 @@ document.getElementById('materialForm').addEventListener('submit', function(e) {
         const extCostPerKgUsd = currentCurrency === 'SYP' ? (extCostPerKgRaw / exchangeRate) : extCostPerKgRaw;
         const payload = {
             material_origin: 'external',
+            material_number: document.getElementById('addMaterialNumber').value,
+            customs_number: document.getElementById('addCustomsNumber').value || null,
             material_type: extType,
             material_name: extName,
-            external_packaging_unit: extPackagingUnit,
+            primary_packaging_unit_id: primaryPackagingUnitId,
+            secondary_packaging_unit_id: secondaryPackagingUnitId || null,
             external_unit_cost: String(extUnitCostUsd),
             external_package_cost: String(extPackageCostUsd),
             external_net_weight: extNetWeightInput,
@@ -2069,6 +2163,8 @@ document.getElementById('materialForm').addEventListener('submit', function(e) {
     // تجهيز الحقول الرقمية غير المرتبطة بالعملة كما هي
     const bodyPayload = {
             material_type: formData.get('material_type'),
+            material_number: formData.get('material_number'),
+            customs_number: formData.get('customs_number') || null,
             material_name: formData.get('material_name'),
             calculation_method: calculationMethod,
             waste_percentage: formData.get('waste_percentage'),
@@ -2078,6 +2174,8 @@ document.getElementById('materialForm').addEventListener('submit', function(e) {
             pieces_per_package: formData.get('pieces_per_package'),
             packages_per_pallet: formData.get('packages_per_pallet'),
             cost_input_basis: costInputBasis
+            ,primary_packaging_unit_id: formData.get('primary_packaging_unit_id')
+            ,secondary_packaging_unit_id: formData.get('secondary_packaging_unit_id') || null
     };
     
     // إضافة الوزن والسعر حسب طريقة الحساب
@@ -2322,10 +2420,6 @@ function setupAddMaterialForm() {
         materialTypeInput.value = 'زيتون';
     }
     
-    const packagingUnitInput = document.querySelector('#addMaterialModal input[name="packaging_unit"]');
-    if (packagingUnitInput && !packagingUnitInput.value) {
-        packagingUnitInput.value = 'سطل';
-    }
     const addBasisPerKg = document.getElementById('costBasisPerKg');
     const addBasisTotal = document.getElementById('costBasisTotal');
     if (addBasisPerKg && addBasisTotal) {
@@ -2333,6 +2427,7 @@ function setupAddMaterialForm() {
         addBasisTotal.checked = true;
     }
     toggleAddMaterialOrigin();
+    handleAddPackagingUnitChange();
 }
 
 // دالة إعادة تعيين نموذج إضافة المادة
@@ -2352,7 +2447,6 @@ function resetAddMaterialForm() {
         if (addExpCont) addExpCont.innerHTML = '';
         const extName = document.getElementById('externalMaterialName');
         const extType = document.getElementById('externalMaterialType');
-        const extPackagingUnit = document.getElementById('externalPackagingUnit');
         const extUnitCost = document.getElementById('externalUnitCost');
         const extPackageCost = document.getElementById('externalPackageCost');
         const extNetWeight = document.getElementById('externalNetWeight');
@@ -2360,7 +2454,6 @@ function resetAddMaterialForm() {
         const extNotes = document.getElementById('externalNotes');
         if (extType) extType.value = '';
         if (extName) extName.value = '';
-        if (extPackagingUnit) extPackagingUnit.value = '';
         if (extUnitCost) extUnitCost.value = '';
         if (extPackageCost) extPackageCost.value = '';
         if (extNetWeight) extNetWeight.value = '';
@@ -2551,7 +2644,7 @@ function calculateEditCosts() {
     // حساب كلفة القطعة الواحدة
     const netWeight = grossWeight * (1 - wastePercentage / 100);
     const pricePerKgBeforeWaste = grossWeight > 0 ? (priceBeforeWaste / grossWeight) : 0;
-    const pricePerKgAfterWaste = pricePerKgBeforeWaste / (1 - wastePercentage / 100 || 1);
+    const pricePerKgAfterWaste = applyWasteMarkup(pricePerKgBeforeWaste, wastePercentage);
   const packagingWeight = parseFloat(document.getElementById('editPackagingWeight').value) || 0; // وزن المادة
     const materialCostInUnit = pricePerKgAfterWaste * packagingWeight;
     const normalizedCosts = costInputBasis === 'normalized'
@@ -2625,14 +2718,15 @@ function saveMaterialEdit() {
     if (materialOrigin === 'external') {
         const extType = (document.getElementById('editExternalMaterialType')?.value || '').trim();
         const extName = (document.getElementById('editExternalMaterialName')?.value || '').trim();
-        const extPackagingUnit = (document.getElementById('editExternalPackagingUnit')?.value || '').trim();
+        const primaryPackagingUnitId = document.getElementById('editPrimaryPackagingUnit').value;
+        const secondaryPackagingUnitId = document.getElementById('editSecondaryPackagingUnit').value;
         const extUnitCostRaw = parseFloat(document.getElementById('editExternalUnitCost')?.value || '0') || 0;
         const extPackageCostRaw = parseFloat(document.getElementById('editExternalPackageCost')?.value || '0') || 0;
         const extNetWeight = parseFloat(document.getElementById('editExternalNetWeight')?.value || '0') || 0;
         const extCostPerKgRaw = parseFloat(document.getElementById('editExternalCostPerKg')?.value || '0') || 0;
         const extNotes = (document.getElementById('editExternalNotes')?.value || '').trim();
 
-        if (!extType || !extName || !extPackagingUnit || extUnitCostRaw <= 0 || extPackageCostRaw <= 0 || extNetWeight <= 0 || extCostPerKgRaw <= 0) {
+        if (!extType || !extName || !primaryPackagingUnitId || extUnitCostRaw <= 0 || extPackageCostRaw <= 0 || extNetWeight <= 0 || extCostPerKgRaw <= 0) {
             showAlert('يرجى إدخال كل حقول المادة الخارجية المطلوبة', 'error');
             return;
         }
@@ -2641,10 +2735,13 @@ function saveMaterialEdit() {
         const extPackageCostUsd = currentCurrency === 'SYP' ? (extPackageCostRaw / exchangeRate) : extPackageCostRaw;
         const extCostPerKgUsd = currentCurrency === 'SYP' ? (extCostPerKgRaw / exchangeRate) : extCostPerKgRaw;
         const payload = {
-            material_origin: 'external',
+        material_origin: 'external',
+        material_number: document.getElementById('editMaterialNumber').value,
+        customs_number: document.getElementById('editCustomsNumber').value || null,
             material_type: extType,
             material_name: extName,
-            external_packaging_unit: extPackagingUnit,
+            primary_packaging_unit_id: primaryPackagingUnitId,
+            secondary_packaging_unit_id: secondaryPackagingUnitId || null,
             external_unit_cost: extUnitCostUsd,
             external_package_cost: extPackageCostUsd,
             external_net_weight: extNetWeight,
@@ -2689,6 +2786,8 @@ function saveMaterialEdit() {
     // جمع القيم مع تحويل العملة
     const formData = {
         material_type: document.getElementById('editMaterialType').value,
+        material_number: document.getElementById('editMaterialNumber').value,
+        customs_number: document.getElementById('editCustomsNumber').value || null,
         material_name: document.getElementById('editMaterialName').value,
         calculation_method: calculationMethod,
         waste_percentage: document.getElementById('editWastePercentage').value,
@@ -2698,6 +2797,8 @@ function saveMaterialEdit() {
         pieces_per_package: document.getElementById('editPiecesPerPackage').value,
         packages_per_pallet: document.getElementById('editPackagesPerPallet').value,
         cost_input_basis: costInputBasis
+        ,primary_packaging_unit_id: document.getElementById('editPrimaryPackagingUnit').value
+        ,secondary_packaging_unit_id: document.getElementById('editSecondaryPackagingUnit').value || null
     };
 
     const editAdditionalExpenseItemsRaw = getAdditionalExpenseItems('#editAdditionalExpensesContainer');
@@ -2878,6 +2979,8 @@ function viewMaterial(materialId) {
                 try {
                     // ملء البيانات الأساسية
                     document.getElementById('viewMaterialName').textContent = material.material_name || '-';
+                    document.getElementById('viewMaterialNumber').textContent = material.material_number || '-';
+                    document.getElementById('viewCustomsNumber').textContent = material.customs_number || '-';
                     document.getElementById('viewMaterialType').textContent = material.material_type || '-';
                     document.getElementById('viewMaterialDate').textContent = formatDate(material.created_at);
                     document.getElementById('viewMaterialUpdated').textContent = formatDate(material.updated_at);
@@ -2899,7 +3002,13 @@ function viewMaterial(materialId) {
                 document.getElementById('viewNetWeight').textContent = rawNumDisplay(netWeight) + ' كجم';
                 
                 // ملء بيانات التعبئة
-                document.getElementById('viewPackagingUnit').textContent = material.packaging_unit || '-';
+                const primaryUnitText = material.primary_packaging_unit
+                    ? material.primary_packaging_unit.name
+                    : (material.packaging_unit || '-');
+                const secondaryUnitText = material.secondary_packaging_unit
+                    ? ` / ${material.secondary_packaging_unit.name}`
+                    : '';
+                document.getElementById('viewPackagingUnit').textContent = primaryUnitText + secondaryUnitText;
                 document.getElementById('viewPackagingWeight').textContent = rawNumDisplay(material.packaging_weight) + ' كجم';
                 document.getElementById('viewPiecesPerPackage').textContent = material.pieces_per_package || '-';
                 document.getElementById('viewPackagesPerPallet').textContent = material.packages_per_pallet || '-';
@@ -3317,8 +3426,12 @@ document.addEventListener('DOMContentLoaded', function() {
         rows.forEach((row) => {
             const rowNameAttr = row.getAttribute('data-material-name') || '';
             const rowTypeAttr = row.getAttribute('data-material-type') || '';
+            const rowNumberAttr = row.getAttribute('data-material-number') || '';
+            const customsNumberAttr = row.getAttribute('data-customs-number') || '';
             const name = normalize(rowNameAttr || row.querySelector('.material-name')?.textContent);
             const type = normalize(rowTypeAttr || row.querySelector('.material-type')?.textContent);
+            const materialNumber = normalize(rowNumberAttr);
+            const customsNumber = normalize(customsNumberAttr);
             const dateText = (row.querySelector('.material-date')?.textContent || '').trim();
             let dateISO = '';
             if (dateText) {
@@ -3333,7 +3446,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
-            const keywordMatch = !keyword || name.includes(keyword) || type.includes(keyword);
+            const keywordMatch = !keyword || materialNumber.includes(keyword) || customsNumber.includes(keyword) || name.includes(keyword) || type.includes(keyword);
             const dateMatch = !selectedDate || dateISO === selectedDate;
 
             row.style.display = (keywordMatch && dateMatch) ? '' : 'none';

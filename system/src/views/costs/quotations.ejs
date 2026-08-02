@@ -48,7 +48,7 @@ function formatNumberDisplay(value) {
 
             <!-- Modal إنشاء عرض سعر جديد -->
             <div class="modal fade" id="createQuotationModal" tabindex="-1">
-              <div class="modal-dialog modal-xl">
+              <div class="modal-dialog modal-xl quotation-entry-dialog">
                 <div class="modal-content">
                   <div class="modal-header">
                     <h5 class="modal-title"><i class="bi bi-plus-circle"></i> إنشاء عرض سعر جديد</h5>
@@ -94,18 +94,19 @@ function formatNumberDisplay(value) {
                                 </button>
                                 </div>
                             </div>
-                            <div class="table-responsive">
-                                <table class="table table-bordered" id="materialsTable">
+                            <div class="table-responsive items-table-shell">
+                                <table class="table table-bordered items-entry-table" id="materialsTable">
                                     <thead>
                                         <tr>
-                                            <th style="width: 30%; min-width: 250px;">المادة</th>
-                                            <th style="width: 12%;">كلفة الطرد</th>
-                                            <th style="width: 12%;">نسبة الربح (%)</th>
-                                            <th style="width: 12%;">السعر النهائي</th>
-                                            <th style="width: 8%;">الكمية</th>
-                                            <th style="width: 12%;">المجموع</th>
-                                            <th style="width: 10%;">ملاحظات</th>
-                                            <th style="width: 4%;">الإجراءات</th>
+                                            <th>المادة</th>
+                                            <th>وحدة التعبئة</th>
+                                            <th>كلفة الطرد</th>
+                                            <th>نسبة الربح (%)</th>
+                                            <th>السعر النهائي</th>
+                                            <th>الكمية</th>
+                                            <th>المجموع</th>
+                                            <th>ملاحظات</th>
+                                            <th>الإجراء</th>
                                         </tr>
                                     </thead>
                                     <tbody id="materialsTableBody">
@@ -113,9 +114,9 @@ function formatNumberDisplay(value) {
                                     </tbody>
                                     <tfoot>
                                         <tr class="table-info">
-                                            <td colspan="5" class="text-end"><strong>المجموع الإجمالي:</strong></td>
+                                            <td colspan="6" class="text-end"><strong>المجموع الإجمالي:</strong></td>
                                             <td><strong id="totalAmount">0.00 <%= defaultCurrency ? defaultCurrency.symbol : '$' %></strong></td>
-                                            <td></td>
+                                            <td colspan="2"></td>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -203,7 +204,7 @@ function formatNumberDisplay(value) {
 
 <!-- Modal تعديل عرض السعر -->
 <div class="modal fade" id="editQuotationModal" tabindex="-1">
-  <div class="modal-dialog modal-xl">
+  <div class="modal-dialog modal-xl quotation-entry-dialog">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">تعديل عرض السعر</h5>
@@ -245,18 +246,19 @@ function formatNumberDisplay(value) {
               <i class="bi bi-plus"></i> إضافة مادة
             </button>
           </div>
-          <div class="table-responsive">
-            <table class="table table-bordered" id="editItemsTable">
+          <div class="table-responsive items-table-shell">
+            <table class="table table-bordered items-entry-table" id="editItemsTable">
               <thead>
                 <tr>
-                  <th style="width: 30%; min-width: 250px;">المادة</th>
-                  <th style="width: 12%;">كلفة الطرد</th>
-                  <th style="width: 12%;">نسبة الربح (%)</th>
-                  <th style="width: 12%;">السعر النهائي</th>
-                  <th style="width: 8%;">الكمية</th>
-                  <th style="width: 12%;">المجموع</th>
-                  <th style="width: 10%;">ملاحظات</th>
-                  <th style="width: 10%;">الإجراءات</th>
+                  <th>المادة</th>
+                  <th>وحدة التعبئة</th>
+                  <th>كلفة الطرد</th>
+                  <th>نسبة الربح (%)</th>
+                  <th>السعر النهائي</th>
+                  <th>الكمية</th>
+                  <th>المجموع</th>
+                  <th>ملاحظات</th>
+                  <th>الإجراء</th>
                 </tr>
               </thead>
               <tbody id="editItemsBody"></tbody>
@@ -266,7 +268,7 @@ function formatNumberDisplay(value) {
                   <td>
                     <strong id="editTotalAmount">0.00 <%= defaultCurrency ? defaultCurrency.symbol : '$' %></strong>
                   </td>
-                  <td></td>
+                  <td colspan="2"></td>
                 </tr>
               </tfoot>
             </table>
@@ -444,6 +446,29 @@ const groupedMaterials = (() => {
   });
   return Array.from(byName.values());
 })();
+function materialUnitOptions(material, selectedId) {
+  const units = Array.isArray(material?.packaging_units) && material.packaging_units.length
+    ? material.packaging_units
+    : [{ id: '', name: material?.packaging_unit || '', kilograms_per_unit: material?.packaging_weight || 0, unit_role: 'primary' }];
+  return units.map(unit => `<option value="${unit.id}" data-kg="${unit.kilograms_per_unit}" ${String(unit.id) === String(selectedId ?? '') || (!selectedId && unit.unit_role === 'primary') ? 'selected' : ''}>${unit.name}</option>`).join('');
+}
+function getSelectedMaterialUnit(material, unitId) {
+  const units = Array.isArray(material?.packaging_units) ? material.packaging_units : [];
+  return units.find(unit => String(unit.id) === String(unitId)) || units.find(unit => unit.unit_role === 'primary') || { id: null, name: material?.packaging_unit || '', kilograms_per_unit: Number(material?.packaging_weight) || 0 };
+}
+function quotationMaterialUnitsSummary(material) {
+  const units = Array.isArray(material?.packaging_units) ? material.packaging_units : [];
+  const primary = units.find(unit => unit.unit_role === 'primary') || material?.primary_packaging_unit;
+  const secondary = units.find(unit => unit.unit_role === 'secondary') || material?.secondary_packaging_unit;
+  const primaryName = primary?.name || material?.packaging_unit || '-';
+  return `<div><span class="text-muted small">الأساسية:</span> ${primaryName}</div>${secondary?.name ? `<div><span class="text-muted small">الثانوية:</span> ${secondary.name}</div>` : ''}`;
+}
+function scaledPackageCost(material, unit) {
+  const primaryKg = Number(material?.primary_packaging_unit?.kilograms_per_unit || material?.packaging_weight) || 0;
+  const selectedKg = Number(unit?.kilograms_per_unit) || primaryKg;
+  const baseCost = Number(material?.package_cost) || 0;
+  return primaryKg > 0 ? roundToDecimal(baseCost * selectedKg / primaryKg, defaultCurrencyCode === 'SYP' ? 0 : 2) : baseCost;
+}
 let materialRows = [];
 let nextRowId = 0;
 let nextEditRowId = 0;
@@ -458,12 +483,13 @@ function addMaterialRow() {
     row.innerHTML = `
         <td style="width: 30%; min-width: 250px;">
             <div class="d-flex align-items-center gap-2">
-                <input type="text" class="form-control selected-material-name" placeholder="لم يتم اختيار مادة" readonly>
+                <textarea class="form-control selected-material-name material-name-display" rows="2" placeholder="لم يتم اختيار مادة" readonly></textarea>
                 <button type="button" class="btn btn-outline-primary btn-sm" onclick="openMaterialPicker(${rowId})">
                     <i class="bi bi-search"></i> اختر
                 </button>
             </div>
         </td>
+        <td style="min-width: 150px;"><select class="form-select packaging-unit-choice" onchange="changeQuotationUnit(${rowId}, this.value)" disabled><option>اختر المادة أولاً</option></select></td>
         <td>
             <input type="text" inputmode="decimal" class="form-control unit-cost" readonly>
         </td>
@@ -498,6 +524,7 @@ function addMaterialRow() {
         materialType: '',
         packagingUnit: '',
         packagingWeight: 0,
+        packagingUnitId: null,
         piecesPerPackage: 1,
         unitCost: 0,
         profitPercentage: 0,
@@ -519,18 +546,37 @@ function updateMaterialData(rowId, materialId) {
     row.materialId = material.id;
     row.materialName = material.material_name;
     row.materialType = material.material_type || '';
-    row.packagingUnit = material.packaging_unit || '';
-    row.packagingWeight = material.packaging_weight || '0';
+    const selectedUnit = getSelectedMaterialUnit(material, material.primary_packaging_unit_id);
+    row.packagingUnitId = selectedUnit.id;
+    row.packagingUnit = selectedUnit.name || material.packaging_unit || '';
+    row.packagingWeight = selectedUnit.kilograms_per_unit || material.packaging_weight || '0';
     row.piecesPerPackage = parseInt(material.pieces_per_package) || 1;
-    row.unitCost = parseFloat(material.package_cost);
+    row.unitCost = scaledPackageCost(material, selectedUnit);
     
     const tr = document.querySelector(`#materialsTableBody tr[data-row-id="${rowId}"]`);
     if (tr) {
-        tr.querySelector('.unit-cost').value = displayMoney(material.package_cost);
+        tr.querySelector('.unit-cost').value = displayMoney(row.unitCost);
+        const unitSelect = tr.querySelector('.packaging-unit-choice');
+        unitSelect.innerHTML = materialUnitOptions(material, selectedUnit.id);
+        unitSelect.disabled = false;
         const nameInput = tr.querySelector('.selected-material-name');
         if (nameInput) nameInput.value = material.material_name;
     }
     
+    calculateRowTotal(rowId);
+}
+function changeQuotationUnit(rowId, unitId) {
+    const row = materialRows[rowId];
+    const material = materials.find(m => m.id == row?.materialId);
+    if (!row || !material) return;
+    const unit = getSelectedMaterialUnit(material, unitId);
+    row.packagingUnitId = unit.id;
+    row.packagingUnit = unit.name;
+    row.packagingWeight = unit.kilograms_per_unit;
+    row.unitCost = scaledPackageCost(material, unit);
+    const tr = document.querySelector(`#materialsTableBody tr[data-row-id="${rowId}"]`);
+    tr.querySelector('.unit-cost').value = displayMoney(row.unitCost);
+    tr.querySelector('.final-price').value = '';
     calculateRowTotal(rowId);
 }
 
@@ -624,7 +670,8 @@ function openEditQuotationModal(id) {
         .replace(/>/g, '&gt;');
       
       tr.innerHTML = `
-        <td style="width: 30%; min-width: 250px; word-wrap: break-word; white-space: normal;">${it.material_name}<input type="hidden" class="edit-material-id" value="${it.material_id||''}"></td>
+        <td><div class="material-name-text">${it.material_name}</div><input type="hidden" class="edit-material-id" value="${it.material_id||''}"></td>
+        <td style="min-width:150px"><select class="form-select edit-packaging-unit-choice" onchange="changeEditQuotationUnit(this)">${materialUnitOptions(materials.find(m => m.id == it.material_id), it.packaging_unit_id)}</select></td>
         <td>
           <input type="text" inputmode="decimal" class="form-control edit-unit-cost" value="${it.unit_cost}" readonly>
         </td>
@@ -643,6 +690,7 @@ function openEditQuotationModal(id) {
       tr.setAttribute('data-material-type', it.material_type || '');
       tr.setAttribute('data-packaging-unit', it.packaging_unit || '');
       tr.setAttribute('data-packaging-weight', it.packaging_weight || '0');
+      tr.setAttribute('data-packaging-unit-id', it.packaging_unit_id || '');
       tr.setAttribute('data-pieces-per-package', it.pieces_per_package || '1');
       
       tbody.appendChild(tr);
@@ -681,6 +729,19 @@ function recalcEditRow(inputEl){
   
   updateEditTotal();
 }
+function changeEditQuotationUnit(selectEl) {
+  const tr = selectEl.closest('tr');
+  const materialId = tr.querySelector('.edit-material-id')?.value;
+  const material = materials.find(m => m.id == materialId);
+  if (!material) return;
+  const unit = getSelectedMaterialUnit(material, selectEl.value);
+  tr.setAttribute('data-packaging-unit-id', unit.id || '');
+  tr.setAttribute('data-packaging-unit', unit.name || '');
+  tr.setAttribute('data-packaging-weight', unit.kilograms_per_unit || '0');
+  tr.querySelector('.edit-unit-cost').value = scaledPackageCost(material, unit);
+  tr.querySelector('.edit-final').value = '';
+  recalcEditRow(selectEl);
+}
 
 // تغيير يدوي للسعر النهائي في مودال التعديل مع مزامنة نسبة الربح
 function manualEditFinalPriceChange(inputEl){
@@ -713,13 +774,14 @@ function addEditMaterialRow(){
   tr.innerHTML = `
     <td style="width: 30%; min-width: 250px;">
       <div class="d-flex align-items-center gap-2">
-        <input type="text" class="form-control edit-selected-material-name" placeholder="لم يتم اختيار مادة" readonly>
+        <textarea class="form-control edit-selected-material-name material-name-display" rows="2" placeholder="لم يتم اختيار مادة" readonly></textarea>
         <input type="hidden" class="edit-material-id">
         <button type="button" class="btn btn-outline-primary btn-sm" onclick="openMaterialPicker(${rowId}, 'edit')">
           <i class="bi bi-search"></i> اختر
         </button>
       </div>
     </td>
+    <td style="min-width:150px"><select class="form-select edit-packaging-unit-choice" onchange="changeEditQuotationUnit(this)" disabled><option>اختر المادة أولاً</option></select></td>
     <td>
       <input type="text" inputmode="decimal" class="form-control edit-unit-cost" readonly>
     </td>
@@ -750,10 +812,16 @@ function updateEditMaterialData(rowId, materialId){
   if (hiddenId) hiddenId.value = material.id;
   if (nameInput) nameInput.value = material.material_name || '';
   if (unitInput) unitInput.value = displayMoney(material.package_cost);
+  const unitSelect = tr.querySelector('.edit-packaging-unit-choice');
+  const selectedUnit = getSelectedMaterialUnit(material, material.primary_packaging_unit_id);
+  unitSelect.innerHTML = materialUnitOptions(material, selectedUnit.id);
+  unitSelect.disabled = false;
+  unitInput.value = displayMoney(scaledPackageCost(material, selectedUnit));
 
   tr.setAttribute('data-material-type', material.material_type || '');
-  tr.setAttribute('data-packaging-unit', material.packaging_unit || '');
-  tr.setAttribute('data-packaging-weight', material.packaging_weight || '0');
+  tr.setAttribute('data-packaging-unit-id', selectedUnit.id || '');
+  tr.setAttribute('data-packaging-unit', selectedUnit.name || material.packaging_unit || '');
+  tr.setAttribute('data-packaging-weight', selectedUnit.kilograms_per_unit || material.packaging_weight || '0');
   tr.setAttribute('data-pieces-per-package', material.pieces_per_package || '1');
 
   recalcEditRow(tr.querySelector('.edit-profit'));
@@ -844,6 +912,7 @@ function saveEditQuotation(){
     // إضافة بيانات إضافية للمادة إذا كانت متوفرة
     const materialType = tr.getAttribute('data-material-type') || '';
     const packagingUnit = tr.getAttribute('data-packaging-unit') || '';
+    const packagingUnitId = tr.getAttribute('data-packaging-unit-id') || null;
     const packagingWeight = tr.getAttribute('data-packaging-weight') || '';
     const piecesPerPackage = tr.getAttribute('data-pieces-per-package') || '';
     
@@ -856,6 +925,7 @@ function saveEditQuotation(){
       item_notes: notes,
       material_type: materialType,
       packaging_unit: packagingUnit,
+      packaging_unit_id: packagingUnitId,
       packaging_weight: packagingWeight,
       pieces_per_package: piecesPerPackage
     });
@@ -921,6 +991,7 @@ document.getElementById('quotationForm').addEventListener('submit', function(e) 
                 material_name: row.materialName,
                 material_type: row.materialType,
                 packaging_unit: row.packagingUnit,
+                packaging_unit_id: row.packagingUnitId,
                 packaging_weight: row.packagingWeight,
                 pieces_per_package: row.piecesPerPackage,
                 package_cost: unitCostRaw || String(row.unitCost),
@@ -1078,115 +1149,113 @@ body.modal-open {
     padding-right: 0 !important;
 }
 
-/* تحسين عرض عمود المادة في جدول اختيار المواد */
-#materialsTable th:first-child,
-#materialsTable td:first-child {
-    width: 30% !important;
-    min-width: 250px !important;
-    max-width: 350px;
+/* مساحة عمل منظمة لجداول إنشاء وتعديل عرض السعر */
+.quotation-entry-dialog {
+    width: calc(100vw - 2rem);
+    max-width: 1540px !important;
 }
 
-#materialsTable .material-select {
-    width: 100% !important;
-    font-size: 0.9rem;
+.quotation-entry-dialog .modal-content {
+    max-height: calc(100vh - 2rem);
 }
 
-#materialsTable .material-select option {
-    white-space: normal !important;
-    word-wrap: break-word !important;
-    padding: 8px 12px;
+.quotation-entry-dialog .modal-header,
+.quotation-entry-dialog .modal-footer {
+    flex: 0 0 auto;
 }
 
-/* تحسين عرض النص الطويل في خلايا الجدول */
-#materialsTable td {
-    word-wrap: break-word;
-    white-space: normal;
-    vertical-align: top;
-}
-
-/* تحسين جدول التعديل أيضاً */
-#editItemsTable th:first-child,
-#editItemsBody td:first-child {
-    width: 30% !important;
-    min-width: 250px !important;
-    max-width: 350px;
-    word-wrap: break-word;
-    white-space: normal;
-}
-
-#editItemsBody .edit-material-select {
-    width: 100% !important;
-    font-size: 0.9rem;
-}
-
-#editItemsTable .edit-material-select option {
-    white-space: normal !important;
-    word-wrap: break-word !important;
-    padding: 8px 12px;
-}
-
-/* تأكد من أن جدول التعديل يأخذ العرض الكامل */
-#editItemsTable {
-    width: 100%;
-    table-layout: fixed;
-}
-
-/* تحسين التمرير الأفقي للجدول */
-.table-responsive {
-    overflow-x: auto;
-    min-height: 200px;
-}
-
-/* تأكد من أن الجدول يأخذ العرض الكامل */
-#materialsTable {
-    width: 100%;
-    table-layout: fixed;
-}
-
-/* تحسين عرض المودالات الكبيرة */
-.modal-xl {
-    max-width: 90vw !important;
-}
-
-@media (max-width: 1200px) {
-    .modal-xl {
-        max-width: 95vw !important;
-    }
-    
-    #materialsTable th:first-child,
-    #materialsTable td:first-child,
-    #editItemsTable th:first-child,
-    #editItemsBody td:first-child {
-        min-width: 200px !important;
-        width: 25% !important;
-    }
-}
-
-@media (max-width: 768px) {
-    .modal-xl {
-        max-width: 98vw !important;
-    }
-    
-    #materialsTable th:first-child,
-    #materialsTable td:first-child,
-    #editItemsTable th:first-child,
-    #editItemsBody td:first-child {
-        min-width: 180px !important;
-        width: 35% !important;
-    }
-    
-    .table-responsive {
-        font-size: 0.85rem;
-    }
-}
-
-/* تحسين padding للمودالات الكبيرة */
-.modal-xl .modal-body {
+.quotation-entry-dialog .modal-body {
+    overflow-y: auto;
     padding: 1.5rem;
 }
 
-.modal-xl .table-responsive {
-    margin-bottom: 1rem;
+.items-table-shell {
+    min-height: 0;
+    max-height: 48vh;
+    overflow: auto;
+    border: 1px solid #dee2e6;
+    border-radius: .5rem;
+    background: #fff;
+}
+
+.items-entry-table {
+    width: 100%;
+    min-width: 1280px;
+    margin: 0;
+    table-layout: fixed;
+}
+
+.items-entry-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: .75rem .6rem;
+    background: #f1f5f9;
+    color: #334155;
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.items-entry-table td {
+    padding: .65rem .5rem;
+    vertical-align: top;
+    background: #fff;
+}
+
+.items-entry-table th:nth-child(1), .items-entry-table td:nth-child(1) { width: 350px; }
+.items-entry-table th:nth-child(2), .items-entry-table td:nth-child(2) { width: 130px; }
+.items-entry-table th:nth-child(3), .items-entry-table td:nth-child(3) { width: 130px; }
+.items-entry-table th:nth-child(4), .items-entry-table td:nth-child(4) { width: 140px; }
+.items-entry-table th:nth-child(5), .items-entry-table td:nth-child(5) { width: 95px; }
+.items-entry-table th:nth-child(6), .items-entry-table td:nth-child(6) { width: 140px; }
+.items-entry-table th:nth-child(7), .items-entry-table td:nth-child(7) { width: 190px; }
+.items-entry-table th:nth-child(8), .items-entry-table td:nth-child(8) { width: 75px; text-align: center; }
+
+.items-entry-table .form-control,
+.items-entry-table .form-select {
+    min-width: 0;
+    font-size: .9rem;
+}
+
+.material-name-display {
+    min-height: 58px;
+    resize: none;
+    overflow-y: auto;
+    line-height: 1.35;
+    white-space: normal;
+}
+
+.material-name-text {
+    min-height: 42px;
+    padding: .35rem .25rem;
+    font-weight: 500;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+
+.items-entry-table tfoot td {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    background: #d9edf7;
+    vertical-align: middle;
+}
+
+@media (max-width: 767.98px) {
+    .quotation-entry-dialog {
+        width: 100vw;
+        max-width: 100vw !important;
+        height: 100%;
+        margin: 0;
+    }
+    .quotation-entry-dialog .modal-content {
+        min-height: 100vh;
+        border: 0;
+        border-radius: 0;
+    }
+    .quotation-entry-dialog .modal-body { padding: 1rem; }
+    .items-entry-table { min-width: 1220px; }
 }
 </style> 
 <script>
@@ -1271,7 +1340,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <span class="input-group-text bg-light border-end-0">
               <i class="bi bi-search text-muted"></i>
             </span>
-            <input type="text" class="form-control border-start-0 ps-0" id="materialSearchInput" placeholder="ابحث باسم المادة أو النوع..." autocomplete="off">
+            <input type="text" class="form-control border-start-0 ps-0" id="materialSearchInput" placeholder="ابحث برقم المادة أو الرقم الجمركي أو الاسم..." autocomplete="off">
             <button type="button" class="btn btn-outline-secondary border-start-0" id="clearMaterialSearchBtn" style="display: none;">
               <i class="bi bi-x-lg"></i>
             </button>
@@ -1281,9 +1350,10 @@ document.addEventListener('DOMContentLoaded', function() {
           <table class="table table-hover">
             <thead class="table-light">
               <tr>
+                <th>رقم المادة</th>
                 <th>الاسم</th>
                 <th>النوع</th>
-                <th>الوحدة</th>
+                <th>الوحدة الأساسية / الثانوية</th>
                 <th>سعر الطرد</th>
                 <th>إضافة</th>
               </tr>
@@ -1330,9 +1400,10 @@ function renderMaterialsPickerRows(sourceRows){
       const pkg = displayMoney(m.package_cost);
       rowsHtml += `
         <tr>
+          <td>${m.material_number || '-'}</td>
           ${indexInGroup === 0 ? `<td class="pick-name" rowspan="${group.length}">${m.material_name || '-'}</td>` : ''}
           <td class="pick-type">${m.material_type || ''}</td>
-          <td>${m.packaging_unit || ''}</td>
+          <td>${quotationMaterialUnitsSummary(m)}</td>
           <td>${pkg} ${currencySymbol}</td>
           <td>
             <button type="button" class="btn btn-sm btn-success" onclick="selectMaterial(${m.id})">
@@ -1356,7 +1427,9 @@ function wireMaterialSearch(){
       : (materials || []).filter((m) => {
           const name = (m?.material_name || '').toLowerCase();
           const type = (m?.material_type || '').toLowerCase();
-          return name.includes(q) || type.includes(q);
+          const number = String(m?.material_number || '').toLowerCase();
+          const customsNumber = String(m?.customs_number || '').toLowerCase();
+          return number.includes(q) || customsNumber.includes(q) || name.includes(q) || type.includes(q);
         });
     renderMaterialsPickerRows(filtered);
     if (clearBtn) clearBtn.style.display = q ? '' : 'none';

@@ -35,9 +35,11 @@ function formatDiscountDisplay(value) {
 const currencySymbol = (typeof defaultCurrency !== 'undefined' && defaultCurrency && defaultCurrency.symbol) ? defaultCurrency.symbol : '';
 const isEn = (typeof printLang !== 'undefined' && printLang === 'en');
 const t = (ar, en) => isEn ? en : ar;
-const isFullMode = !!showFullQuotationColumns;
-const quotationTableColumnCount = isFullMode ? 11 : 9;
-const quotationTotalLabelColspan = isFullMode ? 9 : 7;
+const selectedFields = new Set(Array.isArray(outputFields) ? outputFields : []);
+const hasField = (field) => selectedFields.has(field);
+const tableFields = ['row_number','material_number','material_name','material_type','packaging_unit','packaging_weight','pieces_per_package','package_cost','profit_percentage','final_price','quantity','total_price','item_notes'];
+const activeQuotationTableFields = tableFields.filter(hasField);
+const quotationTableColumnCount = activeQuotationTableFields.length;
 const totalBeforeDiscount = parseFloat(grandTotal) || 0;
 const totalAfterDiscount = (typeof discountedTotal !== 'undefined' && discountedTotal !== null)
   ? (parseFloat(discountedTotal) || 0)
@@ -46,6 +48,15 @@ const discountValue = (typeof discountAmount !== 'undefined' && discountAmount !
   ? Math.max(0, parseFloat(discountAmount) || 0)
   : Math.max(0, totalBeforeDiscount - totalAfterDiscount);
 const hasDiscount = discountValue > 0;
+const renderQuotationTotalRow = (label, value) => {
+  const labelField = activeQuotationTableFields.find(field => !['packaging_weight','pieces_per_package','package_cost','profit_percentage','final_price','quantity','total_price'].includes(field));
+  return `<tr class="total-row">${activeQuotationTableFields.map((field, index) => {
+    if (field === 'total_price') return `<td class="num-cell" style="font-weight:700"><span class="money-inline">${value}</span></td>`;
+    if (field === labelField) return `<td style="font-weight:700">${label}</td>`;
+    if (!labelField && index === 0) return `<td class="num-cell" style="font-weight:700">${label}: <span class="money-inline">${value}</span></td>`;
+    return '<td></td>';
+  }).join('')}</tr>`;
+};
 %>
 
 <% if (isEn) { %>
@@ -82,29 +93,30 @@ const hasDiscount = discountValue > 0;
 
   <!-- Customer/Quotation Info -->
   <div class="info-grid">
+    <% if (hasField('client_info') || hasField('sale_description') || hasField('payment_method')) { %>
     <div class="box-compact">
       <h6 class="section-title"><%= t('بيانات العميل', 'Customer Info') %></h6>
       <div class="grid-kv">
-        <div class="kv"><span><%= t('الاسم:', 'Name:') %></span><span><%= quotation.client_name || '-' %></span></div>
-        <% if (quotation.client_phone) { %><div class="kv"><span><%= t('الهاتف:', 'Phone:') %></span><span><%= quotation.client_phone %></span></div><% } %>
-        <% if (quotation.client_address) { %><div class="kv full"><span><%= t('العنوان:', 'Address:') %></span><span><%= quotation.client_address %></span></div><% } %>
-        <% if (quotation.sale_description) { %><div class="kv"><span><%= t('صفة البيع:', 'Sale Type:') %></span><span><%= quotation.sale_description %></span></div><% } %>
-        <% if (quotation.payment_method) { %><div class="kv"><span><%= t('طريقة الدفع:', 'Payment Method:') %></span><span><%= quotation.payment_method %></span></div><% } %>
+        <% if (hasField('client_info')) { %><div class="kv"><span><%= t('الاسم:', 'Name:') %></span><span><%= quotation.client_name || '-' %></span></div><% } %>
+        <% if (hasField('client_info') && quotation.client_phone) { %><div class="kv"><span><%= t('الهاتف:', 'Phone:') %></span><span><%= quotation.client_phone %></span></div><% } %>
+        <% if (hasField('client_info') && quotation.client_address) { %><div class="kv full"><span><%= t('العنوان:', 'Address:') %></span><span><%= quotation.client_address %></span></div><% } %>
+        <% if (hasField('sale_description') && quotation.sale_description) { %><div class="kv"><span><%= t('صفة البيع:', 'Sale Type:') %></span><span><%= quotation.sale_description %></span></div><% } %>
+        <% if (hasField('payment_method') && quotation.payment_method) { %><div class="kv"><span><%= t('طريقة الدفع:', 'Payment Method:') %></span><span><%= quotation.payment_method %></span></div><% } %>
       </div>
     </div>
-    <div class="box-compact">
+    <% } %>
+    <% if (hasField('client_info') || hasField('totals')) { %><div class="box-compact">
       <h6 class="section-title"><%= t('بيانات العرض', 'Quotation Info') %></h6>
       <div class="grid-kv">
-        <div class="kv"><span><%= t('التاريخ:', 'Date:') %></span><span><%= fmtDate(quotation.created_at) %></span></div>
-        <div class="kv"><span><%= t('عدد المواد:', 'Items Count:') %></span><span><%= (items||[]).length %></span></div>
-          <div class="kv"><span><%= t('إجمالي السعر:', 'Total Amount:') %></span><span class="money-inline"><%= `${formatTotalDisplay(totalBeforeDiscount)} ${currencySymbol}` %></span></div>
-        <% if (hasDiscount) { %>
+        <% if (hasField('client_info')) { %><div class="kv"><span><%= t('التاريخ:', 'Date:') %></span><span><%= fmtDate(quotation.created_at) %></span></div><div class="kv"><span><%= t('عدد المواد:', 'Items Count:') %></span><span><%= (items||[]).length %></span></div><% } %>
+          <% if (hasField('totals')) { %><div class="kv"><span><%= t('إجمالي السعر:', 'Total Amount:') %></span><span class="money-inline"><%= `${formatTotalDisplay(totalBeforeDiscount)} ${currencySymbol}` %></span></div><% } %>
+        <% if (hasField('totals') && hasDiscount) { %>
           <div class="kv"><span><%= t('الخصم:', 'Discount:') %></span><span class="money-inline"><%= `- ${formatDiscountDisplay(discountValue)} ${currencySymbol}` %></span></div>
           <div class="kv"><span><%= t('الإجمالي بعد الخصم:', 'Total After Discount:') %></span><span class="money-inline"><%= `${formatDiscountDisplay(totalAfterDiscount)} ${currencySymbol}` %></span></div>
         <% } %>
       </div>
-    </div>
-    <% if (quotation.notes) { %>
+    </div><% } %>
+    <% if (hasField('quotation_notes') && quotation.notes) { %>
       <div class="box-compact">
         <h6 class="section-title"><%= t('ملاحظات', 'Notes') %></h6>
         <div class="notes"><%= quotation.notes %></div>
@@ -113,23 +125,26 @@ const hasDiscount = discountValue > 0;
   </div>
 
   <!-- Items Table -->
-  <div class="table-responsive" style="margin-top: 6px;">
-    <table class="table-custom table-bordered text-center align-middle" style="font-size: 10pt; width: 100%;">
+  <% if (quotationTableColumnCount > 0) { %><div class="table-responsive" style="margin-top: 6px;">
+    <table class="table-custom table-bordered align-middle" style="font-size: 10pt; width: 100%;">
       <thead>
         <tr>
-          <th style="width: 4%; padding: 2pt 2pt;">#</th>
-          <th style="width: 26%; padding: 2pt 2pt;"><%= t('الصنف', 'Item') %></th>
-          <th style="width: 10%; padding: 2pt 2pt;"><%= t('التعبئة', 'Packaging') %></th>
-          <th style="width: 10%; padding: 2pt 2pt;"><%= t('حجم العبوة', 'Pack Weight') %></th>
-          <th style="width: 10%; padding: 2pt 2pt;"><%= t('شد الكرتون', 'Pieces/Pack') %></th>
-          <% if (isFullMode) { %>
+          <% if (hasField('row_number')) { %><th>#</th><% } %>
+          <% if (hasField('material_number')) { %><th><%= t('رقم المادة','Material No.') %></th><% } %>
+          <% if (hasField('material_name')) { %><th><%= t('الصنف', 'Item') %></th><% } %>
+          <% if (hasField('material_type')) { %><th><%= t('النوع','Type') %></th><% } %>
+          <% if (hasField('packaging_unit')) { %><th><%= t('التعبئة', 'Packaging') %></th><% } %>
+          <% if (hasField('packaging_weight')) { %><th><%= t('حجم العبوة', 'Pack Weight') %></th><% } %>
+          <% if (hasField('pieces_per_package')) { %><th><%= t('شد الكرتون', 'Pieces/Pack') %></th><% } %>
+          <% if (hasField('package_cost')) { %>
           <th style="width: 12%; padding: 2pt 2pt;"><%= t('كلفة الطرد', 'Package Cost') %></th>
+          <% } %><% if (hasField('profit_percentage')) { %>
           <th style="width: 8%; padding: 2pt 2pt;"><%= t('نسبة الربح', 'Profit %') %></th>
           <% } %>
-          <th style="width: 12%; padding: 2pt 2pt;"><%= t('السعر', 'Price') %></th>
-          <th style="width: 8%; padding: 2pt 2pt;"><%= t('الكمية', 'Quantity') %></th>
-          <th style="width: 14%; padding: 2pt 2pt;"><%= t('المجموع', 'Total') %></th>
-          <th style="width: 6%; padding: 2pt 2pt;"><%= t('ملاحظات', 'Notes') %></th>
+          <% if (hasField('final_price')) { %><th><%= t('السعر', 'Price') %></th><% } %>
+          <% if (hasField('quantity')) { %><th><%= t('الكمية', 'Quantity') %></th><% } %>
+          <% if (hasField('total_price')) { %><th><%= t('المجموع', 'Total') %></th><% } %>
+          <% if (hasField('item_notes')) { %><th><%= t('ملاحظات', 'Notes') %></th><% } %>
         </tr>
       </thead>
       <tbody>
@@ -159,8 +174,9 @@ const hasDiscount = discountValue > 0;
             <tr class="page-break"><td colspan="<%= quotationTableColumnCount %>"></td></tr>
           <% } %>
           <tr>
-            <td style="padding: 2pt 2pt;"><%= row.rowNumber %></td>
-            <% if (row.isFirstInGroup) { %>
+            <% if (hasField('row_number')) { %><td class="num-cell"><%= row.rowNumber %></td><% } %>
+            <% if (hasField('material_number')) { %><td class="num-cell"><%= item.material_number || '-' %></td><% } %>
+            <% if (hasField('material_name') && row.isFirstInGroup) { %>
             <% if (isEn) { %>
             <td style="padding: 2pt 2pt; text-align: left; line-height: 1.15;" rowspan="<%= row.groupLength %>">
             <% } else { %>
@@ -169,65 +185,43 @@ const hasDiscount = discountValue > 0;
               <div><%= item.material_name || '-' %></div>
             </td>
             <% } %>
-            <td style="padding: 2pt 2pt;"><%= item.packaging_unit || '-' %></td>
-            <td style="padding: 2pt 2pt;"><%= item.packaging_weight != null ? formatNumberDisplay(item.packaging_weight) : '-' %></td>
-            <td style="padding: 2pt 2pt;"><%= item.pieces_per_package != null ? formatNumberDisplay(item.pieces_per_package) : '-' %></td>
-            <% if (isFullMode) { %>
-            <td style="padding: 2pt 2pt;"><span class="money-inline"><%= `${formatNumberDisplay(item.unit_cost)} ${currencySymbol}` %></span></td>
-            <td style="padding: 2pt 2pt;"><%= `${formatNumberDisplay(item.profit_percentage || 0)}%` %></td>
+            <% if (hasField('material_type')) { %><td><%= item.material_type || '-' %></td><% } %>
+            <% if (hasField('packaging_unit')) { %><td><%= item.packaging_unit || '-' %></td><% } %>
+            <% if (hasField('packaging_weight')) { %><td class="num-cell"><%= item.packaging_weight != null ? formatNumberDisplay(item.packaging_weight) : '-' %></td><% } %>
+            <% if (hasField('pieces_per_package')) { %><td class="num-cell"><%= item.pieces_per_package != null ? formatNumberDisplay(item.pieces_per_package) : '-' %></td><% } %>
+            <% if (hasField('package_cost')) { %>
+            <td class="num-cell" style="padding: 2pt 2pt;"><span class="money-inline"><%= `${formatNumberDisplay(item.package_cost)} ${currencySymbol}` %></span></td>
+            <% } %><% if (hasField('profit_percentage')) { %>
+            <td class="num-cell" style="padding: 2pt 2pt;"><%= `${formatNumberDisplay(item.profit_percentage || 0)}%` %></td>
             <% } %>
-            <td style="padding: 2pt 2pt;"><span class="money-inline"><%= `${formatNumberDisplay(item.final_price)} ${currencySymbol}` %></span></td>
-            <td style="padding: 2pt 2pt;"><%= item.quantity != null ? formatNumberDisplay(item.quantity) : '-' %></td>
-            <td style="padding: 2pt 2pt;"><span class="money-inline"><%= `${formatNumberDisplay(item.total_price)} ${currencySymbol}` %></span></td>
-            <td style="padding: 2pt 2pt;"><%= item.item_notes || '-' %></td>
+            <% if (hasField('final_price')) { %><td class="num-cell"><%= `${formatNumberDisplay(item.final_price)} ${currencySymbol}` %></td><% } %>
+            <% if (hasField('quantity')) { %><td class="num-cell"><%= item.quantity != null ? formatNumberDisplay(item.quantity) : '-' %></td><% } %>
+            <% if (hasField('total_price')) { %><td class="num-cell"><%= `${formatNumberDisplay(item.total_price)} ${currencySymbol}` %></td><% } %>
+            <% if (hasField('item_notes')) { %><td><%= item.item_notes || '-' %></td><% } %>
           </tr>
         <% }) %>
-        <% if ((groupedQuotationPrintRows||[]).length <= rowsOnFirstPage) { %>
-          <tr class="total-row">
-            <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;"><%= t('الإجمالي', 'Total') %></td>
-            <td style="font-weight:700;"><span class="money-inline"><%= `${formatTotalDisplay(totalBeforeDiscount)} ${currencySymbol}` %></span></td>
-            <td></td>
-          </tr>
+        <% if (hasField('totals') && (groupedQuotationPrintRows||[]).length <= rowsOnFirstPage) { %>
+          <%- renderQuotationTotalRow(t('الإجمالي','Total'), `${formatTotalDisplay(totalBeforeDiscount)} ${currencySymbol}`) %>
           <% if (hasDiscount) { %>
-          <tr class="total-row">
-            <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;"><%= t('الخصم', 'Discount') %></td>
-            <td style="font-weight:700;"><span class="money-inline"><%= `- ${formatDiscountDisplay(discountValue)} ${currencySymbol}` %></span></td>
-            <td></td>
-          </tr>
-          <tr class="total-row">
-            <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;"><%= t('الإجمالي بعد الخصم', 'Total After Discount') %></td>
-            <td style="font-weight:700;"><span class="money-inline"><%= `${formatDiscountDisplay(totalAfterDiscount)} ${currencySymbol}` %></span></td>
-            <td></td>
-          </tr>
+          <%- renderQuotationTotalRow(t('الخصم','Discount'), `- ${formatDiscountDisplay(discountValue)} ${currencySymbol}`) %>
+          <%- renderQuotationTotalRow(t('الإجمالي بعد الخصم','Total After Discount'), `${formatDiscountDisplay(totalAfterDiscount)} ${currencySymbol}`) %>
           <% } %>
-        <% } else { %>
+        <% } else if (hasField('totals')) { %>
           <% const remainder = ((groupedQuotationPrintRows||[]).length - rowsOnFirstPage) % rowsPerPage; %>
           <% const isExactMultiple = remainder === 0; %>
           <% if (isExactMultiple) { %>
             <tr class="page-break"><td colspan="<%= quotationTableColumnCount %>"></td></tr>
           <% } %>
-          <tr class="total-row">
-            <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;"><%= t('الإجمالي', 'Total') %></td>
-            <td style="font-weight:700;"><span class="money-inline"><%= `${formatTotalDisplay(totalBeforeDiscount)} ${currencySymbol}` %></span></td>
-            <td></td>
-          </tr>
+          <%- renderQuotationTotalRow(t('الإجمالي','Total'), `${formatTotalDisplay(totalBeforeDiscount)} ${currencySymbol}`) %>
           <% if (hasDiscount) { %>
-          <tr class="total-row">
-            <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;"><%= t('الخصم', 'Discount') %></td>
-            <td style="font-weight:700;"><span class="money-inline"><%= `- ${formatDiscountDisplay(discountValue)} ${currencySymbol}` %></span></td>
-            <td></td>
-          </tr>
-          <tr class="total-row">
-            <td colspan="<%= quotationTotalLabelColspan %>" style="text-align: center; font-weight: 700;"><%= t('الإجمالي بعد الخصم', 'Total After Discount') %></td>
-            <td style="font-weight:700;"><span class="money-inline"><%= `${formatDiscountDisplay(totalAfterDiscount)} ${currencySymbol}` %></span></td>
-            <td></td>
-          </tr>
+          <%- renderQuotationTotalRow(t('الخصم','Discount'), `- ${formatDiscountDisplay(discountValue)} ${currencySymbol}`) %>
+          <%- renderQuotationTotalRow(t('الإجمالي بعد الخصم','Total After Discount'), `${formatDiscountDisplay(totalAfterDiscount)} ${currencySymbol}`) %>
           <% } %>
         <% } %>
       </tbody>
       
     </table>
-  </div>
+  </div><% } %>
 
   <!-- Footer -->
   <div class="print-footer" id="fixed-print-footer" style="text-align:center; font-size: 8.5pt; margin-top: 6px;">
@@ -262,6 +256,7 @@ const hasDiscount = discountValue > 0;
   .table-custom { width: 100%; border-collapse: separate; border-spacing: 0; }
   .table-custom th, .table-custom td { border: 0.7px solid #444; }
   .table-custom th { background: #f5f5f5; font-weight: 700; }
+  .table-custom td.num-cell { text-align: center !important; white-space: nowrap; }
   thead { display: table-header-group; }
   tfoot { display: none; }
   tr { page-break-inside: avoid; }

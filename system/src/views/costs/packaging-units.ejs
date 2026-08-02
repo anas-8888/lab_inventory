@@ -1,0 +1,70 @@
+<% const formatNumberDisplay = (value) => { const number = Number(value); return Number.isFinite(number) ? String(Number(number.toFixed(3))) : '-'; }; %>
+<div class="container-fluid py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        <h2 class="mb-0"><i class="bi bi-box-seam me-2"></i>وحدات التعبئة</h2>
+        <div class="d-flex gap-2">
+            <button class="btn btn-primary" type="button" onclick="openUnitModal()"><i class="bi bi-plus-lg me-1"></i>إضافة وحدة</button>
+            <a href="/costs" class="btn btn-outline-secondary">العودة</a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body table-responsive">
+            <table class="table table-hover align-middle">
+                <thead><tr><th>اسم الوحدة</th><th>ما تقابله بالكيلو</th><th>المواد المرتبطة</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
+                <tbody>
+                <% units.forEach(unit => { %>
+                    <tr>
+                        <td><strong><%= unit.name %></strong></td>
+                        <td><%= formatNumberDisplay(unit.kilograms_per_unit) %> كجم</td>
+                        <td><%= unit.materials_count %></td>
+                        <td><span class="badge <%= unit.is_active ? 'bg-success' : 'bg-secondary' %>"><%= unit.is_active ? 'فعالة' : 'معطلة' %></span></td>
+                        <td class="d-flex gap-1">
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-name="<%= unit.name %>" data-kg="<%= unit.kilograms_per_unit %>" onclick="openUnitModal({ id: <%= unit.id %>, name: this.dataset.name, kilograms_per_unit: this.dataset.kg })" <%= Number(unit.materials_count) > 0 ? 'disabled title="لا يمكن تعديل وحدة مرتبطة بمواد"' : '' %>>تعديل</button>
+                            <button type="button" class="btn btn-sm btn-outline-<%= unit.is_active ? 'danger' : 'success' %>" onclick="setUnitActive(<%= unit.id %>, <%= unit.is_active ? 'false' : 'true' %>)" <%= unit.is_active && Number(unit.materials_count) > 0 ? 'disabled title="لا يمكن تعطيل وحدة مرتبطة بمواد"' : '' %>><%= unit.is_active ? 'تعطيل' : 'تفعيل' %></button>
+                        </td>
+                    </tr>
+                <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="unitModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title" id="unitModalTitle">إضافة وحدة تعبئة</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <input type="hidden" id="unitId">
+            <div class="mb-3"><label class="form-label">اسم الوحدة *</label><input class="form-control" id="unitName" maxlength="100" required></div>
+            <div><label class="form-label">القيمة المقابلة بالكيلو *</label><input type="number" min="0.001" step="0.001" class="form-control" id="unitKg" required><small class="text-muted">مثال: أدخل 6 إذا كانت الوحدة تقابل 6 كجم</small></div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button><button type="button" class="btn btn-primary" onclick="saveUnit()">حفظ</button></div>
+    </div></div>
+</div>
+
+<script>
+let unitModal;
+function openUnitModal(unit = null) {
+    unitModal = unitModal || new bootstrap.Modal(document.getElementById('unitModal'));
+    document.getElementById('unitId').value = unit?.id || '';
+    document.getElementById('unitName').value = unit?.name || '';
+    document.getElementById('unitKg').value = unit?.kilograms_per_unit || '';
+    document.getElementById('unitModalTitle').textContent = unit ? 'تعديل وحدة التعبئة' : 'إضافة وحدة تعبئة';
+    unitModal.show();
+}
+async function saveUnit() {
+    const id = document.getElementById('unitId').value;
+    const payload = { name: document.getElementById('unitName').value, kilograms_per_unit: document.getElementById('unitKg').value };
+    const response = await fetch(id ? `/costs/packaging-units/${id}` : '/costs/packaging-units', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const data = await response.json();
+    if (!response.ok) return alert(data.message || 'تعذر حفظ الوحدة');
+    location.reload();
+}
+async function setUnitActive(id, isActive) {
+    const response = await fetch(`/costs/packaging-units/${id}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_active: isActive }) });
+    const data = await response.json();
+    if (!response.ok) return alert(data.message || 'تعذر تغيير حالة الوحدة');
+    location.reload();
+}
+</script>

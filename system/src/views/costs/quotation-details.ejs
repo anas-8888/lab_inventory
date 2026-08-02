@@ -10,6 +10,9 @@
                     <button id="exportQuotationPdfBtn" class="btn btn-success me-2">
                         <i class="bi bi-file-earmark-pdf"></i> تصدير PDF
                     </button>
+                    <button id="exportQuotationExcelBtn" class="btn btn-outline-success me-2" type="button">
+                        <i class="bi bi-file-earmark-excel"></i> تصدير Excel
+                    </button>
                     <a href="/costs/quotations" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-right me-1"></i> العودة للعروض
                     </a>
@@ -59,10 +62,10 @@
 	            <!-- مودال التخيير -->
             <div class="card shadow mb-4">
                                 <div id="quotationOutputModeModal" class="modal fade" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h5 class="modal-title"><i class="bi bi-sliders2 me-2 text-primary"></i> اختر نوع الطباعة</h5>
+                                <h5 class="modal-title"><i class="bi bi-sliders2 me-2 text-primary"></i> اختر الحقول التي تريد إظهارها</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
                             </div>
                             <div class="modal-body">
@@ -81,13 +84,13 @@
                                         عند اختيار "قيمة ثابتة": الرقم هو مبلغ الخصم المباشر من الإجمالي الحالي.
                                     </small>
                                 </div>
-                                <div class="d-grid gap-2">
-                                    <button id="quotationModeNormalBtn" type="button" class="btn btn-outline-secondary">
-                                        عادي (عرض السعر الحالي)
-                                    </button>
-                                    <button id="quotationModeFullBtn" type="button" class="btn btn-outline-primary">
-                                        كامل (يشمل كلفة الطرد + نسبة الربح)
-                                    </button>
+                                <div class="border rounded p-3 mb-3">
+                                  <div class="d-flex justify-content-between align-items-center mb-2"><strong>الحقول</strong><span><button type="button" class="btn btn-link btn-sm p-0" id="quotationSelectAllFields">تحديد الكل</button> · <button type="button" class="btn btn-link btn-sm p-0" id="quotationClearFields">إلغاء الكل</button></span></div>
+                                  <div class="row g-2">
+                                  <% [['client_info','بيانات العميل والعرض'],['sale_description','صفة البيع'],['payment_method','طريقة الدفع'],['quotation_notes','ملاحظات العرض'],['row_number','رقم السطر'],['material_number','رقم المادة'],['material_name','اسم المادة'],['material_type','نوع المادة'],['packaging_unit','وحدة التعبئة'],['packaging_weight','وزن التعبئة'],['pieces_per_package','عدد القطع'],['package_cost','كلفة الطرد'],['profit_percentage','نسبة الربح'],['final_price','سعر البيع'],['quantity','الكمية'],['total_price','الإجمالي'],['item_notes','ملاحظات المادة'],['totals','صفوف الإجماليات']].forEach(([value,label]) => { %>
+                                    <div class="col-md-4 col-6"><label class="form-check border rounded px-2 py-2 w-100 m-0"><input class="form-check-input quotation-output-field" type="checkbox" value="<%= value %>" checked> <span class="form-check-label"><%= label %></span></label></div>
+                                  <% }) %>
+                                  </div>
                                 </div>
                                 <div class="mt-3">
                                     <label for="quotationPrintLanguage" class="form-label">لغة الطباعة/التصدير</label>
@@ -97,6 +100,7 @@
                                     </select>
                                     <small class="text-muted d-block mt-1">عند اختيار الإنكليزية سيتم ترجمة المحتوى العربي باستثناء الهيدر والفوتر.</small>
                                 </div>
+                                <button id="quotationApplyOutputBtn" type="button" class="btn btn-primary w-100 mt-3">متابعة</button>
                             </div>
                         </div>
                     </div>
@@ -105,7 +109,7 @@
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h5 class="modal-title"><i class="bi bi-file-earmark-pdf me-2 text-success"></i> تم إنشاء ملف PDF</h5>
+                                <h5 class="modal-title"><i class="bi bi-file-earmark-arrow-down me-2 text-success"></i> تم إنشاء الملف</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
                             </div>
                             <div class="modal-body text-center">
@@ -223,7 +227,7 @@
                                      const total = item.total_price;
                                 %>
                                 <tr>
-                                    <td><%= item.material_id || '-' %></td>
+                                    <td><%= item.material_number || item.material_id || '-' %></td>
                                     <% if (indexInGroup === 0) { %>
                                     <td rowspan="<%= group.length %>"><%= item.material_name %></td>
                                     <% } %>
@@ -286,11 +290,11 @@
 document.addEventListener('DOMContentLoaded', function () {
     const printBtn = document.getElementById('printQuotationBtn');
     const exportBtn = document.getElementById('exportQuotationPdfBtn');
+    const excelBtn = document.getElementById('exportQuotationExcelBtn');
     const quotationGrandTotal = Number(document.getElementById('quotationGrandTotalValue')?.value || 0);
     const outputModeModalElem = document.getElementById('quotationOutputModeModal');
     const outputModeModal = outputModeModalElem ? new bootstrap.Modal(outputModeModalElem) : null;
-    const modeNormalBtn = document.getElementById('quotationModeNormalBtn');
-    const modeFullBtn = document.getElementById('quotationModeFullBtn');
+    const applyOutputBtn = document.getElementById('quotationApplyOutputBtn');
     const discountedTotalInput = document.getElementById('quotationDiscountedTotalInput');
     const discountTypeSelect = document.getElementById('quotationDiscountType');
     const quotationPrintLanguage = document.getElementById('quotationPrintLanguage');
@@ -393,13 +397,19 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    async function exportPdfByMode(mode, discountedTotalValue) {
-        if (!exportBtn) return;
+    function getSelectedFields() {
+        return Array.from(document.querySelectorAll('.quotation-output-field:checked')).map((input) => input.value);
+    }
+
+    async function exportSelectedFile(kind, discountedTotalValue, fields) {
+        const activeBtn = kind === 'excel' ? excelBtn : exportBtn;
+        if (!activeBtn) return;
             const lang = quotationPrintLanguage ? quotationPrintLanguage.value : 'ar';
-            exportBtn.disabled = true;
-            exportBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري التصدير...';
+            const originalHtml = activeBtn.innerHTML;
+            activeBtn.disabled = true;
+            activeBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري التصدير...';
             try {
-            const res = await fetch(`/costs/quotations/<%= quotation.id %>/pdf?mode=${encodeURIComponent(mode)}&discounted_total=${encodeURIComponent(discountedTotalValue)}&lang=${encodeURIComponent(lang)}`);
+            const res = await fetch(`/costs/quotations/<%= quotation.id %>/${kind}?fields=${encodeURIComponent(fields.join(','))}&discounted_total=${encodeURIComponent(discountedTotalValue)}&lang=${encodeURIComponent(lang)}`);
                 const data = await res.json();
                 if (data.success && data.url) {
                     if (linkInput) linkInput.value = data.url;
@@ -407,30 +417,34 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (waBtn) waBtn.href = `https://wa.me/?text=${encodeURIComponent(data.url)}`;
                     if (modal) modal.show();
                 } else {
-                    alert(data.message || 'تعذر إنشاء ملف PDF');
+                    alert(data.message || 'تعذر إنشاء الملف');
                 }
             } catch (e) {
                 alert('حدث خطأ في التصدير');
             }
-            exportBtn.disabled = false;
-            exportBtn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> تصدير PDF';
+            activeBtn.disabled = false;
+            activeBtn.innerHTML = originalHtml;
     }
 
-    function printByMode(mode, discountedTotalValue) {
+    function printSelectedFields(discountedTotalValue, fields) {
         const lang = quotationPrintLanguage ? quotationPrintLanguage.value : 'ar';
-        window.open(`/costs/quotations/<%= quotation.id %>/print?mode=${encodeURIComponent(mode)}&discounted_total=${encodeURIComponent(discountedTotalValue)}&lang=${encodeURIComponent(lang)}`, '_blank');
+        window.open(`/costs/quotations/<%= quotation.id %>/print?fields=${encodeURIComponent(fields.join(','))}&discounted_total=${encodeURIComponent(discountedTotalValue)}&lang=${encodeURIComponent(lang)}`, '_blank');
     }
 
-    async function handleModeSelection(mode) {
+    async function handleOutputSelection() {
+        const fields = getSelectedFields();
+        if (!fields.length) return alert('اختر حقلاً واحداً على الأقل.');
         const discountedTotalValue = getValidatedDiscountedTotal();
         if (discountedTotalValue === null) return;
         if (outputModeModal) outputModeModal.hide();
         if (pendingOutputAction === 'print') {
-            printByMode(mode, discountedTotalValue);
+            printSelectedFields(discountedTotalValue, fields);
             return;
         }
         if (pendingOutputAction === 'export') {
-            await exportPdfByMode(mode, discountedTotalValue);
+            await exportSelectedFile('pdf', discountedTotalValue, fields);
+        } else if (pendingOutputAction === 'excel') {
+            await exportSelectedFile('excel', discountedTotalValue, fields);
         }
     }
 
@@ -444,16 +458,10 @@ document.addEventListener('DOMContentLoaded', function () {
             openOutputModeChooser('export');
         });
     }
-    if (modeNormalBtn) {
-        modeNormalBtn.addEventListener('click', function () {
-            handleModeSelection('normal');
-        });
-    }
-    if (modeFullBtn) {
-        modeFullBtn.addEventListener('click', function () {
-            handleModeSelection('full');
-        });
-    }
+    if (excelBtn) excelBtn.addEventListener('click', () => openOutputModeChooser('excel'));
+    if (applyOutputBtn) applyOutputBtn.addEventListener('click', handleOutputSelection);
+    document.getElementById('quotationSelectAllFields')?.addEventListener('click', () => document.querySelectorAll('.quotation-output-field').forEach((el) => { el.checked = true; }));
+    document.getElementById('quotationClearFields')?.addEventListener('click', () => document.querySelectorAll('.quotation-output-field').forEach((el) => { el.checked = false; }));
     if (discountTypeSelect) {
         discountTypeSelect.addEventListener('change', function () {
             if (discountTypeSelect.value === 'percent') {

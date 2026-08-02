@@ -99,6 +99,14 @@ const __isExternalMaterial = material.material_origin === 'external';
                                     <td><%= material.material_name %></td>
                                 </tr>
                                 <tr>
+                                    <td><strong>رقم المادة:</strong></td>
+                                    <td><%= material.material_number || '-' %></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>الرقم الجمركي:</strong></td>
+                                    <td><%= material.customs_number || '-' %></td>
+                                </tr>
+                                <tr>
                                     <td><strong>نوع المادة:</strong></td>
                                     <td><%= material.material_type %></td>
                                 </tr>
@@ -157,7 +165,7 @@ const __isExternalMaterial = material.material_origin === 'external';
                             <table class="table table-borderless">
                                 <tr>
                                     <td><strong>وحدة التعبئة:</strong></td>
-                                    <td><%= material.packaging_unit || '-' %></td>
+                                    <td><%= material.primary_packaging_unit ? material.primary_packaging_unit.name : (material.packaging_unit || '-') %></td>
                                 </tr>
                                 <tr>
                                     <td><strong>كلفة القطعة:</strong></td>
@@ -298,7 +306,11 @@ const __isExternalMaterial = material.material_origin === 'external';
                             <table class="table table-borderless">
                                 <tr>
                                     <td><strong>وحدة التعبئة:</strong></td>
-                                    <td><%= material.packaging_unit %></td>
+                                    <td><%= material.primary_packaging_unit ? material.primary_packaging_unit.name : material.packaging_unit %></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>وحدة التعبئة الثانوية:</strong></td>
+                                    <td><%= material.secondary_packaging_unit ? material.secondary_packaging_unit.name : '-' %></td>
                                 </tr>
                                 <tr>
                                     <td><strong>وزن المادة (داخل العبوة):</strong></td>
@@ -579,6 +591,8 @@ function printMaterialDetails() {
                 <h3>المعلومات الأساسية</h3>
                 <table>
                     <tr><th>اسم المادة</th><td>${materialName}</td></tr>
+                    <tr><th>رقم المادة</th><td><%= material.material_number || '-' %></td></tr>
+                    <tr><th>الرقم الجمركي</th><td><%= material.customs_number || '-' %></td></tr>
                     <tr><th>نوع المادة</th><td><%= material.material_type %></td></tr>
                     <tr><th>أساس إدخال التكاليف</th><td><%= __costInputBasisLabel(material.cost_input_basis) %></td></tr>
                     <tr><th>تاريخ الإضافة</th><td><%= formatDate(material.created_at) %></td></tr>
@@ -607,7 +621,8 @@ function printMaterialDetails() {
             <div class="section">
                 <h3>بيانات التعبئة</h3>
                 <table>
-                    <tr><th>وحدة التعبئة</th><td><%= material.packaging_unit %></td></tr>
+                    <tr><th>وحدة التعبئة الأساسية</th><td><%= material.primary_packaging_unit ? material.primary_packaging_unit.name : material.packaging_unit %></td></tr>
+                    <tr><th>وحدة التعبئة الثانوية</th><td><%= material.secondary_packaging_unit ? material.secondary_packaging_unit.name : '-' %></td></tr>
                     <tr><th>وزن وحدة التعبئة</th><td><%= formatNumberDisplay(material.packaging_weight) %> كجم</td></tr>
                     <tr><th>عدد الحبات في الطرد</th><td><%= material.pieces_per_package %></td></tr>
                     <tr><th>عدد الطرود في الطبلية</th><td><%= material.packages_per_pallet %></td></tr>

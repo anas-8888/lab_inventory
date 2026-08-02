@@ -77,6 +77,8 @@ if (!Array.isArray(__extraWeights)) __extraWeights = [];
   <!-- Title -->
   <div style="text-align:center; margin: 12px 0;">
     <div style="font-size: 13pt; font-weight: 700;">مادة: <%= material.material_name %></div>
+    <div>رقم المادة: <%= material.material_number || '-' %></div>
+    <div>الرقم الجمركي: <%= material.customs_number || '-' %></div>
   </div>
 
   <!-- Material Basic Info -->
@@ -86,10 +88,13 @@ if (!Array.isArray(__extraWeights)) __extraWeights = [];
       <h6 class="section-title">بيانات المادة الخارجية</h6>
       <div class="grid-kv">
         <div class="kv"><span>الاسم:</span><span><%= material.material_name %></span></div>
+        <div class="kv"><span>رقم المادة:</span><span><%= material.material_number || '-' %></span></div>
+        <div class="kv"><span>الرقم الجمركي:</span><span><%= material.customs_number || '-' %></span></div>
         <div class="kv"><span>نوع المادة:</span><span><%= material.material_type || '-' %></span></div>
         <div class="kv"><span>تاريخ الإضافة:</span><span><%= fmtDate(material.created_at) %></span></div>
         <div class="kv"><span>آخر تحديث:</span><span><%= fmtDate(material.updated_at) %></span></div>
-        <div class="kv"><span>وحدة التعبئة:</span><span><%= material.packaging_unit || '-' %></span></div>
+        <div class="kv"><span>وحدة التعبئة الأساسية:</span><span><%= material.primary_packaging_unit ? material.primary_packaging_unit.name : (material.packaging_unit || '-') %></span></div>
+        <div class="kv"><span>وحدة التعبئة الثانوية:</span><span><%= material.secondary_packaging_unit ? material.secondary_packaging_unit.name : '-' %></span></div>
         <div class="kv"><span>كلفة القطعة:</span><span><%= `${formatNumberDisplay(material.unit_cost)} ${currencySymbol}` %></span></div>
         <div class="kv"><span>كلفة الطرد:</span><span><%= `${formatNumberDisplay(material.package_cost)} ${currencySymbol}` %></span></div>
         <div class="kv"><span>الوزن الصافي (كجم):</span><span><%= formatNumberDisplay(material.packaging_weight || material.gross_weight) %></span></div>
@@ -102,6 +107,8 @@ if (!Array.isArray(__extraWeights)) __extraWeights = [];
       <h6 class="section-title">المعلومات الأساسية</h6>
       <div class="grid-kv">
         <div class="kv"><span>الاسم:</span><span><%= material.material_name %></span></div>
+        <div class="kv"><span>رقم المادة:</span><span><%= material.material_number || '-' %></span></div>
+        <div class="kv"><span>الرقم الجمركي:</span><span><%= material.customs_number || '-' %></span></div>
         <div class="kv"><span>النوع:</span><span><%= material.material_type || '-' %></span></div>
         <div class="kv"><span>طريقة الحساب:</span><span><%= material.calculation_method === 'components' ? 'العناصر الفرعية' : 'التقليدية' %></span></div>
         <div class="kv"><span>أساس إدخال التكاليف:</span><span><%= __costInputBasisLabel(material.cost_input_basis) %></span></div>
@@ -149,7 +156,8 @@ if (!Array.isArray(__extraWeights)) __extraWeights = [];
     <div class="box-compact">
       <h6 class="section-title">بيانات التعبئة</h6>
       <div class="grid-kv">
-        <div class="kv"><span>وحدة التعبئة:</span><span><%= material.packaging_unit || '-' %></span></div>
+        <div class="kv"><span>وحدة التعبئة الأساسية:</span><span><%= material.primary_packaging_unit ? material.primary_packaging_unit.name : (material.packaging_unit || '-') %></span></div>
+        <div class="kv"><span>وحدة التعبئة الثانوية:</span><span><%= material.secondary_packaging_unit ? material.secondary_packaging_unit.name : '-' %></span></div>
         <div class="kv"><span>شد الكرتون:</span><span><%= formatNumberDisplay(material.pieces_per_package) %></span></div>
         <div class="kv"><span>عدد الطرود/الطبلية:</span><span><%= formatNumberDisplay(material.packages_per_pallet) %></span></div>
       </div>
