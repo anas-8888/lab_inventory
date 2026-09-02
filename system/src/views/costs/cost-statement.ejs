@@ -1,5 +1,5 @@
 ﻿<%
-function formatNumberDisplay(value) {
+  function formatNumberDisplay(value) {
   if (value === null || value === undefined || value === '') return '-';
   if (typeof value === 'string' && /^-?\d+(\.\d+)?$/.test(value.trim())) return value.trim();
   const num = (typeof value === 'number') ? value : parseFloat(value);
@@ -9,8 +9,15 @@ function formatNumberDisplay(value) {
   let out = Number.isInteger(safe) ? String(safe) : safe.toString();
   out = out.replace(/(\.\d*?[1-9])0+$/,'$1').replace(/\.0+$/,'');
   if (out === '-0') out = '0';
-  return safe < 0 ? ('\u200E' + out) : out;
-}
+    return safe < 0 ? ('\u200E' + out) : out;
+  }
+
+  function formatCostPerKgDisplay(value) {
+    if (value === null || value === undefined || value === '') return '-';
+    const number = typeof value === 'number' ? value : parseFloat(value);
+    if (!Number.isFinite(number)) return '-';
+    return number.toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
+  }
 %>
 <div class="container mt-4">
     <div class="row">
@@ -129,14 +136,16 @@ function formatNumberDisplay(value) {
                                             const storedCostSource = (defaultCurrency && defaultCurrency.code === 'SYP')
                                                 ? material.price_before_waste_syp
                                                 : material.price_before_waste;
-                                            const storedCostPerKg = (storedCostSource !== null && storedCostSource !== undefined && String(storedCostSource).trim() !== '') ? storedCostSource : null;
+                                            const storedCostPerKg = (storedCostSource !== null && storedCostSource !== undefined && String(storedCostSource).trim() !== '')
+                                                ? (material.material_origin === 'external'
+                                                    ? parseFloat(storedCostSource)
+                                                    : (parseFloat(material.gross_weight) > 0 ? parseFloat(storedCostSource) / parseFloat(material.gross_weight) : null))
+                                                : null;
                                             const costPerKg = storedCostPerKg !== null ? storedCostPerKg : computedCostPerKg;
                                         %>
                                         <%= (costPerKg != null)
-                                            ? ((defaultCurrency && defaultCurrency.code === 'SYP')
-                                                ? formatNumberDisplay(costPerKg)
-                                                : formatNumberDisplay(costPerKg))
-                                            : '-' 
+                                            ? formatCostPerKgDisplay(costPerKg)
+                                            : '-'
                                         %> <%= defaultCurrency ? defaultCurrency.symbol : '$' %>
                                     </td>
                                     <td class="material-date" data-date="<%= new Date(material.created_at).toISOString().slice(0,10) %>"><%= formatDate(material.created_at) %></td>
@@ -405,22 +414,9 @@ function formatNumberDisplay(value) {
                         </div>
 
                         <div class="col-12">
-                            <label class="form-label">أساس إدخال التكاليف للحقول التالية *</label>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="cost_input_basis" id="costBasisPerKg" value="per_kg" onchange="calculateCosts()">
-                                        <label class="form-check-label" for="costBasisPerKg">لكل كيلو</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="cost_input_basis" id="costBasisTotal" value="total" onchange="calculateCosts()">
-                                        <label class="form-check-label" for="costBasisTotal">إجمالي</label>
-                                    </div>
-                                </div>
-                            </div>
-                            <small class="text-muted">يُطبق على: اللصاقة، المصاريف الإضافية، العمال، المواد الحافظة فقط.</small>
+                            <input type="hidden" name="cost_input_basis" value="total">
+                            <div class="form-control-plaintext fw-semibold">إجمالي</div>
+                            <small class="text-muted">تُدخل التكاليف الإجمالية، ويُوزع المصروف على الوحدات تلقائيًا.</small>
                         </div>
 
                         <!-- ثمن اللصاقة -->
@@ -469,7 +465,7 @@ function formatNumberDisplay(value) {
                             <label class="form-label">بنود مصاريف إضافية (اسم + سعر)</label>
                             <div id="additionalExpensesContainer"></div>
                             <button type="button" class="btn btn-outline-secondary mt-2" id="addAdditionalExpenseBtn">إضافة بند مصروف</button>
-                            <small class="text-muted d-block mt-1">يُطبّق عليها نفس أساس الإدخال المختار (لكل كيلو/إجمالي) ضمن الحساب التلقائي.</small>
+                            <small class="text-muted d-block mt-1">أدخل كل بند كمبلغ إجمالي، وسيتم توزيعه تلقائيًا على الوحدات.</small>
                         </div>
                     </div>
                     </div>
@@ -771,7 +767,7 @@ function formatNumberDisplay(value) {
                                         </div>
                                     </div>
                                 </div>
-                                <small class="text-muted d-block mt-2">في حال عدم الاختيار، سيتم اعتماد القيم الحالية كما هي دون إعادة تحويل.</small>
+                                <small id="editCostBasisHelp" class="text-muted d-block mt-2">المواد الجديدة تعتمد الإجمالي، والمواد القديمة تحتفظ بأساسها المحفوظ.</small>
                             </div>
                         </div>
                         <input type="hidden" id="editCurrentCostInputBasis" value="">
@@ -828,7 +824,7 @@ function formatNumberDisplay(value) {
                             <label class="form-label">بنود مصاريف إضافية (اسم + سعر)</label>
                             <div id="editAdditionalExpensesContainer"></div>
                             <button type="button" class="btn btn-outline-secondary mt-2" id="editAddAdditionalExpenseBtn">إضافة بند مصروف</button>
-                            <small class="text-muted d-block mt-1">يُطبّق عليها نفس أساس الإدخال المختار (لكل كيلو/إجمالي) ضمن الحساب التلقائي.</small>
+                            <small id="editAdditionalExpenseHelp" class="text-muted d-block mt-1">أدخل كل بند كمبلغ إجمالي، وسيتم توزيعه تلقائيًا على الوحدات.</small>
                         </div>
                     </div>
                     </div>
@@ -1188,6 +1184,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // دالة تعديل المادة
 function editMaterial(materialId) {
+    editComponentsLoadToken += 1;
+    const editComponentsBody = document.getElementById('editComponentsTableBody');
+    if (editComponentsBody) editComponentsBody.innerHTML = '';
+    editComponentRowCounter = 0;
+
     // جلب بيانات المادة
     fetch(`/costs/cost-statement/${materialId}`)
         .then(response => response.json())
@@ -1240,9 +1241,23 @@ function editMaterial(materialId) {
                     document.getElementById('editTraditionalMethod').checked = true;
                     document.getElementById('editComponentsMethod').checked = false;
                 }
-                document.getElementById('editCurrentCostInputBasis').value = resolvedCostInputBasis;
-                document.getElementById('editCostBasisPerKg').checked = resolvedCostInputBasis === 'per_kg';
-                document.getElementById('editCostBasisTotal').checked = resolvedCostInputBasis === 'total';
+                const editBasis = resolvedCostInputBasis || 'normalized';
+                document.getElementById('editCurrentCostInputBasis').value = editBasis;
+                document.getElementById('editCostBasisPerKg').checked = editBasis === 'per_kg';
+                document.getElementById('editCostBasisTotal').checked = editBasis === 'total';
+                document.getElementById('editCostBasisPerKg').disabled = true;
+                document.getElementById('editCostBasisTotal').disabled = true;
+                const editBasisHelp = document.getElementById('editCostBasisHelp');
+                const editAdditionalExpenseHelp = document.getElementById('editAdditionalExpenseHelp');
+                const legacyBasisText = 'هذه المادة القديمة محفوظة على أساس لكل كيلو، وسيتم الحفاظ عليه دون تحويل.';
+                const normalizedBasisText = 'هذه المادة القديمة تستخدم القيم المحفوظة كما هي دون تحويل.';
+                const totalBasisText = 'أدخل كل بند كمبلغ إجمالي، وسيتم توزيعه تلقائيًا على الوحدات.';
+                if (editBasisHelp) editBasisHelp.textContent = editBasis === 'per_kg'
+                    ? legacyBasisText
+                    : (editBasis === 'normalized' ? normalizedBasisText : totalBasisText);
+                if (editAdditionalExpenseHelp) editAdditionalExpenseHelp.textContent = editBasis === 'per_kg'
+                    ? 'هذه المادة القديمة تستخدم قيم المصاريف لكل كيلو كما هي محفوظة.'
+                    : (editBasis === 'normalized' ? normalizedBasisText : totalBasisText);
                 
                 // تبديل العرض حسب طريقة الحساب
                 toggleEditCalculationMethod();
@@ -1636,6 +1651,8 @@ function updateHiddenComponentsFields(totalWeight, totalPrice) {
 // جمع بيانات العناصر للإرسال
 function getComponentsData() {
     const components = [];
+    const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
+    const exchangeRate = Number('<%= exchangeRate %>');
     const rows = document.querySelectorAll('#componentsTableBody tr');
     
     rows.forEach(row => {
@@ -1647,7 +1664,8 @@ function getComponentsData() {
             components.push({
                 component_name: name,
                 weight_grams: weight,
-                price_per_kg: price
+                price_per_kg: currentCurrency === 'SYP' ? (price / exchangeRate) : price,
+                ...(currentCurrency === 'SYP' ? { price_per_kg_syp: price } : {})
             });
         }
     });
@@ -1657,6 +1675,7 @@ function getComponentsData() {
 
 // إدارة العناصر الفرعية في مودال التعديل
 let editComponentRowCounter = 0;
+let editComponentsLoadToken = 0;
 
 // تبديل طريقة الحساب في التعديل
 function toggleEditCalculationMethod() {
@@ -1815,6 +1834,8 @@ function updateEditHiddenComponentsFields(totalWeight, totalPrice) {
 // جمع بيانات العناصر للإرسال في التعديل
 function getEditComponentsData() {
     const components = [];
+    const currentCurrency = '<%= defaultCurrency ? defaultCurrency.code : "USD" %>';
+    const exchangeRate = Number('<%= exchangeRate %>');
     const rows = document.querySelectorAll('#editComponentsTableBody tr');
     
     rows.forEach(row => {
@@ -1826,7 +1847,8 @@ function getEditComponentsData() {
             components.push({
                 component_name: name,
                 weight_grams: weight,
-                price_per_kg: price
+                price_per_kg: currentCurrency === 'SYP' ? (price / exchangeRate) : price,
+                ...(currentCurrency === 'SYP' ? { price_per_kg_syp: price } : {})
             });
         }
     });
@@ -1836,9 +1858,11 @@ function getEditComponentsData() {
 
 // تحميل العناصر الفرعية للمادة في التعديل
 function loadEditMaterialComponents(materialId) {
+    const loadToken = ++editComponentsLoadToken;
     fetch(`/costs/cost-statement/${materialId}/components`)
         .then(response => response.json())
         .then(data => {
+            if (loadToken !== editComponentsLoadToken) return;
             if (data.success && data.components) {
                 // مسح الجدول أولاً
                 document.getElementById('editComponentsTableBody').innerHTML = '';
@@ -2004,10 +2028,7 @@ function calculateCosts() {
     const piecesPerPackage = parseInt(document.querySelector('input[name="pieces_per_package"]').value) || 1;
     const palletPrice = parseFloat(document.querySelector('input[name="pallet_price"]').value) || 0;
     const packagesPerPallet = parseInt(document.querySelector('input[name="packages_per_pallet"]').value) || 1;
-    const costInputBasis = document.querySelector('input[name="cost_input_basis"]:checked')?.value;
-    if (!costInputBasis) {
-        return;
-    }
+    const costInputBasis = document.querySelector('input[name="cost_input_basis"]:checked')?.value || 'total';
 
     // حساب كلفة القطعة الواحدة
     const netWeight = grossWeight * (1 - wastePercentage / 100);
@@ -2125,12 +2146,11 @@ document.getElementById('materialForm').addEventListener('submit', function(e) {
         const addSaveBtn = document.getElementById('addSaveMaterialBtn');
         addMaterialSubmissionInProgress = true;
         setButtonLoading(addSaveBtn, true, 'جاري الحفظ...');
-        fetch('/costs/cost-statement', {
+        fetchJsonWithTimeout('/costs/cost-statement', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         })
-        .then(response => response.json())
         .then(data => {
             if (data.success) {
                 showAlert('تم حفظ المادة بنجاح', 'success');
@@ -2154,11 +2174,7 @@ document.getElementById('materialForm').addEventListener('submit', function(e) {
     // تحديد طريقة الحساب
     const calculationMethod = formData.get('calculation_method');
     const isComponentsMethod = calculationMethod === 'components';
-    const costInputBasis = formData.get('cost_input_basis');
-    if (!costInputBasis) {
-        showAlert('يرجى اختيار أساس إدخال التكاليف: لكل كيلو أو إجمالي', 'error');
-        return;
-    }
+    const costInputBasis = 'total';
 
     // تجهيز الحقول الرقمية غير المرتبطة بالعملة كما هي
     const bodyPayload = {
@@ -2255,14 +2271,13 @@ document.getElementById('materialForm').addEventListener('submit', function(e) {
     const addSaveBtn = document.getElementById('addSaveMaterialBtn');
     addMaterialSubmissionInProgress = true;
     setButtonLoading(addSaveBtn, true, 'جاري الحفظ...');
-    fetch('/costs/cost-statement', {
+    fetchJsonWithTimeout('/costs/cost-statement', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify(bodyPayload)
     })
-    .then(response => response.json())
     .then(data => {
         if (data.success) {
             showAlert('تم حفظ المادة بنجاح', 'success');
@@ -2521,6 +2536,14 @@ function setButtonLoading(button, isLoading, loadingText) {
     }
 }
 
+function fetchJsonWithTimeout(url, options = {}, timeoutMs = 30000) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    return fetch(url, { ...options, signal: controller.signal })
+        .then(response => response.json())
+        .finally(() => clearTimeout(timeoutId));
+}
+
 // دالة عرض التنبيهات
 function showAlert(message, type) {
     const alertDiv = document.createElement('div');
@@ -2751,12 +2774,11 @@ function saveMaterialEdit() {
 
         const editSaveBtn = document.getElementById('editSaveMaterialBtn');
         setButtonLoading(editSaveBtn, true, 'جاري التحديث...');
-        fetch(`/costs/cost-statement/${materialId}`, {
+        fetchJsonWithTimeout(`/costs/cost-statement/${materialId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         })
-        .then(response => response.json())
         .then(data => {
             if (data.success) {
                 showAlert('تم تحديث المادة بنجاح', 'success');
@@ -2885,14 +2907,13 @@ function saveMaterialEdit() {
     
     const editSaveBtn = document.getElementById('editSaveMaterialBtn');
     setButtonLoading(editSaveBtn, true, 'جاري التحديث...');
-    fetch(`/costs/cost-statement/${materialId}`, {
+    fetchJsonWithTimeout(`/costs/cost-statement/${materialId}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify(formData)
     })
-    .then(response => response.json())
     .then(data => {
         if (data.success) {
             showAlert('تم تحديث المادة بنجاح', 'success');

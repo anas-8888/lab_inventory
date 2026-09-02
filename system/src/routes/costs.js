@@ -21,6 +21,17 @@ router.post('/packaging-units', isAuthenticated, isAdmin, packagingUnitsControll
 router.put('/packaging-units/:id', isAuthenticated, isAdmin, packagingUnitsController.update);
 router.put('/packaging-units/:id/status', isAuthenticated, isAdmin, packagingUnitsController.setActive);
 
+// الماركات والمواد المرتبطة بها
+router.get('/brands', isAuthenticated, isAdmin, costsController.getBrands);
+router.get('/brands/export/excel', isAuthenticated, isAdmin, costsController.exportBrandsExcel);
+router.post('/brands/export/excel', isAuthenticated, isAdmin, costsController.exportBrandsExcel);
+router.post('/brands/export/pdf', isAuthenticated, isAdmin, costsController.exportBrandsPdf);
+router.get('/brands/:id', isAuthenticated, isAdmin, costsController.getBrand);
+router.post('/brands', isAuthenticated, isAdmin, costsController.createBrand);
+router.put('/brands/:id', isAuthenticated, isAdmin, costsController.updateBrand);
+router.delete('/brands/:id', isAuthenticated, isAdmin, costsController.deleteBrand);
+router.post('/brands/delete-multiple', isAuthenticated, isAdmin, costsController.deleteBrandsMultiple);
+
 // المرحلة الأولى: بيان الكلفة
 router.get('/cost-statement', isAuthenticated, isAdmin, costsController.getCostStatement);
 // مسارات عامة وثابتة يجب أن تسبق المسارات الديناميكية

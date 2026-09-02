@@ -495,8 +495,9 @@ const getCosts = async (req, res) => {
         const materials = await attachPackagingUnits(req.db, materialRows);
         
         const [quotations] = await req.db.query(`
-            SELECT q.*, COUNT(qi.id) as items_count 
+            SELECT q.*, b.brand_name, COUNT(qi.id) as items_count
             FROM quotations q 
+            LEFT JOIN brands b ON b.id = q.brand_id
             LEFT JOIN quotation_items qi ON q.id = qi.quotation_id 
             GROUP BY q.id 
             ORDER BY q.created_at DESC
@@ -759,7 +760,7 @@ const createMaterial = async (req, res) => {
         const packaging_unit_weight_num = parseFloat(packaging_unit_weight) || 0;
         const pieces_per_package_num = parseInt(pieces_per_package) || 0;
         const packages_per_pallet_num = parseInt(packages_per_pallet) || 0;
-        const costInputBasis = normalizeCostInputBasis(cost_input_basis) || 'total';
+        const costInputBasis = 'total';
 
 
         // تجهيز الحقول المرتبطة بالعملة
@@ -1121,9 +1122,8 @@ const updateMaterial = async (req, res) => {
         const waste_percentage_num = parseFloat(waste_percentage) || 0;
         const pieces_per_package_num = parseInt(pieces_per_package) || 1;
         const packages_per_pallet_num = parseInt(packages_per_pallet) || 1;
-        const requestedCostInputBasis = normalizeCostInputBasis(cost_input_basis);
         const existingCostInputBasis = normalizeCostInputBasis(existingRawMap.cost_input_basis);
-        const costInputBasis = requestedCostInputBasis || existingCostInputBasis || 'normalized';
+        const costInputBasis = existingCostInputBasis || 'normalized';
         // نحفظ packaging_weight كما هو (نص) للحفاظ على الدقة
         const packaging_weight_for_calc = Number(selectedPackagingWeight) || 0;
         const packaging_unit_weight_num = parseFloat(packaging_unit_weight) || 0;
@@ -1186,7 +1186,7 @@ const updateMaterial = async (req, res) => {
             'pallet_price',
             'packages_per_pallet'
         ]);
-        if (requestedCostInputBasis || existingCostInputBasis) {
+        if (existingCostInputBasis) {
             internalRawMap.cost_input_basis = costInputBasis;
         } else {
             delete internalRawMap.cost_input_basis;
@@ -1282,7 +1282,7 @@ const getQuotations = async (req, res) => {
         `);
         
         const [materialRows] = await req.db.query(`
-            SELECT * FROM materials ORDER BY material_name
+            SELECT * FROM materials WHERE deleted_at IS NULL ORDER BY material_name
         `);
         const materials = await attachPackagingUnits(req.db, materialRows);
 
@@ -1319,12 +1319,24 @@ const getQuotations = async (req, res) => {
             return rawMaterial;
         });
 
+        const [brands] = await req.db.query('SELECT id, brand_name FROM brands ORDER BY brand_name');
+        const brandMaterialRows = brands.length
+            ? (await req.db.query(`
+                SELECT bm.brand_id, bm.material_id
+                FROM brand_materials bm
+                INNER JOIN materials m ON m.id = bm.material_id AND m.deleted_at IS NULL
+                WHERE bm.brand_id IN (${brands.map(() => '?').join(',')})
+            `, brands.map((brand) => brand.id)))[0]
+            : [];
+
         res.render('costs/quotations', {
             title: 'عروض الأسعار',
             quotations: displayQuotations,
             materials: displayMaterials,
             formatDate,
-            exchangeRate: exchangeRateValue
+            exchangeRate: exchangeRateValue,
+            brands,
+            brandMaterials: brandMaterialRows
         });
     } catch (error) {
         console.error('خطأ في عرض عروض الأسعار:', error);
@@ -1381,7 +1393,7 @@ const getQuotationJson = async (req, res) => {
 const updateQuotation = async (req, res) => {
     try {
         const { id } = req.params;
-        const { client_name, client_phone, client_address, notes, sale_description, payment_method, items } = req.body;
+        const { client_name, client_phone, client_address, notes, sale_description, payment_method, items, brand_id } = req.body;
 
         // التحقق من البيانات المطلوبة
         if (!client_name || !client_name.trim()) {
@@ -1419,8 +1431,8 @@ const updateQuotation = async (req, res) => {
 
         // تحديث رأس العرض (بدون نسبة ربح عامة)
         await req.db.query(
-            `UPDATE quotations SET client_name = ?, client_phone = ?, client_address = ?, notes = ?, sale_description = ?, payment_method = ?, numeric_raw = ? WHERE id = ?`,
-            [client_name, client_phone, client_address, notes, normalizedSaleDescription, normalizedPaymentMethod, JSON.stringify(quotationHeaderRawMap), id]
+            `UPDATE quotations SET client_name = ?, client_phone = ?, client_address = ?, notes = ?, sale_description = ?, payment_method = ?, brand_id = ?, numeric_raw = ? WHERE id = ?`,
+            [client_name, client_phone, client_address, notes, normalizedSaleDescription, normalizedPaymentMethod, Number(brand_id) || null, JSON.stringify(quotationHeaderRawMap), id]
         );
 
         // حذف البنود القديمة
@@ -1520,7 +1532,8 @@ const createQuotation = async (req, res) => {
             sale_description,
             payment_method,
             general_profit_percentage,
-            items
+            items,
+            brand_id
         } = req.body;
 
         // التحقق من البيانات المطلوبة
@@ -1572,9 +1585,9 @@ const createQuotation = async (req, res) => {
 
         // حفظ العرض
         const [quotationResult] = await req.db.query(`
-            INSERT INTO quotations (quotation_number, client_name, client_phone, client_address, notes, sale_description, payment_method, general_profit_percentage, total_amount, total_amount_syp, numeric_raw)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)
-        `, [quotationNumber, client_name, client_phone, client_address, notes, normalizedSaleDescription, normalizedPaymentMethod, general_profit_percentage || 0, JSON.stringify(quotationHeaderRawMap)]);
+            INSERT INTO quotations (quotation_number, client_name, client_phone, client_address, notes, sale_description, payment_method, brand_id, general_profit_percentage, total_amount, total_amount_syp, numeric_raw)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)
+        `, [quotationNumber, client_name, client_phone, client_address, notes, normalizedSaleDescription, normalizedPaymentMethod, Number(brand_id) || null, general_profit_percentage || 0, JSON.stringify(quotationHeaderRawMap)]);
 
         let totalAmount = 0;
         let totalAmountSyp = 0;
@@ -2001,17 +2014,18 @@ const formatDate = (dateString) => {
 const getOrders = async (req, res) => {
     try {
         const [orders] = await req.db.query(`
-            SELECT o.*, 
+            SELECT o.*, b.brand_name,
                    COALESCE(SUM(oi.total_price), 0) as total_amount,
                    COALESCE(SUM(oi.total_price_syp), 0) as total_amount_syp
             FROM orders o
+            LEFT JOIN brands b ON b.id = o.brand_id
             LEFT JOIN order_items oi ON o.id = oi.order_id
             GROUP BY o.id
             ORDER BY o.created_at DESC
         `);
         const [materialRows] = await req.db.query(`
             SELECT id, material_name, packaging_unit, packaging_weight, gross_package_weight, package_cost, package_cost_syp, numeric_raw 
-            FROM materials ORDER BY material_name
+            FROM materials WHERE deleted_at IS NULL ORDER BY material_name
         `);
         const materials = await attachPackagingUnits(req.db, materialRows);
 
@@ -2035,6 +2049,15 @@ const getOrders = async (req, res) => {
         });
 
         const displayMaterials = materials.map((material) => applyMaterialRaw(material));
+        const [brands] = await req.db.query('SELECT id, brand_name FROM brands ORDER BY brand_name');
+        const brandMaterialRows = brands.length
+            ? (await req.db.query(`
+                SELECT bm.brand_id, bm.material_id
+                FROM brand_materials bm
+                INNER JOIN materials m ON m.id = bm.material_id AND m.deleted_at IS NULL
+                WHERE bm.brand_id IN (${brands.map(() => '?').join(',')})
+            `, brands.map((brand) => brand.id)))[0]
+            : [];
 
         res.render('costs/orders', {
             title: 'الطلبيات',
@@ -2042,7 +2065,9 @@ const getOrders = async (req, res) => {
             materials: displayMaterials,
             formatDate,
             defaultCurrency: req.defaultCurrency || null,
-            exchangeRate: exchangeRateValue
+            exchangeRate: exchangeRateValue,
+            brands,
+            brandMaterials: brandMaterialRows
         });
     } catch (error) {
         console.error('خطأ في عرض الطلبيات:', error);
@@ -2071,7 +2096,8 @@ const createOrder = async (req, res) => {
             accreditation_number,
             notes,
             currency,
-            items
+            items,
+            brand_id
         } = req.body;
 
         // التحقق من الحقول المطلوبة
@@ -2128,12 +2154,12 @@ const createOrder = async (req, res) => {
             INSERT INTO orders (
                 order_number, client_name, recipient_name, order_date, delivery_date,
                 responsible_worker, quality_controller, pallets_count, container_number,
-                packages_count, waybill_number, accreditation_number, notes, numeric_raw
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                packages_count, waybill_number, accreditation_number, notes, brand_id, numeric_raw
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
             orderNumber, client_name || null, recipient_name || null, orderDateSql, deliveryDateSql,
             responsible_worker || null, quality_controller || null, pallets_count || null, container_number || null,
-            packages_count || null, waybill_number || null, accreditation_number || null, notes || null, JSON.stringify(orderHeaderRawMap)
+            packages_count || null, waybill_number || null, accreditation_number || null, notes || null, Number(brand_id) || null, JSON.stringify(orderHeaderRawMap)
         ]);
 
         // حفظ بنود الطلبية إن وُجدت
@@ -2229,7 +2255,7 @@ const getMaterial = async (req, res) => {
         
         const materialWithUnits = await attachPackagingUnits(req.db, materials);
         const material = applyMaterialRaw(materialWithUnits[0]);
-        material.cost_input_basis = inferMaterialCostInputBasis(material) || material.cost_input_basis || null;
+        material.cost_input_basis = normalizeCostInputBasis(material.cost_input_basis) || null;
         res.json({ success: true, material });
     } catch (error) {
         console.error('خطأ في جلب بيانات المادة:', error);
@@ -2651,7 +2677,8 @@ const updateOrder = async (req, res) => {
             accreditation_number,
             notes,
             currency,
-            items
+            items,
+            brand_id
         } = req.body;
         
         // التحقق من الحقول المطلوبة
@@ -2695,12 +2722,12 @@ const updateOrder = async (req, res) => {
             UPDATE orders SET
                 client_name = ?, recipient_name = ?, order_date = ?, delivery_date = ?,
                 responsible_worker = ?, quality_controller = ?, pallets_count = ?, container_number = ?,
-                packages_count = ?, waybill_number = ?, accreditation_number = ?, notes = ?, numeric_raw = ?
+                packages_count = ?, waybill_number = ?, accreditation_number = ?, notes = ?, brand_id = ?, numeric_raw = ?
             WHERE id = ?
         `, [
             client_name || null, recipient_name || null, orderDateSql, deliveryDateSql,
             responsible_worker || null, quality_controller || null, pallets_count || null, container_number || null,
-            packages_count || null, waybill_number || null, accreditation_number || null, notes || null, JSON.stringify(orderHeaderRawMap), id
+            packages_count || null, waybill_number || null, accreditation_number || null, notes || null, Number(brand_id) || null, JSON.stringify(orderHeaderRawMap), id
         ]);
 
         // حدّث البنود
@@ -3007,6 +3034,178 @@ const getOrderPrintRaw = async (req, res) => {
     return getOrderPrintPage(req, res);
 };
 
+const getBrands = async (req, res) => {
+    try {
+        const [brands] = await req.db.query(`
+            SELECT b.*, COUNT(m.id) AS materials_count
+            FROM brands b
+            LEFT JOIN brand_materials bm ON bm.brand_id = b.id
+            LEFT JOIN materials m ON m.id = bm.material_id AND m.deleted_at IS NULL
+            GROUP BY b.id
+            ORDER BY b.brand_name ASC
+        `);
+        const [materials] = await req.db.query(`
+            SELECT id, material_number, material_name, material_type
+            FROM materials WHERE deleted_at IS NULL ORDER BY material_name ASC
+        `);
+        const brandIds = brands.map((brand) => brand.id);
+        let links = [];
+        if (brandIds.length) {
+            const [rows] = await req.db.query(
+                `SELECT bm.brand_id, bm.material_id
+                 FROM brand_materials bm
+                 INNER JOIN materials m ON m.id = bm.material_id AND m.deleted_at IS NULL
+                 WHERE bm.brand_id IN (${brandIds.map(() => '?').join(',')})`,
+                brandIds
+            );
+            links = rows;
+        }
+        res.render('costs/brands', {
+            title: 'الماركات',
+            brands,
+            materials,
+            brandMaterials: links
+        });
+    } catch (error) {
+        console.error('خطأ في عرض الماركات:', error);
+        req.flash('error_msg', 'حدث خطأ في عرض الماركات');
+        res.redirect('/costs');
+    }
+};
+
+const createBrand = async (req, res) => {
+    try {
+        const { brand_name, owner_name, address, contact_number, material_ids } = req.body;
+        const name = String(brand_name || '').trim();
+        if (!name) return res.status(400).json({ success: false, message: 'اسم الماركة مطلوب' });
+        const ids = [...new Set((Array.isArray(material_ids) ? material_ids : []).map(Number).filter(Number.isInteger))];
+        const [result] = await req.db.query(
+            'INSERT INTO brands (brand_name, owner_name, address, contact_number) VALUES (?, ?, ?, ?)',
+            [name, String(owner_name || '').trim() || null, String(address || '').trim() || null, String(contact_number || '').trim() || null]
+        );
+        if (ids.length) {
+            await req.db.query(
+                `INSERT INTO brand_materials (brand_id, material_id) SELECT ?, id FROM materials WHERE id IN (${ids.map(() => '?').join(',')}) AND deleted_at IS NULL`,
+                [result.insertId, ...ids]
+            );
+        }
+        res.json({ success: true, id: result.insertId, message: 'تمت إضافة الماركة بنجاح' });
+    } catch (error) {
+        console.error('خطأ في إضافة الماركة:', error);
+        res.status(error.code === 'ER_DUP_ENTRY' ? 409 : 500).json({ success: false, message: error.code === 'ER_DUP_ENTRY' ? 'اسم الماركة مستخدم مسبقًا' : 'حدث خطأ في إضافة الماركة' });
+    }
+};
+
+const getBrand = async (req, res) => {
+    try {
+        const [brands] = await req.db.query('SELECT * FROM brands WHERE id = ?', [req.params.id]);
+        if (!brands.length) return res.status(404).json({ success: false, message: 'الماركة غير موجودة' });
+        const [links] = await req.db.query('SELECT material_id FROM brand_materials WHERE brand_id = ?', [req.params.id]);
+        res.json({ success: true, brand: brands[0], material_ids: links.map((link) => link.material_id) });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'حدث خطأ في جلب الماركة' });
+    }
+};
+
+const updateBrand = async (req, res) => {
+    try {
+        const { brand_name, owner_name, address, contact_number, material_ids } = req.body;
+        const name = String(brand_name || '').trim();
+        if (!name) return res.status(400).json({ success: false, message: 'اسم الماركة مطلوب' });
+        const ids = [...new Set((Array.isArray(material_ids) ? material_ids : []).map(Number).filter(Number.isInteger))];
+        await req.db.query(
+            'UPDATE brands SET brand_name = ?, owner_name = ?, address = ?, contact_number = ? WHERE id = ?',
+            [name, String(owner_name || '').trim() || null, String(address || '').trim() || null, String(contact_number || '').trim() || null, req.params.id]
+        );
+        await req.db.query('DELETE FROM brand_materials WHERE brand_id = ?', [req.params.id]);
+        if (ids.length) {
+            await req.db.query(
+                `INSERT INTO brand_materials (brand_id, material_id) SELECT ?, id FROM materials WHERE id IN (${ids.map(() => '?').join(',')}) AND deleted_at IS NULL`,
+                [req.params.id, ...ids]
+            );
+        }
+        res.json({ success: true, message: 'تم تعديل الماركة بنجاح' });
+    } catch (error) {
+        res.status(error.code === 'ER_DUP_ENTRY' ? 409 : 500).json({ success: false, message: error.code === 'ER_DUP_ENTRY' ? 'اسم الماركة مستخدم مسبقًا' : 'حدث خطأ في تعديل الماركة' });
+    }
+};
+
+const deleteBrand = async (req, res) => {
+    try {
+        await req.db.query('DELETE FROM brands WHERE id = ?', [req.params.id]);
+        res.json({ success: true, message: 'تم حذف الماركة بنجاح' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'حدث خطأ في حذف الماركة' });
+    }
+};
+
+const deleteBrandsMultiple = async (req, res) => {
+    try {
+        const ids = [...new Set((Array.isArray(req.body.ids) ? req.body.ids : []).map(Number).filter(Number.isInteger))];
+        if (!ids.length) return res.status(400).json({ success: false, message: 'لم يتم تحديد أي ماركات' });
+        const [result] = await req.db.query(`DELETE FROM brands WHERE id IN (${ids.map(() => '?').join(',')})`, ids);
+        res.json({ success: true, message: `تم حذف ${result.affectedRows} ماركة` });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'حدث خطأ في حذف الماركات المحددة' });
+    }
+};
+
+const exportBrandsExcel = async (req, res) => {
+    try {
+        const ids = [...new Set((Array.isArray(req.body?.ids) ? req.body.ids : []).map(Number).filter(Number.isInteger))];
+        const [rows] = await req.db.query(`
+            SELECT b.brand_name, b.owner_name, b.address, b.contact_number,
+                   GROUP_CONCAT(m.material_name ORDER BY m.material_name SEPARATOR '، ') AS materials
+            FROM brands b LEFT JOIN brand_materials bm ON bm.brand_id = b.id
+            LEFT JOIN materials m ON m.id = bm.material_id
+            ${ids.length ? `WHERE b.id IN (${ids.map(() => '?').join(',')})` : ''}
+            GROUP BY b.id ORDER BY b.brand_name
+        `, ids);
+        const workbook = new Excel.Workbook();
+        const sheet = workbook.addWorksheet('الماركات');
+        sheet.columns = [
+            { header: 'اسم الماركة', key: 'brand_name', width: 28 },
+            { header: 'اسم صاحبها', key: 'owner_name', width: 25 },
+            { header: 'العنوان', key: 'address', width: 35 },
+            { header: 'رقم التواصل', key: 'contact_number', width: 20 },
+            { header: 'المواد', key: 'materials', width: 60 }
+        ];
+        rows.forEach((row) => sheet.addRow(row));
+        const fileName = `${uuidv4()}.xlsx`;
+        const dir = path.join(__dirname, '../public/brands_excel');
+        fs.mkdirSync(dir, { recursive: true });
+        await workbook.xlsx.writeFile(path.join(dir, fileName));
+        res.json({ success: true, url: `${process.env.BASE_URL}/public/brands_excel/${fileName}` });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'حدث خطأ في تصدير الماركات' });
+    }
+};
+
+const exportBrandsPdf = async (req, res) => {
+    try {
+        const ids = [...new Set((Array.isArray(req.body.ids) ? req.body.ids : []).map(Number).filter(Number.isInteger))];
+        if (!ids.length) return res.status(400).json({ success: false, message: 'يرجى تحديد ماركات للتصدير' });
+        const [brands] = await req.db.query(`
+            SELECT b.*, GROUP_CONCAT(m.material_name ORDER BY m.material_name SEPARATOR '، ') AS materials
+            FROM brands b LEFT JOIN brand_materials bm ON bm.brand_id = b.id
+            LEFT JOIN materials m ON m.id = bm.material_id AND m.deleted_at IS NULL
+            WHERE b.id IN (${ids.map(() => '?').join(',')}) GROUP BY b.id ORDER BY b.brand_name
+        `, ids);
+        req.app.render('costs/brands-print', { title: 'قائمة الماركات', brands, layout: false }, async (error, html) => {
+            if (error) return res.status(500).json({ success: false, message: 'تعذر تجهيز ملف PDF' });
+            try {
+                const pdf = require('html-pdf-node');
+                const fileName = `${uuidv4()}.pdf`;
+                const dir = path.join(__dirname, '../public/brands_pdf');
+                fs.mkdirSync(dir, { recursive: true });
+                const pdfBuffer = await generatePdfWithMetrics(pdf, { content: html }, { format: 'A4', printBackground: true, preferCSSPageSize: true, margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' }, puppeteerArgs: { args: ['--no-sandbox', '--disable-setuid-sandbox'] } }, 'brands-list');
+                await fs.promises.writeFile(path.join(dir, fileName), pdfBuffer);
+                res.json({ success: true, url: `${process.env.BASE_URL}/public/brands_pdf/${fileName}` });
+            } catch (pdfError) { res.status(500).json({ success: false, message: 'حدث خطأ أثناء إنشاء ملف PDF' }); }
+        });
+    } catch (error) { res.status(500).json({ success: false, message: 'حدث خطأ في تصدير الماركات' }); }
+};
+
 const writeDynamicExcel = async ({ req, res, kind }) => {
     const isQuotation = kind === 'quotation';
     const id = Number.parseInt(req.params.id, 10);
@@ -3193,6 +3392,14 @@ const getMaterialPreview = async (req, res) => {
 module.exports = {
     getCosts,
     getCostStatement,
+    getBrands,
+    getBrand,
+    createBrand,
+    updateBrand,
+    deleteBrand,
+    deleteBrandsMultiple,
+    exportBrandsExcel,
+    exportBrandsPdf,
     createMaterial,
     getMaterial,
     getMaterialComponents,

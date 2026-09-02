@@ -1,0 +1,34 @@
+<%
+  const pagePath = currentPath || '';
+  let backUrl = '/home';
+  let backLabel = 'الرئيسية';
+  const setParent = (url, label) => { backUrl = url; backLabel = label; };
+  if (pagePath.startsWith('/inventory/')) setParent('/inventory', 'المخزون');
+  else if (pagePath === '/inventory') setParent('/home', 'الرئيسية');
+  else if (pagePath.startsWith('/invoices/')) setParent('/invoices', 'طلبات الشحن');
+  else if (pagePath === '/invoices') setParent('/home', 'الرئيسية');
+  else if (pagePath === '/certificates/create/internal' || pagePath === '/certificates/create/external') setParent('/certificates/create-type', 'إنشاء شهادة');
+  else if (pagePath === '/certificates/create-type' || pagePath === '/certificates/deleted' || pagePath.startsWith('/certificates/')) setParent('/certificates', 'الشهادات');
+  else if (pagePath === '/certificates') setParent('/home', 'الرئيسية');
+  else if (pagePath === '/costs/cost-statement' || pagePath === '/costs/quotations' || pagePath === '/costs/orders' || pagePath === '/costs/brands' || pagePath === '/costs/packaging-units' || pagePath === '/costs/currency-settings') setParent('/costs', 'التكاليف');
+  else if (pagePath.startsWith('/costs/cost-statement/')) setParent('/costs/cost-statement', 'بيان الكلفة');
+  else if (pagePath.startsWith('/costs/quotations/')) setParent('/costs/quotations', 'عروض الأسعار');
+  else if (pagePath.startsWith('/costs/orders/')) setParent('/costs/orders', 'الطلبيات');
+  else if (pagePath.startsWith('/costs/')) setParent('/costs', 'التكاليف');
+  else if (pagePath === '/costs') setParent('/home', 'الرئيسية');
+  else if (pagePath.startsWith('/site-management/')) setParent('/site-management', 'إدارة الموقع');
+  else if (pagePath === '/site-management') setParent('/home', 'الرئيسية');
+  else if (pagePath.startsWith('/users/')) setParent('/users', 'المستخدمين');
+  else if (pagePath === '/users' || pagePath.startsWith('/notes') || pagePath.startsWith('/activity-logs')) setParent('/home', 'الرئيسية');
+%>
+<% if (pagePath && pagePath !== '/home' && !pagePath.includes('/print') && !pagePath.includes('/pdf') && !pagePath.startsWith('/auth')) { %>
+  <div class="container-fluid app-backbar no-print"><a class="btn btn-outline-secondary" href="<%= backUrl %>"><i class="bi bi-arrow-right me-1"></i> العودة إلى <%= backLabel %></a></div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('a').forEach(function (link) {
+        if (link.closest('.app-backbar')) return;
+        if (/^(العودة|رجوع)/.test((link.textContent || '').trim())) link.classList.add('d-none');
+      });
+    });
+  </script>
+<% } %>

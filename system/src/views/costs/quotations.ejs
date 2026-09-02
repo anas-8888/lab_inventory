@@ -75,6 +75,10 @@ function formatNumberDisplay(value) {
                                 <input type="text" class="form-control" name="sale_description">
                             </div>
                             <div class="col-md-6">
+                                <label class="form-label">الماركة</label>
+                                <select class="form-select quotation-brand-select" name="brand_id" onchange="applyQuotationBrand(this.value, false)"><option value="">بدون ماركة</option><% (brands || []).forEach((brand) => { %><option value="<%= brand.id %>"><%= brand.brand_name %></option><% }) %></select>
+                            </div>
+                            <div class="col-md-6">
                                 <label class="form-label">طريقة الدفع</label>
                                 <input type="text" class="form-control" name="payment_method">
                             </div>
@@ -147,6 +151,7 @@ function formatNumberDisplay(value) {
                                 <tr>
                                     <th>رقم العرض</th>
                                     <th>اسم العميل</th>
+                                    <th>الماركة</th>
                                     <th>عدد المواد</th>
                                     <th>المبلغ الإجمالي</th>
                                     <th>التاريخ</th>
@@ -158,6 +163,7 @@ function formatNumberDisplay(value) {
                                 <tr>
                                     <td class="quotation-number"><%= quotation.quotation_number %></td>
                                     <td class="quotation-client"><%= quotation.client_name %></td>
+                                    <td><%= quotation.brand_name || '-' %></td>
                                     <td><%= quotation.items_count %></td>
                                     <td>
                                         <%= (defaultCurrency && defaultCurrency.code === 'SYP')
@@ -231,6 +237,10 @@ function formatNumberDisplay(value) {
               <input type="text" class="form-control" id="editSaleDescription">
             </div>
             <div class="col-md-6">
+              <label class="form-label">الماركة</label>
+              <select class="form-select" id="editQuotationBrand" onchange="applyQuotationBrand(this.value, true)"><option value="">بدون ماركة</option><% (brands || []).forEach((brand) => { %><option value="<%= brand.id %>"><%= brand.brand_name %></option><% }) %></select>
+            </div>
+            <div class="col-md-6">
               <label class="form-label">طريقة الدفع</label>
               <input type="text" class="form-control" id="editPaymentMethod">
             </div>
@@ -288,6 +298,8 @@ function formatNumberDisplay(value) {
     defaultCurrencyCode: (defaultCurrency ? defaultCurrency.code : 'USD'),
     currencySymbol: (defaultCurrency ? defaultCurrency.symbol : '$'),
     materials: (materials || [])
+    ,brands: (brands || [])
+    ,brandMaterials: (brandMaterials || [])
 }) %></script>
 
 <script>
@@ -437,6 +449,14 @@ const roundToDecimal = (value, decimals = 2) => {
 };
 // المواد المتاحة
 const materials = Array.isArray(pageData.materials) ? pageData.materials : [];
+const brands = Array.isArray(pageData.brands) ? pageData.brands : [];
+const brandMaterials = Array.isArray(pageData.brandMaterials) ? pageData.brandMaterials : [];
+function getBrandMaterialIds(brandId){ return brandMaterials.filter((link)=>String(link.brand_id)===String(brandId)).map((link)=>Number(link.material_id)); }
+function applyQuotationBrand(brandId, isEdit){
+  const ids=getBrandMaterialIds(brandId);
+  if(isEdit){ const body=document.getElementById('editItemsBody'); body.innerHTML=''; ids.forEach((id)=>{ addEditMaterialRow(); const tr=body.lastElementChild; updateEditMaterialData(Number(tr.dataset.rowId),id); }); updateEditTotal(); }
+  else { materialRows=[]; document.getElementById('materialsTableBody').innerHTML=''; ids.forEach((id)=>{ addMaterialRow(); updateMaterialData(nextRowId-1,id); }); calculateTotalAmount(); }
+}
 const groupedMaterials = (() => {
   const byName = new Map();
   materials.forEach((m) => {
@@ -583,7 +603,8 @@ function changeQuotationUnit(rowId, unitId) {
 // حساب مجموع الصف
 function calculateRowTotal(rowIndex) {
     const row = materialRows[rowIndex];
-    const tr = document.querySelector(`#materialsTableBody tr:nth-child(${rowIndex + 1})`);
+    const tr = document.querySelector(`#materialsTableBody tr[data-row-id="${rowIndex}"]`);
+    if (!tr) return;
     
     const profitPercentage = parseFloat(tr.querySelector('.profit-percentage').value) || 0;
     const quantity = parseFloat(tr.querySelector('.quantity').value) || 1; // تغيير من parseInt إلى parseFloat
@@ -658,6 +679,7 @@ function openEditQuotationModal(id) {
     document.getElementById('editSaleDescription').value = q.sale_description||'';
     document.getElementById('editPaymentMethod').value = q.payment_method||'';
     document.getElementById('editNotes').value = q.notes||'';
+    document.getElementById('editQuotationBrand').value = q.brand_id || '';
     const tbody = document.getElementById('editItemsBody');
     tbody.innerHTML = '';
     items.forEach((it, idx)=>{
@@ -877,7 +899,8 @@ function saveEditQuotation(){
     client_address: document.getElementById('editClientAddress').value,
     sale_description: document.getElementById('editSaleDescription').value,
     payment_method: document.getElementById('editPaymentMethod').value,
-    notes: document.getElementById('editNotes').value,
+            notes: document.getElementById('editNotes').value,
+    brand_id: document.getElementById('editQuotationBrand').value || null,
     currency: defaultCurrencyCode, // إرسال العملة الحالية
     items: []
   };
@@ -1016,6 +1039,7 @@ document.getElementById('quotationForm').addEventListener('submit', function(e) 
             payment_method: formData.get('payment_method'),
             notes: formData.get('notes'),
             general_profit_percentage: formData.get('general_profit_percentage'),
+            brand_id: formData.get('brand_id') || null,
             currency: defaultCurrencyCode, // إرسال العملة المختارة
             items: items
         })

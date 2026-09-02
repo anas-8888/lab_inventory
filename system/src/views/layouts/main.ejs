@@ -15,6 +15,8 @@
     body { 
       font-family: 'Cairo', sans-serif; 
     }
+    .app-backbar { padding: .75rem 1rem 0; }
+    .app-backbar .btn { min-width: 145px; }
     .auto-num-center {
       text-align: center !important;
     }
@@ -33,6 +35,7 @@
   </div>
 
   <%- include('partials/navbar') %>
+  <%- include('partials/back-button') %>
 
   <% if (Array.isArray(error_msg) && error_msg.length) { %>
     <div class="alert alert-danger alert-dismissible fade show m-3" role="alert">
